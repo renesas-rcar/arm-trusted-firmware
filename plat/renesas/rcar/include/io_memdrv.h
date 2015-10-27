@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 2013-2014, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2014, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2015-2016, Renesas Electronics Corporation. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -28,51 +29,11 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef __MMIO_H__
-#define __MMIO_H__
+#ifndef IO_MEMDRV_H__
+#define IO_MEMDRV_H__
 
-#include <stdint.h>
+struct io_dev_connector;
 
-static inline void mmio_write_8(uintptr_t addr, uint8_t value)
-{
-	*(volatile uint8_t*)addr = value;
-}
+int32_t register_io_dev_memdrv(const io_dev_connector_t **dev_con);
 
-static inline uint8_t mmio_read_8(uintptr_t addr)
-{
-	return *(volatile uint8_t*)addr;
-}
-
-#if PLAT_rcar
-static inline void mmio_write_16(uintptr_t addr, uint16_t value)
-{
-	*(volatile uint16_t*)addr = value;
-}
-
-static inline uint16_t mmio_read_16(uintptr_t addr)
-{
-	return *(volatile uint16_t*)addr;
-}
-
-#endif
-static inline void mmio_write_32(uintptr_t addr, uint32_t value)
-{
-	*(volatile uint32_t*)addr = value;
-}
-
-static inline uint32_t mmio_read_32(uintptr_t addr)
-{
-	return *(volatile uint32_t*)addr;
-}
-
-static inline void mmio_write_64(uintptr_t addr, uint64_t value)
-{
-	*(volatile uint64_t*)addr = value;
-}
-
-static inline uint64_t mmio_read_64(uintptr_t addr)
-{
-	return *(volatile uint64_t*)addr;
-}
-
-#endif /* __MMIO_H__ */
+#endif /* IO_MEMDRV_H__ */

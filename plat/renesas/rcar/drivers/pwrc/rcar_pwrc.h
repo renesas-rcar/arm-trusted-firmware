@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2013-2014, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2015-2016, Renesas Electronics Corporation. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -28,51 +29,53 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef __MMIO_H__
-#define __MMIO_H__
+#ifndef RCAR_PWRC_H__
+#define RCAR_PWRC_H__
 
-#include <stdint.h>
+/* RCAR Power controller register offset etc */
+#define PPOFFR_OFF		0x0
+#define PPONR_OFF		0x4
+#define PCOFFR_OFF		0x8
+#define PWKUPR_OFF		0xc
+#define PSYSR_OFF		0x10
 
-static inline void mmio_write_8(uintptr_t addr, uint8_t value)
-{
-	*(volatile uint8_t*)addr = value;
-}
+#define PWKUPR_WEN		(1ull << 31)
 
-static inline uint8_t mmio_read_8(uintptr_t addr)
-{
-	return *(volatile uint8_t*)addr;
-}
+#define PSYSR_AFF_L2		(1 << 31)
+#define PSYSR_AFF_L1		(1 << 30)
+#define PSYSR_AFF_L0		(1 << 29)
+#define PSYSR_WEN		(1 << 28)
+#define PSYSR_PC		(1 << 27)
+#define PSYSR_PP		(1 << 26)
 
-#if PLAT_rcar
-static inline void mmio_write_16(uintptr_t addr, uint16_t value)
-{
-	*(volatile uint16_t*)addr = value;
-}
+#define PSYSR_WK_SHIFT		(24)
+#define PSYSR_WK_MASK		(0x3)
+#define PSYSR_WK(x)		(((x) >> PSYSR_WK_SHIFT) & PSYSR_WK_MASK)
 
-static inline uint16_t mmio_read_16(uintptr_t addr)
-{
-	return *(volatile uint16_t*)addr;
-}
+#define WKUP_COLD		0x0
+#define WKUP_RESET		0x1
+#define WKUP_PPONR		0x2
+#define WKUP_GICREQ		0x3
 
+#define	RCAR_INVALID		(0xffffffffU)
+#define PSYSR_INVALID		0xffffffff
+
+#ifndef __ASSEMBLY__
+
+/*******************************************************************************
+ * Function & variable prototypes
+ ******************************************************************************/
+void rcar_pwrc_setup(void);
+#if 0
+void rcar_pwrc_clusteroff(uint64_t mpidr);
 #endif
-static inline void mmio_write_32(uintptr_t addr, uint32_t value)
-{
-	*(volatile uint32_t*)addr = value;
-}
+void rcar_pwrc_cpuoff(uint64_t mpidr);
+void rcar_pwrc_cpuon(uint64_t mpidr);
+void rcar_pwrc_enable_interrupt_wakeup(uint64_t mpidr);
+void rcar_pwrc_disable_interrupt_wakeup(uint64_t mpidr);
+uint32_t rcar_pwrc_status(uint64_t mpidr);
+uint32_t rcar_pwrc_get_cpu_wkr(uint64_t mpidr);
 
-static inline uint32_t mmio_read_32(uintptr_t addr)
-{
-	return *(volatile uint32_t*)addr;
-}
+#endif /*__ASSEMBLY__*/
 
-static inline void mmio_write_64(uintptr_t addr, uint64_t value)
-{
-	*(volatile uint64_t*)addr = value;
-}
-
-static inline uint64_t mmio_read_64(uintptr_t addr)
-{
-	return *(volatile uint64_t*)addr;
-}
-
-#endif /* __MMIO_H__ */
+#endif /* RCAR_PWRC_H__ */

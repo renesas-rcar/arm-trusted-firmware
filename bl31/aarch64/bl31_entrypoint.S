@@ -44,8 +44,7 @@
 func bl31_entrypoint
 	/* ---------------------------------------------------------------
 	 * Preceding bootloader has populated x0 with a pointer to a
-	 * 'bl31_params' structure & x1 with a pointer to platform
-	 * specific structure
+	 * 'bl31_params' structure & x1 to boot parameter
 	 * ---------------------------------------------------------------
 	 */
 #if !RESET_TO_BL31
@@ -63,17 +62,6 @@ func bl31_entrypoint
 	isb
 #endif
 
-	/* ---------------------------------------------
-	 * When RESET_TO_BL31 is true, perform any
-	 * processor specific actions upon reset e.g.
-	 * cache, tlb invalidations, errata workarounds
-	 * etc.
-	 * When RESET_TO_BL31 is false, perform any
-	 * processor specific actions which undo or are
-	 * in addition to the actions performed by the
-	 * reset handler in the Boot ROM (BL1).
-	 * ---------------------------------------------
-	 */
 	bl	reset_handler
 
 	/* ---------------------------------------------
@@ -136,7 +124,7 @@ func bl31_entrypoint
 	bic	w1, w1, #TFP_BIT
 	msr	cptr_el3, x1
 
-#if RESET_TO_BL31
+#if RESET_TO_BL31 || PLAT_rcar
 	/* -------------------------------------------------------
 	 * Will not return from this macro if it is a warm boot.
 	 * -------------------------------------------------------

@@ -31,6 +31,9 @@
 #include <stdarg.h>
 #include <stdint.h>
 
+#if (IMAGE_BL31 && PLAT_rcar)
+extern void	rcar_set_log_time(void);
+#endif
 /***********************************************************
  * The tf_printf implementation for all BL stages
  ***********************************************************/
@@ -78,6 +81,10 @@ void tf_printf(const char *fmt, ...)
 	int64_t num;
 	uint64_t unum;
 	char *str;
+
+#if (IMAGE_BL31 && PLAT_rcar)
+	rcar_set_log_time();
+#endif
 
 	va_start(args, fmt);
 	while (*fmt) {

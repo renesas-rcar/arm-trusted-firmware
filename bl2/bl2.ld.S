@@ -32,7 +32,11 @@
 
 OUTPUT_FORMAT(PLATFORM_LINKER_FORMAT)
 OUTPUT_ARCH(PLATFORM_LINKER_ARCH)
+#if PLAT_rcar
+ENTRY(bl2_reset)
+#else
 ENTRY(bl2_entrypoint)
+#endif
 
 MEMORY {
     RAM (rwx): ORIGIN = BL2_BASE, LENGTH = BL2_LIMIT - BL2_BASE
@@ -47,7 +51,14 @@ SECTIONS
 
     ro . : {
         __RO_START__ = .;
+#if PLAT_rcar
+        *bl2_reset.o(.text*)
+#endif
         *bl2_entrypoint.o(.text*)
+#if PLAT_rcar
+        . = NEXT(ALIGN_VERSION);
+	*rcar_common.o(.version*)
+#endif
         *(.text*)
         *(.rodata*)
         *(.vectors)

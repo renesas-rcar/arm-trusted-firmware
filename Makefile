@@ -306,6 +306,11 @@ CRTTOOLPATH		?=	tools/cert_create
 CRTTOOL			?=	${CRTTOOLPATH}/cert_create
 certtool:		${CRTTOOL}
 
+# Dummy Image Create
+DUMMYTOOLPATH		?=	tools/dummy_create
+DUMMYTOOL		?=	${DUMMYTOOLPATH}/dummy_create
+dummytool:		${DUMMYTOOL}
+
 # CoT generation tool default parameters
 TRUSTED_KEY_CERT	:=	${BUILD_PLAT}/trusted_key.crt
 
@@ -362,6 +367,7 @@ clean:
 			${Q}rm -rf ${BUILD_PLAT}
 			${Q}${MAKE} --no-print-directory -C ${FIPTOOLPATH} clean
 			${Q}${MAKE} PLAT=${PLAT} --no-print-directory -C ${CRTTOOLPATH} clean
+			${Q}${MAKE} -C ${DUMMYTOOLPATH} clean
 
 realclean distclean:
 			@echo "  REALCLEAN"
@@ -369,6 +375,7 @@ realclean distclean:
 			${Q}rm -f ${CURDIR}/cscope.*
 			${Q}${MAKE} --no-print-directory -C ${FIPTOOLPATH} clean
 			${Q}${MAKE} PLAT=${PLAT} --no-print-directory -C ${CRTTOOLPATH} clean
+			${Q}${MAKE} -C ${DUMMYTOOLPATH} clean
 
 checkcodebase:		locate-checkpatch
 			@echo "  CHECKING STYLE"
@@ -392,6 +399,10 @@ ${CRTTOOL}:
 .PHONY: ${FIPTOOL}
 ${FIPTOOL}:
 			${Q}${MAKE} --no-print-directory -C ${FIPTOOLPATH}
+
+.PHONY: ${DUMMYTOOL}
+${DUMMYTOOL}:
+			${Q}${MAKE} -C ${DUMMYTOOLPATH}
 
 define match_goals
 $(strip $(foreach goal,$(1),$(filter $(goal),$(MAKECMDGOALS))))
@@ -531,6 +542,7 @@ define MAKE_BL
 	$(eval ELF        := $(BUILD_DIR)/bl$(1).elf)
 	$(eval DUMP       := $(BUILD_DIR)/bl$(1).dump)
 	$(eval BIN        := $(BUILD_PLAT)/bl$(1).bin)
+	$(eval SREC       := $(BUILD_PLAT)/bl$(1).srec)
 
 	$(eval $(call MAKE_OBJS,$(BUILD_DIR),$(SOURCES),$(1)))
 	$(eval $(call MAKE_LD,$(LINKERFILE),$(BL$(1)_LINKERFILE)))
@@ -557,8 +569,12 @@ $(BIN) : $(ELF)
 	@echo "Built $$@ successfully"
 	@echo
 
+$(SREC) : $(ELF)
+	@echo "  SREC    $$@"
+	$$(Q)$$(OC) -O srec $$< $$@
+
 .PHONY : bl$(1)
-bl$(1) : $(BUILD_DIR) $(BIN) $(DUMP)
+bl$(1) : $(BUILD_DIR) $(SREC) $(BIN) $(DUMP)
 
 all : bl$(1)
 

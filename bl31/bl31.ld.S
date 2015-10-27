@@ -49,6 +49,10 @@ SECTIONS
     ro . : {
         __RO_START__ = .;
         *bl31_entrypoint.o(.text*)
+#if PLAT_rcar
+        . = NEXT(ALIGN_VERSION);
+        *rcar_common.o(.version*)
+#endif
         *(.text*)
         *(.rodata*)
 
