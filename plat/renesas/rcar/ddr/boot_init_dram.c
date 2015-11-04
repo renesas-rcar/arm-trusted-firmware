@@ -37,6 +37,10 @@
 //#include "bit.h"
 //#include "reg_rcarh3.h"
 
+
+#define	RCAR_DDR_VERSION	"rev.0.10"
+
+
 ///////////////////////////////////////////////////////////
 /* add start */
 #include <debug.h>
@@ -228,6 +232,7 @@
 #define DBSC_DBCAM0CNF1			0xE6790904
 #define DBSC_DBCAM0CNF2			0xE6790908
 #define DBSC_DBCAM0CNF3			0xE679090C
+#define DBSC_DBBCAMDIS			0xE67909FC
 #define DBSC_DBSCHCNT0			0xE6791000
 #define DBSC_DBSCHCNT1			0xE6791004
 #define DBSC_DBSCHSZ0			0xE6791010
@@ -410,16 +415,16 @@ void InitDram(void)
 	md = (*((volatile uint32_t*)RST_MODEMR) & 0x000A0000) >> 17;
 
 	if (md == 0x0) {
-		NOTICE("BL2: DDR3200\n");
+		NOTICE("BL2: DDR3200(%s)\n", RCAR_DDR_VERSION);
 	} else if (md == 0x1) {
 		freq = DDR2800_CLK;	//MD19=0,MD17=1 : LPDDR4-3000, 4GByte(1GByte x4)
-		NOTICE("BL2: DDR2800\n");
+		NOTICE("BL2: DDR2800(%s)\n", RCAR_DDR_VERSION);
 	} else if (md == 0x4) {
 		freq = DDR2400_CLK;	//MD19=1,MD17=0 : LPDDR4-2400, 4GByte(1GByte x4)
-		NOTICE("BL2: DDR2400\n");
+		NOTICE("BL2: DDR2400(%s)\n", RCAR_DDR_VERSION);
 	} else {
 		freq = DDR1600_CLK;	//MD19=1,MD17=1 : LPDDR4-1600, 4GByte(1GByte x4)
-		NOTICE("BL2: DDR1600\n");
+		NOTICE("BL2: DDR1600(%s)\n", RCAR_DDR_VERSION);
 	}
 	InitDDR_0917(freq);
 }
@@ -613,6 +618,7 @@ void pvt_dbsc_regset(uint32_t freq)
 	*((volatile uint32_t*)DBSC_DBCAM0CNF1)	= 0x00044218;	//dbcam0cnf1 
 	*((volatile uint32_t*)DBSC_DBCAM0CNF2)	= 0x000000F4;	//dbcam0cnf2 
 //	*((volatile uint32_t*)DBSC_DBCAM0CNF3)	= 0x00000003;	//
+	*((volatile uint32_t*)DBSC_DBBCAMDIS)	= 0x00000002;	//Subcam Disable
 	*((volatile uint32_t*)DBSC_DBSCHCNT0)	= 0x080F003F;	//dbschcnt0
 	*((volatile uint32_t*)DBSC_DBSCHCNT1)	= 0x00001010;	//dbschcnt1
 	*((volatile uint32_t*)DBSC_DBSCHSZ0)	= 0x00000001;	//dbschsz0

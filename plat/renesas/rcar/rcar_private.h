@@ -60,11 +60,18 @@ typedef struct bl2_to_bl31_params_mem {
 
 #if USE_COHERENT_MEM
 /*
+ * Use this macro to instantiate lock before it is used in below
+ * rcar_lock_xxx() macros
+ */
+#define RCAR_INSTANTIATE_LOCK	DEFINE_BAKERY_LOCK(rcar_lock);
+
+/*
  * These are wrapper macros to the Coherent Memory Bakery Lock API.
  */
-#define rcar_lock_init(_lock_arg)	bakery_lock_init(_lock_arg)
-#define rcar_lock_get(_lock_arg)	bakery_lock_get(_lock_arg)
-#define rcar_lock_release(_lock_arg)	bakery_lock_release(_lock_arg)
+#define rcar_lock_init()	bakery_lock_init(&rcar_lock)
+#define rcar_lock_get()		bakery_lock_get(&rcar_lock)
+#define rcar_lock_release()	bakery_lock_release(&rcar_lock)
+
 
 #else
 

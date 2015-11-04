@@ -32,17 +32,19 @@
 
 # Process flags
 
-PLAT_INCLUDES		:=	-Iplat/renesas/rcar/include/
+PLAT_INCLUDES		:=	-Iinclude/common/tbbr				\
+				-Iplat/renesas/rcar/include/
 
 PLAT_BL_COMMON_SOURCES	:=	lib/aarch64/xlat_tables.c			\
 				plat/common/aarch64/plat_common.c
 
 BL2_SOURCES		+=	plat/common/aarch64/platform_up_stack.S		\
 				plat/renesas/rcar/bl2_rcar_setup.c		\
-				plat/renesas/rcar/aarch64/rcar_common.c	\
-				plat/renesas/rcar/drivers/io/io_rcar.c	\
+				plat/renesas/rcar/aarch64/rcar_common.c		\
+				plat/renesas/rcar/drivers/io/io_rcar.c		\
 				plat/renesas/rcar/drivers/io/io_memdrv.c	\
 				plat/renesas/rcar/drivers/scif/scif.S		\
+				plat/renesas/rcar/drivers/auth/rcarboot.c	\
 				plat/renesas/rcar/rcar_io_storage.c		\
 				drivers/io/io_storage.c				\
 				plat/renesas/rcar/bl2_pfc_init.c		\
@@ -80,7 +82,6 @@ BL31_SOURCES		+=	drivers/arm/cci/cci.c				\
 SPD			:= opteed
 ARM_CCI_PRODUCT_ID	:= 500
 TRUSTED_BOARD_BOOT	:= 1
-AUTH_MOD		:= rcar
 
 # Process RCAR_SECURE_BOOT flag
 ifndef RCAR_SECURE_BOOT
@@ -100,14 +101,20 @@ RCAR_DRAM_SPLIT := 0
 endif
 $(eval $(call add_define,RCAR_DRAM_SPLIT))
 
-# Process MASTER_BOOT_CPU flag
-ifndef MASTER_BOOT_CPU
-MASTER_BOOT_CPU := 0
+# Process RCAR_MASTER_BOOT_CPU flag
+ifndef RCAR_MASTER_BOOT_CPU
+RCAR_MASTER_BOOT_CPU := 0
 endif
-$(eval $(call add_define,MASTER_BOOT_CPU))
+$(eval $(call add_define,RCAR_MASTER_BOOT_CPU))
 
 # Process RCAR_BL33_EXECUTION_EL flag
 ifndef RCAR_BL33_EXECUTION_EL
 RCAR_BL33_EXECUTION_EL := 0
 endif
 $(eval $(call add_define,RCAR_BL33_EXECUTION_EL))
+
+# Process PSCI_DISABLE_BIGLITTLE_IN_CA57BOOT flag
+ifndef PSCI_DISABLE_BIGLITTLE_IN_CA57BOOT
+PSCI_DISABLE_BIGLITTLE_IN_CA57BOOT := 1
+endif
+$(eval $(call add_define,PSCI_DISABLE_BIGLITTLE_IN_CA57BOOT))

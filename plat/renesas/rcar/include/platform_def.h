@@ -73,40 +73,13 @@
 
 #define FIRMWARE_WELCOME_STR		"Booting Trusted Firmware\n"
 
-/* Trusted Boot Firmware BL2 */
-#define BL2_IMAGE_NAME			"bl2.bin"
-
-/* EL3 Runtime Firmware BL31 */
-#define BL31_IMAGE_NAME			"bl31.bin"
-
-/* Secure Payload BL32 (Trusted OS) */
-#define BL32_IMAGE_NAME			"bl32.bin"
-
-/* Non-Trusted Firmware BL33 */
-#define BL33_IMAGE_NAME			"bl33.bin" /* e.g. UEFI */
-#define BL332_IMAGE_NAME		"bl332.bin"
-#define BL333_IMAGE_NAME		"bl333.bin"
-#define BL334_IMAGE_NAME		"bl334.bin"
-#define BL335_IMAGE_NAME		"bl335.bin"
-#define BL336_IMAGE_NAME		"bl336.bin"
-#define BL337_IMAGE_NAME		"bl337.bin"
-#define BL338_IMAGE_NAME		"bl338.bin"
-
-#if TRUSTED_BOARD_BOOT
-/* Certificates */
-# define BL2_CERT_NAME			"bl2.crt"
-# define TRUSTED_KEY_CERT_NAME		"trusted_key.crt"
-
-# define BL30_KEY_CERT_NAME		"bl30_key.crt"
-# define BL31_KEY_CERT_NAME		"bl31_key.crt"
-# define BL32_KEY_CERT_NAME		"bl32_key.crt"
-# define BL33_KEY_CERT_NAME		"bl33_key.crt"
-
-# define BL30_CERT_NAME			"bl30.crt"
-# define BL31_CERT_NAME			"bl31.crt"
-# define BL32_CERT_NAME			"bl32.crt"
-# define BL33_CERT_NAME			"bl33.crt"
-#endif /* TRUSTED_BOARD_BOOT */
+#define BL332_IMAGE_ID		(BL33_CERT_ID + 1U)
+#define BL333_IMAGE_ID		(BL33_CERT_ID + 2U)
+#define BL334_IMAGE_ID		(BL33_CERT_ID + 3U)
+#define BL335_IMAGE_ID		(BL33_CERT_ID + 4U)
+#define BL336_IMAGE_ID		(BL33_CERT_ID + 5U)
+#define BL337_IMAGE_ID		(BL33_CERT_ID + 6U)
+#define BL338_IMAGE_ID		(BL33_CERT_ID + 7U)
 
 /*
  * R-Car H3 Cortex-A57
@@ -157,10 +130,10 @@
  * size plus a little space for growth.
  */
 #define	RCAR_SECRAM_BASE		(0xE6300000)
-#if MASTER_BOOT_CPU == RCAR_BOOT_CA5X
+#if RCAR_MASTER_BOOT_CPU == RCAR_BOOT_CA5X
 #define BL2_BASE			(0xE6302000)
 #define BL2_LIMIT			(0xE632E800)
-#elif MASTER_BOOT_CPU == RCAR_BOOT_CR7
+#elif RCAR_MASTER_BOOT_CPU == RCAR_BOOT_CR7
 #define BL2_BASE			(0x43F20000)
 #define BL2_LIMIT			(0x43F4C800)
 #endif

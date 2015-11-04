@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2013-2015, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2015-2016, Renesas Electronics Corporation. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -61,6 +62,15 @@ func bl31_entrypoint
 	 * endianness and has initialised the memory.
 	 * ---------------------------------------------------------------------
 	 */
+#if PLAT_rcar
+	el3_entrypoint_common					\
+		_set_endian=0					\
+		_warm_boot_mailbox=1				\
+		_secondary_cold_boot=1				\
+		_init_memory=1					\
+		_init_c_runtime=1				\
+		_exception_vectors=runtime_exceptions
+#else
 	el3_entrypoint_common					\
 		_set_endian=0					\
 		_warm_boot_mailbox=0				\
@@ -68,6 +78,7 @@ func bl31_entrypoint
 		_init_memory=0					\
 		_init_c_runtime=1				\
 		_exception_vectors=runtime_exceptions
+#endif
 
 	/* ---------------------------------------------------------------------
 	 * Relay the previous bootloader's arguments to the platform layer

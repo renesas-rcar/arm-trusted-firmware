@@ -32,10 +32,10 @@
 #ifndef RCAR_DEF_H__
 #define RCAR_DEF_H__
 
+#include <tbbr_img_def.h>
+
 /* Firmware Image Package */
 #define RCAR_PRIMARY_CPU			0x0
-
-#define RCAR_IMAGE_NAME			"rcar.bin"
 
 /*
  * Some of the definitions in this file use the 'ull' suffix in order to avoid

@@ -30,12 +30,12 @@
  */
 
 #include <assert.h>
+#include <bl_common.h>		/* For ARRAY_SIZE */
 #include <debug.h>
 #include <io_driver.h>
 #include <io_storage.h>
 #include <io_semihosting.h>
 #include <platform_def.h>
-#include <semihosting.h>	/* For FOPEN_MODE_... */
 #include <string.h>
 #include "io_common.h"
 #include "io_rcar.h"
@@ -50,185 +50,184 @@ static const io_block_spec_t rcar_block_spec = {
 	.length = FLASH0_SIZE
 };
 
-static const io_file_spec_t bl2_file_spec = {
-	.path = BL2_IMAGE_NAME,
+static const io_block_spec_t bl2_file_spec = {
+	.offset = BL2_IMAGE_ID,
 };
 
-static const io_file_spec_t bl31_file_spec = {
-	.path = BL31_IMAGE_NAME,
+static const io_block_spec_t bl31_file_spec = {
+	.offset = BL31_IMAGE_ID,
 };
 
-static const io_file_spec_t bl32_file_spec = {
-	.path = BL32_IMAGE_NAME,
+static const io_block_spec_t bl32_file_spec = {
+	.offset = BL32_IMAGE_ID,
 };
 
-static const io_file_spec_t bl33_file_spec = {
-	.path = BL33_IMAGE_NAME,
+static const io_block_spec_t bl33_file_spec = {
+	.offset = BL33_IMAGE_ID,
 };
 
-static const io_file_spec_t bl332_file_spec = {
-	.path = BL332_IMAGE_NAME,
+static const io_block_spec_t bl332_file_spec = {
+	.offset = BL332_IMAGE_ID,
 };
 
-static const io_file_spec_t bl333_file_spec = {
-	.path = BL333_IMAGE_NAME,
+static const io_block_spec_t bl333_file_spec = {
+	.offset = BL333_IMAGE_ID,
 };
 
-static const io_file_spec_t bl334_file_spec = {
-	.path = BL334_IMAGE_NAME,
+static const io_block_spec_t bl334_file_spec = {
+	.offset = BL334_IMAGE_ID,
 };
 
-static const io_file_spec_t bl335_file_spec = {
-	.path = BL335_IMAGE_NAME,
+static const io_block_spec_t bl335_file_spec = {
+	.offset = BL335_IMAGE_ID,
 };
 
-static const io_file_spec_t bl336_file_spec = {
-	.path = BL336_IMAGE_NAME,
+static const io_block_spec_t bl336_file_spec = {
+	.offset = BL336_IMAGE_ID,
 };
 
-static const io_file_spec_t bl337_file_spec = {
-	.path = BL337_IMAGE_NAME,
+static const io_block_spec_t bl337_file_spec = {
+	.offset = BL337_IMAGE_ID,
 };
 
-static const io_file_spec_t bl338_file_spec = {
-	.path = BL338_IMAGE_NAME,
+static const io_block_spec_t bl338_file_spec = {
+	.offset = BL338_IMAGE_ID,
 };
 
 
 #if TRUSTED_BOARD_BOOT
-static const io_file_spec_t trusted_key_cert_file_spec = {
-	.path = TRUSTED_KEY_CERT_NAME,
+static const io_block_spec_t trusted_key_cert_file_spec = {
+	.offset = TRUSTED_KEY_CERT_ID,
 };
 
-static const io_file_spec_t bl31_key_cert_file_spec = {
-	.path = BL31_KEY_CERT_NAME,
+static const io_block_spec_t bl31_key_cert_file_spec = {
+	.offset = BL31_KEY_CERT_ID,
 };
 
-static const io_file_spec_t bl32_key_cert_file_spec = {
-	.path = BL32_KEY_CERT_NAME,
+static const io_block_spec_t bl32_key_cert_file_spec = {
+	.offset = BL32_KEY_CERT_ID,
 };
 
-static const io_file_spec_t bl33_key_cert_file_spec = {
-	.path = BL33_KEY_CERT_NAME,
+static const io_block_spec_t bl33_key_cert_file_spec = {
+	.offset = BL33_KEY_CERT_ID,
 };
 
-static const io_file_spec_t bl31_cert_file_spec = {
-	.path = BL31_CERT_NAME,
+static const io_block_spec_t bl31_cert_file_spec = {
+	.offset = BL31_CERT_ID,
 };
 
-static const io_file_spec_t bl32_cert_file_spec = {
-	.path = BL32_CERT_NAME,
+static const io_block_spec_t bl32_cert_file_spec = {
+	.offset = BL32_CERT_ID,
 };
 
-static const io_file_spec_t bl33_cert_file_spec = {
-	.path = BL33_CERT_NAME,
+static const io_block_spec_t bl33_cert_file_spec = {
+	.offset = BL33_CERT_ID,
 };
 #endif /* TRUSTED_BOARD_BOOT */
 
 static int32_t open_rcar(const uintptr_t spec);
 static int32_t open_memmap(const uintptr_t spec);
 
+/* sakata check table info */
 struct plat_io_policy {
-	int8_t *image_name;
 	uintptr_t *dev_handle;
 	uintptr_t image_spec;
 	int32_t (*check)(const uintptr_t spec);
 };
 
 static const struct plat_io_policy policies[] = {
-	{
-		(int8_t *)RCAR_IMAGE_NAME,
+	[FIP_IMAGE_ID] = {
 		&memdrv_dev_handle,
 		(uintptr_t)&rcar_block_spec,
 		&open_memmap
-	}, {
-		(int8_t *)BL2_IMAGE_NAME,
+	},
+	[BL2_IMAGE_ID] = {
 		&rcar_dev_handle,
 		(uintptr_t)&bl2_file_spec,
 		&open_rcar
-	}, {
-		(int8_t *)BL31_IMAGE_NAME,
+	},
+	[BL31_IMAGE_ID] = {
 		&rcar_dev_handle,
 		(uintptr_t)&bl31_file_spec,
 		&open_rcar
-	}, {
-		(int8_t *)BL32_IMAGE_NAME,
+	},
+	[BL32_IMAGE_ID] = {
 		&rcar_dev_handle,
 		(uintptr_t)&bl32_file_spec,
 		&open_rcar
-	}, {
-		(int8_t *)BL33_IMAGE_NAME,
+	},
+	[BL33_IMAGE_ID] = {
 		&rcar_dev_handle,
 		(uintptr_t)&bl33_file_spec,
 		&open_rcar
-	}, {
-		(int8_t *)BL332_IMAGE_NAME,
+	},
+	[BL332_IMAGE_ID] = {
 		&rcar_dev_handle,
 		(uintptr_t)&bl332_file_spec,
 		&open_rcar
-	}, {
-		(int8_t *)BL333_IMAGE_NAME,
+	},
+	[BL333_IMAGE_ID] = {
 		&rcar_dev_handle,
 		(uintptr_t)&bl333_file_spec,
 		&open_rcar
-	}, {
-		(int8_t *)BL334_IMAGE_NAME,
+	},
+	[BL334_IMAGE_ID] = {
 		&rcar_dev_handle,
 		(uintptr_t)&bl334_file_spec,
 		&open_rcar
-	}, {
-		(int8_t *)BL335_IMAGE_NAME,
+	},
+	[BL335_IMAGE_ID] = {
 		&rcar_dev_handle,
 		(uintptr_t)&bl335_file_spec,
 		&open_rcar
-	}, {
-		(int8_t *)BL336_IMAGE_NAME,
+	},
+	[BL336_IMAGE_ID] = {
 		&rcar_dev_handle,
 		(uintptr_t)&bl336_file_spec,
 		&open_rcar
-	}, {
-		(int8_t *)BL337_IMAGE_NAME,
+	},
+	[BL337_IMAGE_ID] = {
 		&rcar_dev_handle,
 		(uintptr_t)&bl337_file_spec,
 		&open_rcar
-	}, {
-		(int8_t *)BL338_IMAGE_NAME,
+	},
+	[BL338_IMAGE_ID] = {
 		&rcar_dev_handle,
 		(uintptr_t)&bl338_file_spec,
 		&open_rcar
-	}, {
+	},
 #if TRUSTED_BOARD_BOOT
-		(int8_t *)TRUSTED_KEY_CERT_NAME,
+	[TRUSTED_KEY_CERT_ID] = {
 		&rcar_dev_handle,
 		(uintptr_t)&trusted_key_cert_file_spec,
 		&open_rcar
-	}, {
-		(int8_t *)BL31_KEY_CERT_NAME,
+	},
+	[BL31_KEY_CERT_ID] = {
 		&rcar_dev_handle,
 		(uintptr_t)&bl31_key_cert_file_spec,
 		&open_rcar
-	}, {
-		(int8_t *)BL32_KEY_CERT_NAME,
+	},
+	[BL32_KEY_CERT_ID] = {
 		&rcar_dev_handle,
 		(uintptr_t)&bl32_key_cert_file_spec,
 		&open_rcar
-	}, {
-		(int8_t *)BL33_KEY_CERT_NAME,
+	},
+	[BL33_KEY_CERT_ID] = {
 		&rcar_dev_handle,
 		(uintptr_t)&bl33_key_cert_file_spec,
 		&open_rcar
-	}, {
-		(int8_t *)BL31_CERT_NAME,
+	},
+	[BL31_CERT_ID] = {
 		&rcar_dev_handle,
 		(uintptr_t)&bl31_cert_file_spec,
 		&open_rcar
-	}, {
-		(int8_t *)BL32_CERT_NAME,
+	},
+	[BL32_CERT_ID] = {
 		&rcar_dev_handle,
 		(uintptr_t)&bl32_cert_file_spec,
 		&open_rcar
-	}, {
-		(int8_t *)BL33_CERT_NAME,
+	},
+	[BL33_CERT_ID] = {
 		&rcar_dev_handle,
 		(uintptr_t)&bl33_cert_file_spec,
 		&open_rcar
@@ -244,7 +243,7 @@ static int32_t open_rcar(const uintptr_t spec)
 	int32_t result;
 
 	/* See if a Firmware Image Package is available */
-	result = io_dev_init(rcar_dev_handle, (uintptr_t)RCAR_IMAGE_NAME);
+	result = io_dev_init(rcar_dev_handle, (uintptr_t)FIP_IMAGE_ID);
 	if (result == IO_SUCCESS) {
 		VERBOSE("Using RCar File Manager\n");
 	}
@@ -298,30 +297,20 @@ void rcar_io_setup (void)
 
 /* Return an IO device handle and specification which can be used to access
  * an image. Use this to enforce platform load policy */
-int plat_get_image_source(const char *image_name, uintptr_t *dev_handle,
+int plat_get_image_source(unsigned int image_id, uintptr_t *dev_handle,
 			  uintptr_t *image_spec)
 {
-	int32_t result = IO_FAIL;
+	int result = IO_FAIL;
 	const struct plat_io_policy *policy;
-	int32_t loop = 0;
 
-	if ((image_name != NULL) && (dev_handle != NULL) &&
-	    (image_spec != NULL)) {
-		policy = &policies[0];
-		while (policy->image_name != NULL) {
-			if (strcmp((const char *)policy->image_name, image_name) == 0) {
-				result = policy->check(policy->image_spec);
-				if (result == IO_SUCCESS) {
-					*image_spec = policy->image_spec;
-					*dev_handle = *(policy->dev_handle);
-					break;
-				}
-			}
-			loop++;
-			policy = &policies[loop];
-		}
-	} else {
-		result = IO_FAIL;
+	assert(image_id < ARRAY_SIZE(policies));
+
+	policy = &policies[image_id];
+	result = policy->check(policy->image_spec);
+	if (result == IO_SUCCESS) {
+		*image_spec = policy->image_spec;
+		*dev_handle = *(policy->dev_handle);
 	}
+
 	return result;
 }

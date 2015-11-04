@@ -66,6 +66,11 @@
 #define	CPG_PLL2CR		(CPG_BASE + 0x002CU)
 #define	CPG_PLL4CR		(CPG_BASE + 0x01F4U)
 
+/* RST Registers */
+#define	RST_BASE		(0xE6160000U)
+#define	RST_WDTRSTCR		(RST_BASE + 0x0054U)
+#define	WDTRSTCR_PASSWORD	(0xA55A0000U)
+#define	WDTRSTCR_RWDT_RSTMSK	((uint32_t)1U << 0U)
 
 /*******************************************************************************
  * Declarations of linker defined symbols which will help us find the layout
@@ -204,7 +209,7 @@ void bl2_early_platform_setup(meminfo_t *mem_layout)
 	/* disable Secure Watchdog Timer */
 	mmio_write_32(0xE6030004U, 0xA5A5A500U);
 
-#if MASTER_BOOT_CPU == RCAR_BOOT_CA5X
+#if RCAR_MASTER_BOOT_CPU == RCAR_BOOT_CA5X
 	/* initialize Pin Function */
 	bl2_pfc_init();
 #endif
@@ -218,7 +223,7 @@ void bl2_early_platform_setup(meminfo_t *mem_layout)
 	/* Setup the BL2 memory layout */
 	bl2_tzram_layout = *mem_layout;
 
-#if MASTER_BOOT_CPU == RCAR_BOOT_CA5X
+#if RCAR_MASTER_BOOT_CPU == RCAR_BOOT_CA5X
 	/* Initialize SDRAM */
 /*	bl2_sdram_init();	*/
 	InitDram();
@@ -230,7 +235,7 @@ void bl2_early_platform_setup(meminfo_t *mem_layout)
 	/* Initialize DMA */
 	initDMA();
 
-#if MASTER_BOOT_CPU == RCAR_BOOT_CA5X
+#if RCAR_MASTER_BOOT_CPU == RCAR_BOOT_CA5X
 	/* Initialize secure configuration */
 	bl2_secure_setting();
 
@@ -240,6 +245,12 @@ void bl2_early_platform_setup(meminfo_t *mem_layout)
 	/* initialize QoS configration */
 	bl2_qos_init();
 #endif
+
+	/* unmask the detection of RWDT overflow */
+	reg = mmio_read_32(RST_WDTRSTCR);
+	reg &= ~WDTRSTCR_RWDT_RSTMSK;
+	reg |= WDTRSTCR_PASSWORD;
+	mmio_write_32(RST_WDTRSTCR, reg);
 
 	/* Release CPG write protect */
 	mmio_write_32(CPG_CPGWPR, CPGWPR_PASSWORD);

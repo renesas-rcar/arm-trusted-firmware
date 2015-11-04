@@ -45,7 +45,7 @@
 
 
 typedef struct {
-	const int8_t	*name;
+	const int32_t	name;
 	const uint32_t	offset;
 	const uint32_t	attr;
 } plat_rcar_name_offset_t;
@@ -83,28 +83,28 @@ typedef struct {
 #define RCAR_CERT_LOAD			(1U)
 
 static const plat_rcar_name_offset_t name_offset[] = {		/* calc addr, no load, cert offset */
-	{(const int8_t *)BL31_IMAGE_NAME,	RCAR_GET_FLASH_ADR(7U,0x000U),	RCAR_ATTR_SET_ALL(0,0,0)},
+	{BL31_IMAGE_ID,		RCAR_GET_FLASH_ADR(7U,0x000U),	RCAR_ATTR_SET_ALL(0,0,0)},
 	/* BL3-2 is optional in the platform */
-	{(const int8_t *)BL32_IMAGE_NAME,	RCAR_GET_FLASH_ADR(8U,0x000U),	RCAR_ATTR_SET_ALL(0,0,1)},
-	{(const int8_t *)BL33_IMAGE_NAME,	0U,				RCAR_ATTR_SET_ALL(1,0,2)},
-	{(const int8_t *)BL332_IMAGE_NAME,	0U,				RCAR_ATTR_SET_ALL(2,0,3)},
-	{(const int8_t *)BL333_IMAGE_NAME,	0U,				RCAR_ATTR_SET_ALL(3,0,4)},
-	{(const int8_t *)BL334_IMAGE_NAME,	0U,				RCAR_ATTR_SET_ALL(4,0,5)},
-	{(const int8_t *)BL335_IMAGE_NAME,	0U,				RCAR_ATTR_SET_ALL(5,0,6)},
-	{(const int8_t *)BL336_IMAGE_NAME,	0U,				RCAR_ATTR_SET_ALL(6,0,7)},
-	{(const int8_t *)BL337_IMAGE_NAME,	0U,				RCAR_ATTR_SET_ALL(7,0,8)},
-	{(const int8_t *)BL338_IMAGE_NAME,	0U,				RCAR_ATTR_SET_ALL(8,0,9)},
+	{BL32_IMAGE_ID,		RCAR_GET_FLASH_ADR(8U,0x000U),	RCAR_ATTR_SET_ALL(0,0,1)},
+	{BL33_IMAGE_ID,		0U,				RCAR_ATTR_SET_ALL(1,0,2)},
+	{BL332_IMAGE_ID,	0U,				RCAR_ATTR_SET_ALL(2,0,3)},
+	{BL333_IMAGE_ID,	0U,				RCAR_ATTR_SET_ALL(3,0,4)},
+	{BL334_IMAGE_ID,	0U,				RCAR_ATTR_SET_ALL(4,0,5)},
+	{BL335_IMAGE_ID,	0U,				RCAR_ATTR_SET_ALL(5,0,6)},
+	{BL336_IMAGE_ID,	0U,				RCAR_ATTR_SET_ALL(6,0,7)},
+	{BL337_IMAGE_ID,	0U,				RCAR_ATTR_SET_ALL(7,0,8)},
+	{BL338_IMAGE_ID,	0U,				RCAR_ATTR_SET_ALL(8,0,9)},
 };
 #if TRUSTED_BOARD_BOOT
 static const plat_rcar_name_offset_t cert_offset[] = {
 	/* Certificates */
-	{(const int8_t *)TRUSTED_KEY_CERT_NAME,	0U,				RCAR_ATTR_SET_ALL(0,1,0)},
-	{(const int8_t *)BL31_KEY_CERT_NAME,	0U,				RCAR_ATTR_SET_ALL(0,1,0)},
-	{(const int8_t *)BL32_KEY_CERT_NAME,	0U,				RCAR_ATTR_SET_ALL(0,1,0)},
-	{(const int8_t *)BL33_KEY_CERT_NAME,	0U,				RCAR_ATTR_SET_ALL(0,1,0)},
-	{(const int8_t *)BL31_CERT_NAME,	0U,				RCAR_ATTR_SET_ALL(0,1,0)},
-	{(const int8_t *)BL32_CERT_NAME,	0U,				RCAR_ATTR_SET_ALL(0,1,1)},
-	{(const int8_t *)BL33_CERT_NAME,	0U,				RCAR_ATTR_SET_ALL(0,1,2)},
+	{TRUSTED_KEY_CERT_ID,	0U,				RCAR_ATTR_SET_ALL(0,1,0)},
+	{BL31_KEY_CERT_ID,	0U,				RCAR_ATTR_SET_ALL(0,1,0)},
+	{BL32_KEY_CERT_ID,	0U,				RCAR_ATTR_SET_ALL(0,1,0)},
+	{BL33_KEY_CERT_ID,	0U,				RCAR_ATTR_SET_ALL(0,1,0)},
+	{BL31_CERT_ID,		0U,				RCAR_ATTR_SET_ALL(0,1,0)},
+	{BL32_CERT_ID,		0U,				RCAR_ATTR_SET_ALL(0,1,1)},
+	{BL33_CERT_ID,		0U,				RCAR_ATTR_SET_ALL(0,1,2)},
 };
 #endif /* TRUSTED_BOARD_BOOT */
 
@@ -127,7 +127,7 @@ static int32_t rcar_file_read(io_entity_t *entity, uintptr_t buffer, size_t leng
 static int32_t rcar_file_close(io_entity_t *entity);
 static int32_t rcar_dev_init(io_dev_info_t *dev_info, const uintptr_t init_params);
 static int32_t rcar_dev_close(io_dev_info_t *dev_info);
-static int32_t file_to_offset(const int8_t *filename, uint32_t *offset, uint32_t *cert_addr, uint32_t *is_noload);
+static int32_t file_to_offset(const int32_t file, uint32_t *offset, uint32_t *cert_addr, uint32_t *is_noload);
 static int32_t load_bl33x(uintptr_t handle);
 
 
@@ -173,13 +173,13 @@ static int32_t rcar_dev_open(const uintptr_t dev_spec __attribute__((unused)),
 	return IO_SUCCESS;
 }
 
-int32_t file_to_cert(const int8_t *filename, uint32_t *cert_addr)
+int32_t file_to_cert(const int32_t filename, uint32_t *cert_addr)
 {
 	int32_t i;
 	int32_t status = -EINVAL;
 
 	for (i = 0; i < (int32_t)ARRAY_SIZE(cert_offset); i++) {
-		if (strcmp((const char *)filename, (const char *)cert_offset[i].name) == 0) {
+		if (filename == cert_offset[i].name) {
 			*cert_addr = RCAR_CERT_SIZE;
 			*cert_addr *= (uint32_t)RCAR_ATTR_GET_CERTOFF(cert_offset[i].attr);
 			*cert_addr += RCAR_SDRAM_CERT_ADDRESS;
@@ -190,7 +190,7 @@ int32_t file_to_cert(const int8_t *filename, uint32_t *cert_addr)
 	return status;
 }
 
-static int32_t file_to_offset(const int8_t *filename, uint32_t *offset, uint32_t *cert_addr, uint32_t *is_noload)
+static int32_t file_to_offset(const int32_t file, uint32_t *offset, uint32_t *cert_addr, uint32_t *is_noload)
 {
 	int32_t i;
 	int32_t status = -EINVAL;
@@ -201,7 +201,7 @@ static int32_t file_to_offset(const int8_t *filename, uint32_t *offset, uint32_t
 	assert(is_noload != NULL);
 
 	for (i = 0; i < (int32_t)ARRAY_SIZE(name_offset); i++) {
-		if (strcmp((const char *)filename, (const char *)name_offset[i].name) == 0) {
+		if (file == name_offset[i].name) {
 			is_calc_addr = RCAR_ATTR_GET_CALCADDR(name_offset[i].attr);
 			if (rcar_image_header[0] >= is_calc_addr)
 			{
@@ -223,7 +223,7 @@ static int32_t file_to_offset(const int8_t *filename, uint32_t *offset, uint32_t
 
 	if (IO_SUCCESS != status) {
 		for (i = 0; i < (int32_t)ARRAY_SIZE(cert_offset); i++) {
-			if (strcmp((const char *)filename, (const char *)cert_offset[i].name) == 0) {
+			if (file == cert_offset[i].name) {
 				*offset = 0U;
 				*cert_addr = 0U;
 				*is_noload = RCAR_ATTR_GET_ISNOLOAD(cert_offset[i].attr);
@@ -256,15 +256,15 @@ static int32_t load_bl33x(uintptr_t handle)
 	uint32_t l_image_size;
 	uint32_t dest_addr;
 	size_t bytes_read;
-	const char *load_names[] = {
-		BL33_IMAGE_NAME,
-		BL332_IMAGE_NAME,
-		BL333_IMAGE_NAME,
-		BL334_IMAGE_NAME,
-		BL335_IMAGE_NAME,
-		BL336_IMAGE_NAME,
-		BL337_IMAGE_NAME,
-		BL338_IMAGE_NAME
+	const int32_t load_names[] = {
+		BL33_IMAGE_ID,
+		BL332_IMAGE_ID,
+		BL333_IMAGE_ID,
+		BL334_IMAGE_ID,
+		BL335_IMAGE_ID,
+		BL336_IMAGE_ID,
+		BL337_IMAGE_ID,
+		BL338_IMAGE_ID
 	};
 
 	for (; loop < rcar_image_header[0]; loop++) {
@@ -273,7 +273,7 @@ static int32_t load_bl33x(uintptr_t handle)
 			break;
 		}
 
-		result = file_to_offset((const int8_t *)load_names[loop], &file_offset,
+		result = file_to_offset(load_names[loop], &file_offset,
 			&cert_addr, &noload);
 		if (IO_SUCCESS != result) {
 			WARN("load_bl33x: failed to get offset\n");
@@ -309,16 +309,17 @@ static int32_t load_bl33x(uintptr_t handle)
 static int32_t rcar_dev_init(io_dev_info_t *dev_info, const uintptr_t init_params)
 {
 	int32_t result;
-	int8_t *image_name = (int8_t *)init_params;
+	int32_t image_name = (int32_t)init_params;
 	uintptr_t backend_handle;
 	size_t bytes_read;
 
 	/* Obtain a reference to the image by querying the platform layer */
 	/* get rcar flash memory address... (certain BL2, BL31, BL32, BL33... max 64MB:RPC LBSC address) */
-	result = plat_get_image_source((const char *)image_name, &backend_dev_handle,
+	/* sakata check image number */
+	result = plat_get_image_source(image_name, &backend_dev_handle,
 				       &backend_image_spec);
 	if (result != IO_SUCCESS) {
-		WARN("Failed to obtain reference to image '%s' (%i)\n",
+		WARN("Failed to obtain reference to image '%d' (%i)\n",
 			image_name, result);
 		result = IO_FAIL;
 	} else {
@@ -333,7 +334,7 @@ static int32_t rcar_dev_init(io_dev_info_t *dev_info, const uintptr_t init_param
 			result = io_open(backend_dev_handle, backend_image_spec,
 					&backend_handle);
 			if (result != IO_SUCCESS) {
-				WARN("Failed to access image '%s' (%i)\n",
+				WARN("Failed to access image '%d' (%i)\n",
 						image_name, result);
 				result = IO_FAIL;
 			}
@@ -430,7 +431,7 @@ static int32_t rcar_file_open(io_dev_info_t *dev_info, const uintptr_t spec,
 	uint32_t cert_addr;
 	uint32_t l_image_size;
 	uint32_t dest_addr;
-	const io_file_spec_t *file_spec = (io_file_spec_t *)spec;
+	const io_block_spec_t *file_spec = (io_block_spec_t *)spec;
 
 	assert(file_spec != NULL);
 	assert(entity != NULL);
@@ -447,11 +448,11 @@ static int32_t rcar_file_open(io_dev_info_t *dev_info, const uintptr_t spec,
 	} else {
 
 		/* get file offset(but BL33 image id not get) */
-		result = file_to_offset((const int8_t *) file_spec->path,
+		result = file_to_offset(file_spec->offset,
 			&file_offset, &cert_addr, &noload);
 		if (result != IO_SUCCESS) {
-			WARN("Failed to open file name %s (%i)\n",
-				file_spec->path, result);
+			WARN("Failed to open file name %ld (%i)\n",
+				file_spec->offset, result);
 			result = IO_FAIL;
 		} else {
 			if (0U != noload) {

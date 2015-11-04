@@ -57,7 +57,7 @@ const uint8_t version_of_renesas[VER_SIZE] __attribute__((__section__(".version"
 					DRAM1_NS_SIZE,			\
 					MT_MEMORY | MT_RW | MT_NS)
 
-#define MAP_BL32_MEM	MAP_REGION_FLAT(BL32_BASE,		\
+#define MAP_BL32_MEM	MAP_REGION_FLAT(BL32_BASE,			\
 					BL32_LIMIT - BL32_BASE,		\
 					MT_MEMORY | MT_RW | MT_SECURE)
 
@@ -169,7 +169,7 @@ DEFINE_CONFIGURE_MMU_EL(1)
 DEFINE_CONFIGURE_MMU_EL(3)
 
 #if (IMAGE_BL2)
-extern int32_t file_to_cert(const int8_t *filename, uint32_t *cert_addr);
+extern int32_t file_to_cert(const int32_t filename, uint32_t *cert_addr);
 extern void get_info_from_cert(uint64_t cert_addr, uint32_t *size, uint32_t *dest_addr);
 #endif
 
@@ -180,7 +180,7 @@ unsigned long plat_get_ns_image_entrypoint(void)
 	uint32_t cert_addr;
 	uint32_t l_image_size;
 	uint32_t dest_addr;
-	ret = file_to_cert((const int8_t *)BL33_CERT_NAME, &cert_addr);
+	ret = file_to_cert(BL33_CERT_ID, &cert_addr);
 	if (0 == ret) {
 		get_info_from_cert((uint64_t) cert_addr, &l_image_size, &dest_addr);
 	} else {

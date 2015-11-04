@@ -35,9 +35,12 @@
 
 #include	<arch_helpers.h>
 #include	<platform_def.h>
+#include	<bakery_lock.h>
 #include	"../../rcar_def.h"
 #include	"../../rcar_private.h"
 #include	"rcar_printf.h"
+
+extern RCAR_INSTANTIATE_LOCK
 
 typedef struct log_head
 {
@@ -53,14 +56,6 @@ typedef struct log_map
 	uint8_t log_data[RCAR_BL31_LOG_MAX];
 	uint8_t res_data[RCAR_LOG_RES_SIZE];
 } logmap_t;
-
-#if USE_COHERENT_MEM
-static bakery_lock_t log_lock __attribute__((section("tzfw_coherent_mem")));
-#define	LOG_LOCK	(&log_lock)
-#else
-#define	LOG_LOCK	ERROR("not use coherent memory");	\
-			panic();
-#endif
 
 void rcar_set_log_time(void)
 {
@@ -116,7 +111,7 @@ int32_t rcar_set_log_data(int32_t c)
 
 	t_log = (logmap_t *)RCAR_BL31_LOG_BASE;
 
-	rcar_lock_get(LOG_LOCK);
+	rcar_lock_get();
 
 	/*
 	 * If index is broken, then index and size initialize
@@ -137,7 +132,7 @@ int32_t rcar_set_log_data(int32_t c)
 		t_log->header.index = 0U;
 	}
 
-	rcar_lock_release(LOG_LOCK);
+	rcar_lock_release();
 
 	return(1);
 }
@@ -168,7 +163,7 @@ int32_t rcar_log_init(void)
 		t_log->header.index = 0U;
 		t_log->header.size = 0U;
 	}
-	rcar_lock_init(LOG_LOCK);
+	rcar_lock_init();
 
 	return(1);
 }

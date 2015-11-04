@@ -147,6 +147,14 @@ int rcar_affinst_on(unsigned long mpidr, unsigned long sec_entrypoint,
 {
 	int rc = PSCI_E_SUCCESS;
 
+#if PSCI_DISABLE_BIGLITTLE_IN_CA57BOOT
+	uint64_t	boot_cluster = read_mpidr_el1() & ((uint64_t)MPIDR_CLUSTER_MASK);
+	if (boot_cluster == 0x0000U) {
+		if ((mpidr & ((uint64_t)MPIDR_CLUSTER_MASK)) != boot_cluster) {
+			return PSCI_E_INTERN_FAIL;
+		}
+	}
+#endif
 	/*
 	 * It's possible to turn on only affinity level 0 i.e. a cpu
 	 * on the RCAR. Ignore any other affinity level.

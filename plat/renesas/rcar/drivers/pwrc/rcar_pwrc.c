@@ -41,13 +41,7 @@
  * TODO: Someday there will be a generic power controller api. At the moment
  * each platform has its own pwrc so just exporting functions is fine.
  */
-#if USE_COHERENT_MEM
-static bakery_lock_t pwrc_lock __attribute__ ((section("tzfw_coherent_mem")));
-#define PWRC_LOCK	(&pwrc_lock)
-#else
-#define PWRC_LOCK	ERROR("not use coherent memory");	\
-			panic();
-#endif
+RCAR_INSTANTIATE_LOCK
 
 #define	WUP_IRQ_SHIFT	(0U)
 #define	WUP_FIQ_SHIFT	(8U)
@@ -77,7 +71,7 @@ uint32_t rcar_pwrc_status(uint64_t mpidr)
 	uint64_t cpu_no;
 	uint32_t prr_data;
 
-	rcar_lock_get(PWRC_LOCK);
+	rcar_lock_get();
 	prr_data = mmio_read_32((uintptr_t)RCAR_PRR);
 	cpu_no = mpidr & (uint64_t)MPIDR_CPU_MASK;
 	if ((mpidr & ((uint64_t)MPIDR_CLUSTER_MASK)) != 0U) {
@@ -96,7 +90,7 @@ uint32_t rcar_pwrc_status(uint64_t mpidr)
 		}
 	}
 	NOTICE("BL31: - rcar_pwrc_read_psysr : rc=0x%x\n", rc);
-	rcar_lock_release(PWRC_LOCK);
+	rcar_lock_release();
 
 	return rc;
 }
@@ -110,7 +104,7 @@ void rcar_pwrc_cpuon(uint64_t mpidr)
 	uint64_t cpu_no;
 	uint32_t upper_value;
 
-	rcar_lock_get(PWRC_LOCK);
+	rcar_lock_get();
 
 	cpu_no = mpidr & (uint64_t)MPIDR_CPU_MASK;
 	if ((mpidr & ((uint64_t)MPIDR_CLUSTER_MASK)) != 0U) {
@@ -128,7 +122,7 @@ void rcar_pwrc_cpuon(uint64_t mpidr)
 	mmio_write_32(on_reg, (uint32_t)((uint32_t)1U << cpu_no));
 	res_data = mmio_read_32(res_reg) | upper_value;
 	mmio_write_32(res_reg, (res_data & (~((uint32_t)1U << (3U - cpu_no)))));
-	rcar_lock_release(PWRC_LOCK);
+	rcar_lock_release();
 }
 
 static void SCU_power_up(uint64_t mpidr)
@@ -184,7 +178,7 @@ void rcar_pwrc_cpuoff(uint64_t mpidr)
 	uint32_t *off_reg;
 	uint64_t cpu_no;
 
-	rcar_lock_get(PWRC_LOCK);
+	rcar_lock_get();
 	cpu_no = mpidr & (uint64_t)MPIDR_CPU_MASK;
 	if ((mpidr & (uint64_t)MPIDR_CLUSTER_MASK) != 0U) {
 		/* A53 side				*/
@@ -195,7 +189,7 @@ void rcar_pwrc_cpuoff(uint64_t mpidr)
 	}
 	mmio_write_32(off_reg+(cpu_no*10), (uint32_t)0x03U);
 	wfi();
-	rcar_lock_release(PWRC_LOCK);
+	rcar_lock_release();
 #endif
 }
 
@@ -206,7 +200,7 @@ void rcar_pwrc_enable_interrupt_wakeup(uint64_t mpidr)
 	uint32_t shift_irq;
 	uint32_t shift_fiq;
 
-	rcar_lock_get(PWRC_LOCK);
+	rcar_lock_get();
 	cpu_no = mpidr & (uint64_t)MPIDR_CPU_MASK;
 	if ((mpidr & ((uint64_t)MPIDR_CLUSTER_MASK)) != 0U) {
 		/* A53 side				*/
@@ -218,7 +212,7 @@ void rcar_pwrc_enable_interrupt_wakeup(uint64_t mpidr)
 	shift_irq = WUP_IRQ_SHIFT + (uint32_t)cpu_no;
 	shift_fiq = WUP_FIQ_SHIFT + (uint32_t)cpu_no;
 	mmio_write_32(reg, (uint32_t)((~((uint32_t)1U << shift_irq)) & (~((uint32_t)1U << shift_fiq))));
-	rcar_lock_release(PWRC_LOCK);
+	rcar_lock_release();
 }
 
 void rcar_pwrc_disable_interrupt_wakeup(uint64_t mpidr)
@@ -228,7 +222,7 @@ void rcar_pwrc_disable_interrupt_wakeup(uint64_t mpidr)
 	uint32_t shift_irq;
 	uint32_t shift_fiq;
 
-	rcar_lock_get(PWRC_LOCK);
+	rcar_lock_get();
 	cpu_no = mpidr & (uint64_t)MPIDR_CPU_MASK;
 	if ((mpidr & ((uint64_t)MPIDR_CLUSTER_MASK)) != 0U) {
 		/* A53 side				*/
@@ -240,7 +234,7 @@ void rcar_pwrc_disable_interrupt_wakeup(uint64_t mpidr)
 	shift_irq = WUP_IRQ_SHIFT + (uint32_t)cpu_no;
 	shift_fiq = WUP_FIQ_SHIFT + (uint32_t)cpu_no;
 	mmio_write_32(reg, (uint32_t)(((uint32_t)1U << shift_irq) | ((uint32_t)1U << shift_fiq)));
-	rcar_lock_release(PWRC_LOCK);
+	rcar_lock_release();
 }
 
 #if 0
@@ -248,7 +242,7 @@ void rcar_pwrc_clusteroff(uint64_t mpidr)
 {
 	uintptr_t off_reg;
 
-	rcar_lock_get(PWRC_LOCK);
+	rcar_lock_get();
 	if ((mpidr & (uint64_t)MPIDR_CLUSTER_MASK) != 0U) {
 		/* A53 side				*/
 		off_reg = (uintptr_t)RCAR_CA53CPUCMCR;
@@ -257,12 +251,12 @@ void rcar_pwrc_clusteroff(uint64_t mpidr)
 		off_reg = (uintptr_t)RCAR_CA57CPUCMCR;
 	}
 	mmio_write_32(off_reg, (uint32_t)0x03U);
-	rcar_lock_release(PWRC_LOCK);
+	rcar_lock_release();
 }
 #endif
 
 /* Nothing else to do here apart from initializing the lock */
 void rcar_pwrc_setup(void)
 {
-	rcar_lock_init(PWRC_LOCK);
+	rcar_lock_init();
 }
