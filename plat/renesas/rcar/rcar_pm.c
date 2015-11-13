@@ -46,8 +46,12 @@
 
 static void rcar_program_mailbox(uint64_t mpidr, uint64_t address);
 static int32_t rcar_do_plat_actions(unsigned int afflvl, unsigned int state);
+static void rcar_cpu_pwrdwn_common(void);
+static void rcar_cluster_pwrdwn_common(void);
 static void __dead2 rcar_system_off(void);
 static void __dead2 rcar_system_reset(void);
+
+static int32_t cpu_on_check(uint64_t mpidr);
 
 /*******************************************************************************
  * Private RCAR function to program the mailbox for a cpu before it is released
@@ -64,7 +68,7 @@ static void rcar_program_mailbox(uint64_t mpidr, uint64_t address)
 	flush_dcache_range((unsigned long)&rcar_mboxes[linear_id],
 			sizeof(unsigned long));
 }
-#if 0
+
 /*******************************************************************************
  * Function which implements the common RCAR specific operations to power down a
  * cpu in response to a CPU_OFF or CPU_SUSPEND request.
@@ -75,7 +79,7 @@ static void rcar_cpu_pwrdwn_common(void)
 	arm_gic_cpuif_deactivate();
 
 	/* Program the power controller to power off this cpu. */
-	rcar_pwrc_cpuoff(read_mpidr_el1());
+	rcar_pwrc_cpuoff (read_mpidr_el1());
 }
 
 /*******************************************************************************
@@ -92,7 +96,6 @@ static void rcar_cluster_pwrdwn_common(void)
 	/* Program the power controller to turn the cluster off */
 	rcar_pwrc_clusteroff(mpidr);
 }
-#endif
 
 /*******************************************************************************
  * Private RCAR function which is used to determine if any platform actions
@@ -132,10 +135,8 @@ void rcar_affinst_standby(unsigned int power_state)
 	 * Enter standby state
 	 * dsb is good practice before using wfi to enter low power states
 	 */
-#if 0
 	dsb();
 	wfi();
-#endif
 }
 
 /*******************************************************************************
@@ -148,7 +149,7 @@ int rcar_affinst_on(unsigned long mpidr, unsigned long sec_entrypoint,
 	int rc = PSCI_E_SUCCESS;
 
 #if PSCI_DISABLE_BIGLITTLE_IN_CA57BOOT
-	uint64_t	boot_cluster = read_mpidr_el1() & ((uint64_t)MPIDR_CLUSTER_MASK);
+	uint64_t boot_cluster = read_mpidr_el1() & ((uint64_t)MPIDR_CLUSTER_MASK);
 	if (boot_cluster == 0x0000U) {
 		if ((mpidr & ((uint64_t)MPIDR_CLUSTER_MASK)) != boot_cluster) {
 			return PSCI_E_INTERN_FAIL;
@@ -190,7 +191,6 @@ int rcar_affinst_on(unsigned long mpidr, unsigned long sec_entrypoint,
  ******************************************************************************/
 void rcar_affinst_off(unsigned int afflvl, unsigned int state)
 {
-#if 0
 	/* Determine if any platform actions need to be executed */
 	if (rcar_do_plat_actions(afflvl, state) == -EAGAIN) {
 		return;
@@ -206,7 +206,6 @@ void rcar_affinst_off(unsigned int afflvl, unsigned int state)
 	if (afflvl != MPIDR_AFFLVL0) {
 		rcar_cluster_pwrdwn_common();
 	}
-#endif
 }
 
 /*******************************************************************************
@@ -223,7 +222,6 @@ void rcar_affinst_off(unsigned int afflvl, unsigned int state)
 void rcar_affinst_suspend(unsigned long sec_entrypoint, unsigned int afflvl,
 		unsigned int state)
 {
-#if 0
 	unsigned long mpidr;
 
 	/* Determine if any platform actions need to be executed. */
@@ -238,7 +236,7 @@ void rcar_affinst_suspend(unsigned long sec_entrypoint, unsigned int afflvl,
 	rcar_program_mailbox(mpidr, sec_entrypoint);
 
 	/* Program the power controller to enable wakeup interrupts. */
-	rcar_pwrc_set_wen(mpidr);
+	rcar_pwrc_enable_interrupt_wakeup(mpidr);
 
 	/* Perform the common cpu specific operations */
 	rcar_cpu_pwrdwn_common();
@@ -247,7 +245,6 @@ void rcar_affinst_suspend(unsigned long sec_entrypoint, unsigned int afflvl,
 	if (afflvl != MPIDR_AFFLVL0) {
 		rcar_cluster_pwrdwn_common();
 	}
-#endif
 }
 
 /*******************************************************************************
@@ -299,9 +296,7 @@ void rcar_affinst_on_finish(unsigned int afflvl, unsigned int state)
  ******************************************************************************/
 void rcar_affinst_suspend_finish(unsigned int afflvl, unsigned int state)
 {
-#if 0
 	rcar_affinst_on_finish(afflvl, state);
-#endif
 }
 
 /*******************************************************************************
@@ -309,28 +304,61 @@ void rcar_affinst_suspend_finish(unsigned int afflvl, unsigned int state)
  ******************************************************************************/
 static void __dead2 rcar_system_off(void)
 {
-#if 0
-	/* Write the System Configuration Control Register */
-	mmio_write_32(VE_SYSREGS_BASE + V2M_SYS_CFGCTRL,
-		CFGCTRL_START | CFGCTRL_RW | CFGCTRL_FUNC(FUNC_SHUTDOWN));
+	uint64_t my_cpu;
+
+	my_cpu = read_mpidr_el1();
+	if (cpu_on_check(my_cpu) == 0) {
+		rcar_pwrc_cpuoff(my_cpu);
+		rcar_pwrc_clusteroff(my_cpu);
+	} else {
+		panic();
+	}
 	wfi();
-#endif
+
 	ERROR("RCAR System Off: operation not handled.\n");
 	panic();
 }
 
 static void __dead2 rcar_system_reset(void)
 {
-#if 0
-	/* Write the System Configuration Control Register */
+	rcar_pwrc_system_reset();
 
-	mmio_write_32(VE_SYSREGS_BASE + V2M_SYS_CFGCTRL,
-		CFGCTRL_START | CFGCTRL_RW | CFGCTRL_FUNC(FUNC_REBOOT));
-
-	wfi();
-#endif
 	ERROR("RCAR System Reset: operation not handled.\n");
 	panic();
+}
+
+static int32_t cpu_on_check(uint64_t mpidr)
+{
+	uint64_t i;
+	uint64_t j;
+	uint64_t cpu_count;
+	uintptr_t reg_PSTR;
+	uint32_t status;
+	uint64_t my_cpu;
+	int32_t rtn;
+
+	const uint64_t cpu_num_in_core[PLATFORM_MAX_AFFLVL + 1] = {
+			(uint64_t)PLATFORM_CLUSTER0_CORE_COUNT,
+			(uint64_t)PLATFORM_CLUSTER1_CORE_COUNT};
+	const uintptr_t registerPSTR[PLATFORM_MAX_AFFLVL + 1] = {RCAR_CA57PSTR,
+			RCAR_CA53PSTR};
+
+	rtn = 0;
+	my_cpu = mpidr & ((uint64_t)(MPIDR_CLUSTER_MASK | MPIDR_CPU_MASK));
+	for (i = 0U; i < ((uint64_t)(PLATFORM_MAX_AFFLVL + 1U)); i++) {
+		cpu_count = cpu_num_in_core[i];
+		reg_PSTR = registerPSTR[i];
+		for (j = 0U; j < cpu_count; j++) {
+			if (my_cpu != ((i * 0x100) + j)) {
+				status = mmio_read_32(reg_PSTR) >> (j * 4);
+				if ((status & 0x00000003U) == 0U) {
+					rtn--;
+				}
+			}
+		}
+	}
+	return (rtn);
+
 }
 
 /*******************************************************************************
@@ -359,6 +387,11 @@ int rcar_validate_power_state(unsigned int power_state)
 	return PSCI_E_SUCCESS;
 }
 
+unsigned int rcar_get_sys_suspend_power_state(void)
+{
+	return psci_make_powerstate(0, PSTATE_TYPE_POWERDOWN,
+			PLATFORM_MAX_AFFLVL);
+}
 /*******************************************************************************
  * Export the platform handlers to enable psci to invoke them
  ******************************************************************************/
@@ -371,7 +404,8 @@ static const plat_pm_ops_t rcar_plat_pm_ops = {
 	.affinst_suspend_finish = rcar_affinst_suspend_finish,
 	.system_off = rcar_system_off,
 	.system_reset = rcar_system_reset,
-	.validate_power_state = rcar_validate_power_state
+	.validate_power_state = rcar_validate_power_state,
+	.get_sys_suspend_power_state = rcar_get_sys_suspend_power_state
 };
 
 /*******************************************************************************

@@ -65,10 +65,6 @@ const uint8_t version_of_renesas[VER_SIZE] __attribute__((__section__(".version"
 					DEVICE_RCAR_SIZE,		\
 					MT_DEVICE | MT_RW | MT_SECURE)
 
-#define MAP_ATFW_MAIL	MAP_REGION_FLAT(RCAR_BL31_MAIL_BASE,		\
-					RCAR_BL31_MAIL_SIZE,		\
-					MT_MEMORY | MT_RW | MT_SECURE)
-
 #define MAP_ATFW_LOG	MAP_REGION_FLAT(RCAR_BL31_LOG_BASE,		\
 					RCAR_BL31_LOG_SIZE,		\
 					MT_MEMORY | MT_RW | MT_SECURE)
@@ -100,7 +96,6 @@ const mmap_region_t rcar_mmap[] = {
 #if IMAGE_BL31
 const mmap_region_t rcar_mmap[] = {
 	MAP_SHARED_RAM,
-	MAP_ATFW_MAIL,
 	MAP_ATFW_LOG,
 	MAP_DEVICE_RCAR,
 	{	0}
@@ -232,9 +227,9 @@ void rcar_cci_disable(void)
 	cci_disable_snoop_dvm_reqs((unsigned int)MPIDR_AFFLVL1_VAL(read_mpidr()));
 }
 
-	/*******************************************************************************
-	 * Gets SPSR for BL32 entry
-	 ******************************************************************************/
+/*******************************************************************************
+ * Gets SPSR for BL32 entry
+ ******************************************************************************/
 uint32_t rcar_get_spsr_for_bl32_entry(void)
 {
 	/*

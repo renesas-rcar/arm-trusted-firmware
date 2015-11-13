@@ -66,15 +66,14 @@
  * Function & variable prototypes
  ******************************************************************************/
 void rcar_pwrc_setup(void);
-#if 0
 void rcar_pwrc_clusteroff(uint64_t mpidr);
-#endif
 void rcar_pwrc_cpuoff(uint64_t mpidr);
 void rcar_pwrc_cpuon(uint64_t mpidr);
 void rcar_pwrc_enable_interrupt_wakeup(uint64_t mpidr);
 void rcar_pwrc_disable_interrupt_wakeup(uint64_t mpidr);
 uint32_t rcar_pwrc_status(uint64_t mpidr);
 uint32_t rcar_pwrc_get_cpu_wkr(uint64_t mpidr);
+void rcar_pwrc_system_reset(void);
 
 #endif /*__ASSEMBLY__*/
 

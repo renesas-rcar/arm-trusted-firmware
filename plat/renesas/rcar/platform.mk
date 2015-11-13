@@ -49,16 +49,12 @@ BL2_SOURCES		+=	plat/common/aarch64/platform_up_stack.S		\
 				drivers/io/io_storage.c				\
 				plat/renesas/rcar/bl2_pfc_init.c		\
 				plat/renesas/rcar/ddr/boot_init_dram.c		\
-				plat/renesas/rcar/bl2_phy_init.c		\
 				plat/renesas/rcar/drivers/rpc/rpc_driver.c	\
 				plat/renesas/rcar/drivers/dma/dma_driver.c	\
 				plat/renesas/rcar/bl2_secure_setting.c		\
 				plat/renesas/rcar/bl2_cpg_init.c		\
-				plat/renesas/rcar/bl2_qos_init.c		\
+				plat/renesas/rcar/qos/qos_init.c		\
 				plat/renesas/rcar/aarch64/bl2_reset.S
-#				plat/renesas/rcar/ddr/boot_init_dram.c		\
-#				plat/renesas/rcar/bl2_sdram_init.c		\
-#				plat/renesas/rcar/bl2_ddr3_init.S		\
 
 BL31_SOURCES		+=	drivers/arm/cci/cci.c				\
 				drivers/arm/gic/arm_gic.c			\

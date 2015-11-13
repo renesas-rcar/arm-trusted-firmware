@@ -67,7 +67,7 @@
 
 /* The remaining Trusted SRAM is used to load the BL images */
 #define RCAR_TRUSTED_SRAM_BASE	0x44000000	/* Trusted Firmware Image */
-#define RCAR_TRUSTED_SRAM_SIZE	0x00054000	/* 336 KB */
+#define RCAR_TRUSTED_SRAM_SIZE	0x0003E000	/* 248 KB */
 
 #define FLASH0_BASE		0x08000000U		/* LBSC RPC address */
 #define FLASH0_SIZE		0x04000000U		/* 64MB */
@@ -205,6 +205,7 @@
 #define	RCAR_MODEMR_A			(0xE6160060)					/* Mode pin register for Assembly language				*/
 #define	RCAR_CA57RESCNT			(0xE6160040U)					/* Reset control register for A57					*/
 #define	RCAR_CA53RESCNT			(0xE6160044U)					/* Reset control register for A53					*/
+#define	RCAR_SRESCR			(0xE6160110U)					/* Soft Power On Reset Control Register					*/
 #define	RCAR_CA53WUPCR			(0xE6151010U)					/* Wake-up control register for A53					*/
 #define	RCAR_CA57WUPCR			(0xE6152010U)					/* Wake-up control register for A57					*/
 #define	RCAR_CA53PSTR			(0xE6151040U)					/* Power status register for A53					*/
@@ -223,6 +224,8 @@
 #define	RCAR_SYSCSR			(0xE6180000U)					/* SYSC status register							*/
 #define	RCAR_PWRONCR3			(0xE618014CU)					/* Power resume control register CA53-SCU				*/
 #define	RCAR_PWRONCR5			(0xE61801CCU)					/* Power resume control register CA57-SCU				*/
+#define	RCAR_PWROFFCR3			(0xE6180144U)					/* Power shutoff control register CA53-SCU				*/
+#define	RCAR_PWROFFCR5			(0xE61801C4U)					/* Power shutoff control register CA57-SCU				*/
 #define	RCAR_PWRER3			(0xE6180154U)					/* Power shutoff/resume error register CA53-SCU				*/
 #define	RCAR_PWRER5			(0xE61801D4U)					/* Power shutoff/resume error register CA57-SCU				*/
 #define	RCAR_SYSCISR			(0xE6180004U)					/* Interrupt status register						*/
@@ -246,9 +249,11 @@
 
 #define	RCAR_BL31_MAIL_BASE	(0x4403E000)
 #define	RCAR_BL31_MAIL_SIZE	(0x00002000)
+#define	RCAR_BL31_WORK_BASE	(0x44022000)
+#define	RCAR_BL31_WORK_SIZE	(0x0001C000)
 
 /* Entrypoint mailboxes */
-#define MBOX_BASE		RCAR_BL31_MAIL_BASE
+#define MBOX_BASE		RCAR_SHARED_MEM_BASE
 #define MBOX_SIZE		0x200
 
 /* Base address where parameters to BL31 are stored */

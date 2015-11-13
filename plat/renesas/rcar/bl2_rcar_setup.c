@@ -40,16 +40,15 @@
 #include "rcar_private.h"
 #include "io_common.h"
 #include "bl2_pfc_init.h"
-#include "bl2_sdram_init.h"
 #include "rpc_driver.h"
 #include "dma_driver.h"
 #include "bl2_secure_setting.h"
 #include "bl2_cpg_register.h"
 #include "bl2_cpg_init.h"
-#include "bl2_qos_init.h"
 #include <debug.h>
 #include <mmio.h>
 #include "ddr/boot_init_dram.h"
+#include "qos/qos_init.h"
 #include "rcar_version.h"
 
 
@@ -225,7 +224,6 @@ void bl2_early_platform_setup(meminfo_t *mem_layout)
 
 #if RCAR_MASTER_BOOT_CPU == RCAR_BOOT_CA5X
 	/* Initialize SDRAM */
-/*	bl2_sdram_init();	*/
 	InitDram();
 #endif
 
@@ -243,7 +241,7 @@ void bl2_early_platform_setup(meminfo_t *mem_layout)
 	bl2_cpg_init();
 
 	/* initialize QoS configration */
-	bl2_qos_init();
+	qos_init();
 #endif
 
 	/* unmask the detection of RWDT overflow */

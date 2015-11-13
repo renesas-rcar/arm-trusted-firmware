@@ -29,9 +29,9 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef BL2_QOS_INIT_H__
-#define BL2_QOS_INIT_H__
+#ifndef QOS_INIT_H__
+#define QOS_INIT_H__
 
-void bl2_qos_init(void);
+void qos_init(void);
 
-#endif	/* BL2_QOS_INIT_H__ */
+#endif	/* QOS_INIT_H__ */

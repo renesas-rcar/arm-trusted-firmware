@@ -29,10 +29,10 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <mmio.h>
-#include <bl_common.h>
+#include <stdint.h>
 #include <debug.h>
-#include "bl2_qos_init.h"
+#include "qos_init.h"
+
 
 #define	RCAR_QOS_VERSION		"rev.0.24A"
 
@@ -79,6 +79,17 @@
 #define	RALLOC_INSFC			(RALLOC_BASE + 0x0050U)
 #define	RALLOC_BERR			(RALLOC_BASE + 0x0054U)
 
+#define ARRAY_SIZE(a)	(sizeof(a) / sizeof((a)[0]))
+
+static inline void io_write_32(uintptr_t addr, uint32_t value)
+{
+	*(volatile uint32_t*)addr = value;
+}
+
+static inline void io_write_64(uintptr_t addr, uint64_t value)
+{
+	*(volatile uint64_t*)addr = value;
+}
 
 typedef struct {
 	uintptr_t addr;
@@ -518,27 +529,27 @@ static const mstat_slot_t mstat_be[] = {
 #endif
 
 
-void bl2_qos_init(void)
+void qos_init(void)
 {
 	/* DRAM Split Address mapping */
 #if RCAR_DRAM_SPLIT == RCAR_DRAM_SPLIT_4CH
 	NOTICE("BL2: DRAM Split is 4ch\n");
-	mmio_write_32(AXI_ADSPLCR0, ADSPLCR0_ADRMODE_DEFAULT
+	io_write_32(AXI_ADSPLCR0, ADSPLCR0_ADRMODE_DEFAULT
 				  | ADSPLCR0_SPLITSEL(0xFFU)
 				  | ADSPLCR0_AREA(0x1BU)
 				  | ADSPLCR0_SWP);
-	mmio_write_32(AXI_ADSPLCR1, 0x00000000U);
-	mmio_write_32(AXI_ADSPLCR2, 0xA8A90000U);
-	mmio_write_32(AXI_ADSPLCR3, 0x00000000U);
+	io_write_32(AXI_ADSPLCR1, 0x00000000U);
+	io_write_32(AXI_ADSPLCR2, 0xA8A90000U);
+	io_write_32(AXI_ADSPLCR3, 0x00000000U);
 #elif RCAR_DRAM_SPLIT == RCAR_DRAM_SPLIT_2CH
 	NOTICE("BL2: DRAM Split is 2ch\n");
-	mmio_write_32(AXI_ADSPLCR0, 0x00000000U);
-	mmio_write_32(AXI_ADSPLCR1, ADSPLCR0_ADRMODE_DEFAULT
+	io_write_32(AXI_ADSPLCR0, 0x00000000U);
+	io_write_32(AXI_ADSPLCR1, ADSPLCR0_ADRMODE_DEFAULT
 				  | ADSPLCR0_SPLITSEL(0xFFU)
 				  | ADSPLCR0_AREA(0x1BU)
 				  | ADSPLCR0_SWP);
-	mmio_write_32(AXI_ADSPLCR2, 0x00000000U);
-	mmio_write_32(AXI_ADSPLCR3, 0x00000000U);
+	io_write_32(AXI_ADSPLCR2, 0x00000000U);
+	io_write_32(AXI_ADSPLCR3, 0x00000000U);
 #else
 	NOTICE("BL2: DRAM Split is OFF\n");
 #endif
@@ -551,66 +562,66 @@ void bl2_qos_init(void)
 #endif
 
 	/* AR Cache setting */
-	mmio_write_32(0xE67D1000U, 0x00000100U);
-	mmio_write_32(0xE67D1008U, 0x00000100U);
+	io_write_32(0xE67D1000U, 0x00000100U);
+	io_write_32(0xE67D1008U, 0x00000100U);
 
 	/* Resource Alloc setting */
-	mmio_write_32(RALLOC_RAS,   0x00000040U);
-	mmio_write_32(RALLOC_FIXTH, 0x000F0005U);
-	mmio_write_32(RALLOC_RAEN,  0x00000001U);
-	mmio_write_32(RALLOC_REGGD, 0x00000004U);
-	mmio_write_64(RALLOC_DANN,  0x0202000004040404U);
-	mmio_write_32(RALLOC_DANT,  0x003C1110U);
-	mmio_write_32(RALLOC_EC,    0x00080001U);	/* need for H3 ES1 */
-	mmio_write_64(RALLOC_EMS,   0x0000000000000000U);
-	mmio_write_32(RALLOC_INSFC, 0xC7840001U);
-	mmio_write_32(RALLOC_BERR,  0x00000000U);
+	io_write_32(RALLOC_RAS,   0x00000040U);
+	io_write_32(RALLOC_FIXTH, 0x000F0005U);
+	io_write_32(RALLOC_RAEN,  0x00000001U);
+	io_write_32(RALLOC_REGGD, 0x00000004U);
+	io_write_64(RALLOC_DANN,  0x0202000004040404U);
+	io_write_32(RALLOC_DANT,  0x003C1110U);
+	io_write_32(RALLOC_EC,    0x00080001U);	/* need for H3 ES1 */
+	io_write_64(RALLOC_EMS,   0x0000000000000000U);
+	io_write_32(RALLOC_INSFC, 0xC7840001U);
+	io_write_32(RALLOC_BERR,  0x00000000U);
 
 	/* MSTAT setting */
-	mmio_write_32(MSTAT_SL_INIT, 0x0305007DU);
-	mmio_write_32(MSTAT_REF_ARS, 0x00330000U);
+	io_write_32(MSTAT_SL_INIT, 0x0305007DU);
+	io_write_32(MSTAT_REF_ARS, 0x00330000U);
 
 	/* MSTAT SRAM setting */
 	{
 	uint32_t i;
 
 	for (i = 0U; i < ARRAY_SIZE(mstat_fix); i++) {
-		mmio_write_64(MSTAT_FIX_QOS_BANK0 + mstat_fix[i].addr,
+		io_write_64(MSTAT_FIX_QOS_BANK0 + mstat_fix[i].addr,
 				mstat_fix[i].value);
-		mmio_write_64(MSTAT_FIX_QOS_BANK1 + mstat_fix[i].addr,
+		io_write_64(MSTAT_FIX_QOS_BANK1 + mstat_fix[i].addr,
 				mstat_fix[i].value);
 	}
 	for (i = 0U; i < ARRAY_SIZE(mstat_be); i++) {
-		mmio_write_64(MSTAT_BE_QOS_BANK0 + mstat_be[i].addr,
+		io_write_64(MSTAT_BE_QOS_BANK0 + mstat_be[i].addr,
 				mstat_be[i].value);
-		mmio_write_64(MSTAT_BE_QOS_BANK1 + mstat_be[i].addr,
+		io_write_64(MSTAT_BE_QOS_BANK1 + mstat_be[i].addr,
 				mstat_be[i].value);
 	}
 	}
 
 	/* AXI-IF arbitration setting */
-	mmio_write_32(DBSC_AXARB, 0x18010000U);
+	io_write_32(DBSC_AXARB, 0x18010000U);
 
 	/* 3DG bus Leaf setting */
-	mmio_write_32(0xFD820808U, 0x00001234U);
-	mmio_write_32(0xFD820800U, 0x0000003FU);
-	mmio_write_32(0xFD821800U, 0x0000003FU);
-	mmio_write_32(0xFD822800U, 0x0000003FU);
-	mmio_write_32(0xFD823800U, 0x0000003FU);
-	mmio_write_32(0xFD824800U, 0x0000003FU);
-	mmio_write_32(0xFD825800U, 0x0000003FU);
-	mmio_write_32(0xFD826800U, 0x0000003FU);
-	mmio_write_32(0xFD827800U, 0x0000003FU);
+	io_write_32(0xFD820808U, 0x00001234U);
+	io_write_32(0xFD820800U, 0x0000003FU);
+	io_write_32(0xFD821800U, 0x0000003FU);
+	io_write_32(0xFD822800U, 0x0000003FU);
+	io_write_32(0xFD823800U, 0x0000003FU);
+	io_write_32(0xFD824800U, 0x0000003FU);
+	io_write_32(0xFD825800U, 0x0000003FU);
+	io_write_32(0xFD826800U, 0x0000003FU);
+	io_write_32(0xFD827800U, 0x0000003FU);
 
 	/* Resource Alloc start */
-	mmio_write_32(RALLOC_RAEN,  0x00000001U);
+	io_write_32(RALLOC_RAEN,  0x00000001U);
 
 	/* MSTAT start */
-	mmio_write_32(MSTAT_STATQC, 0x00000001U);
+	io_write_32(MSTAT_STATQC, 0x00000001U);
 #else
 	NOTICE("BL2: QoS is None\n");
 
 	/* Resource Alloc setting */
-	mmio_write_32(RALLOC_EC,    0x00080001U);	/* need for H3 ES1 */
+	io_write_32(RALLOC_EC,    0x00080001U);	/* need for H3 ES1 */
 #endif /* !(RCAR_QOS_TYPE == RCAR_QOS_NONE) */
 }
