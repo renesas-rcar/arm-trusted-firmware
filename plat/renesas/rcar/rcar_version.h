@@ -35,7 +35,7 @@
 #include	<arch_helpers.h>
 
 #define		VER_SIZE		5
-#define		VERSION_OF_RENESAS	"1.0.2"
+#define		VERSION_OF_RENESAS	"1.0.3"
 
 extern const uint8_t	version_of_renesas[VER_SIZE];
 

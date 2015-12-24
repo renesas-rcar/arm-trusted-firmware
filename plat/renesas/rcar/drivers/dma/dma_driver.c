@@ -176,12 +176,12 @@ void execDMA(uint32_t dst, uint32_t src, uint32_t len)
 				(size_t)memlen);
 	}
 	if (dmalen != 0U) {
-		INFO("BL2: %s (%d) DMA    len=%d(0x%x)\n",
-			__FUNCTION__, __LINE__,	dmalen, dmalen);
+		INFO("BL2: DMA    len=%d(0x%x)\n",
+			dmalen, dmalen);
 	}
 	if (memlen != 0U) {
-		INFO("BL2: %s (%d) memcpy len=%d(0x%x)\n",
-			__FUNCTION__, __LINE__, memlen, memlen);
+		INFO("BL2: memcpy len=%d(0x%x)\n",
+			memlen, memlen);
 	}
 }
 

@@ -184,8 +184,7 @@ static int32_t memdrv_block_read(io_entity_t *entity, uintptr_t buffer,
 
 	fp = (file_state_t *)entity->info;
 
-	NOTICE("BL2: %s dst=0x%x src=0x%x len=%d(0x%x)\n",
-		__FUNCTION__,
+	NOTICE("BL2: dst=0x%x src=0x%x len=%d(0x%x)\n",
 		(uint32_t)buffer,
 		(uint32_t)(fp->base + fp->file_pos),
 		(uint32_t)length, (uint32_t)length);
