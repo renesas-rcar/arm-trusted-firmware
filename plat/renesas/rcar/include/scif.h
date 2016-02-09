@@ -35,7 +35,12 @@
 
 #define	SCIF_INTERNAL_CLK	0	/* Internal clock(S3D4:66.66MHz) */
 #define	SCIF_EXTARNAL_CLK	1	/* External clock(SCK2:14.7456MHz) */
-#define	SCIF_CLK		SCIF_EXTARNAL_CLK
+#define	SCIF_CLK		SCIF_INTERNAL_CLK
+
+/* Product Register */
+#define	PRR			(0xFFF00044)
+#define	PRR_PRODUCT_MASK	(0x00007FFF)
+#define	PRR_PRODUCT_H3_ES_1_0	(0x00004F00)	/* R-Car H3 ES1.0 */
 
 /* Pin functon */
 #define	PFC_BASE		(0xE6060000)
@@ -84,7 +89,7 @@
 				SCSMR_CKS_DIV1)
 
 #define	SCBRR_115200BPS		(17)		/* 115200bps@66MHz */
-#define	SCBRR_INIT_DATA		(SCBRR_115200BPS)
+#define	SCBRR_230400BPS		(8)		/* 230400bps@66MHz */
 
 #define	SCSCR_TE_MASK		(1 << 5)
 #define	SCSCR_TE_DIS		(0x0000)

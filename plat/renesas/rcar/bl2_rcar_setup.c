@@ -52,6 +52,11 @@
 #include "rcar_version.h"
 
 
+/* Product Register */
+#define PRR			(0xFFF00044U)
+#define PRR_PRODUCT_MASK	(0x00007FFFU)
+#define PRR_PRODUCT_H3_ES_1_0	(0x00004F00U)		/* R-Car H3 ES1.0 */
+
 /* CPG write protect registers */
 /*#define	CPG_CPGWPR		(CPG_BASE + 0x900U)*/
 /*#define	CPG_CPGWPCR		(CPG_BASE + 0x904U)*/
@@ -258,18 +263,22 @@ void bl2_early_platform_setup(meminfo_t *mem_layout)
 	mmio_write_32(CPG_CA57DBGRCR,
 			DBGCPUPREN | mmio_read_32(CPG_CA57DBGRCR));
 
-	/* PLL0, PLL2, PLL4 setting */
-	reg = mmio_read_32(CPG_PLL2CR);
-	reg &= ~((uint32_t)1U << 5U);	/* bit5 = 0 */
-	mmio_write_32(CPG_PLL2CR, reg);
+	/* STA restriction check for R-Car H3 ES1.0 */
+	reg = mmio_read_32(PRR);
+	if ((reg & PRR_PRODUCT_MASK) == PRR_PRODUCT_H3_ES_1_0) {
+		/* PLL0, PLL2, PLL4 setting */
+		reg = mmio_read_32(CPG_PLL2CR);
+		reg &= ~((uint32_t)1U << 5U);	/* bit5 = 0 */
+		mmio_write_32(CPG_PLL2CR, reg);
 
-	reg = mmio_read_32(CPG_PLL4CR);
-	reg &= ~((uint32_t)1U << 5U);	/* bit5 = 0 */
-	mmio_write_32(CPG_PLL4CR, reg);
+		reg = mmio_read_32(CPG_PLL4CR);
+		reg &= ~((uint32_t)1U << 5U);	/* bit5 = 0 */
+		mmio_write_32(CPG_PLL4CR, reg);
 
-	reg = mmio_read_32(CPG_PLL0CR);
-	reg &= ~((uint32_t)1U << 12U);	/* bit12 = 0 */
-	mmio_write_32(CPG_PLL0CR, reg);
+		reg = mmio_read_32(CPG_PLL0CR);
+		reg &= ~((uint32_t)1U << 12U);	/* bit12 = 0 */
+		mmio_write_32(CPG_PLL0CR, reg);
+	}
 
 	/* Initialise the IO layer and register platform IO devices */
 	rcar_io_setup();

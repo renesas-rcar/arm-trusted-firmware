@@ -51,6 +51,11 @@
 #define	FREQ_8_33M		(0x0000U)
 #define	FREQ_16_66M		(0x6000U)
 
+/* RCAR product and cut information     */
+#define RCAR_PRODUCT_MASK       (0x00007F00U)
+#define RCAR_CUT_MASK           (0x000000FFU)
+#define RCAR_PRODUCT_H3         (0x00004F00U)
+#define RCAR_CUT_ES1p0          (0x00000000U)
 /*******************************************************************************
  * Declarations of linker defined symbols which will help us find the layout
  * of trusted SRAM
@@ -177,6 +182,8 @@ void bl31_early_platform_setup(bl31_params_t *from_bl2,
 {
 	uint32_t chk_data;
 	uint32_t freq_data;
+	uint32_t product_cut = mmio_read_32((uintptr_t)RCAR_PRR)
+				& (RCAR_PRODUCT_MASK | RCAR_CUT_MASK);
 
 	/*
 	 * Set frequency data to CNTFID0
@@ -184,16 +191,19 @@ void bl31_early_platform_setup(bl31_params_t *from_bl2,
 	chk_data = mmio_read_32((uintptr_t)RCAR_MODEMR) & CHECK_MD13_MD14;
 	switch (chk_data) {
 	case FREQ_8_33M:
-		freq_data = (uint32_t)(8.3333F * 1000000.0F); /* 8.33MHz	*/
+		freq_data = 8333300U; /* 8.33MHz	*/
 		break;
 	case FREQ_10M:
-		freq_data = (uint32_t)(10 * 1000000); /* 10MHz	*/
+		freq_data = 10000000U; /* 10MHz	*/
 		break;
 	case FREQ_12_5M:
-		freq_data = (uint32_t)(12.5F * 1000000.0F); /* 12.5MHz	*/
+		freq_data = 12500000U; /* 12.5MHz	*/
 		break;
 	case FREQ_16_66M:
-		freq_data = (uint32_t)(16.66F * 1000000.0F); /* 16.66MHz	*/
+		freq_data = 16666600U; /* 16.66MHz	*/
+		if (product_cut == (RCAR_PRODUCT_H3 | RCAR_CUT_ES1p0)) {
+			freq_data = freq_data >> 1;
+		}
 		break;
 	default:
 		freq_data = 0U;

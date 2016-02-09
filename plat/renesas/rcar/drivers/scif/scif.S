@@ -111,8 +111,18 @@ func console_core_init
 	strh	w1, [x0, #SCIF_SCSMR]		/* CA=0,CHR=0,PE=0,STOP=0,CKS=P */
 	/* Set value in SCBRR */
 #if SCIF_CLK == SCIF_INTERNAL_CLK
-	mov	w1,	#SCBRR_INIT_DATA
-	strb	w1,	[x0, SCIF_SCBRR]
+	ldr	x1, =PRR
+	ldr	w1, [x1]
+	and	w1, w1, #PRR_PRODUCT_MASK
+	mov	w2, #PRR_PRODUCT_H3_ES_1_0
+	cmp	w1, w2
+	beq	3f
+	mov	w1, #SCBRR_115200BPS	/* 115200bps */
+	b	2f
+3:
+	mov	w1, #SCBRR_230400BPS	/* H3 ES1.0 sets clock to doubling */
+2:
+	strb	w1, [x0, SCIF_SCBRR]
 #else
 	mov	w1, #DL_INIT_DATA
 	strh	w1, [x0, #SCIF_DL]
