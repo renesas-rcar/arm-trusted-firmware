@@ -45,7 +45,11 @@
 #elif RCAR_MASTER_BOOT_CPU == RCAR_BOOT_CR7
 #define RCAR_BOOT_KEY_CERT	(0xE6300400U)
 #endif
+#if RCAR_LSI == RCAR_H3
 #define RCAR_SBROM_API		(0xeb10dd64U)
+#elif RCAR_LSI == RCAR_M3
+#define RCAR_SBROM_API		(0xeb1102fcU)
+#endif
 #define	RST_BASE		(0xE6160000U)
 #define	RST_MODEMR		(RST_BASE + 0x0060U)
 #define LIFEC_CC_LCS		(0xE6110028U)		/* cc_lcs  Life cycle state read */
@@ -85,27 +89,113 @@ int auth_mod_verify_img(unsigned int img_id, void *img_ptr,
 	case (uint32_t)BL31_KEY_CERT_ID:
 	case (uint32_t)BL32_KEY_CERT_ID:
 	case (uint32_t)BL33_KEY_CERT_ID:
+	case (uint32_t)BL332_KEY_CERT_ID:
+	case (uint32_t)BL333_KEY_CERT_ID:
+	case (uint32_t)BL334_KEY_CERT_ID:
+	case (uint32_t)BL335_KEY_CERT_ID:
+	case (uint32_t)BL336_KEY_CERT_ID:
+	case (uint32_t)BL337_KEY_CERT_ID:
+	case (uint32_t)BL338_KEY_CERT_ID:
 	case (uint32_t)BL31_CERT_ID:
 	case (uint32_t)BL32_CERT_ID:
 	case (uint32_t)BL33_CERT_ID:
+	case (uint32_t)BL332_CERT_ID:
+	case (uint32_t)BL333_CERT_ID:
+	case (uint32_t)BL334_CERT_ID:
+	case (uint32_t)BL335_CERT_ID:
+	case (uint32_t)BL336_CERT_ID:
+	case (uint32_t)BL337_CERT_ID:
+	case (uint32_t)BL338_CERT_ID:
 		/* no check */
 		break;
 	case (uint32_t)BL31_IMAGE_ID:
 		ret = file_to_cert(BL31_CERT_ID, &cert_addr);
 		if (0 == ret) {
 			ret = sbrom_SecureBootAPI(RCAR_BOOT_KEY_CERT, cert_addr, NULL);
+			if (0 != ret) {
+				ERROR("Verification Failed!!! 0x%x -> BL31\n", ret);
+			}
 		}
 		break;
 	case (uint32_t)BL32_IMAGE_ID:
 		ret = file_to_cert(BL32_CERT_ID, &cert_addr);
 		if (0 == ret) {
 			ret = sbrom_SecureBootAPI(RCAR_BOOT_KEY_CERT, cert_addr, NULL);
+			if (0 != ret) {
+				ERROR("Verification Failed!!! 0x%x -> BL32\n", ret);
+			}
 		}
 		break;
 	case (uint32_t)BL33_IMAGE_ID:
 		ret = file_to_cert(BL33_CERT_ID, &cert_addr);
 		if (0 == ret) {
 			ret = sbrom_SecureBootAPI(RCAR_BOOT_KEY_CERT, cert_addr, NULL);
+			if (0 != ret) {
+				ERROR("Verification Failed!!! 0x%x -> BL33\n", ret);
+			}
+		}
+		break;
+	case (uint32_t)BL332_IMAGE_ID:
+		ret = file_to_cert(BL332_CERT_ID, &cert_addr);
+		if (0 == ret) {
+			ret = sbrom_SecureBootAPI(RCAR_BOOT_KEY_CERT, cert_addr, NULL);
+			if (0 != ret) {
+				ERROR("Verification Failed!!! 0x%x -> BL332\n", ret);
+			} 
+		}
+		break;
+	case (uint32_t)BL333_IMAGE_ID:
+		ret = file_to_cert(BL333_CERT_ID, &cert_addr);
+		if (0 == ret) {
+			ret = sbrom_SecureBootAPI(RCAR_BOOT_KEY_CERT, cert_addr, NULL);
+			if (0 != ret) {
+				ERROR("Verification Failed!!! 0x%x -> BL333\n", ret);
+			} 
+		}
+		break;
+	case (uint32_t)BL334_IMAGE_ID:
+		ret = file_to_cert(BL334_CERT_ID, &cert_addr);
+		if (0 == ret) {
+			ret = sbrom_SecureBootAPI(RCAR_BOOT_KEY_CERT, cert_addr, NULL);
+			if (0 != ret) {
+				ERROR("Verification Failed!!! 0x%x -> BL334\n", ret);
+			} 
+		}
+		break;
+	case (uint32_t)BL335_IMAGE_ID:
+		ret = file_to_cert(BL335_CERT_ID, &cert_addr);
+		if (0 == ret) {
+			ret = sbrom_SecureBootAPI(RCAR_BOOT_KEY_CERT, cert_addr, NULL);
+			if (0 != ret) {
+				ERROR("Verification Failed!!! 0x%x -> BL335\n", ret);
+			} 
+		}
+		break;
+	case (uint32_t)BL336_IMAGE_ID:
+		ret = file_to_cert(BL336_CERT_ID, &cert_addr);
+		if (0 == ret) {
+			ret = sbrom_SecureBootAPI(RCAR_BOOT_KEY_CERT, cert_addr, NULL);
+			if (0 != ret) {
+				ERROR("Verification Failed!!! 0x%x -> BL336\n", ret);
+			} 
+		}
+		break;
+	case (uint32_t)BL337_IMAGE_ID:
+		ret = file_to_cert(BL337_CERT_ID, &cert_addr);
+		if (0 == ret) {
+			ret = sbrom_SecureBootAPI(RCAR_BOOT_KEY_CERT, cert_addr, NULL);
+			if (0 != ret) {
+				ERROR("Verification Failed!!! 0x%x -> BL337\n", ret);
+			} 
+		}
+		break;
+	case (uint32_t)BL338_IMAGE_ID:
+		ret = file_to_cert(BL338_CERT_ID, &cert_addr);
+		if (0 == ret) {
+			ret = sbrom_SecureBootAPI(RCAR_BOOT_KEY_CERT, cert_addr, NULL);
+			if (0 != ret) {
+				ERROR("Verification Failed!!! 0x%x -> BL338\n", ret);
+			} 
 		}
 		break;
 #endif /* IMAGE_BL2 */

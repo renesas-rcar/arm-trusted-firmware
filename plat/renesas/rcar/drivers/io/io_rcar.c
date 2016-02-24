@@ -30,6 +30,7 @@
  */
 
 #include <assert.h>
+#include <auth_mod.h>
 #include <bl_common.h>
 #include <debug.h>
 #include <errno.h>
@@ -105,6 +106,13 @@ static const plat_rcar_name_offset_t cert_offset[] = {
 	{BL31_CERT_ID,		0U,				RCAR_ATTR_SET_ALL(0,1,0)},
 	{BL32_CERT_ID,		0U,				RCAR_ATTR_SET_ALL(0,1,1)},
 	{BL33_CERT_ID,		0U,				RCAR_ATTR_SET_ALL(0,1,2)},
+	{BL332_CERT_ID,		0U,				RCAR_ATTR_SET_ALL(0,1,3)},
+	{BL333_CERT_ID,		0U,				RCAR_ATTR_SET_ALL(0,1,4)},
+	{BL334_CERT_ID,		0U,				RCAR_ATTR_SET_ALL(0,1,5)},
+	{BL335_CERT_ID,		0U,				RCAR_ATTR_SET_ALL(0,1,6)},
+	{BL336_CERT_ID,		0U,				RCAR_ATTR_SET_ALL(0,1,7)},
+	{BL337_CERT_ID,		0U,				RCAR_ATTR_SET_ALL(0,1,8)},
+	{BL338_CERT_ID,		0U,				RCAR_ATTR_SET_ALL(0,1,9)},
 };
 #endif /* TRUSTED_BOARD_BOOT */
 
@@ -283,13 +291,13 @@ static int32_t load_bl33x(uintptr_t handle)
 			get_info_from_cert((uint64_t) cert_addr, &l_image_size,
 				&dest_addr);
 
-			result = io_seek(handle, IO_SEEK_SET,
-				(ssize_t) file_offset);
-			if (IO_SUCCESS != result) {
-				WARN("load_bl33x: failed to seek\n");
-				result = IO_FAIL;
+				result = io_seek(handle, IO_SEEK_SET,
+					(ssize_t) file_offset);
+				if (IO_SUCCESS != result) {
+					WARN("load_bl33x: failed to seek\n");
+					result = IO_FAIL;
+				}
 			}
-		}
 
 		if (IO_SUCCESS == result) {
 
@@ -299,6 +307,21 @@ static int32_t load_bl33x(uintptr_t handle)
 				WARN("load_bl33x: failed to read\n");
 				result = IO_FAIL;
 			}
+#if TRUSTED_BOARD_BOOT
+			else {
+				/* Authenticate it */
+				result = (int32_t)auth_mod_verify_img(
+					(unsigned int)load_names[loop],
+					(void *)((uintptr_t)dest_addr),
+					(unsigned int)l_image_size);
+				if (0 != result) {
+					memset((void *)((uintptr_t)dest_addr),
+						0x00,
+						(size_t)l_image_size);
+					result = IO_FAIL;
+				}
+			}
+#endif /* TRUSTED_BOARD_BOOT */
 		}
 	}
 

@@ -29,10 +29,9 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef	__BOOT_INIT_DRAM_
-#define	__BOOT_INIT_DRAM_
+#ifndef __BOOT_INIT_DRAM_H_
+#define __BOOT_INIT_DRAM_H_
 
 extern void InitDram(void);
-extern uint32_t TpExtendDdrRamCheck(void);
 
-#endif /* __BOOT_INIT_DRAM_ */
+#endif /* __BOOT_INIT_DRAM_H_ */

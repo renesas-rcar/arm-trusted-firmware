@@ -29,9 +29,9 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef QOS_INIT_H__
-#define QOS_INIT_H__
+#ifndef QOS_INIT_H_
+#define QOS_INIT_H_
 
-void qos_init(void);
+extern void qos_init(void);
 
-#endif	/* QOS_INIT_H__ */
+#endif /* QOS_INIT_H_ */

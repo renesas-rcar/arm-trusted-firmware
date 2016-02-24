@@ -29,14 +29,21 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef	RCAR_VERSION_H__
-#define	RCAR_VERSION_H__
+#include <stdint.h>
+#include "pfc_init.h"
+#if RCAR_LSI == RCAR_H3	/* H3 */
+  #include "H3/pfc_init_h3.h"
+#endif
+#if RCAR_LSI == RCAR_M3	/* M3 */
+  #include "M3/pfc_init_m3.h"
+#endif
 
-#include	<arch_helpers.h>
 
-#define		VER_SIZE		5
-#define		VERSION_OF_RENESAS	"1.0.5"
-
-extern const uint8_t	version_of_renesas[VER_SIZE];
-
-#endif	/* RCAR_VERSION_H__	*/
+void pfc_init(void)
+{
+#if RCAR_LSI == RCAR_H3		/* H3 */
+	pfc_init_h3();
+#elif RCAR_LSI == RCAR_M3	/* M3 */
+	pfc_init_m3();
+#endif
+}

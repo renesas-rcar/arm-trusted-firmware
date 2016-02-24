@@ -51,11 +51,6 @@
 #define	FREQ_8_33M		(0x0000U)
 #define	FREQ_16_66M		(0x6000U)
 
-/* RCAR product and cut information     */
-#define RCAR_PRODUCT_MASK       (0x00007F00U)
-#define RCAR_CUT_MASK           (0x000000FFU)
-#define RCAR_PRODUCT_H3         (0x00004F00U)
-#define RCAR_CUT_ES1p0          (0x00000000U)
 /*******************************************************************************
  * Declarations of linker defined symbols which will help us find the layout
  * of trusted SRAM
@@ -201,7 +196,7 @@ void bl31_early_platform_setup(bl31_params_t *from_bl2,
 		break;
 	case FREQ_16_66M:
 		freq_data = 16666600U; /* 16.66MHz	*/
-		if (product_cut == (RCAR_PRODUCT_H3 | RCAR_CUT_ES1p0)) {
+		if (product_cut == (RCAR_PRODUCT_H3 | RCAR_CUT_ES10)) {
 			freq_data = freq_data >> 1;
 		}
 		break;

@@ -35,5 +35,5 @@ const unsigned int __attribute__ ((section (".sa0_bootrom"))) bootrom_paramA = 0
 /* 0x00000D54 */
 const unsigned int __attribute__ ((section (".sa0_bl2cert_addr"))) bl2cert_addr = 0xE6302000;
 /* 0x00000E64 */
-const unsigned int __attribute__ ((section (".sa0_bl2cert_size"))) bl2cert_size = 0x00004000;
+const unsigned int __attribute__ ((section (".sa0_bl2cert_size"))) bl2cert_size = 0x00008000;
 

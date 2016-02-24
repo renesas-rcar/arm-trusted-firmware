@@ -204,7 +204,7 @@ uint64_t plat_get_syscnt_freq(void)
 }
 
 /* Map of CCI masters with the slave interfaces they are connected */
-static const int cci_map[] = {
+static int cci_map[] = {
 	CCI500_CLUSTER0_SL_IFACE_IX,
 	CCI500_CLUSTER1_SL_IFACE_IX
 };
@@ -214,6 +214,12 @@ void rcar_cci_init(void)
 	/*
 	 * Initialize CCI-500 driver
 	 */
+	uint32_t product = mmio_read_32((uintptr_t)RCAR_PRR)
+			& RCAR_PRODUCT_MASK;
+	if (RCAR_PRODUCT_M3 == product) {
+		cci_map[0U] = CCI500_CLUSTER0_SL_IFACE_IX_FOR_M3;
+		cci_map[1U] = CCI500_CLUSTER1_SL_IFACE_IX_FOR_M3;
+	}
 	cci_init(RCAR_CCI_BASE, cci_map, ARRAY_SIZE(cci_map));
 }
 

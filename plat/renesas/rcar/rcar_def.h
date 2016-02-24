@@ -122,6 +122,8 @@
 #define CCI500_BASE			0xF1200000
 #define CCI500_CLUSTER0_SL_IFACE_IX	2
 #define CCI500_CLUSTER1_SL_IFACE_IX	3
+#define CCI500_CLUSTER0_SL_IFACE_IX_FOR_M3	1
+#define CCI500_CLUSTER1_SL_IFACE_IX_FOR_M3	2
 
 /* CCI-500	*/
 #define	RCAR_CCI_BASE			(0xF1200000U)					/* The base address of CCI-500						*/
@@ -156,7 +158,8 @@
 #define	ARM_IRQ_SEC_RPC			( 70U)						/* RPC									*/
 #define	ARM_IRQ_SEC_TIMER		(166U)						/* Secure timer								*/
 #define	ARM_IRQ_SEC_TIMER_UP		(171U)						/* Secure timer UP							*/
-#define	ARM_IRQ_SEC_WDT			(173U)						/* Secure watch dog timer						*/
+#define	ARM_IRQ_SEC_WDT			(173U)						/* System watch dog timer						*/
+#define	ARM_IRQ_SEC_WDT_A		(173)						/* System watch dog timer for Assembly language				*/
 #define	ARM_IRQ_SEC_CRYPT		(102U)						/* Crypt Engine sec							*/
 #define	ARM_IRQ_SEC_CRYPT_SecPKA	( 97U)						/* Crypt Engine PKA sec							*/
 #define	ARM_IRQ_SEC_CRYPT_PubPKA	( 98U)						/* Crypt Engine PKA pub							*/
@@ -232,6 +235,23 @@
 #define	RCAR_SYSCISCR			(0xE6180008U)					/* Interrupt status clear register					*/
 /* Product register	*/
 #define	RCAR_PRR			(0xFFF00044U)					/* Product register							*/
+
+/*******************************************************************************
+ *  RCAR product and cut information
+ ******************************************************************************/
+#define RCAR_PRODUCT_MASK		(0x00007F00U)
+#define RCAR_CUT_MASK			(0x000000FFU)
+#define RCAR_PRODUCT_H3			(0x00004F00U)
+#define RCAR_PRODUCT_M3			(0x00005200U)
+#define RCAR_CUT_ES10			(0x00000000U)
+#define RCAR_CUT_ES11			(0x00000001U)
+#define RCAR_MAJOR_MASK			(0x000000F0U)
+#define RCAR_MINOR_MASK			(0x0000000FU)
+#define RCAR_PRODUCT_SHIFT		(8U)
+#define RCAR_MAJOR_SHIFT		(4U)
+#define RCAR_MINOR_SHIFT		(0U)
+#define RCAR_MAJOR_OFFSET		(1U)
+#define RCAR_PRODUCT_H3_ES10		(0x00004F00U)	/* R-Car H3 ES1.0 */
 /****************************************************************************************************************************************************************/
 /* Memory mapped Generic timer interfaces  */
 /****************************************************************************************************************************************************************/

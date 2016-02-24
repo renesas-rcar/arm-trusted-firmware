@@ -29,9 +29,9 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef BL2_PFC_INIT_H__
-#define BL2_PFC_INIT_H__
+#ifndef QOS_INIT_H_M3_ES10__
+#define QOS_INIT_H_M3_ES10__
 
-void bl2_pfc_init(void);
+void qos_init_m3_es10(void);
 
-#endif	/* BL2_PFC_INIT_H__ */
+#endif	/* QOS_INIT_H_M3_ES10__ */

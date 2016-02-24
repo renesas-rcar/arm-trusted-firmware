@@ -34,6 +34,7 @@
 #include <bl_common.h>
 #include <cortex_a57.h>
 #include <platform_def.h>
+#include <runtime_svc.h>
 #include "../rcar_def.h"
 
 
@@ -49,6 +50,14 @@
 	.extern	platform_set_stack
 	.extern	rcar_log_init
 	.extern	tf_printf
+#if IMAGE_BL2
+	.extern bl2_swdt_exec
+	.extern arm_gic_acknowledge_interrupt
+	.extern bl2_interrupt_error_type
+	.extern bl2_interrupt_error_id
+
+#define	INT_ID_MASK	(0x3ff)
+#endif
 
 	.extern	rcar_boot_kind_flag[data]
 
@@ -200,6 +209,31 @@ func plat_report_exception
 	mrs	x1, CurrentEl
 
 	str	w0, [x1]
+#if IMAGE_BL2
+	mov	w1, #FIQ_SP_ELX
+	cmp	w0, w1
+	beq	rep_exec_fiq_elx
+/*
+ * Please imprement checking the other type of interrupt
+*/
+	b	rep_exec_panic_type
+rep_exec_fiq_elx:
+	bl	arm_gic_acknowledge_interrupt
+	mov	x2, #INT_ID_MASK
+	and	x0, x0, x2
+	mov	x1, #ARM_IRQ_SEC_WDT_A
+	cmp	x0, x1
+	bne	rep_exec_panic_id
+	mrs	x0, ELR_EL1
+	b	bl2_swdt_exec
+rep_exec_panic_type:	/* interrupt type error	*/
+	/* x0 is interrupt TYPE */
+	b	bl2_interrupt_error_type
+rep_exec_panic_id:	/* interrupt id error	*/
+	/* x0 is interrupt ID */
+	b	bl2_interrupt_error_id
+rep_exec_end:
+#endif
 	ret
 endfunc plat_report_exception
 
@@ -276,6 +310,9 @@ endfunc platform_is_primary_cpu
 	 * ---------------------------------------------
 	 */
 func plat_crash_console_init
+#if IMAGE_BL2
+	mov	x0, #0
+#else
 	mov	x1, sp
 	mov_imm	x2, RCAR_CRASH_STACK
 	mov	sp, x2
@@ -285,6 +322,7 @@ func plat_crash_console_init
 	ldr	x30, [sp], #16
 	ldr	x1, [sp], #16
 	mov	sp, x1
+#endif
 	ret
 endfunc plat_crash_console_init
 
@@ -324,6 +362,10 @@ endfunc plat_crash_console_putc
 	 * - Set the L2 Tag RAM latency to 2 (i.e. 3 cycles) for Cortex-A57
 	 * - Set the L2 Data setup latency to 1 (i.e. 1 cycles) for Cortex-A57
 	 * - Set the L2 Data RAM latency to 3 (i.e. 4 cycles) for Cortex-A57
+	 * For R-Car M3:
+	 * - Set the L2 Tag RAM latency to 2 (i.e. 3 cycles) for Cortex-A57
+	 * - Set the L2 Data setup latency to 0 (i.e. 0 cycles) for Cortex-A57
+	 * - Set the L2 Data RAM latency to 3 (i.e. 4 cycles) for Cortex-A57
 	 *
 	 * --------------------------------------------------------------------
 	 */
@@ -337,13 +379,21 @@ func plat_reset_handler
 	 * On R-Car H3:  x2 := 0
 	 * On R-Car M3:  x2 := 1
 	 */
+	ldr	x0, =0xFFF00044	/* read PRR */
+	ldr	w0, [x0]
+	ubfx	w0, w0, 8, 8
+	cmp	w0, #0x4F	/* H3? */
+	b.eq	H3
+	mov	x2, #1		/* set R-Car M3 */
+	b	CHK_A5x
+H3:
 	mov	x2, #0		/* set R-Car H3 */
-
 	/* --------------------------------------------------------------------
 	 * Determine whether this code is executed on a Cortex-A53 or on a
 	 * Cortex-A57 core.
 	 * --------------------------------------------------------------------
 	 */
+CHK_A5x:
 	mrs	x0, midr_el1
 	ubfx	x1, x0, MIDR_PN_SHIFT, #12
 	cmp     w1, #((CORTEX_A57_MIDR >> MIDR_PN_SHIFT) & MIDR_PN_MASK)
@@ -357,9 +407,8 @@ A57:
 	 * --------------------------------------------------------------------
 	 */
 	mrs	x0, L2CTLR_EL1		/* Get data from L2CTLR_EL1		*/
-	cbnz	x2, apply_l2_ram_latencies	/* If M3 then return		*/
 	/*
-	 * On R-Car H3
+	 * On R-Car H3/M3
 	 *
 	 * L2 Tag RAM latency is bit8-6 of L2CTLR_EL1
 	 * L2 Data RAM setup is bit5 of L2CTLR_EL1
@@ -369,7 +418,9 @@ A57:
 	neg	x1, x1			/* ~(0x1e7) -> x1			*/
 	and	x0, x0, x1		/* clear bit of L2 RAM -> x0		*/
 	orr	x0, x0, #0x2 << 6  	/* L2 Tag RAM latency (3 cycles)	*/
+	cbnz	x2, M3_L2		/* If M3 then L2 Data RAM setup is 0	*/
 	orr	x0, x0, #0x1 << 5  	/* L2 Data RAM setup (1 cycle)		*/
+M3_L2:
 	orr	x0, x0, #0x3       	/* L2 Data RAM latency (4 cycles)	*/
 	msr     L2CTLR_EL1, x0		/* Store data to L2CTLR_EL1		*/
 

@@ -29,14 +29,15 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef	RCAR_VERSION_H__
-#define	RCAR_VERSION_H__
+#ifndef BL2_SWDT_H__
+#define BL2_SWDT_H__
 
-#include	<arch_helpers.h>
+void bl2_swdt_init(void);
 
-#define		VER_SIZE		5
-#define		VERSION_OF_RENESAS	"1.0.5"
+void bl2_swdt_enable(void);
 
-extern const uint8_t	version_of_renesas[VER_SIZE];
+void bl2_swdt_release(void);
 
-#endif	/* RCAR_VERSION_H__	*/
+void bl2_swdt_exec(uint64_t addr);
+
+#endif /* BL2_SWDT_H__ */

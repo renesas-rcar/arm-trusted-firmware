@@ -39,6 +39,13 @@ PLAT_BL_COMMON_SOURCES	:=	lib/aarch64/xlat_tables.c			\
 				plat/common/aarch64/plat_common.c
 
 BL2_SOURCES		+=	plat/common/aarch64/platform_up_stack.S		\
+				drivers/arm/gic/arm_gic.c			\
+				drivers/arm/gic/gic_v2.c			\
+				drivers/arm/gic/gic_v3.c			\
+				plat/common/plat_gic.c				\
+				plat/renesas/rcar/drivers/timer/bl2_swdt.c	\
+				plat/renesas/rcar/drivers/error/bl2_int_error.c	\
+				plat/renesas/rcar/aarch64/rcar_helpers.S	\
 				plat/renesas/rcar/bl2_rcar_setup.c		\
 				plat/renesas/rcar/aarch64/rcar_common.c		\
 				plat/renesas/rcar/drivers/io/io_rcar.c		\
@@ -47,13 +54,11 @@ BL2_SOURCES		+=	plat/common/aarch64/platform_up_stack.S		\
 				plat/renesas/rcar/drivers/auth/rcarboot.c	\
 				plat/renesas/rcar/rcar_io_storage.c		\
 				drivers/io/io_storage.c				\
-				plat/renesas/rcar/bl2_pfc_init.c		\
-				plat/renesas/rcar/ddr/boot_init_dram.c		\
 				plat/renesas/rcar/drivers/rpc/rpc_driver.c	\
 				plat/renesas/rcar/drivers/dma/dma_driver.c	\
+				plat/renesas/rcar/drivers/avs/avs_driver.c	\
 				plat/renesas/rcar/bl2_secure_setting.c		\
 				plat/renesas/rcar/bl2_cpg_init.c		\
-				plat/renesas/rcar/qos/qos_init.c		\
 				plat/renesas/rcar/aarch64/bl2_reset.S
 
 BL31_SOURCES		+=	drivers/arm/cci/cci.c				\
@@ -78,6 +83,43 @@ BL31_SOURCES		+=	drivers/arm/cci/cci.c				\
 SPD			:= opteed
 ARM_CCI_PRODUCT_ID	:= 500
 TRUSTED_BOARD_BOOT	:= 1
+
+# LSI setting common define
+RCAR_H3:=0
+RCAR_M3:=1
+$(eval $(call add_define,RCAR_H3))
+$(eval $(call add_define,RCAR_M3))
+RCAR_CUT_10:=0
+RCAR_CUT_11:=1
+$(eval $(call add_define,RCAR_CUT_10))
+$(eval $(call add_define,RCAR_CUT_11))
+
+ifndef LSI
+  $(error "Error: Unknown LSI. Please use RCAR_LSI=<LSI name> to specify the LSI")
+else
+  ifeq (${LSI},H3)
+    RCAR_LSI:=${RCAR_H3}
+    ifndef LSI_CUT
+      # enable compatible function.
+      RCAR_LSI_CUT_COMPAT := 1
+      $(eval $(call add_define,RCAR_LSI_CUT_COMPAT))
+    else
+      # disable compatible function.
+      ifeq (${LSI_CUT},10)
+        RCAR_LSI_CUT:=0
+      endif
+      ifeq (${LSI_CUT},11)
+        RCAR_LSI_CUT:=1
+      endif
+      $(eval $(call add_define,RCAR_LSI_CUT))
+    endif
+  else ifeq (${LSI},M3)
+    RCAR_LSI:=${RCAR_M3}
+  else
+    $(error "Error: ${LSI} is not supported.")
+  endif
+  $(eval $(call add_define,RCAR_LSI))
+endif
 
 # Process RCAR_SECURE_BOOT flag
 ifndef RCAR_SECURE_BOOT
@@ -114,3 +156,15 @@ ifndef PSCI_DISABLE_BIGLITTLE_IN_CA57BOOT
 PSCI_DISABLE_BIGLITTLE_IN_CA57BOOT := 1
 endif
 $(eval $(call add_define,PSCI_DISABLE_BIGLITTLE_IN_CA57BOOT))
+
+# Process RCAR_AVS_SETTING_ENABLE flag
+ifeq (${RCAR_AVS_SETTING_ENABLE},0)
+AVS_SETTING_ENABLE := 0
+else
+AVS_SETTING_ENABLE := 1
+endif
+$(eval $(call add_define,AVS_SETTING_ENABLE))
+
+include plat/renesas/rcar/ddr/ddr.mk
+include plat/renesas/rcar/qos/qos.mk
+include plat/renesas/rcar/pfc/pfc.mk

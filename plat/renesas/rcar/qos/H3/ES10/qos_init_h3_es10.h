@@ -29,14 +29,9 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef	RCAR_VERSION_H__
-#define	RCAR_VERSION_H__
+#ifndef QOS_INIT_H_H3_ES10__
+#define QOS_INIT_H_H3_ES10__
 
-#include	<arch_helpers.h>
+void qos_init_h3_es10(void);
 
-#define		VER_SIZE		5
-#define		VERSION_OF_RENESAS	"1.0.5"
-
-extern const uint8_t	version_of_renesas[VER_SIZE];
-
-#endif	/* RCAR_VERSION_H__	*/
+#endif	/* QOS_INIT_H_H3_ES10__ */

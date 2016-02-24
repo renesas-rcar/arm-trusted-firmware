@@ -93,7 +93,6 @@ uint32_t rcar_pwrc_status(uint64_t mpidr)
 			rc = RCAR_INVALID;
 		}
 	}
-	NOTICE("BL31: - rcar_pwrc_read_psysr : rc=0x%x\n", rc);
 	rcar_lock_release();
 
 	return rc;

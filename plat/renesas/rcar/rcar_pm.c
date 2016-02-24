@@ -53,6 +53,8 @@ static void __dead2 rcar_system_reset(void);
 
 static int32_t cpu_on_check(uint64_t mpidr);
 
+extern int32_t platform_is_primary_cpu(uint64_t mpidr);
+
 /*******************************************************************************
  * Private RCAR function to program the mailbox for a cpu before it is released
  * from reset.
@@ -305,9 +307,13 @@ void rcar_affinst_suspend_finish(unsigned int afflvl, unsigned int state)
 static void __dead2 rcar_system_off(void)
 {
 	uint64_t my_cpu;
+	int32_t rtn_primary;
+	int32_t rtn_on;
 
 	my_cpu = read_mpidr_el1();
-	if (cpu_on_check(my_cpu) == 0) {
+	rtn_primary = platform_is_primary_cpu(my_cpu);
+	rtn_on = cpu_on_check(my_cpu);
+	if ((rtn_primary != 0) && (rtn_on == 0)) {
 		rcar_pwrc_cpuoff(my_cpu);
 		rcar_pwrc_clusteroff(my_cpu);
 	} else {
@@ -339,18 +345,21 @@ static int32_t cpu_on_check(uint64_t mpidr)
 
 	const uint64_t cpu_num_in_core[PLATFORM_MAX_AFFLVL + 1] = {
 			(uint64_t)PLATFORM_CLUSTER0_CORE_COUNT,
-			(uint64_t)PLATFORM_CLUSTER1_CORE_COUNT};
-	const uintptr_t registerPSTR[PLATFORM_MAX_AFFLVL + 1] = {RCAR_CA57PSTR,
-			RCAR_CA53PSTR};
+			(uint64_t)PLATFORM_CLUSTER1_CORE_COUNT
+	};
+	const uintptr_t registerPSTR[PLATFORM_MAX_AFFLVL + 1] = {
+			RCAR_CA57PSTR,
+			RCAR_CA53PSTR
+	};
 
 	rtn = 0;
-	my_cpu = mpidr & ((uint64_t)(MPIDR_CLUSTER_MASK | MPIDR_CPU_MASK));
+	my_cpu = mpidr & ((uint64_t)((MPIDR_CLUSTER_MASK) | (MPIDR_CPU_MASK)));
 	for (i = 0U; i < ((uint64_t)(PLATFORM_MAX_AFFLVL + 1U)); i++) {
 		cpu_count = cpu_num_in_core[i];
 		reg_PSTR = registerPSTR[i];
 		for (j = 0U; j < cpu_count; j++) {
-			if (my_cpu != ((i * 0x100) + j)) {
-				status = mmio_read_32(reg_PSTR) >> (j * 4);
+			if (my_cpu != ((i * 0x100U) + j)) {
+				status = mmio_read_32(reg_PSTR) >> (j * 4U);
 				if ((status & 0x00000003U) == 0U) {
 					rtn--;
 				}

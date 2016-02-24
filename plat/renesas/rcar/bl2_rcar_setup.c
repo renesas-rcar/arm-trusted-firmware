@@ -36,10 +36,11 @@
 #include <platform.h>
 #include <platform_def.h>
 #include <string.h>
+#include <arm_gic.h>
 #include "rcar_def.h"
 #include "rcar_private.h"
 #include "io_common.h"
-#include "bl2_pfc_init.h"
+#include "pfc_init.h"
 #include "rpc_driver.h"
 #include "dma_driver.h"
 #include "bl2_secure_setting.h"
@@ -50,12 +51,9 @@
 #include "ddr/boot_init_dram.h"
 #include "qos/qos_init.h"
 #include "rcar_version.h"
+#include "bl2_swdt.h"
+#include "avs_driver.h"
 
-
-/* Product Register */
-#define PRR			(0xFFF00044U)
-#define PRR_PRODUCT_MASK	(0x00007FFFU)
-#define PRR_PRODUCT_H3_ES_1_0	(0x00004F00U)		/* R-Car H3 ES1.0 */
 
 /* CPG write protect registers */
 /*#define	CPG_CPGWPR		(CPG_BASE + 0x900U)*/
@@ -75,6 +73,35 @@
 #define	RST_WDTRSTCR		(RST_BASE + 0x0054U)
 #define	WDTRSTCR_PASSWORD	(0xA55A0000U)
 #define	WDTRSTCR_RWDT_RSTMSK	((uint32_t)1U << 0U)
+
+/* MIDR */
+#define MIDR_CA57		(0x0D07U << MIDR_PN_SHIFT)
+#define MIDR_CA53		(0x0D03U << MIDR_PN_SHIFT)
+
+/* MaskROM API */
+typedef uint32_t(*ROM_GETLCS_API)(uint32_t *pLcs);
+#if RCAR_LSI == RCAR_H3
+#define ROM_GETLCS_API_ADDR	((ROM_GETLCS_API)0xEB10DFE0U)
+#elif RCAR_LSI == RCAR_M3
+#define ROM_GETLCS_API_ADDR	((ROM_GETLCS_API)0xEB110578U)
+#endif
+#define LCS_CM			(0x0U)
+#define LCS_DM			(0x1U)
+#define LCS_SD			(0x3U)
+#define LCS_SE			(0x5U)
+#define LCS_FA			(0x7U)
+
+/* R-Car Gen3 product check */
+#if RCAR_LSI == RCAR_H3
+#define TARGET_PRODUCT		RCAR_PRODUCT_H3
+#define TARGET_NAME		"R-Car H3"
+#elif RCAR_LSI == RCAR_M3
+#define TARGET_PRODUCT		RCAR_PRODUCT_M3
+#define TARGET_NAME		"R-Car M3"
+#endif
+
+/* Instruction Cache Invalidate All to PoU */
+DEFINE_SYSOP_TYPE_FUNC(ic, iallu)	/* ICIALLU instruction macro */
 
 /*******************************************************************************
  * Declarations of linker defined symbols which will help us find the layout
@@ -208,46 +235,155 @@ struct entry_point_info *bl2_plat_get_bl31_ep_info(void)
  ******************************************************************************/
 void bl2_early_platform_setup(meminfo_t *mem_layout)
 {
+	const unsigned int irq_sec_array[] = {
+		ARM_IRQ_SEC_WDT                /* 173          */
+	};
+	const ROM_GETLCS_API	ROM_GetLcs = ROM_GETLCS_API_ADDR;
 	uint32_t reg;
-
-	/* disable Secure Watchdog Timer */
-	mmio_write_32(0xE6030004U, 0xA5A5A500U);
+	uint32_t lcs;
+	const char *str;
+	const char *cpu_ca57        = "CA57";
+	const char *cpu_ca53        = "CA53";
+	const char *product_h3      = "H3";
+	const char *product_m3      = "M3";
+	const char *lcs_cm          = "CM";
+	const char *lcs_dm          = "DM";
+	const char *lcs_sd          = "SD";
+	const char *lcs_secure      = "SE";
+	const char *lcs_fa          = "FA";
+	const char *unknown         = "unknown";
 
 #if RCAR_MASTER_BOOT_CPU == RCAR_BOOT_CA5X
 	/* initialize Pin Function */
-	bl2_pfc_init();
+	pfc_init();
 #endif
 
 	/* Initialize the console to provide early debug support */
 	(void)console_init(0U, 0U, 0U);
 
-	/* boot message */
-	NOTICE("BL2: R-Car H3 Loader Rev.%s\n", version_of_renesas);
+	/* GIC initialize		*/
+	arm_gic_init(RCAR_GICC_BASE, RCAR_GICD_BASE, RCAR_GICR_BASE
+			,irq_sec_array, ARRAY_SIZE(irq_sec_array));
+	/* GIC setup			*/
+	arm_gic_setup();
 
+	/* Enable FIQ interrupt		*/
+	enable_fiq();
+
+	/* System WDT initialize	*/
+	bl2_swdt_init();
+
+	bl2_avs_init();		/*  Initialize AVS Settings */
+	
+	bl2_avs_setting();	/*  Proceed with separated AVS processing */
+	
+	/* boot message */
+	reg = (uint32_t)read_midr();
+	switch (reg & (uint32_t)(MIDR_PN_MASK << MIDR_PN_SHIFT)) { 
+	case MIDR_CA57:
+		str = cpu_ca57;
+		break;
+	case MIDR_CA53:
+		str = cpu_ca53;
+		break;
+	default:
+		str = unknown;
+		break;
+	}
+	NOTICE("BL2: R-Car Gen3 Initial Program Loader(%s) Rev.%s\n", str, version_of_renesas);
+
+	bl2_avs_setting();	/*  Proceed with separated AVS processing */
+	
+	/* R-Car Gen3 product display & check */
+	reg = mmio_read_32(RCAR_PRR);
+	switch (reg & RCAR_PRODUCT_MASK) {
+	case RCAR_PRODUCT_H3:
+		str = product_h3;
+		break;
+	case RCAR_PRODUCT_M3:
+		str = product_m3;
+		break;
+	default:
+		str = unknown;
+		break;
+	}
+	NOTICE("BL2: PRR is R-Car %s ES%d.%d\n", str,
+		((reg & RCAR_MAJOR_MASK) >> RCAR_MAJOR_SHIFT) + RCAR_MAJOR_OFFSET,
+		 (reg & RCAR_MINOR_MASK));
+	if((reg & RCAR_PRODUCT_MASK) != TARGET_PRODUCT) {
+		ERROR("BL2: This IPL has been built for the %s.\n", 
+								TARGET_NAME);
+		ERROR("BL2: Please write the correct IPL to flash memory.\n");
+		panic();
+	}
+
+	bl2_avs_setting();	/*  Proceed with separated AVS processing */
+
+	reg = ROM_GetLcs(&lcs);
+	if (reg == 0U) {
+		switch (lcs) {
+		case LCS_CM:
+			str = lcs_cm;
+			break;
+		case LCS_DM:
+			str = lcs_dm;
+			break;
+		case LCS_SD:
+			str = lcs_sd;
+			break;
+		case LCS_SE:
+			str = lcs_secure;
+			break;
+		case LCS_FA:
+			str = lcs_fa;
+			break;
+		default:
+			str = unknown;
+			break;
+		}
+	} else {
+		str = unknown;
+	}
+	NOTICE("BL2: LCM state is %s\n", str);
+
+	bl2_avs_setting();	/*  Proceed with separated AVS processing */
+	
 	/* Setup the BL2 memory layout */
 	bl2_tzram_layout = *mem_layout;
 
 #if RCAR_MASTER_BOOT_CPU == RCAR_BOOT_CA5X
 	/* Initialize SDRAM */
 	InitDram();
+
+	bl2_avs_setting();	/*  Proceed with separated AVS processing */
 #endif
 
 	/* Initialize RPC */
 	initRPC();
 
+	bl2_avs_setting();	/*  Proceed with separated AVS processing */
+
 	/* Initialize DMA */
 	initDMA();
 
 #if RCAR_MASTER_BOOT_CPU == RCAR_BOOT_CA5X
+	bl2_avs_setting();	/*  Proceed with separated AVS processing */
+
 	/* Initialize secure configuration */
 	bl2_secure_setting();
+
+	bl2_avs_setting();	/*  Proceed with separated AVS processing */
 
 	/* Initialize CPG configuration */
 	bl2_cpg_init();
 
+	bl2_avs_setting();	/*  Proceed with separated AVS processing */
+
 	/* initialize QoS configration */
 	qos_init();
 #endif
+
+	bl2_avs_end();		/* End of AVS Settings */
 
 	/* unmask the detection of RWDT overflow */
 	reg = mmio_read_32(RST_WDTRSTCR);
@@ -264,8 +400,8 @@ void bl2_early_platform_setup(meminfo_t *mem_layout)
 			DBGCPUPREN | mmio_read_32(CPG_CA57DBGRCR));
 
 	/* STA restriction check for R-Car H3 ES1.0 */
-	reg = mmio_read_32(PRR);
-	if ((reg & PRR_PRODUCT_MASK) == PRR_PRODUCT_H3_ES_1_0) {
+	reg = mmio_read_32(RCAR_PRR) & (RCAR_PRODUCT_MASK | RCAR_CUT_MASK);
+	if (reg  == RCAR_PRODUCT_H3_ES10) {
 		/* PLL0, PLL2, PLL4 setting */
 		reg = mmio_read_32(CPG_PLL2CR);
 		reg &= ~((uint32_t)1U << 5U);	/* bit5 = 0 */
@@ -305,6 +441,21 @@ void bl2_plat_flush_bl31_params(void)
 	flush_dcache_range((unsigned long)PARAMS_BASE, \
 				sizeof(bl2_to_bl31_params_mem_t));
 #endif
+	uint32_t val;
+
+	/* disable the System WDT, FIQ and GIC	*/
+	bl2_swdt_release();
+
+	/* Disable instruction cache */
+	val = (uint32_t)read_sctlr_el1();
+	val &= ~((uint32_t)SCTLR_I_BIT);
+	write_sctlr_el1((uint64_t)val);
+	isb();
+
+	/* Invalidate instruction cache */
+	iciallu();
+	dsb();
+	isb();
 }
 
 

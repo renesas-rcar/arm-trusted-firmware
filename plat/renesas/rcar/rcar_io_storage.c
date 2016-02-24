@@ -112,6 +112,34 @@ static const io_block_spec_t bl33_key_cert_file_spec = {
 	.offset = BL33_KEY_CERT_ID,
 };
 
+static const io_block_spec_t bl332_key_cert_file_spec = {
+	.offset = BL332_KEY_CERT_ID,
+};
+
+static const io_block_spec_t bl333_key_cert_file_spec = {
+	.offset = BL333_KEY_CERT_ID,
+};
+
+static const io_block_spec_t bl334_key_cert_file_spec = {
+	.offset = BL334_KEY_CERT_ID,
+};
+
+static const io_block_spec_t bl335_key_cert_file_spec = {
+	.offset = BL335_KEY_CERT_ID,
+};
+
+static const io_block_spec_t bl336_key_cert_file_spec = {
+	.offset = BL336_KEY_CERT_ID,
+};
+
+static const io_block_spec_t bl337_key_cert_file_spec = {
+	.offset = BL337_KEY_CERT_ID,
+};
+
+static const io_block_spec_t bl338_key_cert_file_spec = {
+	.offset = BL338_KEY_CERT_ID,
+};
+
 static const io_block_spec_t bl31_cert_file_spec = {
 	.offset = BL31_CERT_ID,
 };
@@ -122,6 +150,34 @@ static const io_block_spec_t bl32_cert_file_spec = {
 
 static const io_block_spec_t bl33_cert_file_spec = {
 	.offset = BL33_CERT_ID,
+};
+
+static const io_block_spec_t bl332_cert_file_spec = {
+	.offset = BL332_CERT_ID,
+};
+
+static const io_block_spec_t bl333_cert_file_spec = {
+	.offset = BL333_CERT_ID,
+};
+
+static const io_block_spec_t bl334_cert_file_spec = {
+	.offset = BL334_CERT_ID,
+};
+
+static const io_block_spec_t bl335_cert_file_spec = {
+	.offset = BL335_CERT_ID,
+};
+
+static const io_block_spec_t bl336_cert_file_spec = {
+	.offset = BL336_CERT_ID,
+};
+
+static const io_block_spec_t bl337_cert_file_spec = {
+	.offset = BL337_CERT_ID,
+};
+
+static const io_block_spec_t bl338_cert_file_spec = {
+	.offset = BL338_CERT_ID,
 };
 #endif /* TRUSTED_BOARD_BOOT */
 
@@ -217,6 +273,41 @@ static const struct plat_io_policy policies[] = {
 		(uintptr_t)&bl33_key_cert_file_spec,
 		&open_rcar
 	},
+	[BL332_KEY_CERT_ID] = {
+		&rcar_dev_handle,
+		(uintptr_t)&bl332_key_cert_file_spec,
+		&open_rcar
+	},
+	[BL333_KEY_CERT_ID] = {
+		&rcar_dev_handle,
+		(uintptr_t)&bl333_key_cert_file_spec,
+		&open_rcar
+	},
+	[BL334_KEY_CERT_ID] = {
+		&rcar_dev_handle,
+		(uintptr_t)&bl334_key_cert_file_spec,
+		&open_rcar
+	},
+	[BL335_KEY_CERT_ID] = {
+		&rcar_dev_handle,
+		(uintptr_t)&bl335_key_cert_file_spec,
+		&open_rcar
+	},
+	[BL336_KEY_CERT_ID] = {
+		&rcar_dev_handle,
+		(uintptr_t)&bl336_key_cert_file_spec,
+		&open_rcar
+	},
+	[BL337_KEY_CERT_ID] = {
+		&rcar_dev_handle,
+		(uintptr_t)&bl337_key_cert_file_spec,
+		&open_rcar
+	},
+	[BL338_KEY_CERT_ID] = {
+		&rcar_dev_handle,
+		(uintptr_t)&bl338_key_cert_file_spec,
+		&open_rcar
+	},
 	[BL31_CERT_ID] = {
 		&rcar_dev_handle,
 		(uintptr_t)&bl31_cert_file_spec,
@@ -231,7 +322,42 @@ static const struct plat_io_policy policies[] = {
 		&rcar_dev_handle,
 		(uintptr_t)&bl33_cert_file_spec,
 		&open_rcar
-	}, {
+	},
+	[BL332_CERT_ID] = {
+		&rcar_dev_handle,
+		(uintptr_t)&bl332_cert_file_spec,
+		&open_rcar
+	},
+	[BL333_CERT_ID] = {
+		&rcar_dev_handle,
+		(uintptr_t)&bl333_cert_file_spec,
+		&open_rcar
+	},
+	[BL334_CERT_ID] = {
+		&rcar_dev_handle,
+		(uintptr_t)&bl334_cert_file_spec,
+		&open_rcar
+	},
+	[BL335_CERT_ID] = {
+		&rcar_dev_handle,
+		(uintptr_t)&bl335_cert_file_spec,
+		&open_rcar
+	},
+	[BL336_CERT_ID] = {
+		&rcar_dev_handle,
+		(uintptr_t)&bl336_cert_file_spec,
+		&open_rcar
+	},
+	[BL337_CERT_ID] = {
+		&rcar_dev_handle,
+		(uintptr_t)&bl337_cert_file_spec,
+		&open_rcar
+	},
+	[BL338_CERT_ID] = {
+		&rcar_dev_handle,
+		(uintptr_t)&bl338_cert_file_spec,
+		&open_rcar
+	},{
 #endif /* TRUSTED_BOARD_BOOT */
 		0, 0, 0
 	}

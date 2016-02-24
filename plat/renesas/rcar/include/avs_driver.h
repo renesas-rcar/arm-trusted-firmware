@@ -28,15 +28,17 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
+ 
+#ifndef AVS_DRIVER_H__
+#define AVS_DRIVER_H__
 
-#ifndef	RCAR_VERSION_H__
-#define	RCAR_VERSION_H__
+/* AVS Setting. 1:enable / 0:disable */
+#ifndef AVS_SETTING_ENABLE
+#define AVS_SETTING_ENABLE	1
+#endif /* AVS_SETTING_ENABLE */
 
-#include	<arch_helpers.h>
+void bl2_avs_init(void);
+void bl2_avs_setting(void);
+void bl2_avs_end(void);
 
-#define		VER_SIZE		5
-#define		VERSION_OF_RENESAS	"1.0.5"
-
-extern const uint8_t	version_of_renesas[VER_SIZE];
-
-#endif	/* RCAR_VERSION_H__	*/
+#endif  /* AVS_DRIVER_H__ */
