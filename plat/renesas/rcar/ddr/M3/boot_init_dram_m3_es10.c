@@ -4,6 +4,8 @@
 #include <stdio.h>		//for uint32_t
 #include "boot_init_dram_m3_es10.h"
 
+#define	RCAR_DDR_VERSION	"rev.0.11"
+
 ///////////////////////////////////////////////////////////
 // Board define
 
@@ -18,7 +20,7 @@
 
 ///////////////////////////////////////////////////////////
 /* add start */
-//#include <debug.h>
+#include <debug.h>
 #define	RST_BASE				(0xE6160000U)
 #define	RST_MODEMR				(RST_BASE + 0x0060U)
 #define	CPG_BASE				(0xE6150000U)
@@ -29,7 +31,7 @@
 #define	CPG_SRSTCLR4				(CPG_BASE + 0x950U)
 ///////////////////////////////////////////////////////////
 
-
+#define	DEBUG_WDQSWA7
 
 //OK?
 //   debug_term
@@ -950,8 +952,7 @@ void pvt_dbsc_regset(uint32_t freq)
 		*((volatile uint32_t*)DBSC_DBTR18)	= 0x00000000;	//dbtr18 No odt for DQ exists in LPDDR4.
 		*((volatile uint32_t*)DBSC_DBTR19)	= 0x00000000;	//dbtr19 tzqcl=0 tzqcs=0 because LPDDR4 doesn't support ZQC[SL].
 		*((volatile uint32_t*)DBSC_DBTR20)	= 0x012c012c;	//dbtr20 txsdll=trfc+12=220 txs=220
-//		*((volatile uint32_t*)DBSC_DBTR21)	= 0x00080008;	//dbtr21 tccd_s=8 tccd=8
-		*((volatile uint32_t*)DBSC_DBTR21)	= 0x000E000E;	//dbtr21 tccd_s=14 tccd=14	 // 2016/03/24
+		*((volatile uint32_t*)DBSC_DBTR21)	= 0x00080008;	//dbtr21 tccd_s=8 tccd=8
 		*((volatile uint32_t*)DBSC_DBTR22)	= 0x06400030;	//dbtr22 tzqcal=1600 tzqlat=48
 //		*((volatile uint32_t*)DBSC_DBTR23)	= 0x00000002;	//dbtr23
 		*((volatile uint32_t*)DBSC_DBTR23)	= 0x00000003;	//dbtr23 // 2016/03/24
@@ -1624,6 +1625,21 @@ void InitDDR_start_testtesttest(uint32_t freq)
 //			REG_DDRPHY_WRITE(ch,0x0252 ,	0x01000000|((dataL&0xF)<<16)		);	// PHY_LP4_RDLVL_PATT8_0:RW:0:32:=0x00000000
 //		}
 
+
+#ifdef DEBUG_WDQSWA7
+//	{	0x084D ,	0x01D00004	} ,	// PHY_WRLVL_DELAY_EARLY_THRESHOLD_0:RW+:16:10:=0x01D0 PHY_WRITE_PATH_LAT_ADD_0:RW+:8:3:=0x00 PHY_RDDQS_LATENCY_ADJUST_0:RW+:0:4:=0x04
+//	{	0x084E ,	0x00010000	} ,	// PHY_WRLVL_EARLY_FORCE_ZERO_0:RW+:16:1:=0x00 PHY_WRLVL_DELAY_PERIOD_THRESHOLD_0:RW+:0:10:=0x0000
+		for(slice=0;slice<4;slice++)
+		{
+//			REG_DDRPHY_WRITE(ch,0x084D +0x80*slice,	0x01C00004	);
+			REG_DDRPHY_WRITE(ch,0x084D +0x80*slice,	0x01800004	);
+			REG_DDRPHY_WRITE(ch,0x084E +0x80*slice,	0x00010000	);
+		}
+
+
+
+#endif
+
 ///////////////////////////////////////////////////
 #ifdef	debug_term_over_pre
 ///// TERM over write
@@ -1634,8 +1650,8 @@ void InitDDR_start_testtesttest(uint32_t freq)
 //			dataL =	*((volatile uint32_t*)0xE6338008);
 //			dataL = ((dataL & 0xFF)<<12	) |0x0000054F;
 //		} else {
-//			dataL = 0x0001154F;
-			dataL = 0x0001F54F;
+			dataL = 0x0001154F;
+//			dataL = 0x0001F54F;
 //		}
 
 		REG_DDRPHY_WRITE(ch,0x0BA2 ,	dataL|0x00020000	);	// PHY_PAD_FDBK_TERM:RW+:0:18:=0x004410
@@ -1810,8 +1826,8 @@ void InitDDR_start_testtesttest(uint32_t freq)
 //			dataL =	*((volatile uint32_t*)0xE6338008);
 //			dataL = ((dataL & 0xFF)<<12	) |0x0000054F;
 //		} else {
-//			dataL = 0x0001154F;
-			dataL = 0x0001F54F;
+			dataL = 0x0001154F;
+//			dataL = 0x0001F54F;
 //		}
 
 		REG_DDRPHY_WRITE(ch,0x0BA2 ,	dataL|0x00020000	);	// PHY_PAD_FDBK_TERM:RW+:0:18:=0x004410
@@ -1984,6 +2000,7 @@ void InitDram_m3_es10(void)
 //		freq = DDR2400_CLK;	//MD19=1,MD17=0 : 3733 -> LPDDR4-2400
 //	} else {
 		freq = DDR1600_CLK;	//MD19=1,MD17=1 : 3200 -> LPDDR4-1600
+		NOTICE("BL2: DDR1600(%s)\n", RCAR_DDR_VERSION);
 //	}
 
 	*((volatile uint32_t*)CPG_CPGWPR)		= ~(freq<<24);

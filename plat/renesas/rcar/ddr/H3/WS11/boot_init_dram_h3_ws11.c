@@ -28,34 +28,24 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-
 #include <stdint.h>		//for uint32_t
 #include <string.h>		//for uint32_t
 #include <stdio.h>		//for uint32_t
 #include "boot_init_dram_h3_ws11.h"
-
 ///////////////////////////////////////////////////////////
 // Board define
-
 #define	BOARD_SALVATOR_X
 //#define	BOARD_SALVATOR_M
 //#define	BOARD_KRIEK
-
 #define	DDR_ES1px	1	// 1:ES1.1 / 0:ES1.0
 //#define	DDR_BACKUPMODE
-//#define	DDR_QOSSETTING
-
+#define	DDR_QOSSETTING
 ///////////////////////////////////////////////////////////
 #include "init_dram_tbl_h3_ws11.h"
 //#include "bit.h"
 //#include "reg_rcarh3.h"
-
-
-#define	RCAR_DDR_VERSION	"rev.0.13"
-
-
+#define	RCAR_DDR_VERSION	"rev.0.15"
 ///////////////////////////////////////////////////////////
-/* add start */
 #include <debug.h>
 #define	RST_BASE				(0xE6160000U)
 #define	RST_MODEMR				(RST_BASE + 0x0060U)
@@ -66,35 +56,18 @@
 #define	CPG_SRCR4				(CPG_BASE + 0x0BCU)
 #define	CPG_SRSTCLR4			(CPG_BASE + 0x950U)
 ///////////////////////////////////////////////////////////
-
-
-///////////////////////////////////////////////////////////
 #define	DDR_DEBUG_ES1P1						// ES1.1 debug code
-#define	DDR_DEBUG_WL
-#define	DDR_DEBUG_REG_DDRPHY
-//#define	DDR_DEBUG_MEMCHK
-//#define	DDR_DEBUG_ODTMODE
-//#define	DDR_DEBUG_VREF
-//#define	DDR_DEBUG_FREQ			0
-//#define	DDR_DEBUG_ODT2
-//#define	DDR_DEBUG_PST_AMBLE		1
-//#define	DDR_DEBUG_REF
-//#define	DDR_DEBUG_DBI		0x02
-
 ///////////////////////////////////////////////////////////
 // Kriek board settings
 #ifdef	BOARD_KRIEK
-#define DDR_REF_PR
 #define DDR_PAD_NORMAL
 #define DDR_2RANK
-#define DDR_KRIEK_MEMSWAP
+#else
+#define	DDR_WDQLVL_CHAB_SWAP_WA
 #endif 
 
 ///////////////////////////////////////////////////////////
-
-#define	DDR_WDQLVL_CHAB_SWAP_WA
 #define	DDR_ODT_SET			0x7170
-
 #ifdef DDR_2RANK			// 2Rank
 #define	DDR_CSMAP		0xF
 #define	DDR_CSMAP_WDQLVL	0xF
@@ -110,75 +83,55 @@
 #define	DDR_CSMAP_WRLVL		0x1
 #define	DDR_CSMAP_CALVL		0x1
 #endif
-
-
 #define	DDR_LVLEN				0x1e
 #define	DDR_FDIV				0x0
 #define	DDR_FDIVA				0x0
-#define	DDR_PLL3ONLY
-
+//#define	DDR_PLL3ONLY
 #define	DDR_DRIVE				0x1
 #define	DDR_LPDDR4_EN_OFF_FIRST	0x1
 #define	DDR_LP4_BOOT_DISABLE	0x1
-
 #ifdef DDR_PAD_NORMAL
-//#define	DDR_PAD_BOOST			0x0		// not define
-//#define	DDR_PAD_ADDR_CS_DRIVE	0x27f6e		// not define
-//#define	DDR_PAD_CLK_DRIVE		0x47F6E		// not define
-//#define	DDR_PVTR_ADJ			0x0		// not define
 #define	DDR_PVTR_ADJ			0x8
 #else
 #define	DDR_PAD_BOOST			0x0
 #define	DDR_PAD_ADDR_CS_DRIVE	0x7f2c
 #define	DDR_PVTR_ADJ			0x8
 #endif
-
 #define	DDR_RX_CAL_MAN			0x033f
-
 #ifdef	DDR_DEBUG_DBI
-#define	DDR_MR3					0xF1	//0xF1 W/DBI , 0x31 noDBI
+#define	DDR_MR3					0xF1
 #else
 #define	DDR_MR3					0x31
 #endif
-
 #ifdef DDR_PAD_NORMAL
-#define	DDR_MR11				0x36	// ca.odt=80 ohm / dq.odt=40 ohm
+#define	DDR_MR11				0x36
 #else
-#define	DDR_MR11				0x32	// 120 ohm
+#define	DDR_MR11				0x32
 #endif
 #define	DDR_MR22				0x06
-
 #ifdef DDR_PAD_NORMAL
 #define	DDR_TSEL_SELECT			0x00006E0E
-
 #ifdef BOARD_KRIEK
 #define	DDR_VREF				0x0F02
 #else
 #define	DDR_VREF				0x0F19
 #endif
-
 #else
 #define	DDR_TSEL_SELECT			0x00002C0C
-
 #define	DDR_VREF				0x0F1F
 #endif
-
 #define	DDR_PAD_CAL_WA
 #ifdef DDR_PAD_NORMAL
 #define	DDR_PAD_CAL_WA2
 #endif
-
 #define	DDR_UPDT_WA				0x1c48
 #define	DDR_FREQCHG
-
 #define	DDR_RDDQSDQ				0x0
 #define	DDR_CALVLSIDE			0x2
 #define	DDR_LOWDIV				0x4
 #define	DDR_LOWFIX				0x17
-
 #define	DDR_BPGRP				0x000
 #define	DDR_BPCAD				0x000
-
 #ifdef BOARD_KRIEK
 #define DRAM_CH_CNT				4
 #define	DDR_PHYVALID			0x5
@@ -187,12 +140,10 @@
 #define	DDR_PHYVALID			0xf
 #endif
 #define	DDR_PHYMRW				0xf
-
 #define	DDR_TVAL0				0
 #define	DDR_TVAL1				0
 #define	DDR_TVAL2				0
 #define	DDR_DBS_DFI_WA
-
 #ifdef DDR_PAD_NORMAL
 #define	DDR_CAD					0x240
 #define	DDR_GRP_A				0x240
@@ -202,42 +153,24 @@
 #define	DDR_GRP_A				0x200
 #define	DDR_GRP_B				0x200
 #endif
-
 #define	DDR_PVTCODE_0			0x10
 #define	DDR_PVTCODE_1			0x20
 #define	DDR_PVTCODE_2			0x20
-
 #define DDR1600_CLK				0x2F		// 1600
 #define DDR2400_CLK				0x47		// 2400
 #define DDR2800_CLK				0x53		// 2800
 #define DDR3200_CLK				0x5f		// 3200
 
-#ifdef DDR_DEBUG_FREQ
-#define DDR1433_CLK				0x2A		// 1433(1433.3333)
-#define DDR1466_CLK				0x2B		// 1466(1466.6652)
-#define DDR1500_CLK				0x2C		// 1500
-#define DDR1533_CLK				0x2D		// 1533(1533.3333)
-#define DDR2900_CLK				0x56		// 2900
-#define DDR3000_CLK				0x59		// 3000
-#define DDR3100_CLK				0x5C		// 3100
-#define DDR3133_CLK				0x5D		// 3133
-#define DDR3166_CLK				0x5E		// 3166
-#endif
-
-// 9/24
 #define DDR_CACS_CAPTURE_CNT	0x02
 #define DDR_CACS_RESP_WAIT_CNT	0x00
 #define DDR_CACS_CCCP			0x2816
-#define DDR_CACS_START			0x280		// 0x320
-#define DDR_CACS_QTR			0x80		// 0x40
+#define DDR_CACS_START			0x280
+#define DDR_CACS_QTR			0x80
 #define DDR_CACS_STEP			0x03
-
-#define	DBSC_REFINTS			0x1;		// 0: Average interval is REFINT. / 1: Average interval is 1/2 REFINT.
-
+#define	DBSC_REFINTS			0x1
 #define DBSC_DBSYSCONF1			0xE6790004
-#define DBSC_DBPHYCONF0			0xE6790010 //
-#define DBSC_DBKIND				0xE6790020 //
-
+#define DBSC_DBPHYCONF0			0xE6790010
+#define DBSC_DBKIND				0xE6790020
 #define DBSC_DBMEMCONF_0_0		0xE6790030
 #define DBSC_DBMEMCONF_0_1		0xE6790034
 #define DBSC_DBMEMCONF_1_0		0xE6790040
@@ -246,7 +179,6 @@
 #define DBSC_DBMEMCONF_2_1		0xE6790054
 #define DBSC_DBMEMCONF_3_0		0xE6790060
 #define DBSC_DBMEMCONF_3_1		0xE6790064
-
 #define DBSC_DBMEMCONF_0_2		0xE6790038
 #define DBSC_DBMEMCONF_0_3		0xE679003C
 #define DBSC_DBMEMCONF_1_2		0xE6790048
@@ -255,14 +187,11 @@
 #define DBSC_DBMEMCONF_2_3		0xE679005C
 #define DBSC_DBMEMCONF_3_2		0xE6790068
 #define DBSC_DBMEMCONF_3_3		0xE679006C
-
 #define DBSC_DBSTATE0			0xE6790108
-
 #define DBSC_DBACEN				0xE6790200
 #define DBSC_DBRFEN				0xE6790204
 #define DBSC_DBCMD				0xE6790208
-#define DBSC_DBWAIT				0xE6790210	//wait DBCMD 1=busy, 0=ready
-
+#define DBSC_DBWAIT				0xE6790210
 #define DBSC_DBTR0				0xE6790300
 #define DBSC_DBTR1				0xE6790304
 #define DBSC_DBTR3				0xE679030C
@@ -286,12 +215,9 @@
 #define DBSC_DBTR21				0xE6790354
 #define DBSC_DBTR22				0xE6790358
 #define DBSC_DBTR23				0xE679035C
-
 #define DBSC_DBBL				0xE6790400
-
 #define DBSC_DBRFCNF1			0xE6790414
 #define DBSC_DBRFCNF2			0xE6790418
-
 #define DBSC_DBRNK0				0xE6790430
 #define DBSC_DBRNK1				0xE6790434
 #define DBSC_DBRNK2				0xE6790438
@@ -299,38 +225,30 @@
 #define DBSC_DBRNK4				0xE6790440
 #define DBSC_DBRNK5				0xE6790444
 #define DBSC_DBRNK6				0xE6790448
-
 #define DBSC_DBADJ0				0xE6790500
 #define DBSC_DBADJ2				0xE6790508
 #define DBSC_DBDBICNT			0xE6790518
-
 #define DBSC_DBDFIPMSTRCNF		0xE6790520
-
 #define DBSC_DBPDLK_0			0xE6790620
 #define DBSC_DBPDLK_1			0xE6790660
 #define DBSC_DBPDLK_2			0xE67906a0
 #define DBSC_DBPDLK_3			0xE67906e0
-
 #define DBSC_INITCOMP_0			0xE6790600
 #define DBSC_INITCOMP_1			0xE6790640
 #define DBSC_INITCOMP_2			0xE6790680
 #define DBSC_INITCOMP_3			0xE67906C0
-
 #define DBSC_DBDFICNT_0			0xE6790604
 #define DBSC_DBDFICNT_1			0xE6790644
 #define DBSC_DBDFICNT_2			0xE6790684
 #define DBSC_DBDFICNT_3			0xE67906C4
-
 #define DBSC_DBPDCNT0_0			0xE6790610
 #define DBSC_DBPDCNT0_1			0xE6790650
 #define DBSC_DBPDCNT0_2			0xE6790690
 #define DBSC_DBPDCNT0_3			0xE67906D0
-
 #define DBSC_DBPDCNT_0			0xE679061C
 #define DBSC_DBPDCNT_1			0xE679065C
 #define DBSC_DBPDCNT_2			0xE679069C
 #define DBSC_DBPDCNT_3			0xE67906DC
-
 #define DBSC_DBPDRGA_0			0xE6790624  //
 #define DBSC_DBPDRGD_0			0xE6790628  //
 #define DBSC_DBPDRGA_1			0xE6790664  //
@@ -339,10 +257,8 @@
 #define DBSC_DBPDRGD_2			0xE67906A8  //
 #define DBSC_DBPDRGA_3			0xE67906E4  //
 #define DBSC_DBPDRGD_3			0xE67906E8  //
-
 #define DBSC_DBBUS0CNF0			0xE6790800
 #define DBSC_DBBUS0CNF1			0xE6790804
-
 #define DBSC_DBCAM0CNF0			0xE6790900
 #define DBSC_DBCAM0CNF1			0xE6790904
 #define DBSC_DBCAM0CNF2			0xE6790908
@@ -353,7 +269,6 @@
 #define DBSC_DBSCHSZ0			0xE6791010
 #define DBSC_DBSCHRW0			0xE6791020
 #define DBSC_DBSCHRW1			0xE6791024
-
 #define DBSC_DBSCHQOS_0_0		0xE6791030
 #define DBSC_DBSCHQOS_0_1		0xE6791034
 #define DBSC_DBSCHQOS_0_2		0xE6791038
@@ -378,34 +293,26 @@
 #define DBSC_DBSCHQOS_15_1		0xE6791124
 #define DBSC_DBSCHQOS_15_2		0xE6791128
 #define DBSC_DBSCHQOS_15_3		0xE679112C
-
 #define DBSC_DBSCTR0			0xE6791700
 #define DBSC_DBSCTR1			0xE6791708
 #define DBSC_DBSCHRW2			0xE679170C
-
-#define DBSC_SCFCTST0			0xE6791700	//Schedule timing setting register 0
-#define DBSC_SCFCTST1			0xE6791708	//Schedule timing setting register 1
-#define DBSC_SCFCTST2			0xE679170C	//Schedule timing setting register 2
-
+#define DBSC_SCFCTST0			0xE6791700
+#define DBSC_SCFCTST1			0xE6791708
+#define DBSC_SCFCTST2			0xE679170C
 #define DBSC_DBMEMSWAPCONF0		0xE6792000
-
 #define DBSC_DBMONCONF4			0xE6793010
-
 #define DBSC_PLL_LOCK_0 		0xE6794054
 #define DBSC_PLL_LOCK_1 		0xE6794154
 #define DBSC_PLL_LOCK_2 		0xE6794254
 #define DBSC_PLL_LOCK_3 		0xE6794354
-
 #define DBSC_FREQ_CHG_ACK_0 	0xE6790618
 #define DBSC_FREQ_CHG_ACK_1 	0xE6790658
 #define DBSC_FREQ_CHG_ACK_2 	0xE6790698
 #define DBSC_FREQ_CHG_ACK_3 	0xE67906D8
-
 #define DBSC_DFI_FREQ_0 		0xE6790614
 #define DBSC_DFI_FREQ_1 		0xE6790654
 #define DBSC_DFI_FREQ_2 		0xE6790694
 #define DBSC_DFI_FREQ_3 		0xE67906D4
-
 ////////////////////////////////////////////////////////////
 // 2800: RL=28,WL=14,nWR=30,nRTP=12
 #define DDR2800_PI_MR1			0xd4	//DeviceFeature1(Post=1.5tck nWR=30 RDpre=static WRPre=2tCK BL=16		// 1 101 0100
@@ -427,7 +334,6 @@
 #define DDR2800_PI_CASLAT_LIN	0x50
 #define DDR2800_PI_WRLAT		0x0e
 #define DDR2800_PI_WRLAT_ADJ	0x0c
-
 ///////////////////////////////////////////////////////////
 // 2400: RL=24,WL=12,nWR=24,nRTP=10
 #define DDR2400_PI_MR1			0xc4	//DeviceFeature1(Post=1.5tck nWR=24 RDpre=static WRPre=2tCK BL=16		// 1 100 0100
@@ -450,8 +356,8 @@
 #define DDR2400_PI_WRLAT		0x0c	//PI_WRLAT_F2:RW:16:5:=0x08
 #define DDR2400_PI_WRLAT_ADJ	0x0a
 /////////////////
-#define DDR1600_PI_MR1			0xa4	//MRW DeviceFeature1(Post=1.5tck nWR=16 RDpre=static WRPre=2tCK BL=16//OK		// 1 010 0100
-#define DDR1600_PI_MR2			0x52	//MRW DeviceFeature2(0,1SetB,010=WL12,010=RL14(nRTP14))//						// 01 010 010
+#define DDR1600_PI_MR1			0xa4	//MRW DeviceFeature1(Post=1.5tck nWR=16 RDpre=static WRPre=2tCK BL=16
+#define DDR1600_PI_MR2			0x52	//MRW DeviceFeature2(0,1SetB,010=WL12,010=RL14(nRTP14))
 #define DDR1600_PI_TFC			0x00c8
 #define DDR1600_PI_TRTP			0x08
 #define DDR1600_PI_TCCD			0x08
@@ -465,295 +371,176 @@
 #define DDR1600_PI_TMRD			0x0c
 #define DDR1600_PI_TCCDMW		0x20
 #define DDR1600_PI_TDQSCK_MAX	0x3
-#define DDR1600_PI_RDLAT_ADJ	0x08	//PI_RDLAT_ADJ_F2:RW:16:8:=0x07       //try 07+2 1600
+#define DDR1600_PI_RDLAT_ADJ	0x08	//PI_RDLAT_ADJ_F2:RW:16:8:=0x07 
 #define DDR1600_PI_CASLAT_LIN	0x50	//PI_CASLAT_LIN_F2:RW:0:7:=0x1c
 #define DDR1600_PI_WRLAT		0x0c	//PI_WRLAT_F2:RW:16:5:=0x08
 #define DDR1600_PI_WRLAT_ADJ	0x0a
-
 //////////////////////////////////////////////////////////////////
-
 void InitDram_h3_ws11(void);
-
 static void pvt_dbsc_regset(uint32_t freq);
 static void pvt_manual_update(uint32_t flag);
 static void set_cacs_delay();
-void _rx_cal_code_set(uint32_t ch, uint32_t slice, uint8_t _cal_code_up[][4][16],uint8_t _cal_code_dn[][4][16]);
+static void _rx_cal_code_set(uint32_t ch, uint32_t slice, uint8_t _cal_code_up[][4][16],uint8_t _cal_code_dn[][4][16]);
 static void rx_cal_manual1(uint32_t chmask);
 static void mode_register_set(uint32_t freq,uintptr_t phychno,uint32_t mr13_val);
 static void _set_reg(uint32_t ch_mask, uint32_t regadd, uint32_t pos, uint32_t width, uint32_t val);
 static void pvt_lvl_enable_set(uint32_t go);
 static void pvt_freq_change_ack(uint32_t freq, uintptr_t phychno, uint32_t freq_flag);
 static uint32_t pvt_pi_training_go_all_o(uint32_t freq);
-
 inline void PLL3_FREQ(uint32_t freq,uint32_t freq_flag);
 static uint32_t pvt_pi_training_go_all(uint32_t freq);
 static uint32_t pvt_pi_training(uint32_t freq);
 static void WaitDBCMD(void);
-
 static void REG_DDRPHY_WRITE ( uintptr_t phyno, uint32_t regadd, uint32_t regdata);
 static void change_lpddr4_en(uintptr_t phychno, uint32_t mode);
 static void copy_csdelay(uint32_t	phychno, uint32_t s_byte);
 static void adjust_rddqsgatedelay(uintptr_t phychno);
 static void copy_dqdelay(uintptr_t phychno, uint32_t s_byte, uint32_t d_byte);
 static uint32_t pvt_pi_training_go_all_soft(uint32_t freq);
-
 inline void dsb_sev(void);
-
 static uint32_t REG_DDRPHY_READ ( uintptr_t phyno, uint32_t regadd);
 #ifdef	DDR_DEBUG_VREF
 static uint32_t InitDDR_0917(uint32_t freq, uint32_t vref);
 #else
 static uint32_t InitDDR_0917(uint32_t freq);
 #endif
-//void freq2800_reg_set();
-//void freq2400_reg_set();
+//static void freq2800_reg_set();
+//static void freq2400_reg_set();
 static void freq1600_reg_set();
-
 #ifdef	DDR_WDQLVL_CHAB_SWAP_WA
 uint32_t wdqlvl(uint32_t phych_mask);
 #endif
-
-uint8_t cal_code_up[4][4][16];//[11-15]are dummy
-uint8_t cal_code_dn[4][4][16];//[11-15]are dummy
-uint8_t fst1[4][4][16];//[11-15]are dummy
-uint8_t lst0[4][4][16];//[11-15]are dummy
+uint8_t cal_code_up[4][4][16];
+uint8_t cal_code_dn[4][4][16];
+uint8_t fst1[4][4][16];
+uint8_t lst0[4][4][16];
 uint32_t val[4][4][16][4];
-
 #ifdef DDR_BACKUPMODE
-uint32_t ddrBackup;		//0:ColdBoot, 1:WarmBoot(DDR-BackUp), 2:WarmBoot Timeout Error
+uint32_t ddrBackup;
 #endif
-
-void SoftDelay_ddr(uint32_t loop)
+static void SoftDelay_ddr(uint32_t loop)
 {
 	volatile uint32_t i;
 	for(i=0;i<loop;i++);
 }
-
 ///////////////////////////////////////////////////////////////////
-
 void InitDram_h3_ws11(void)
 {
 	uint32_t md=0;
 	uint32_t freq=DDR3200_CLK;
-
 #ifdef	DDR_DEBUG_VREF
 	uint32_t vref=DDR_VREF;
 #endif
-
 #ifdef	DDR_DEBUG_FREQ
 	md = *(volatile uint32_t *)0xe6330000;
 	if((md&0xffff0000)==0xa5a50000){
 		freq = md&0xff;
-//		NOTICE("BL2: FREQ is set by 0xe6330000 %x\n",freq);
-
 #ifdef	DDR_DEBUG_ODTMODE
 		md = ((*((volatile uint32_t*)RST_MODEMR) & 0x00020000) >> 17)|
 		     ((*((volatile uint32_t*)RST_MODEMR) & 0x00080000) >> 18);
-//		NOTICE("BL2: ODTdbg:%x \n",md);
 #endif
-
 	} else {
-
-
 #ifdef	DDR_DEBUG_ODTMODE
 		md = ((*((volatile uint32_t*)RST_MODEMR) & 0x00020000) >> 17)|
 		     ((*((volatile uint32_t*)RST_MODEMR) & 0x00080000) >> 18);
-//		NOTICE("BL2: DDR3200(ODTdbg:%x)\n",md);
 #else
 		md = (*((volatile uint32_t*)RST_MODEMR) & 0x000A0000) >> 17;
-
 		if(DDR_DEBUG_FREQ ==0){
 			if (md == 0x0) {
-//				NOTICE("BL2: DDR3200\n");
 			} else if (md == 0x1) {
 				freq = DDR2800_CLK;
-//				NOTICE("BL2: DDR2800\n");
 			} else if (md == 0x4) {
 				freq = DDR2400_CLK;
-//				NOTICE("BL2: DDR2400\n");
 			} else {
 				freq = DDR1600_CLK;
-//				NOTICE("BL2: DDR1600\n");
 			}
 		}
 		else if(DDR_DEBUG_FREQ ==1){
 			if (md == 0x0) {
-//				NOTICE("BL2: DDR3200\n");
 			} else if (md == 0x1) {
 				freq = DDR3166_CLK;
-//				NOTICE("BL2: DDR3166\n");
 			} else if (md == 0x4) {
 				freq = DDR3133_CLK;
-//				NOTICE("BL2: DDR3133\n");
 			} else {
 				freq = DDR3100_CLK;
-//				NOTICE("BL2: DDR3100\n");
 			}
 		}
 		else if(DDR_DEBUG_FREQ ==2){
 			if (md == 0x0) {
 				freq = DDR3100_CLK;
-//				NOTICE("BL2: DDR3100\n");
 			} else if (md == 0x1) {
 				freq = DDR3200_CLK;
-//				NOTICE("BL2: DDR3200\n");
 			} else if (md == 0x4) {
 				freq = DDR3000_CLK;
-//				NOTICE("BL2: DDR3000\n");
 			} else {
 				freq = DDR2900_CLK;
-//				NOTICE("BL2: DDR2900\n");
 			}
 		}
 		else {
 			if (md == 0x0) {
 				freq = DDR1533_CLK;
-//				NOTICE("BL2: DDR1533\n");
 			} else if (md == 0x1) {
 				freq = DDR1433_CLK;
-//				NOTICE("BL2: DDR1433\n");
 			} else if (md == 0x4) {
 				freq = DDR1500_CLK;
-//				NOTICE("BL2: DDR1500\n");
 			} else {
 				freq = DDR1466_CLK;
-//				NOTICE("BL2: DDR1466\n");
 			}
 		}
 #endif
-	} // manual freq setting
-
-#else	// DDR_DEBUG_FREQ
+	}
+#else
 	md = (*((volatile uint32_t*)RST_MODEMR) & 0x000A0000) >> 17;
-
 	if (md == 0x0) {
-		NOTICE("BL2: DDR3200(%s)\n", RCAR_DDR_VERSION);
-////		freq = DDR3100_CLK;
-////		NOTICE("BL2: DDR3100\n");
 	} else if (md == 0x1) {
-		freq = DDR2800_CLK;	//MD19=0,MD17=1 : LPDDR4-3000, 4GByte(1GByte x4)
+		freq = DDR2800_CLK;	//MD19=0,MD17=1 : LPDDR4-2800
 		NOTICE("BL2: DDR2800(%s)\n", RCAR_DDR_VERSION);
 	} else if (md == 0x4) {
-		freq = DDR2400_CLK;	//MD19=1,MD17=0 : LPDDR4-2400, 4GByte(1GByte x4)
+		freq = DDR2400_CLK;	//MD19=1,MD17=0 : LPDDR4-2400
 		NOTICE("BL2: DDR2400(%s)\n", RCAR_DDR_VERSION);
 	} else {
-		freq = DDR1600_CLK;	//MD19=1,MD17=1 : LPDDR4-1600, 4GByte(1GByte x4)
+		freq = DDR1600_CLK;	//MD19=1,MD17=1 : LPDDR4-1600
 		NOTICE("BL2: DDR1600(%s)\n", RCAR_DDR_VERSION);
 	}
-#endif	// DDR_DEBUG_FREQ
-
-
+#endif
 #ifdef	DDR_DEBUG_VREF
 	md = *(volatile uint32_t *)0xe6330004;
 	if((md&0xffff0000)==0xa5a50000){
 		vref = md&0xfff;
-//		NOTICE("BL2: VREF is set by 0xe6330004 %x\n",vref);
 	}
-
 	InitDDR_0917(freq,vref);
 #else
 	InitDDR_0917(freq);
 #endif
 }
-
-
 static void pvt_dbsc_regset(uint32_t freq)
 {
-
 	*((volatile uint32_t*)DBSC_DBPDCNT0_0)	= 0x00;
 	*((volatile uint32_t*)DBSC_DBPDCNT0_1)	= 0x00;
 	*((volatile uint32_t*)DBSC_DBPDCNT0_2)	= 0x00;
 	*((volatile uint32_t*)DBSC_DBPDCNT0_3)	= 0x00;
-
-	//LPDDR4-1600(CL14NoDBI),4GByte(8GBit x 4)
-
 	*((volatile uint32_t*)DBSC_DBSTATE0)	= 0x00000010;
 	*((volatile uint32_t*)DBSC_DBKIND)		= 0x0000000a;	//ddcg=a(lpddr4)
-
 	*((volatile uint32_t*)DBSC_DBBL)		= 0x00000002;	//BL=16(lpddr4)
 
-//DRAM Size Registers
-//Please set for 4ranks
-	*((volatile uint32_t*)DBSC_DBMEMCONF_0_0)	= 0x0f030a02;	//memconf00(ch0/rank0) 4GB
-	*((volatile uint32_t*)DBSC_DBMEMCONF_0_1)	= 0x0f030a02;	//memconf01(ch0/rank1) 4GB
-	*((volatile uint32_t*)DBSC_DBMEMCONF_1_0)	= 0x0f030a02;	//memconf10(ch1/rank0) 4GB
-	*((volatile uint32_t*)DBSC_DBMEMCONF_1_1)	= 0x0f030a02;	//memconf11(ch1/rank1) 4GB
-	*((volatile uint32_t*)DBSC_DBMEMCONF_2_0)	= 0x0f030a02;	//memconf20(ch2/rank0) 4GB
-	*((volatile uint32_t*)DBSC_DBMEMCONF_2_1)	= 0x0f030a02;	//memconf21(ch2/rank1) 4GB
-	*((volatile uint32_t*)DBSC_DBMEMCONF_3_0)	= 0x0f030a02;	//memconf30(ch3/rank0) 4GB
-	*((volatile uint32_t*)DBSC_DBMEMCONF_3_1)	= 0x0f030a02;	//memconf31(ch3/rank1) 4GB
-
-	*((volatile uint32_t*)DBSC_DBMEMCONF_0_2)	= 0x0f030a02;	//memconf01(ch0/rank2) 4GB
-	*((volatile uint32_t*)DBSC_DBMEMCONF_0_3)	= 0x0f030a02;	//memconf01(ch0/rank3) 4GB
-	*((volatile uint32_t*)DBSC_DBMEMCONF_1_2)	= 0x0f030a02;	//memconf01(ch1/rank2) 4GB
-	*((volatile uint32_t*)DBSC_DBMEMCONF_1_3)	= 0x0f030a02;	//memconf01(ch1/rank3) 4GB
-	*((volatile uint32_t*)DBSC_DBMEMCONF_2_2)	= 0x0f030a02;	//memconf01(ch2/rank2) 4GB
-	*((volatile uint32_t*)DBSC_DBMEMCONF_2_3)	= 0x0f030a02;	//memconf01(ch2/rank3) 4GB
-	*((volatile uint32_t*)DBSC_DBMEMCONF_3_2)	= 0x0f030a02;	//memconf01(ch3/rank2) 4GB
-	*((volatile uint32_t*)DBSC_DBMEMCONF_3_3)	= 0x0f030a02;	//memconf01(ch3/rank3) 4GB
-
+	*((volatile uint32_t*)DBSC_DBMEMCONF_0_0)	= 0x0f030a02;	//memconf00(ch0/rank0)
+	*((volatile uint32_t*)DBSC_DBMEMCONF_0_1)	= 0x0f030a02;	//memconf01(ch0/rank1)
+	*((volatile uint32_t*)DBSC_DBMEMCONF_1_0)	= 0x0f030a02;	//memconf10(ch1/rank0)
+	*((volatile uint32_t*)DBSC_DBMEMCONF_1_1)	= 0x0f030a02;	//memconf11(ch1/rank1)
+	*((volatile uint32_t*)DBSC_DBMEMCONF_2_0)	= 0x0f030a02;	//memconf20(ch2/rank0)
+	*((volatile uint32_t*)DBSC_DBMEMCONF_2_1)	= 0x0f030a02;	//memconf21(ch2/rank1)
+	*((volatile uint32_t*)DBSC_DBMEMCONF_3_0)	= 0x0f030a02;	//memconf30(ch3/rank0)
+	*((volatile uint32_t*)DBSC_DBMEMCONF_3_1)	= 0x0f030a02;	//memconf31(ch3/rank1)
+	*((volatile uint32_t*)DBSC_DBMEMCONF_0_2)	= 0x0f030a02;	//memconf01(ch0/rank2)
+	*((volatile uint32_t*)DBSC_DBMEMCONF_0_3)	= 0x0f030a02;	//memconf01(ch0/rank3)
+	*((volatile uint32_t*)DBSC_DBMEMCONF_1_2)	= 0x0f030a02;	//memconf01(ch1/rank2)
+	*((volatile uint32_t*)DBSC_DBMEMCONF_1_3)	= 0x0f030a02;	//memconf01(ch1/rank3)
+	*((volatile uint32_t*)DBSC_DBMEMCONF_2_2)	= 0x0f030a02;	//memconf01(ch2/rank2)
+	*((volatile uint32_t*)DBSC_DBMEMCONF_2_3)	= 0x0f030a02;	//memconf01(ch2/rank3)
+	*((volatile uint32_t*)DBSC_DBMEMCONF_3_2)	= 0x0f030a02;	//memconf01(ch3/rank2)
+	*((volatile uint32_t*)DBSC_DBMEMCONF_3_3)	= 0x0f030a02;	//memconf01(ch3/rank3)
 	*((volatile uint32_t*)DBSC_DBPHYCONF0)	= 0x00000001;	//phyconf0
-
-	if(freq>0x5f)
-	{
-#ifdef	DDR_DEBUG_WL
-		// DDR3733 ???
-		*((volatile uint32_t*)DBSC_DBTR0)	= 0x00000020;	//dbtr0  cl=32
-		*((volatile uint32_t*)DBSC_DBTR1)	= 0x0000000e;	//dbtr1  cwl=14
-		*((volatile uint32_t*)DBSC_DBTR3)	= 0x00000022;	//dbtr3  trcd=34
-		*((volatile uint32_t*)DBSC_DBTR4)	= 0x00280022;	//dbtr4  trpa=40 trp=34
-		*((volatile uint32_t*)DBSC_DBTR5)	= 0x00000071;	//dbtr5  trc=113
-		*((volatile uint32_t*)DBSC_DBTR6)	= 0x0000004f;	//dbtr6  tras=79
-		*((volatile uint32_t*)DBSC_DBTR7)	= 0x00130013;	//dbtr7  trrd_s=19 trrd=19
-		*((volatile uint32_t*)DBSC_DBTR8)	= 0x0000004B;	//dbtr8  tfaw=75
-		*((volatile uint32_t*)DBSC_DBTR9)	= 0x0000000E;	//dbtr9  trdpr=14
-		*((volatile uint32_t*)DBSC_DBTR10)	= 0x00000023;	//dbtr10 twr=38
-		*((volatile uint32_t*)DBSC_DBTR11)	= 0x00000026;	//dbtr11 trdwr=41
-		*((volatile uint32_t*)DBSC_DBTR12)	= 0x002A002A;	//dbtr12 twrrd_s=42 twrrd=42
-		*((volatile uint32_t*)DBSC_DBTR13)	= 0x00900120;	//dbtr13 trfcpb=96 trfc=208
-		*((volatile uint32_t*)DBSC_DBTR14)	= 0x000c000c;	//dbtr14 tckehdll=12 tckeh=12
-		*((volatile uint32_t*)DBSC_DBTR15)	= 0x001e000c;	//dbtr15 tckesr=30 tckel=12   currently tckesr is TBD.
-
-#ifdef	DDR_DEBUG_ODT2
-		*((volatile uint32_t*)DBSC_DBTR16)	= 0x13400c0e;	//dbtr16
-#else
-		*((volatile uint32_t*)DBSC_DBTR16)	= 0x10400c0e;	//dbtr16 latency?  CL=32 & PHY_RDDATA_EN_DLY_X = 0e (32+2-14=20), CWL=14 & TDFI_PHY_WRDATA=2
-#endif
-		*((volatile uint32_t*)DBSC_DBTR17)	= 0x080a0004;	//dbtr17 tmodrd=8  tmod=10 trdmr=4
-		*((volatile uint32_t*)DBSC_DBTR18)	= 0x00000000;	//dbtr18 No odt for DQ exists in LPDDR4.
-		*((volatile uint32_t*)DBSC_DBTR19)	= 0x00000000;	//dbtr19 tzqcl=0 tzqcs=0 because LPDDR4 doesn't support ZQC[SL].
-		*((volatile uint32_t*)DBSC_DBTR20)	= 0x012c012c;	//dbtr20 txsdll=trfc+12=220 txs=220
-		*((volatile uint32_t*)DBSC_DBTR21)	= 0x00180018;	//dbtr21 tccd_s=24 tccd=24
-		*((volatile uint32_t*)DBSC_DBTR22)	= 0x06400030;	//dbtr22 tzqcal=1600 tzqlat=48
-#else
-		// DDR3733 ???
-		*((volatile uint32_t*)DBSC_DBTR0)	= 0x00000020;	//dbtr0  cl=32
-		*((volatile uint32_t*)DBSC_DBTR1)	= 0x00000010;	//dbtr1  cwl=16
-		*((volatile uint32_t*)DBSC_DBTR3)	= 0x00000022;	//dbtr3  trcd=29
-		*((volatile uint32_t*)DBSC_DBTR4)	= 0x00280022;	//dbtr4  trpa=34 trp=29
-		*((volatile uint32_t*)DBSC_DBTR5)	= 0x00000076;	//dbtr5  trc=102
-		*((volatile uint32_t*)DBSC_DBTR6)	= 0x0000004F;	//dbtr6  tras=68
-		*((volatile uint32_t*)DBSC_DBTR7)	= 0x00130013;	//dbtr7  trrd_s=16 trrd=16
-		*((volatile uint32_t*)DBSC_DBTR8)	= 0x0000004B;	//dbtr8  tfaw=64
-		*((volatile uint32_t*)DBSC_DBTR9)	= 0x0000000e;	//dbtr9  trdpr=12
-		*((volatile uint32_t*)DBSC_DBTR10)	= 0x00000023;	//dbtr10 twr=30
-		*((volatile uint32_t*)DBSC_DBTR11)	= 0x00000025;	//dbtr11 trdwr=37
-		*((volatile uint32_t*)DBSC_DBTR12)	= 0x002c002c;	//dbtr12 twrrd_s=44 twrrd=44
-		*((volatile uint32_t*)DBSC_DBTR13)	= 0x00900120;	//dbtr13 trfcpb=96 trfc=208
-		*((volatile uint32_t*)DBSC_DBTR14)	= 0x000c000c;	//dbtr14 tckehdll=12 tckeh=12
-		*((volatile uint32_t*)DBSC_DBTR15)	= 0x001e000c;	//dbtr15 tckesr=30 tckel=12   currently tckesr is TBD.
-
-		*((volatile uint32_t*)DBSC_DBTR16)	= 0x10290e10;	//dbtr16 latency?  CL=32 & PHY_RDDATA_EN_DLY_X = 0e (32+2-14=20), CWL=14 & TDFI_PHY_WRDATA=2
-		*((volatile uint32_t*)DBSC_DBTR17)	= 0x080a0004;	//dbtr17 tmodrd=8  tmod=10 trdmr=4
-		*((volatile uint32_t*)DBSC_DBTR18)	= 0x00000000;	//dbtr18 No odt for DQ exists in LPDDR4.
-		*((volatile uint32_t*)DBSC_DBTR19)	= 0x00000000;	//dbtr19 tzqcl=0 tzqcs=0 because LPDDR4 doesn't support ZQC[SL].
-		*((volatile uint32_t*)DBSC_DBTR20)	= 0x012c012c;	//dbtr20 txsdll=trfc+12=220 txs=220
-		*((volatile uint32_t*)DBSC_DBTR21)	= 0x00180018;	//dbtr21 tccd_s=24 tccd=24
-		*((volatile uint32_t*)DBSC_DBTR22)	= 0x06400030;	//dbtr22 tzqcal=1600 tzqlat=48
-#endif
-
-	}
-	else if(freq>0x53)
+	if(freq>0x53)
 	{
 		// DDR3200
 		*((volatile uint32_t*)DBSC_DBTR0)	= 0x00000020;	//dbtr0  cl=32
@@ -770,16 +557,14 @@ static void pvt_dbsc_regset(uint32_t freq)
 		*((volatile uint32_t*)DBSC_DBTR12)	= 0x00270027;	//dbtr12 twrrd_s=39 twrrd=39
 		*((volatile uint32_t*)DBSC_DBTR13)	= 0x00900120;	//dbtr13 trfcpb=96 trfc=208
 		*((volatile uint32_t*)DBSC_DBTR14)	= 0x000c000c;	//dbtr14 tckehdll=12 tckeh=12
-		*((volatile uint32_t*)DBSC_DBTR15)	= 0x001e000c;	//dbtr15 tckesr=30 tckel=12   currently tckesr is TBD.
-
-		*((volatile uint32_t*)DBSC_DBTR16)	= 0x10400c0e;	//dbtr16 latency?  CL=32 & PHY_RDDATA_EN_DLY_X = 0e (32+2-14=20), CWL=14 & TDFI_PHY_WRDATA=2
+		*((volatile uint32_t*)DBSC_DBTR15)	= 0x001e000c;	//dbtr15 tckesr=30 tckel=12
+		*((volatile uint32_t*)DBSC_DBTR16)	= 0x10400c0e;	//dbtr16 
 		*((volatile uint32_t*)DBSC_DBTR17)	= 0x080a0004;	//dbtr17 tmodrd=8  tmod=10 trdmr=4
 		*((volatile uint32_t*)DBSC_DBTR18)	= 0x00000000;	//dbtr18 No odt for DQ exists in LPDDR4.
 		*((volatile uint32_t*)DBSC_DBTR19)	= 0x00000000;	//dbtr19 tzqcl=0 tzqcs=0 because LPDDR4 doesn't support ZQC[SL].
 		*((volatile uint32_t*)DBSC_DBTR20)	= 0x012c012c;	//dbtr20 txsdll=trfc+12=220 txs=220
-		*((volatile uint32_t*)DBSC_DBTR21)	= 0x00140014;	//dbtr21 tccd_s=20 tccd=20	u-boot ok			// for lowfreq
+		*((volatile uint32_t*)DBSC_DBTR21)	= 0x00140014;	//dbtr21 tccd_s=20 tccd=20
 		*((volatile uint32_t*)DBSC_DBTR22)	= 0x06400030;	//dbtr22 tzqcal=1600 tzqlat=48
-
 	}
 	else if(freq>0x47)
 	{
@@ -793,21 +578,19 @@ static void pvt_dbsc_regset(uint32_t freq)
 		*((volatile uint32_t*)DBSC_DBTR7)	= 0x000f000f;	//dbtr7  trrd_s=15 trrd=15
 		*((volatile uint32_t*)DBSC_DBTR8)	= 0x00000039;	//dbtr8  tfaw=57
 		*((volatile uint32_t*)DBSC_DBTR9)	= 0x0000000c;	//dbtr9  trdpr=12
-		*((volatile uint32_t*)DBSC_DBTR10)	= 0x0000001E;	//dbtr10 twr=30, nWR is 26, but its value is not defined in MR1.nWR
+		*((volatile uint32_t*)DBSC_DBTR10)	= 0x0000001E;	//dbtr10 twr=30
 		*((volatile uint32_t*)DBSC_DBTR11)	= 0x00000022;	//dbtr11 trdwr=34
 		*((volatile uint32_t*)DBSC_DBTR12)	= 0x00260026;	//dbtr12 twrrd_s=38 twrrd=38
 		*((volatile uint32_t*)DBSC_DBTR13)	= 0x007f00fd;	//dbtr13 trfcpb=127 trfc=253
 		*((volatile uint32_t*)DBSC_DBTR14)	= 0x000c000c;	//dbtr14 tckehdll=12 tckeh=12
 		*((volatile uint32_t*)DBSC_DBTR15)	= 0x0016000b;	//dbtr15 tckesr=22 tckel=11
-
-		*((volatile uint32_t*)DBSC_DBTR16)	= 0x101f0c0e;	//dbtr16 latency?  CL=32 & PHY_RDDATA_EN_DLY_X = 0e (32+2-14=20), CWL=14 & TDFI_PHY_WRDATA=2
+		*((volatile uint32_t*)DBSC_DBTR16)	= 0x101f0c0e;	//dbtr16
 		*((volatile uint32_t*)DBSC_DBTR17)	= 0x0c0f0020;	//dbtr17 tmodrd=12  tmod=15 trdmr=32
 		*((volatile uint32_t*)DBSC_DBTR18)	= 0x00000000;	//dbtr18 No odt for DQ exists in LPDDR4.
 		*((volatile uint32_t*)DBSC_DBTR19)	= 0x00000000;	//dbtr19 tzqcl=0 tzqcs=0 because LPDDR4 doesn't support ZQC[SL].
 		*((volatile uint32_t*)DBSC_DBTR20)	= 0x01070107;	//dbtr20 txsdll=txs=tRFCab+7.5ns=263
-		*((volatile uint32_t*)DBSC_DBTR21)	= 0x000e000e;	//dbtr21 tccd_s=14 tccd=14						// for lowfreq
+		*((volatile uint32_t*)DBSC_DBTR21)	= 0x000e000e;	//dbtr21 tccd_s=14 tccd=14
 		*((volatile uint32_t*)DBSC_DBTR22)	= 0x06400030;	//dbtr22 tzqcal=1600 tzqlat=48
-
 	}
 	else if(freq>0x2f)
 	{
@@ -827,15 +610,13 @@ static void pvt_dbsc_regset(uint32_t freq)
 		*((volatile uint32_t*)DBSC_DBTR13)	= 0x006d00d9;	//dbtr13 trfcpb=109 trfc=217
 		*((volatile uint32_t*)DBSC_DBTR14)	= 0x000a000a;	//dbtr14 tckehdll=10 tckeh=10
 		*((volatile uint32_t*)DBSC_DBTR15)	= 0x0013000c;	//dbtr15 tckesr=19 tckel=12
-
-		*((volatile uint32_t*)DBSC_DBTR16)	= 0x08400a0c;	//dbtr16 latency?  CL=24 & PHY_RDDATA_EN_DLY_X = 0e (???), CWL=12 & TDFI_PHY_WRDATA=2
+		*((volatile uint32_t*)DBSC_DBTR16)	= 0x08400a0c;	//dbtr16 latency
 		*((volatile uint32_t*)DBSC_DBTR17)	= 0x080a0004;	//dbtr17 tmodrd=8  tmod=10 trdmr=4
 		*((volatile uint32_t*)DBSC_DBTR18)	= 0x00000000;	//dbtr18 No odt for DQ exists in LPDDR4.
 		*((volatile uint32_t*)DBSC_DBTR19)	= 0x00000000;	//dbtr19 tzqcl=0 tzqcs=0 because LPDDR4 doesn't support ZQC[SL].
 		*((volatile uint32_t*)DBSC_DBTR20)	= 0x00e200e2;	//dbtr20 txsdll=txs=tRFCab+7.5ns=226
-		*((volatile uint32_t*)DBSC_DBTR21)	= 0x000C000C;	//dbtr21 tccd_s=12 tccd=12											// for lowfreq
+		*((volatile uint32_t*)DBSC_DBTR21)	= 0x000C000C;	//dbtr21 tccd_s=12 tccd=12
 		*((volatile uint32_t*)DBSC_DBTR22)	= 0x04b10025;	//dbtr22 tzqcal=1201 tzqlat=37
-
 	}
 	else
 	{
@@ -855,52 +636,47 @@ static void pvt_dbsc_regset(uint32_t freq)
 		*((volatile uint32_t*)DBSC_DBTR13)	= 0x00480090;	//dbtr13 trfcpb=72  trfcab=144
 		*((volatile uint32_t*)DBSC_DBTR14)	= 0x00060006;	//dbtr14 tckehdll=6
 		*((volatile uint32_t*)DBSC_DBTR15)	= 0x000c0006;	//dbtr15 tckesr=12
-
-		*((volatile uint32_t*)DBSC_DBTR16)	= 0x06200a0C;	//dbtr16 latency?
+		*((volatile uint32_t*)DBSC_DBTR16)	= 0x06200a0C;	//dbtr16
 		*((volatile uint32_t*)DBSC_DBTR17)	= 0x080a0004;	//dbtr17 tmodrd=8  tmod=10 trdmr=4
 		*((volatile uint32_t*)DBSC_DBTR18)	= 0x00000000;	//dbtr18 No odt for DQ exists in LPDDR4.
 		*((volatile uint32_t*)DBSC_DBTR19)	= 0x00000000;	//dbtr19 tzqcl=0 tzqcs=0 because LPDDR4 doesn't support ZQC[SL].
 		*((volatile uint32_t*)DBSC_DBTR20)	= 0x00b00096;	//dbtr20 txsdll=150
-		*((volatile uint32_t*)DBSC_DBTR21)	= 0x000b000b;	//dbtr21 tccd_s=11 tccd=11 But PHY may restrict tccd+1/+2, so set it big enough.
+		*((volatile uint32_t*)DBSC_DBTR21)	= 0x000b000b;	//dbtr21 tccd_s=11 tccd=11
 		*((volatile uint32_t*)DBSC_DBTR22)	= 0x03200018;	//dbtr22 tzqcal=800 tzqlat=24
 	}
-
-	*((volatile uint32_t*)DBSC_DBRNK0)	= 0x00000000;	//dbrnk0 No odt for DQ exists in LPDDR4(N.Honda).
-	*((volatile uint32_t*)DBSC_DBRNK1)	= 0x00000000;	//dbrnk1 Don't need to set it cause we use all-rank refresh.
+	*((volatile uint32_t*)DBSC_DBRNK0)	= 0x00000000;	//dbrnk0
+	*((volatile uint32_t*)DBSC_DBRNK1)	= 0x00000000;	//dbrnk1
 	*((volatile uint32_t*)DBSC_DBRNK2)	= 0x00008888;	//dbrnk2 rkrr=8
 	*((volatile uint32_t*)DBSC_DBRNK3)	= 0x00008888;	//dbrnk3 rkrw=8
 	*((volatile uint32_t*)DBSC_DBRNK4)	= 0x00008888;	//dbrnk4 rkwr=8
 	*((volatile uint32_t*)DBSC_DBRNK5)	= 0x00008888;	//dbrnk5 rkww=8
-#ifdef DDR_REF_PR
-	*((volatile uint32_t*)DBSC_DBRNK6)	= 0x00000002;	//dbrnk6 Use Per Rank
-#else
 	*((volatile uint32_t*)DBSC_DBRNK6)	= 0x00000000;	//dbrnk6 Use ALL Rank
-#endif
+
 	*((volatile uint32_t*)DBSC_DBADJ0)	= 0x00000000;	//dbadj0 No Optional setting
 	*((volatile uint32_t*)DBSC_DBADJ2)	= 0x00000000;	//dbadj2 No Optional setting
-
-	//BUFCAM settings
 #ifdef	DDR_DEBUG_ES1P1
 	if(((*((volatile uint32_t*)0xFFF00044)) & 0x00007FFF ) == 0x00004F00) {
-	*((volatile uint32_t*)DBSC_DBBCAMDIS)	= 0x00000002;	//sc disable try
+		*((volatile uint32_t*)DBSC_DBBCAMDIS)	= 0x00000002;	//sc disable try
+	} else {
+		*((volatile uint32_t*)DBSC_DBBCAMDIS)	= 0x00000004;	//Simple mode
 	}
-#else
-#if	DDR_ES1px==0
-	*((volatile uint32_t*)DBSC_DBBCAMDIS)	= 0x00000002;	//sc disable try
-#endif
-#endif
-
+#else	//DDR_DEBUG_ES1P1
+#if	DDR_ES1px==1
+		*((volatile uint32_t*)DBSC_DBBCAMDIS)	= 0x00000004;	//Simple mode
+#else	//DDR_ES1px==1
+		*((volatile uint32_t*)DBSC_DBBCAMDIS)	= 0x00000002;	//sc disable try
+#endif	//DDR_ES1px==1
+#endif	//DDR_DEBUG_ES1P1
 #ifdef	DDR_QOSSETTING
-//	*((volatile uint32_t*)DBSC_DBCAM0CNF0)	= 0x00000000;	//dbcam0cnf0 inoen=0, actually it is not used.
-	*((volatile uint32_t*)DBSC_DBCAM0CNF1)	= 0x00044218;	//dbcam0cnf1 
-	*((volatile uint32_t*)DBSC_DBCAM0CNF2)	= 0x000000F4;	//dbcam0cnf2 
+//	*((volatile uint32_t*)DBSC_DBCAM0CNF0)	= 0x00000000;	//dbcam0cnf0
+	*((volatile uint32_t*)DBSC_DBCAM0CNF1)	= 0x00044218;	//dbcam0cnf1
+	*((volatile uint32_t*)DBSC_DBCAM0CNF2)	= 0x000000F4;	//dbcam0cnf2
 //	*((volatile uint32_t*)DBSC_DBCAM0CNF3)	= 0x00000003;	//
 	*((volatile uint32_t*)DBSC_DBSCHCNT0)	= 0x080F003F;	//dbschcnt0
 	*((volatile uint32_t*)DBSC_DBSCHCNT1)	= 0x00001010;	//dbschcnt1
 	*((volatile uint32_t*)DBSC_DBSCHSZ0)	= 0x00000001;	//dbschsz0
 	*((volatile uint32_t*)DBSC_DBSCHRW0)	= 0xF7311111;	//dbschrw0
 	*((volatile uint32_t*)DBSC_DBSCHRW1)	= 0x00000037;	//dbschrw1
-
 //QoS Settings
 	*((volatile uint32_t*)DBSC_DBSCHQOS_0_0)	= 0x0000F000;	//dbschqos00
 	*((volatile uint32_t*)DBSC_DBSCHQOS_0_1)	= 0x0000E000;	//dbschqos01
@@ -927,13 +703,9 @@ static void pvt_dbsc_regset(uint32_t freq)
 	*((volatile uint32_t*)DBSC_DBSCHQOS_15_2)	= 0x000005D0;	//dbschqos152
 	*((volatile uint32_t*)DBSC_DBSCHQOS_15_3)	= 0x000003D0;	//dbschqos153
 #endif
-
 	*((volatile uint32_t*)DBSC_DBSYSCONF1)		= 0x00000002;	//dbsysconf1 freqratio=2.
-
-//Under Verification
-	*((volatile uint32_t*)DBSC_DBCAM0CNF1)		= 0x00044218;	//wbkwait(0004), wbkmdhi(4,2),wbkmdlo(1,8)             <- independent of dram freq
-	*((volatile uint32_t*)DBSC_DBCAM0CNF2)		= 0x00000284;	//rg_scexp[15:0] 0,0(fillunit),8(dirtymax),4(dirtymin) <- independent of dram freq
-
+	*((volatile uint32_t*)DBSC_DBCAM0CNF1)		= 0x00044218;	//wbkwait(0004), wbkmdhi(4,2),wbkmdlo(1,8)
+	*((volatile uint32_t*)DBSC_DBCAM0CNF2)		= 0x00000284;	//rg_scexp[15:0] 0,0(fillunit),8(dirtymax),4(dirtymin)
 #if	DDR_ES1px==1
 #ifdef	DDR_DEBUG_ES1P1
 		if(((*((volatile uint32_t*)0xFFF00044)) & 0x00007FFF ) != 0x00004F00) {
@@ -956,20 +728,7 @@ static void pvt_dbsc_regset(uint32_t freq)
 		}
 #endif
 #endif
-
-
-	if(freq>0x5f)
-	{
-		// DDR3733???
-#ifdef	DDR_QOSSETTING
-		*((volatile uint32_t*)DBSC_DBSCHRW0)	= 0xF7311111;	//stop_tolerance, independent of dram freq
-		*((volatile uint32_t*)DBSC_DBSCHRW1)	= 0x00000048;	//[15: 8]=trfcpb/4; [ 7: 0]=trfcab/4   ;
-		*((volatile uint32_t*)DBSC_SCFCTST2)	= 0x111f1fff;	//rd-wr/wr-rd toggle count, independent of dram freq
-#endif
-		*((volatile uint32_t*)DBSC_SCFCTST0)	= 0x18030d09;	//[31:24]=trc/4   ; [23:16]=trda->act/4; [15:8]=twra->act/4; [7:0]=trp/4
-		*((volatile uint32_t*)DBSC_SCFCTST1)	= 0x090a080c;	//[31:24]=trdwr/4 ; [23:16]=twrrd/4    ; [15:8]=trcd/4     ; [7:0]=asyncofs
-	}
-	else if(freq>0x53)
+	if(freq>0x53)
 	{
 		// DDR3200
 #ifdef	DDR_QOSSETTING
@@ -988,7 +747,8 @@ static void pvt_dbsc_regset(uint32_t freq)
 		*((volatile uint32_t*)DBSC_DBSCHRW1)	= 0x00018248;	//[15: 8]=trfcpb/4; [ 7: 0]=trfcab/4   ;
 		*((volatile uint32_t*)DBSC_SCFCTST2)	= 0x000F0FFF;	//rd-wr/wr-rd toggle count, independent of dram freq
 #endif
-		*((volatile uint32_t*)DBSC_SCFCTST0)	= 0x180b1508;	//[31:24]=trc/2.5=18   ; [23:16]=trda->act/2.5=11; [15:8]=twra->act/2.5=21; [7:0]=trp/2.5=8
+//		*((volatile uint32_t*)DBSC_SCFCTST0)	= 0x180b1508;	//[31:24]=trc/2.5=18   ; [23:16]=trda->act/2.5=11; [15:8]=twra->act/2.5=21; [7:0]=trp/2.5=8
+		*((volatile uint32_t*)DBSC_SCFCTST0)	= 0x180b1408;	//[31:24]=trc/2.5=18   ; [23:16]=trda->act/2.5=11; [15:8]=twra->act/2.5=21; [7:0]=trp/2.5=8
 		*((volatile uint32_t*)DBSC_SCFCTST1)	= 0x0a0b080C;	//[31:24]=trdwr/2.5=9 ; [23:16]=twrrd/2.5=16   ; [15:8]=trcd/2.5=8     ; [7:0]=asyncofs
 	}
 	else if(freq>0x2f)
@@ -1013,94 +773,54 @@ static void pvt_dbsc_regset(uint32_t freq)
 		*((volatile uint32_t*)DBSC_SCFCTST1)	= 0x0508040C;	//[31:24]=trdwr/4 ; [23:16]=twrrd/4    ; [15:8]=trcd/4     ; [7:0]=asyncofs
 	}
 }
-
-/*
-//Clear DBSC unneeded register settings ..... Debug(2015/12/15)
-void pvt_dbsc_regclr(void)	
-{
-//	*((volatile uint32_t*)DBSC_DBMEMCONF_0_1)	= 0x0;
-//	*((volatile uint32_t*)DBSC_DBMEMCONF_1_1)	= 0x0;
-	*((volatile uint32_t*)DBSC_DBMEMCONF_2_1)	= 0x0;
-	*((volatile uint32_t*)DBSC_DBMEMCONF_3_1)	= 0x0;
-
-	*((volatile uint32_t*)DBSC_DBMEMCONF_0_2)	= 0x0;
-	*((volatile uint32_t*)DBSC_DBMEMCONF_0_3)	= 0x0;
-	*((volatile uint32_t*)DBSC_DBMEMCONF_1_2)	= 0x0;
-	*((volatile uint32_t*)DBSC_DBMEMCONF_1_3)	= 0x0;
-	*((volatile uint32_t*)DBSC_DBMEMCONF_2_2)	= 0x0;
-	*((volatile uint32_t*)DBSC_DBMEMCONF_2_3)	= 0x0;
-	*((volatile uint32_t*)DBSC_DBMEMCONF_3_2)	= 0x0;
-	*((volatile uint32_t*)DBSC_DBMEMCONF_3_3)	= 0x0;
-}
-*/
-
 static void pvt_manual_update(uint32_t flag)
 {
 	if(flag&0x1) {REG_DDRPHY_WRITE(0,0x702,REG_DDRPHY_READ(0,0x702) | (1<<16));};
 	if(flag&0x2) {REG_DDRPHY_WRITE(1,0x702,REG_DDRPHY_READ(1,0x702) | (1<<16));};
 	if(flag&0x4) {REG_DDRPHY_WRITE(2,0x702,REG_DDRPHY_READ(2,0x702) | (1<<16));};
 	if(flag&0x8) {REG_DDRPHY_WRITE(3,0x702,REG_DDRPHY_READ(3,0x702) | (1<<16));};
-
 	if(flag&0x10) {REG_DDRPHY_WRITE(0,0x732,REG_DDRPHY_READ(0,0x732) | (1<<16));};
 	if(flag&0x20) {REG_DDRPHY_WRITE(1,0x732,REG_DDRPHY_READ(1,0x732) | (1<<16));};
 	if(flag&0x40) {REG_DDRPHY_WRITE(2,0x732,REG_DDRPHY_READ(2,0x732) | (1<<16));};
 	if(flag&0x80) {REG_DDRPHY_WRITE(3,0x732,REG_DDRPHY_READ(3,0x732) | (1<<16));};
 }
-
-
 static void set_cacs_delay()
 {
 	uint32_t i,f,dataL;
-
-	//FREQ_SEL_INDEX=3 (not needed? because MULTICAST_EN=1) ==> NEED!! otherwise, copy will not copy
 	REG_DDRPHY_WRITE (0,0x00000700,0x0301);
 	REG_DDRPHY_WRITE (1,0x00000700,0x0301);
 	REG_DDRPHY_WRITE (2,0x00000700,0x0301);
 	REG_DDRPHY_WRITE (3,0x00000700,0x0301);
-
 	for (i=0;i<DRAM_CH_CNT;i++)
 	{
 		for(f=0;f<2;f++)
 		{
 			REG_DDRPHY_WRITE(i,0x700,dataL=((REG_DDRPHY_READ(i,0x700) & 0xfffffcfe) | (f<<8)) );
-
 			REG_DDRPHY_WRITE(i,DDR_CA_DELAY[0][0],dataL=((DDR_CA_DELAY[0][1] & 0x000000ff) | (DDR_CAD<<8)) );
 			REG_DDRPHY_WRITE(i,DDR_CA_DELAY[1][0],dataL=((DDR_CA_DELAY[1][1] & 0x00000000) | (DDR_CAD<<16) | (DDR_CAD<<0)) );
 			REG_DDRPHY_WRITE(i,DDR_CA_DELAY[2][0],dataL=((DDR_CA_DELAY[2][1] & 0x00000000) | (DDR_CAD<<16) | (DDR_CAD<<0)) );
 			REG_DDRPHY_WRITE(i,DDR_CA_DELAY[3][0],dataL=((DDR_CA_DELAY[3][1] & 0x000f0000) | (DDR_CAD<<0)) );
-
 			REG_DDRPHY_WRITE(i,DDR_CA_DELAY[0][0]+0x80,dataL=((DDR_CA_DELAY[0][1] & 0x000000ff) | (DDR_CAD<<8)) );
 			REG_DDRPHY_WRITE(i,DDR_CA_DELAY[1][0]+0x80,dataL=((DDR_CA_DELAY[1][1] & 0x00000000) | (DDR_CAD<<16) | (DDR_CAD<<0)) );
 			REG_DDRPHY_WRITE(i,DDR_CA_DELAY[2][0]+0x80,dataL=((DDR_CA_DELAY[2][1] & 0x00000000) | (DDR_CAD<<16) | (DDR_CAD<<0)) );
 			REG_DDRPHY_WRITE(i,DDR_CA_DELAY[3][0]+0x80,dataL=((DDR_CA_DELAY[3][1] & 0x000f0000) | (DDR_CAD<<0)) );
-
 			REG_DDRPHY_WRITE(i,DDR_CA_DELAY[4][0],dataL=((DDR_CA_DELAY[4][1] & 0x000000ff) | (DDR_GRP_A<<8)) );
 			REG_DDRPHY_WRITE(i,DDR_CA_DELAY[5][0],dataL=((DDR_CA_DELAY[5][1] & 0x00000000) | (DDR_GRP_B<<16) | (DDR_GRP_A<<0)) );
 			REG_DDRPHY_WRITE(i,DDR_CA_DELAY[6][0],dataL=((DDR_CA_DELAY[6][1] & 0x00000000) | (DDR_GRP_B<<0)) );
 		}
 		REG_DDRPHY_WRITE(i,0x700,dataL=((REG_DDRPHY_READ(i,0x700) & 0xfffffffe) | 1) );
 	}
-
 	for (i=0;i<DRAM_CH_CNT;i++)
 	{
 		REG_DDRPHY_WRITE(i,0x702,dataL=((REG_DDRPHY_READ(i,0x702) & 0xfeffffff) | (DDR_LP4_BOOT_DISABLE<<24) ) );
-//		0x00000601, 0x00000000, // PHY_ADR_CLK_WR_BYPASS_SLAVE_DELAY_0:RW:16:11:=0x0000 PHY_ADR5_SW_WRADDR_SHIFT_0:RW+:8:5:=0x00 PHY_ADR4_SW_WRADDR_SHIFT_0:RW+:0:5:=0x00
-//		0x00000681, 0x00000404, // PHY_ADR_CLK_WR_BYPASS_SLAVE_DELAY_1:RW:16:11:=0x0000 PHY_ADR5_SW_WRADDR_SHIFT_1:RW+:8:5:=0x04 PHY_ADR4_SW_WRADDR_SHIFT_1:RW+:0:5:=0x04
-//		0x00000701, 0x00000000, // PHY_GRP_BYPASS_SLAVE_DELAY:RW:16:11:=0x0000 PHY_SW_GRP_SHIFT_3:RW+:8:5:=0x00 PHY_SW_GRP_SHIFT_2:RW+:0:5:=0x00
 		REG_DDRPHY_WRITE(i,0x601,dataL=((REG_DDRPHY_READ(i,0x601) & 0xf800ffff) | (DDR_BPCAD<<16)) );
 		REG_DDRPHY_WRITE(i,0x681,dataL=((REG_DDRPHY_READ(i,0x681) & 0xf800ffff) | (DDR_BPCAD<<16)) );
 		REG_DDRPHY_WRITE(i,0x701,dataL=((REG_DDRPHY_READ(i,0x701) & 0xf800ffff) | (DDR_BPGRP<<16)) );
-
-//		0x00000680, 0x04040404, // PHY_ADR3_SW_WRADDR_SHIFT_1:RW+:24:5:=0x04 PHY_ADR2_SW_WRADDR_SHIFT_1:RW+:16:5:=0x04 PHY_ADR1_SW_WRADDR_SHIFT_1:RW+:8:5:=0x04 PHY_ADR0_SW_WRADDR_SHIFT_1:RW+:0:5:=0x04
-//		0x00000681, 0x00000404, // PHY_ADR_CLK_WR_BYPASS_SLAVE_DELAY_1:RW:16:11:=0x0000 PHY_ADR5_SW_WRADDR_SHIFT_1:RW+:8:5:=0x04 PHY_ADR4_SW_WRADDR_SHIFT_1:RW+:0:5:=0x04
 		REG_DDRPHY_WRITE(i,0x680,dataL=((REG_DDRPHY_READ(i,0x680) & 0xe0e0e0e0) | 0x05050505) );
 		REG_DDRPHY_WRITE(i,0x681,dataL=((REG_DDRPHY_READ(i,0x681) & 0xffffe0e0) | 0x00000505) );
 	}
 }
-
-
-
-void _rx_cal_code_set(uint32_t ch, uint32_t slice, uint8_t _cal_code_up[][4][16],uint8_t _cal_code_dn[][4][16])
+static void _rx_cal_code_set(uint32_t ch, uint32_t slice, uint8_t _cal_code_up[][4][16],uint8_t _cal_code_dn[][4][16])
 {
 	uint32_t i;
 	uint32_t code;
@@ -1113,38 +833,24 @@ void _rx_cal_code_set(uint32_t ch, uint32_t slice, uint8_t _cal_code_up[][4][16]
 		REG_DDRPHY_WRITE(ch,0x434+i+slice*0x80,code);
 	}
 }
-
 static void rx_cal_manual1(uint32_t chmask)
 {
-
 	uint32_t ch,slice;
 	uint32_t index;
 	uint32_t trial;
-
 	uint16_t cal_obs;
 	uint32_t rx_cal_val;
-	uint32_t NS_WA; //for backward compat
-
+	uint32_t NS_WA;
 	uint32_t regadd, o_dataL,dataL;
-
-/*
-Reports the calibration results. This parameter is only applicable if the phy_rx_cal_override_X parameter is set to fb1.
-There is a phy_rx_cal_obs_X parameter for each of the slices of data sent on the DFI data bus.
-? Bit [10] = Calibration result from FDBK
-? Bit [9] = rx_cal_rd_dqs; Calibration result from DQS
-? Bit [8] = rx_cal_rd_dm; Calibration result from DM
-? Bits [7:0] = wrlvl_rd_dq;
-*/
 	rx_cal_val = DDR_RX_CAL_MAN&0x3f;
 	if(DDR_RX_CAL_MAN&0x200)NS_WA=1;
 	else NS_WA=0;
-
 	for(ch=0;ch<DRAM_CH_CNT;ch++)
 	{
 		for(slice=0;slice<4;slice++)
 		{
-			REG_DDRPHY_WRITE(ch,0x452+0x80*slice,REG_DDRPHY_READ(ch,0x452+0x80*slice) | (1<<16));	//IE_on
-			REG_DDRPHY_WRITE(ch,0x433+0x80*slice,REG_DDRPHY_READ(ch,0x433+0x80*slice)|0x100); //CAL_OVERRIDE on
+			REG_DDRPHY_WRITE(ch,0x452+0x80*slice,REG_DDRPHY_READ(ch,0x452+0x80*slice) | (1<<16));
+			REG_DDRPHY_WRITE(ch,0x433+0x80*slice,REG_DDRPHY_READ(ch,0x433+0x80*slice)|0x100);
 			for(index=0;index<16;index++)
 			{
 				cal_code_up[ch][slice][index]=rx_cal_val;
@@ -1157,7 +863,6 @@ There is a phy_rx_cal_obs_X parameter for each of the slices of data sent on the
 			_rx_cal_code_set(ch,slice,cal_code_up,cal_code_dn);
 		}
 	}
-
 	for(trial=0;trial<2*rx_cal_val;trial++)
 	{
 		for(ch=0;ch<DRAM_CH_CNT;ch++)
@@ -1196,7 +901,6 @@ There is a phy_rx_cal_obs_X parameter for each of the slices of data sent on the
 					{
 						val[ch][slice][index][trial/32]&=~(1ULL<<trial%32);
 					}
-
 					if(((ch==0 || ch==3)&&(slice==2||slice==3)) || !NS_WA)
 					{
 						if(cal_obs&(1<<index) )
@@ -1223,7 +927,6 @@ There is a phy_rx_cal_obs_X parameter for each of the slices of data sent on the
 			}
 		}
 	}
-
 	for(ch=0;ch<DRAM_CH_CNT;ch++)
 	{
 		for(slice=0;slice<4;slice++)
@@ -1253,13 +956,12 @@ There is a phy_rx_cal_obs_X parameter for each of the slices of data sent on the
 			_rx_cal_code_set(ch,slice,cal_code_up,cal_code_dn);
 		}
 	}
-
 	for(ch=0;ch<DRAM_CH_CNT;ch++)
 	{
 		for(slice=0;slice<4;slice++)
 		{
-			REG_DDRPHY_WRITE(ch,0x452+0x80*slice,REG_DDRPHY_READ(ch,0x452+0x80*slice)&~(1<<16));	//IE_off
-			REG_DDRPHY_WRITE(ch,0x433+0x80*slice,REG_DDRPHY_READ(ch,0x433+0x80*slice)&~0x100); //CAL_OVERRIDE off
+			REG_DDRPHY_WRITE(ch,0x452+0x80*slice,REG_DDRPHY_READ(ch,0x452+0x80*slice)&~(1<<16));
+			REG_DDRPHY_WRITE(ch,0x433+0x80*slice,REG_DDRPHY_READ(ch,0x433+0x80*slice)&~0x100);
 		}
 	}
 	if(1)
@@ -1280,87 +982,55 @@ There is a phy_rx_cal_obs_X parameter for each of the slices of data sent on the
 		}
 	}
 }
-
-
 static void mode_register_set(uint32_t freq,uintptr_t phychno,uint32_t mr13_val)
 {
-
-	*((volatile uint32_t*)DBSC_DBCMD) = 0x0e040d00|(0x00100000 * phychno)|mr13_val;	//MRW 13 chA rkA 0d:00 //FSPOP&FSPWP is fixed to 0, VRO off
+	*((volatile uint32_t*)DBSC_DBCMD) = 0x0e040d00|(0x00100000 * phychno)|mr13_val;
 	WaitDBCMD();
-
-	if(freq>0x5f)
+	if(freq>0x47)
 	{
-#ifdef	DDR_DEBUG_WL
-		*((volatile uint32_t*)DBSC_DBCMD) = 0x0e0401d4|(0x00100000 * phychno);	//MRW 1 DeviceFeature1(Post=1.5tck nWR=30 RDpre=static WRPre=2tCK BL=16
-#else
-		*((volatile uint32_t*)DBSC_DBCMD) = 0x0e0401e4|(0x00100000 * phychno);	//MRW 1 DeviceFeature1(Post=1.5tck nWR=34 RDpre=static WRPre=2tCK BL=16
-#endif
-	}
-	else if(freq>0x47)
-	{
-		*((volatile uint32_t*)DBSC_DBCMD) = 0x0e0401d4|(0x00100000 * phychno);	//MRW 1 DeviceFeature1(Post=1.5tck nWR=30 RDpre=static WRPre=2tCK BL=16
+		*((volatile uint32_t*)DBSC_DBCMD) = 0x0e0401d4|(0x00100000 * phychno);
 	}
 	else if (freq > 0x2f)
 	{
-		*((volatile uint32_t*)DBSC_DBCMD) = 0x0e0401c4|(0x00100000 * phychno);	//MRW 1 DeviceFeature1(Post=1.5tck nWR=24 RDpre=static WRPre=2tCK BL=16
+		*((volatile uint32_t*)DBSC_DBCMD) = 0x0e0401c4|(0x00100000 * phychno);
 	}
 	else
 	{
-		*((volatile uint32_t*)DBSC_DBCMD) = 0x0e0401a4|(0x00100000 * phychno);	//MRW 1 DeviceFeature1(Post=1.5tck nWR=16 RDpre=static WRPre=2tCK BL=16
+		*((volatile uint32_t*)DBSC_DBCMD) = 0x0e0401a4|(0x00100000 * phychno);
 	}
-
 	WaitDBCMD();
-
-	if(freq>0x5f)
+	if(freq>0x47)
 	{
-#ifdef	DDR_DEBUG_WL
-		*((volatile uint32_t*)DBSC_DBCMD) = 0x0e04022e|(0x00100000 * phychno);	//MRW 2 DeviceFeature2(0,0SetA,101=WL14,110=RL32)
-#else
-		*((volatile uint32_t*)DBSC_DBCMD) = 0x0e040236|(0x00100000 * phychno);	//MRW 2 DeviceFeature2(0,0SetA,110=WL16,110=RL32)
-#endif
-	}
-	else if(freq>0x47)
-	{
-		*((volatile uint32_t*)DBSC_DBCMD) = 0x0e04022e|(0x00100000 * phychno);	//MRW 2 DeviceFeature2(0,0SetA,101=WL14,110=RL32)
+		*((volatile uint32_t*)DBSC_DBCMD) = 0x0e04022e|(0x00100000 * phychno);
 	}
 	else if (freq > 0x2f)
 	{
-		*((volatile uint32_t*)DBSC_DBCMD) = 0x0e040224|(0x00100000 * phychno);	//MRW 2 DeviceFeature2(0,0SetA,100=WL12,100=RL24)
+		*((volatile uint32_t*)DBSC_DBCMD) = 0x0e040224|(0x00100000 * phychno);
 	}
 	else
 	{
-		*((volatile uint32_t*)DBSC_DBCMD) = 0x0e040252|(0x00100000 * phychno);	//MRW 2 DeviceFeature2(0,1SetB,010=WL12,010=RL14)
+		*((volatile uint32_t*)DBSC_DBCMD) = 0x0e040252|(0x00100000 * phychno);
 	}
-
-
 	WaitDBCMD();
-
-	*((volatile uint32_t*)DBSC_DBCMD) = 0x0e040300|(0x00100000 * phychno)|DDR_MR3;	//MRW 3 chA rkA 03:31
+	*((volatile uint32_t*)DBSC_DBCMD) = 0x0e040300|(0x00100000 * phychno)|DDR_MR3;
 	WaitDBCMD();
-
-	*((volatile uint32_t*)DBSC_DBCMD) = 0x0e040b00|(0x00100000 * phychno)|DDR_MR11;	//MRW 11
+	*((volatile uint32_t*)DBSC_DBCMD) = 0x0e040b00|(0x00100000 * phychno)|DDR_MR11;
 	WaitDBCMD();
-
-	*((volatile uint32_t*)DBSC_DBCMD) = 0x0e040c11|(0x00100000 * phychno);	//MRW 12
+	*((volatile uint32_t*)DBSC_DBCMD) = 0x0e040c11|(0x00100000 * phychno);
 	WaitDBCMD();
-
-	*((volatile uint32_t*)DBSC_DBCMD) = 0x0e040e11|(0x00100000 * phychno);	//MRW 14
+	*((volatile uint32_t*)DBSC_DBCMD) = 0x0e040e11|(0x00100000 * phychno);
 	WaitDBCMD();
-
-	*((volatile uint32_t*)DBSC_DBCMD) = 0x0e041600|(0x00100000 * phychno)|DDR_MR22;	//MRW 22
+	*((volatile uint32_t*)DBSC_DBCMD) = 0x0e041600|(0x00100000 * phychno)|DDR_MR22;
 	WaitDBCMD();
 }
-
 static void _set_reg(uint32_t ch_mask, uint32_t regadd, uint32_t pos, uint32_t width, uint32_t val)
 {
 	int ch;
 	uint32_t dataL;
 	uintptr_t valids;
 	uintptr_t valids_shift;
-
 	valids=(1ULL<<width)-1;
 	valids_shift = valids<<pos;
-
 	for(ch=0;ch<DRAM_CH_CNT;ch++)
 	{
 		if(!((1<<ch)&ch_mask))continue;
@@ -1369,15 +1039,11 @@ static void _set_reg(uint32_t ch_mask, uint32_t regadd, uint32_t pos, uint32_t w
 		REG_DDRPHY_WRITE(ch,regadd,dataL);
 	}
 }
-
-
 static void pvt_lvl_enable_set(uint32_t go)
 {
 	uint32_t i;
-
 	for(i=0;i<DRAM_CH_CNT;i++)
 	{
-	//CALVL_EN
 		if((DDR_LVLEN&go)&0x00000001)
 		{
 			REG_DDRPHY_WRITE(i,0x25d,REG_DDRPHY_READ(i,0x25d) | (1ULL<<8));
@@ -1386,8 +1052,6 @@ static void pvt_lvl_enable_set(uint32_t go)
 		{
 			REG_DDRPHY_WRITE(i,0x25d,REG_DDRPHY_READ(i,0x25d) &~(1ULL<<8));
 		}
-
-	//WRLVL_EN
 		if((DDR_LVLEN&go)&0x00000002)
 		{
 			REG_DDRPHY_WRITE(i,0x23a,REG_DDRPHY_READ(i,0x23a) | (1ULL<<24));
@@ -1396,8 +1060,6 @@ static void pvt_lvl_enable_set(uint32_t go)
 		{
 			REG_DDRPHY_WRITE(i,0x23a,REG_DDRPHY_READ(i,0x23a) &~(1ULL<<24));
 		}
-
-	//RDLVL_GATE_EN
 		if((DDR_LVLEN&go)&0x00000004)
 		{
 			REG_DDRPHY_WRITE(i,0x24d,REG_DDRPHY_READ(i,0x24d) | (1ULL<<24));
@@ -1406,8 +1068,6 @@ static void pvt_lvl_enable_set(uint32_t go)
 		{
 			REG_DDRPHY_WRITE(i,0x24d,REG_DDRPHY_READ(i,0x24d) &~(1ULL<<24));
 		}
-
-	//RDLVL_EN
 		if((DDR_LVLEN&go)&0x00000008)
 		{
 			REG_DDRPHY_WRITE(i,0x24d,REG_DDRPHY_READ(i,0x24d) | (1ULL<<16));
@@ -1416,8 +1076,6 @@ static void pvt_lvl_enable_set(uint32_t go)
 		{
 			REG_DDRPHY_WRITE(i,0x24d,REG_DDRPHY_READ(i,0x24d) &~(1ULL<<16));
 		}
-
-	//WRDQLVL_EN
 		if((DDR_LVLEN&go)&0x00000010)
 		{
 			REG_DDRPHY_WRITE(i,0x275,REG_DDRPHY_READ(i,0x275) | (1ULL<<16));
@@ -1426,8 +1084,6 @@ static void pvt_lvl_enable_set(uint32_t go)
 		{
 			REG_DDRPHY_WRITE(i,0x275,REG_DDRPHY_READ(i,0x275) &~(1ULL<<16));
 		}
-
-	//CSLVL_EN
 		if((DDR_LVLEN&go)&0x00000020)
 		{
 			REG_DDRPHY_WRITE(i,0x703,REG_DDRPHY_READ(i,0x703) | (1));
@@ -1438,43 +1094,29 @@ static void pvt_lvl_enable_set(uint32_t go)
 		}
 	}
 }
-
 static void pvt_freq_change_ack(uint32_t freq, uintptr_t phychno, uint32_t freq_flag)
 {
 	uint32_t dataL;
 	uint32_t j;
-
 	dsb_sev();
-	//DFI FREQ
 	*((volatile uint32_t*)(DBSC_DFI_FREQ_0 +0x040 * phychno)) = freq_flag;
 	dataL=*((volatile uint32_t*)(DBSC_DFI_FREQ_0 +0x040 * phychno));
 	dsb_sev();
-
-#ifdef DDR_FREQCHG
 	j = *((volatile uint32_t*)CPG_PLL3CR);
 	dsb_sev();
-
-//	j = (j&0x00ffff7f) | ((((freq/(3-freq_flag))  << 24))&0xff000000)| ((fdiv << 7)&0x00000080);
 	j = (j&0x00ffff7f) | ((freq & 0xff) << 24)| ((freq_flag == 0) << 7);
 	*((volatile uint32_t*)CPG_PLL3CR) = j;
 	dsb_sev();
 	j = *((volatile uint32_t*)CPG_PLL3CR);
-
 	dsb_sev();
 	do {
 		dataL=*((volatile uint32_t*)CPG_PLLECR);
 	} while( (dataL&0x1f00)!=0x1f00 );
-#endif
-
-	//FREQ CHANGE ACK
 	*((volatile uint32_t*)(DBSC_FREQ_CHG_ACK_0 + 0x40 * phychno)) = 0x0CF20000;
 	dataL=*((volatile uint32_t*)(DBSC_FREQ_CHG_ACK_0 + 0x40 * phychno));
-
 	*((volatile uint32_t*)(DBSC_FREQ_CHG_ACK_0 + 0x40 * phychno)) = 0x00000000;
 	dsb_sev();
 }
-
-
 static uint32_t pvt_pi_training_go_all_o(uint32_t freq)
 {
 	uint32_t dataL;
@@ -1483,60 +1125,42 @@ static uint32_t pvt_pi_training_go_all_o(uint32_t freq)
 	uint32_t pll_status[4];
 	uint32_t wait_count[4];
 	uintptr_t phychno;
-
 	if(DDR_TVAL1==0)
 	{
 		for(phychno=0;phychno<DRAM_CH_CNT;phychno++)
 		{
-			//dfi_init_start negate
 			*((volatile uint32_t*)(DBSC_DBDFICNT_0+0x40*phychno)) = 0x00000010;
 			dsb_sev();
 		}
 	}
-
 	for(phychno=0;phychno<DRAM_CH_CNT;phychno++)
 	{
 		if( (DDR_PHYVALID&(1<<phychno))==0 )
 		{
 			continue;
 		}
-		////////////////////////////////////////////////////////////////////////////////////////////////// PI_START
 		REG_DDRPHY_WRITE(phychno, 0x200, 0x20410B01);
-//		*((volatile uint32_t*)(DBSC_DBPDRGA_0 + 0x040 * phychno)) = 0x00000200;
-//		*((volatile uint32_t*)(DBSC_DBPDRGD_0 + 0x040 * phychno)) = 0x20410B01;
 		if(DDR_TVAL1==1)
 		{
-			//dfi_init_start negate
 			*((volatile uint32_t*)(DBSC_DBDFICNT_0+0x40*phychno)) = 0x00000010;
 			dsb_sev();
 		}
 	}
-	//////////////////////
-
 	dsb_sev();
-
 	if(DDR_TVAL1==2)
 	{
 		for(phychno=0;phychno<DRAM_CH_CNT;phychno++)
 		{
-			//dfi_init_start negate
 			*((volatile uint32_t*)(DBSC_DBDFICNT_0+0x40*phychno)) = 0x00000010;
 			dsb_sev();
 		}
 	}
-
 	phytrainingok=0;
 	retry=0;
-
-	// 0 : wait first unlock
-	// 1 : pll is off
-	// 2 : pll is on
-
-	pll_status[0]=0;//wait unlock
-	pll_status[1]=0;//wait unlock
-	pll_status[2]=0;//wait unlock
-	pll_status[3]=0;//wait unlock
-
+	pll_status[0]=0;
+	pll_status[1]=0;
+	pll_status[2]=0;
+	pll_status[3]=0;
 	while(1)
 	{
 		for(phychno=0;phychno<DRAM_CH_CNT;phychno++)
@@ -1545,22 +1169,20 @@ static uint32_t pvt_pi_training_go_all_o(uint32_t freq)
 			{
 				continue;
 			}
-
 			if(pll_status[phychno]==0)
 			{
-				dataL = *((volatile uint32_t*)(DBSC_PLL_LOCK_0+phychno*0x100));	//Wait for PLL is unlock
+				dataL = *((volatile uint32_t*)(DBSC_PLL_LOCK_0+phychno*0x100));
 				if((dataL & 0x0000001F) == 0x0)
 				{
 					pll_status[phychno]=1;
 					wait_count[phychno]=1000;
-
 					pvt_freq_change_ack(freq,phychno,0);
 					retry=0;
 				}
 			}
 			else if(pll_status[phychno]==1)
 			{
-				dataL = *((volatile uint32_t*)(DBSC_PLL_LOCK_0+phychno*0x100));	//Wait for PLL Lock
+				dataL = *((volatile uint32_t*)(DBSC_PLL_LOCK_0+phychno*0x100));
 				if((dataL & 0x0000001F) == 0x1F)
 				{
 					pll_status[phychno]=2;
@@ -1587,12 +1209,11 @@ static uint32_t pvt_pi_training_go_all_o(uint32_t freq)
 					{
 						phytrainingok |= (0x1<<phychno);
 						retry=0;
-						// TRAING OK
 					}
 				}
 				else
 				{
-					dataL = *((volatile uint32_t*)(DBSC_PLL_LOCK_0+phychno*0x100));	//Check PLL is unlock again
+					dataL = *((volatile uint32_t*)(DBSC_PLL_LOCK_0+phychno*0x100));
 					if((dataL & 0x0000001F) == 0x00)
 					{
 						pll_status[phychno]=1;
@@ -1607,7 +1228,6 @@ static uint32_t pvt_pi_training_go_all_o(uint32_t freq)
 				}
 			}
 		}
-
 		if( (DDR_PHYVALID& phytrainingok&0xf)==0xf )
 		{
 			break;
@@ -1618,25 +1238,17 @@ static uint32_t pvt_pi_training_go_all_o(uint32_t freq)
 			break;
 		}
 	}
-
 	for(phychno=0;phychno<DRAM_CH_CNT;phychno++)
 	{
 		dataL = REG_DDRPHY_READ ( phychno, 0x0000029B);
 		REG_DDRPHY_WRITE( phychno, 0x29c, dataL);
 	}
-
 	return phytrainingok;
 }
-
-
 inline void PLL3_FREQ(uint32_t freq, uint32_t freq_flag)
 {
 	uint32_t dataL;
-
-#ifdef	DDR_FREQCHG
-
 	dsb_sev();
-
 	if(freq_flag==0)
 	{
 #ifdef	DDR_LOWFIX
@@ -1649,24 +1261,18 @@ inline void PLL3_FREQ(uint32_t freq, uint32_t freq_flag)
 	{
 		dataL = (freq);
 	}
-
 	dataL = (dataL<<24);
 	*((volatile uint32_t*)CPG_CPGWPR) = ~dataL;
 	*((volatile uint32_t*)CPG_PLL3CR) =  dataL;
-
 	dsb_sev();
 	do {
 		dataL=*((volatile uint32_t*)CPG_PLLECR);
 	} while( (dataL&0x1f00)!=0x1f00 );
-
-#endif	// DDR_FREQCHG
 }
-
 #define TR_ERR 4000
 #define TR_MAX (TR_ERR*2)
 #define TE_ERR 10000
 #define TE_MAX (TE_ERR*2)
-
 uint32_t pvt_pi_training_go_all(uint32_t freq)
 {
 	uint32_t flag,i,j;
@@ -1675,90 +1281,53 @@ uint32_t pvt_pi_training_go_all(uint32_t freq)
 	uint32_t retry;
 	uintptr_t phychno;
 	uint32_t FREQ_H;
-
 	FREQ_H=1;
-
 	PLL3_FREQ(freq,0);
-
 	for(phychno=0;phychno<DRAM_CH_CNT;phychno++)
 	{
-		//dfi_init_start negate
 		*((volatile uint32_t*)(DBSC_DBDFICNT_0+0x40*phychno)) = 0x00000010;
 		dsb_sev();
 	}
-
 	if(DDR_TVAL0&0x100)
 	{
-//		//CHANGE IMPEDANCE CODE to CMOS MODE
 		change_lpddr4_en(0xf,0);
 	}
-
 	for(phychno=0;phychno<DRAM_CH_CNT;phychno++)
 	{
 		if(DDR_TVAL0&0x1)
 		{
-//		0x00000268, 0x09090605, // PI_TDFI_CALVL_STROBE_F2:RW:24:4:=0x09 PI_TDFI_CALVL_STROBE_F1:RW:16:4:=0x09 PI_TDFI_CALVL_STROBE_F0:RW:8:4:=0x06 PI_TDFI_INIT_COMPLETE_MIN:RW:0:8:=0x05
-//NOTE:TDFI_INIT_COMPLETE_MIN: wait cycle for init_complete: should be max value
 			REG_DDRPHY_WRITE(phychno, 0x268, (REG_DDRPHY_READ(phychno,0x268)&0xffffff00) | 0xff);
 		}
-
 		if(DDR_TVAL0&0x2)
 		{
-//		0x0000026D, 0x18020100, // PI_TCKEHDQS_F1:RW:24:6:=0x18 PI_TCKEHDQS_F0:RW:16:6:=0x02 PI_REFRESH_BETWEEN_SEGMENT_DISABLE:RW_D:8:1:=0x01 PI_DRAM_CLK_DISABLE_DEASSERT_SEL:RW:0:1:=0x00
-//		0x0000026E, 0x00010118, // PI_WDQLVL_BST_NUM:RW:16:3:=0x01 PI_WDQLVL_VREF_EN:RW:8:1:=0x01 PI_TCKEHDQS_F2:RW:0:6:=0x18
-//NOTE:TCKEHDQS
 			REG_DDRPHY_WRITE(phychno, 0x26D, (REG_DDRPHY_READ(phychno,0x26D)&0xc0c0ffff) | (0x18<<24) | (0x18<<16));
 			REG_DDRPHY_WRITE(phychno, 0x26E, (REG_DDRPHY_READ(phychno,0x26E)&0xffffffc0) | (0x18<<0));
 		}
-
 		if(DDR_TVAL0&0x4)
 		{
-//		0x00000262, 0x00060100, // PI_TVREF_SHORT_F0:RW:16:10:=0x0006 PI_TDFI_CASEL_F0:RW:8:5:=0x01 PI_TDFI_CACSCA_F0:RW:0:5:=0x00
-//		0x00000263, 0x01000006, // PI_TDFI_CASEL_F1:RW:24:5:=0x01 PI_TDFI_CACSCA_F1:RW:16:5:=0x00 PI_TVREF_LONG_F0:RW:0:10:=0x0006
-//		0x00000264, 0x018E018E, // PI_TVREF_LONG_F1:RW:16:10:=0x018e PI_TVREF_SHORT_F1:RW:0:10:=0x018e
-//		0x00000265, 0x018E0100, // PI_TVREF_SHORT_F2:RW:16:10:=0x018e PI_TDFI_CASEL_F2:RW:8:5:=0x01 PI_TDFI_CACSCA_F2:RW:0:5:=0x00
-//		0x00000266, 0x0F0F018E, // PI_CALVL_VREF_INITIAL_STOP_POINT:RW:24:7:=0x1e PI_CALVL_VREF_INITIAL_START_POINT:RW:16:7:=0x1a PI_TVREF_LONG_F2:RW:0:10:=0x018e
-//NOTE:TDFI_TVREF_LONG: wait cycle from CKE assert to MRW :
-//			REG_DDRPHY_WRITE(phychno, 0x263, REG_DDRPHY_READ(phychno,0x263)&0xfffffc00 | (0x3ff<<0));
-//			REG_DDRPHY_WRITE(phychno, 0x264, REG_DDRPHY_READ(phychno,0x264)&0xfc00ffff | (0x3ff<<16));
-//			REG_DDRPHY_WRITE(phychno, 0x266, REG_DDRPHY_READ(phychno,0x266)&0xfffffc00 | (0x3ff<<0));
-
 			REG_DDRPHY_WRITE(phychno, 0x262, (REG_DDRPHY_READ(phychno,0x262)&0xfc00ffff) | (0x18e<<0));
 			REG_DDRPHY_WRITE(phychno, 0x263, (REG_DDRPHY_READ(phychno,0x263)&0xfffffc00) | (0x18e<<0));
 			REG_DDRPHY_WRITE(phychno, 0x264, (REG_DDRPHY_READ(phychno,0x264)&0xfc00fc00) | (0x18e<<16) | (0x18e<<0));
 			REG_DDRPHY_WRITE(phychno, 0x266, (REG_DDRPHY_READ(phychno,0x266)&0xfffffc00) | (0x18e<<0));
 		}
-
 		if(DDR_TVAL0&0x8)
 		{
-//		0x0000025F, 0x00FF010A, // PI_TCAENT_F0:RW:16:14:=0x0005 PI_TMRZ_F0:RW:8:5:=0x01 PI_TCACKEH:RW:0:5:=0x0a
-//		0x00000260, 0x03018D03, // PI_TMRZ_F2:RW:24:5:=0x03 PI_TCAENT_F1:RW:8:14:=0x018d PI_TMRZ_F1:RW:0:5:=0x03
-//		0x00000261, 0x000A018D, // PI_CA_TRAIN_VREF_EN:RW:24:1:=0x01 PI_TCAEXT:RW:16:5:=0x0a PI_TCAENT_F2:RW:0:14:=0x018d
-//NOTE:TDFI_TCAENT: wait cycle to begin CA operation
 			REG_DDRPHY_WRITE(phychno, 0x25f, (REG_DDRPHY_READ(phychno,0x25f)&0xc000ffff) | (0x3fff<<16));
 			REG_DDRPHY_WRITE(phychno, 0x260, (REG_DDRPHY_READ(phychno,0x260)&0xffc000ff) | (0x3fff<<8));
 			REG_DDRPHY_WRITE(phychno, 0x261, (REG_DDRPHY_READ(phychno,0x261)&0xffffc000) | (0x3fff<<0));
 		}
-
 		if(DDR_TVAL0&0x10)
 		{
-//		0x00000267, 0x10010204, // PI_TDFI_INIT_START_MIN:RW:24:8:=0x10 PI_CALVL_VREF_DELTA:RW:16:4:=0x01 PI_CALVL_VREF_NORMAL_STEPSIZE:RW:8:4:=0x02 PI_CALVL_VREF_INITIAL_STEPSIZE:RW:0:4:=0x04
-//NOTE:TDFI_INIT_START_MIN: wait to assert init_start
 			REG_DDRPHY_WRITE(phychno, 0x267, (REG_DDRPHY_READ(phychno,0x267)&0x00ffffff) | (0xff<<24));
 		}
 		if(DDR_TVAL0&0x20)
 		{
-//		0x00000269, 0x20000202, // PI_TDFI_INIT_START_F0:RW:24:8:=0x20 PI_SW_CA_TRAIN_VREF:RW:16:7:=0x00 PI_CALVL_STROBE_NUM:RW:8:5:=0x02 PI_TCKCKEH:RW:0:4:=0x02
-//NOTE:PI_TCKCKEH :
 			REG_DDRPHY_WRITE(phychno, 0x269, (REG_DDRPHY_READ(phychno,0x269)&0xfffffff0) | (0xf<<0));
 		}
-
 		if(DDR_TVAL0&0x40)
 		{
-//		0x0000026D, 0x18020100, // PI_TCKEHDQS_F1:RW:24:6:=0x18 PI_TCKEHDQS_F0:RW:16:6:=0x02 PI_REFRESH_BETWEEN_SEGMENT_DISABLE:RW_D:8:1:=0x01 PI_DRAM_CLK_DISABLE_DEASSERT_SEL:RW:0:1:=0x00
 			REG_DDRPHY_WRITE(phychno, 0x26d, (REG_DDRPHY_READ(phychno,0x26d)&0xfffffffe) | (0x1<<0));
 		}
-
 		if(DDR_TVAL0&0x100)
 		{
 			for(i=0;i<DRAM_CH_CNT;i++)
@@ -1766,28 +1335,22 @@ uint32_t pvt_pi_training_go_all(uint32_t freq)
 				REG_DDRPHY_WRITE(phychno, 0x44e + 0x80*i, REG_DDRPHY_READ(phychno, 0x44e + 0x80*i)|1);
 			}
 		}
-//		0x00000414, 0x04080000, // PHY_WRLVL_UPDT_WAIT_CNT_0:RW:24:4:=0x04 PHY_WRLVL_CAPTURE_CNT_0:RW:16:6:=0x08 SC_PHY_LVL_DEBUG_CONT_0:WR:8:1:=0x00 PHY_LVL_DEBUG_MODE_0:RW:0:1:=0x00
-//		0x00000415, 0x04080a04, // PHY_RDLVL_UPDT_WAIT_CNT_0:RW:24:4:=0x04 PHY_RDLVL_CAPTURE_CNT_0:RW:16:6:=0x08 PHY_GTLVL_UPDT_WAIT_CNT_0:RW:8:4:=0x04 PHY_GTLVL_CAPTURE_CNT_0:RW:0:6:=0x00
 		for(i=0;i<4;i++)
 		{
 			j=((REG_DDRPHY_READ(phychno, 0x414 + 0x80*i)>>24)+((DDR_TVAL0>>12)&0x0f))&0x0f;
 			REG_DDRPHY_WRITE(phychno, 0x414 + 0x80*i, (REG_DDRPHY_READ(phychno, 0x414 + 0x80*i)&0xf0ffffff) | (j<<24));
 		}
 	}
-
 	if(DDR_TVAL0&0x80)
 	{
 		for(phychno=0;phychno<DRAM_CH_CNT;phychno++)
 		{
-//		0x00000700, 0x00000001, // PHY_SW_GRP_SHIFT_1:RW+:24:5:=0x00 PHY_SW_GRP_SHIFT_0:RW+:16:5:=0x00 PHY_FREQ_SEL_INDEX:RW:8:2:=0x00 PHY_FREQ_SEL_MULTICAST_EN:RW_D:0:1:=0x01
 			REG_DDRPHY_WRITE(phychno, 0x700, (REG_DDRPHY_READ(phychno,0x700)&0xfffffcfe) | (0x2<<8) | (0x0<<0));
 		}
 	}
-
 	for(phychno=0;phychno<DRAM_CH_CNT;phychno++)
 	{
 		int slice;
-
 		if(DDR_PHYVALID&(1<<phychno))
 		{
 		}
@@ -1795,36 +1358,24 @@ uint32_t pvt_pi_training_go_all(uint32_t freq)
 		{
 			continue;
 		}
-
 		for(slice=0;slice<4;slice++)
 		{
 			for(i=0;i<4;i++)
 			{
-//		0x00000409, 0x000700C0, // SC_PHY_SNAP_OBS_REGS_0:WR:24:1:=0x00 PHY_GATE_ERROR_DELAY_SELECT_0:RW:16:4:=0x07 PHY_RDDQS_DQ_BYPASS_SLAVE_DELAY_0:RW:0:10:=0x00c0
 				REG_DDRPHY_WRITE(phychno, 0x409+0x80*slice, (REG_DDRPHY_READ(phychno, 0x409+0x80*slice) | (1<<24)));
-//		0x00000412, 0x00000000, // PHY_RDDQ_ENC_OBS_SELECT_0:RW:24:3:=0x00 PHY_MASTER_DLY_LOCK_OBS_SELECT_0:RW:16:3:=0x00 PHY_SW_FIFO_PTR_RST_DISABLE_0:RW:8:1:=0x00 PHY_SLAVE_LOOP_CNT_UPDATE_0:RW:0:3:=0x00
 				REG_DDRPHY_WRITE(phychno, 0x412+0x80*slice, ((REG_DDRPHY_READ(phychno, 0x412+0x80*slice)  & 0xfff8ffff) | 0));
-//		0x00000413, 0x00000000, // PHY_FIFO_PTR_OBS_SELECT_0:RW:24:4:=0x00 PHY_WR_SHIFT_OBS_SELECT_0:RW:16:4:=0x00 PHY_WR_ENC_OBS_SELECT_0:RW:8:4:=0x00 PHY_RDDQS_DQ_ENC_OBS_SELECT_0:RW:0:4:=0x00
 				REG_DDRPHY_WRITE(phychno, 0x413+0x80*slice, ((REG_DDRPHY_READ(phychno, 0x413+0x80*slice)  & 0xfff0f0ff) | (9<<16) | (9<<16)));
-
-
-//		0x00000423, 0x00000000, // PHY_RDDQS_BASE_SLV_DLY_ENC_OBS_0:RD:24:7:=0x00 PHY_RDDQ_SLV_DLY_ENC_OBS_0:RD:16:6:=0x00 PHY_MASTER_DLY_LOCK_OBS_0:RD:0:10:=0x0000
-//		0x00000424, 0x00000000, // PHY_RDDQS_GATE_SLV_DLY_ENC_OBS_0:RD:16:10:=0x0000 PHY_RDDQS_DQ_FALL_ADDER_SLV_DLY_ENC_OBS_0:RD:8:8:=0x00 PHY_RDDQS_DQ_RISE_ADDER_SLV_DLY_ENC_OBS_0:RD:0:8:=0x00
-
 				dataL=REG_DDRPHY_READ(phychno, 0x423+0x80*slice);
-//		0x00000425, 0x00000000, // PHY_WR_SHIFT_OBS_0:RD:24:3:=0x00 PHY_WR_ADDER_SLV_DLY_ENC_OBS_0:RD:16:8:=0x00 PHY_WRDQ_BASE_SLV_DLY_ENC_OBS_0:RD:8:8:=0x00 PHY_WRDQS_BASE_SLV_DLY_ENC_OBS_0:RD:0:7:=0x00
 				dataL=REG_DDRPHY_READ(phychno, 0x425+0x80*slice);
 			}
 		}
 	}
-
 	phytrainingok=DDR_PHYVALID;
 	if(DDR_UPDT_WA&0x1000)
 	{
 		for(phychno=0;phychno<DRAM_CH_CNT;phychno++)
 		{
 			if(!(phytrainingok&(1<<phychno)))continue;
-			//////////////////////
 			*((volatile uint32_t*)(DBSC_DBPDRGA_0 + 0x040 * phychno)) = 0x200;
 			dsb_sev();
 			*((volatile uint32_t*)(DBSC_DBPDRGD_0 + 0x040 * phychno)) = 0x20410B01;
@@ -1841,14 +1392,11 @@ uint32_t pvt_pi_training_go_all(uint32_t freq)
 	}
 	else
 	{
-
 		for(phychno=0;phychno<DRAM_CH_CNT;phychno++)
 		{
-			//////////////////////
 			if(!(DDR_PHYVALID&(1<<phychno)))continue;
 			*((volatile uint32_t*)(DBSC_DBPDRGA_0 + 0x040 * phychno)) = 0x200;
 			dsb_sev();
-//BEGIN:timing critical:
 			*((volatile uint32_t*)(DBSC_DBPDRGD_0 + 0x040 * phychno)) = 0x20410B01;
 		}
 		do {
@@ -1859,41 +1407,30 @@ uint32_t pvt_pi_training_go_all(uint32_t freq)
 			if(DDR_PHYVALID&(1<<3)) dataL |= *((volatile uint32_t*)(DBSC_PLL_LOCK_0+0x100*3)) & 0x1f;
 		} while(dataL);
 	}
-
 	if(DDR_LVLEN&0x21)
 	{
-
 		if(DDR_TVAL0&0x100)
 		{
-		//CHANGE IMPEDANCE CODE to LP4 MODE
 			change_lpddr4_en(0xf,0);
 		}
-
 		dsb_sev();
 		dsb_sev();
-
 		if(!(DDR_UPDT_WA&0x2000))
 		{
 			PLL3_FREQ(freq,FREQ_H);
-
 			dsb_sev();
 			dsb_sev();
 		}
-
 		for(phychno=0;phychno<DRAM_CH_CNT;phychno++)
 		{
 			if(!(phytrainingok&(1<<phychno)))continue;
-			//DFI FREQ
 			*((volatile uint32_t*)(DBSC_DFI_FREQ_0 +0x040 * phychno)) = FREQ_H;
-	//		*((volatile uint32_t*)(DBSC_DFI_FREQ_0 +0x040 * phychno)) = 0;
 			dsb_sev();
-			//CHG_ACK
 			*((volatile uint32_t*)(DBSC_FREQ_CHG_ACK_0 + 0x40 * phychno)) = 0x0CF20000;
 			dsb_sev();
-	//		//CHG_ACK
 			*((volatile uint32_t*)(DBSC_FREQ_CHG_ACK_0 + 0x40 * phychno)) = 0x0;
 			dsb_sev();
-			if(DDR_UPDT_WA&0x800)	 //SEQ mode
+			if(DDR_UPDT_WA&0x800)
 			{
 				do {
 					dataL  = *((volatile uint32_t*)(DBSC_PLL_LOCK_0+0x100*phychno)) & 0x1f;
@@ -1903,10 +1440,8 @@ uint32_t pvt_pi_training_go_all(uint32_t freq)
 				} while(dataL);
 			}
 		}
-
-		if(!(DDR_UPDT_WA&0x800))	//PARA mode
+		if(!(DDR_UPDT_WA&0x800))
 		{
-			//lock check
 			do {
 				dataL=0x1f;
 				if(phytrainingok&(1<<0))dataL &= *((volatile uint32_t*)(DBSC_PLL_LOCK_0+0x100*0)) & 0x1f;
@@ -1914,9 +1449,6 @@ uint32_t pvt_pi_training_go_all(uint32_t freq)
 				if(phytrainingok&(1<<2))dataL &= *((volatile uint32_t*)(DBSC_PLL_LOCK_0+0x100*2)) & 0x1f;
 				if(phytrainingok&(1<<3))dataL &= *((volatile uint32_t*)(DBSC_PLL_LOCK_0+0x100*3)) & 0x1f;
 			} while(dataL!=0x1f);
-
-			///////////////////////////////////////////////////////////////////////
-			//unlock check
 			do {
 				dataL  = 0;
 				if(phytrainingok&(1<<0))dataL |= *((volatile uint32_t*)(DBSC_PLL_LOCK_0+0x100*0)) & 0x1f;
@@ -1925,77 +1457,31 @@ uint32_t pvt_pi_training_go_all(uint32_t freq)
 				if(phytrainingok&(1<<3))dataL |= *((volatile uint32_t*)(DBSC_PLL_LOCK_0+0x100*3)) & 0x1f;
 			} while(dataL);
 		}
-
 		if(DDR_TVAL0&0x200)
 		{
-		//CHANGE IMPEDANCE CODE to CMOS MODE
 			change_lpddr4_en(0xf,0);
 		}
-
 		dsb_sev();
 		dsb_sev();
 		dsb_sev();
-
 		PLL3_FREQ(freq,0);
-
 		dsb_sev();
 		dsb_sev();
 		dsb_sev();
-
-if(0){	//////// Retry check NG -----
-		for(phychno=0;phychno<DRAM_CH_CNT;phychno++)
-		{
-			if(!(phytrainingok&(1<<phychno)))continue;
-
-			//DFI FREQ
-			*((volatile uint32_t*)(DBSC_DFI_FREQ_0 +0x040 * phychno)) =0;	// 0;
-	//		*((volatile uint32_t*)(DBSC_DFI_FREQ_0 +0x040 * phychno)) =2;	// 2
-			//CHG_ACK
-			*((volatile uint32_t*)(DBSC_FREQ_CHG_ACK_0 + 0x40 * phychno)) = 0x0CF20000;
-			//CHG_ACK
-			*((volatile uint32_t*)(DBSC_FREQ_CHG_ACK_0 + 0x40 * phychno)) = 0x0;
-			retry=0;
-			do {
-				dataL  = *((volatile uint32_t*)(DBSC_PLL_LOCK_0+0x100*phychno)) & 0x1f;
-				retry++;
-			} while(dataL!=0x1f && retry<1000);
-			if(retry<1000) {
-				// pi_start_status |= (0x10<<phychno);
-			}
-			else {
-				phytrainingok&=~(1<<phychno);
-			}
-		}
-		//------------NG/////
-} else {
 		for(phychno=0;phychno<DRAM_CH_CNT;phychno++){
 			if(!(phytrainingok&(1<<phychno)))continue;
-
-			//DFI FREQ
-			*((volatile uint32_t*)(DBSC_DFI_FREQ_0 +0x040 * phychno)) =0;	// 0;
-	//		*((volatile uint32_t*)(DBSC_DFI_FREQ_0 +0x040 * phychno)) =2;	// 2
+			*((volatile uint32_t*)(DBSC_DFI_FREQ_0 +0x040 * phychno)) =0;
 			dsb_sev();
-
-			//CHG_ACK
 			*((volatile uint32_t*)(DBSC_FREQ_CHG_ACK_0 + 0x40 * phychno)) = 0x0CF20000;
 			dsb_sev();
-
-			//CHG_ACK
 			*((volatile uint32_t*)(DBSC_FREQ_CHG_ACK_0 + 0x40 * phychno)) = 0x0;
 			dsb_sev();
-
-			//NOTE: this detecting may be failed, because asserting period is very short (retry = 1 or 2)
-			// therefore, do not treat as error when timeout.
 			retry=0;
 			do {
 				dataL  = *((volatile uint32_t*)(DBSC_PLL_LOCK_0+0x100*phychno)) & 0x1f;
 				retry++;
 			} while(dataL!=0x1f && retry<32);
 		}
-}
-
-//END:timing critical:
-		//unlock check
 		do {
 			dataL  = 0;
 			if(phytrainingok&(1<<0))dataL |= *((volatile uint32_t*)(DBSC_PLL_LOCK_0+0x100*0)) & 0x1f;
@@ -2003,57 +1489,45 @@ if(0){	//////// Retry check NG -----
 			if(phytrainingok&(1<<2))dataL |= *((volatile uint32_t*)(DBSC_PLL_LOCK_0+0x100*2)) & 0x1f;
 			if(phytrainingok&(1<<3))dataL |= *((volatile uint32_t*)(DBSC_PLL_LOCK_0+0x100*3)) & 0x1f;
 		} while(dataL);
-
 		if(DDR_TVAL0&0x200)
 		{
-		//CHANGE IMPEDANCE CODE to LP4 MODE
 			change_lpddr4_en(0xf,1);
 		}
-
 		dsb_sev();
 		dsb_sev();
-
 		if(DDR_TVAL0&0x80)
 		{
 			for(phychno=0;phychno<DRAM_CH_CNT;phychno++)
 			{
-//		0x00000700, 0x00000001, // PHY_SW_GRP_SHIFT_1:RW+:24:5:=0x00 PHY_SW_GRP_SHIFT_0:RW+:16:5:=0x00 PHY_FREQ_SEL_INDEX:RW:8:2:=0x00 PHY_FREQ_SEL_MULTICAST_EN:RW_D:0:1:=0x01
 				REG_DDRPHY_WRITE(phychno, 0x700, (REG_DDRPHY_READ(phychno,0x700)&0xfffffcfe) | (0x2<<8) | (0x1<<0));
 			}
 		}
-
 		if(DDR_UPDT_WA&0x8000)
 		{
 			if(phytrainingok&(1<<0))		copy_csdelay(0,0);
 			if(phytrainingok&(1<<1))		copy_csdelay(1,2);
 			if(phytrainingok&(1<<2))		copy_csdelay(2,0);
 			if(phytrainingok&(1<<3))		copy_csdelay(3,0);
-			if(phytrainingok&(1<<0))*((volatile uint32_t*)DBSC_DBPDCNT_0) = 0x0000CF00;	//dll_rst_n1 -> 0
+			if(phytrainingok&(1<<0))*((volatile uint32_t*)DBSC_DBPDCNT_0) = 0x0000CF00;
 			if(phytrainingok&(1<<1))*((volatile uint32_t*)DBSC_DBPDCNT_1) = 0x0000CF00;
 			if(phytrainingok&(1<<2))*((volatile uint32_t*)DBSC_DBPDCNT_2) = 0x0000CF00;
 			if(phytrainingok&(1<<3))*((volatile uint32_t*)DBSC_DBPDCNT_3) = 0x0000CF00;
 			dsb_sev();
-			if(phytrainingok&(1<<0))*((volatile uint32_t*)DBSC_DBPDCNT_0) = 0x0000CF01;	//dll_rst_n0 -> 1
+			if(phytrainingok&(1<<0))*((volatile uint32_t*)DBSC_DBPDCNT_0) = 0x0000CF01;
 			if(phytrainingok&(1<<1))*((volatile uint32_t*)DBSC_DBPDCNT_1) = 0x0000CF01;
 			if(phytrainingok&(1<<2))*((volatile uint32_t*)DBSC_DBPDCNT_2) = 0x0000CF01;
 			if(phytrainingok&(1<<3))*((volatile uint32_t*)DBSC_DBPDCNT_3) = 0x0000CF01;
-
 			dsb_sev();
 			dsb_sev();
 		}
-
-	}	/////////////////////////////////////////lvlen&0x21
-
+	}
 	dsb_sev();
 	dsb_sev();
 	dsb_sev();
-
 	PLL3_FREQ(freq,FREQ_H);
-
 	dsb_sev();
 	dsb_sev();
 	dsb_sev();
-
 	for(i=0;i<DRAM_CH_CNT;i++){
 		if(DDR_TVAL1&0x10){
 			phychno=3-i;
@@ -2061,9 +1535,7 @@ if(0){	//////// Retry check NG -----
 			phychno=i;
 		}
 		if(!(phytrainingok&(1<<phychno)))continue;
-
 		if(DDR_TVAL1&0x03){
-//		0x00000408, 0x00000133, // PHY_LPBK_CONTROL_0:RW:24:7:=0x00 PHY_LP4_BOOT_RDDQS_LATENCY_ADJUST_0:RW:16:4:=0x00 PHY_LP4_BOOT_RDDQS_GATE_SLAVE_DELAY_0:RW:0:10:=0x0133
 			uint32_t o_ch,o_slice,o_tmp;
 			o_ch=phychno^0x1;
 			if((DDR_TVAL1&0x03)==1)
@@ -2073,44 +1545,13 @@ if(0){	//////// Retry check NG -----
 				REG_DDRPHY_WRITE(o_ch, 0x408+0x80*o_slice,(REG_DDRPHY_READ(o_ch, 0x408+0x80*o_slice) & 0x00ffffff) | (o_tmp<<24));
 			}
 		}
-////////////////////
-		//DFI FREQ
 		*((volatile uint32_t*)(DBSC_DFI_FREQ_0 +0x040 * phychno)) = FREQ_H;
 		dsb_sev();
-		//CHG_ACK
 		*((volatile uint32_t*)(DBSC_FREQ_CHG_ACK_0 + 0x40 * phychno)) = 0x0CF20000;
 		dsb_sev();
-		//CHG_ACK
 		*((volatile uint32_t*)(DBSC_FREQ_CHG_ACK_0 + 0x40 * phychno)) = 0x0;
 		dsb_sev();
-
-		if(0)
-		{
-			int slice;
-
-			for(slice=0;slice<4;slice++)
-			{
-				for(i=0;i<4;i++)
-				{
-//		0x00000409, 0x000700C0, // SC_PHY_SNAP_OBS_REGS_0:WR:24:1:=0x00 PHY_GATE_ERROR_DELAY_SELECT_0:RW:16:4:=0x07 PHY_RDDQS_DQ_BYPASS_SLAVE_DELAY_0:RW:0:10:=0x00c0
-					REG_DDRPHY_WRITE(phychno, 0x409+0x80*slice, (REG_DDRPHY_READ(phychno, 0x409+0x80*slice) | (1<<24)));
-//		0x00000412, 0x00000000, // PHY_RDDQ_ENC_OBS_SELECT_0:RW:24:3:=0x00 PHY_MASTER_DLY_LOCK_OBS_SELECT_0:RW:16:3:=0x00 PHY_SW_FIFO_PTR_RST_DISABLE_0:RW:8:1:=0x00 PHY_SLAVE_LOOP_CNT_UPDATE_0:RW:0:3:=0x00
-					REG_DDRPHY_WRITE(phychno, 0x412+0x80*slice, ((REG_DDRPHY_READ(phychno, 0x412+0x80*slice)  & 0xfff8ffff) | 0));
-//		0x00000413, 0x00000000, // PHY_FIFO_PTR_OBS_SELECT_0:RW:24:4:=0x00 PHY_WR_SHIFT_OBS_SELECT_0:RW:16:4:=0x00 PHY_WR_ENC_OBS_SELECT_0:RW:8:4:=0x00 PHY_RDDQS_DQ_ENC_OBS_SELECT_0:RW:0:4:=0x00
-					REG_DDRPHY_WRITE(phychno, 0x413+0x80*slice, ((REG_DDRPHY_READ(phychno, 0x413+0x80*slice)  & 0xfff0f0ff) | (9<<16) | (9<<16)));
-
-
-//		0x00000423, 0x00000000, // PHY_RDDQS_BASE_SLV_DLY_ENC_OBS_0:RD:24:7:=0x00 PHY_RDDQ_SLV_DLY_ENC_OBS_0:RD:16:6:=0x00 PHY_MASTER_DLY_LOCK_OBS_0:RD:0:10:=0x0000
-//		0x00000424, 0x00000000, // PHY_RDDQS_GATE_SLV_DLY_ENC_OBS_0:RD:16:10:=0x0000 PHY_RDDQS_DQ_FALL_ADDER_SLV_DLY_ENC_OBS_0:RD:8:8:=0x00 PHY_RDDQS_DQ_RISE_ADDER_SLV_DLY_ENC_OBS_0:RD:0:8:=0x00
-
-					dataL=REG_DDRPHY_READ(phychno, 0x423+0x80*slice);
-//		0x00000425, 0x00000000, // PHY_WR_SHIFT_OBS_0:RD:24:3:=0x00 PHY_WR_ADDER_SLV_DLY_ENC_OBS_0:RD:16:8:=0x00 PHY_WRDQ_BASE_SLV_DLY_ENC_OBS_0:RD:8:8:=0x00 PHY_WRDQS_BASE_SLV_DLY_ENC_OBS_0:RD:0:7:=0x00
-					dataL=REG_DDRPHY_READ(phychno, 0x425+0x80*slice);
-				}
-			}
-		}
-
-		if(DDR_UPDT_WA&0x400)	//SEQ MODE
+		if(DDR_UPDT_WA&0x400)
 		{
 			retry=0;
 			while(retry<TE_MAX)
@@ -2124,21 +1565,17 @@ if(0){	//////// Retry check NG -----
 				phytrainingok&=~(1<<phychno);
 			}
 		}
-
 		if(DDR_TVAL1&0x03)
 		{
-//		0x00000408, 0x00000133, // PHY_LPBK_CONTROL_0:RW:24:7:=0x00 PHY_LP4_BOOT_RDDQS_LATENCY_ADJUST_0:RW:16:4:=0x00 PHY_LP4_BOOT_RDDQS_GATE_SLAVE_DELAY_0:RW:0:10:=0x0133
 			uint32_t o_ch,o_slice,o_tmp;
 			o_ch=phychno^0x1;
 			o_tmp=0x0;
-
 			for(o_slice=0;o_slice<4;o_slice++){
 				REG_DDRPHY_WRITE(o_ch, 0x408+0x80*o_slice,
 					(REG_DDRPHY_READ (o_ch, 0x408+0x80*o_slice) & 0x00ffffff) | (o_tmp<<24));
 			}
 		}
 	}
-
 	retry=10000;
 	flag=0;
 	while(retry>0)
@@ -2148,37 +1585,28 @@ if(0){	//////// Retry check NG -----
 			if(!(phytrainingok&(1<<phychno)))continue;
 			if(flag & (1<<phychno))continue;
 			dataL = REG_DDRPHY_READ ( phychno, 0x0000029B);
-
 			if(dataL&0x1)
 			{
 				flag |= (0x1<<phychno);
-				// TRAING OK
 			}
 		}
 		if((flag&phytrainingok)==phytrainingok)break;
 		retry--;
 	}
-
 	phytrainingok&=flag;
-
-
 	for(phychno=0;phychno<DRAM_CH_CNT;phychno++)
 	{
 		dataL = REG_DDRPHY_READ ( phychno, 0x0000029B);
 		REG_DDRPHY_WRITE( phychno, 0x29c, dataL);
 	}
-
 	return phytrainingok;
 }
-
 uint32_t pvt_pi_training(uint32_t freq)
 {
 	uint32_t phytrainingok=0;
-
 	if(1)
 	{
 		pvt_lvl_enable_set(0x3f);
-
 		if(DDR_UPDT_WA&0x4000)
 		{
 			phytrainingok = pvt_pi_training_go_all_soft(freq);
@@ -2191,32 +1619,27 @@ uint32_t pvt_pi_training(uint32_t freq)
 		{
 			phytrainingok = pvt_pi_training_go_all(freq);
 		}
-
-		//FREQ_SEL_INDEX=3 (not needed? because MULTICAST_EN=1) ==> NEED!! otherwise, copy will not copy
 		REG_DDRPHY_WRITE (0,0x00000700,0x0301);
 		REG_DDRPHY_WRITE (1,0x00000700,0x0301);
 		REG_DDRPHY_WRITE (2,0x00000700,0x0301);
 		REG_DDRPHY_WRITE (3,0x00000700,0x0301);
-
 #ifdef	DDR_WDQLVL_CHAB_SWAP_WAxxxx
-#else	// non WDQLVL
+#else
 #ifdef BOARD_SALVATOR_M
-		copy_dqdelay(0 ,0,2);		// ch0 0:2:1:3
+		copy_dqdelay(0 ,0,2);
 		copy_dqdelay(0 ,3,1);
-		copy_dqdelay(3 ,0,2);		// ch3 2:0:3:1
+		copy_dqdelay(3 ,0,2);
 		copy_dqdelay(3 ,3,1);
 #endif
 #ifdef BOARD_SALVATOR_X
-		copy_dqdelay(1 ,1,2);		// ch1 2:0:1:3
+		copy_dqdelay(1 ,1,2);
 		copy_dqdelay(1 ,3,0);
-		copy_dqdelay(2 ,1,3);		// ch2 3:1:2:0
+		copy_dqdelay(2 ,1,3);
 		copy_dqdelay(2 ,2,0);
-		copy_dqdelay(3 ,1,3);		// ch3 3:1:2:0
+		copy_dqdelay(3 ,1,3);
 		copy_dqdelay(3 ,2,0);
 #endif
 #endif
-
-
 		if(DDR_LVLEN&0x20)
 		{
 			if(DDR_CALVLSIDE== 0x0)
@@ -2241,7 +1664,6 @@ uint32_t pvt_pi_training(uint32_t freq)
 				copy_csdelay(3,0);
 			}
 		}
-
 		if(DDR_LVLEN&0x4)
 		{
 			adjust_rddqsgatedelay(0);
@@ -2250,86 +1672,47 @@ uint32_t pvt_pi_training(uint32_t freq)
 			adjust_rddqsgatedelay(3);
 		}
 	}
-
 	return phytrainingok;
 }
-
 static void WaitDBCMD(void)
 {
 	uint32_t dataL;
-
 	while(1)
 	{
-		dataL = *((volatile uint32_t*)DBSC_DBWAIT);	//wait DBCMD 1=busy, 0=ready
+		dataL = *((volatile uint32_t*)DBSC_DBWAIT);
 		if((dataL & 0x00000001) == 0x0)	break;
 	}
 }
-
-
 static void REG_DDRPHY_WRITE ( uintptr_t phyno, uint32_t regadd, uint32_t regdata)
 {
 	uint32_t i;
 
-#ifdef	DDR_DEBUG_REG_DDRPHY
-	i = *((volatile uint32_t*)(DBSC_DBPDRGA_0 + 0x40 * phyno));	//add
+	i = *((volatile uint32_t*)(DBSC_DBPDRGA_0 + 0x40 * phyno));	
 	dsb_sev();
 	*((volatile uint32_t*)(DBSC_DBPDRGA_0 + 0x40 * phyno)) = regadd;
-	dsb_sev();//add
-	i = *((volatile uint32_t*)(DBSC_DBPDRGA_0 + 0x40 * phyno));	//
-	dsb_sev();//add
-	i = *((volatile uint32_t*)(DBSC_DBPDRGA_0 + 0x40 * phyno));	//
+	dsb_sev();
+	i = *((volatile uint32_t*)(DBSC_DBPDRGA_0 + 0x40 * phyno));
+	dsb_sev();
+	i = *((volatile uint32_t*)(DBSC_DBPDRGA_0 + 0x40 * phyno));
 	dsb_sev();
 	*((volatile uint32_t*)(DBSC_DBPDRGD_0 + 0x40 * phyno)) = regdata;
-	dsb_sev();//add
-	i = *((volatile uint32_t*)(DBSC_DBPDRGD_0 + 0x40 * phyno));	//
-	dsb_sev();//add
-	i = *((volatile uint32_t*)(DBSC_DBPDRGD_0 + 0x40 * phyno));	//
+	dsb_sev();
+	i = *((volatile uint32_t*)(DBSC_DBPDRGD_0 + 0x40 * phyno));
+	dsb_sev();
+	i = *((volatile uint32_t*)(DBSC_DBPDRGD_0 + 0x40 * phyno));
 	dsb_sev();
 	(void)i;
-#else
-	dsb_sev();
-	*((volatile uint32_t*)(DBSC_DBPDRGA_0 + 0x40 * phyno)) = regadd;
-	i = *((volatile uint32_t*)(DBSC_DBPDRGA_0 + 0x40 * phyno));	//
-	i = *((volatile uint32_t*)(DBSC_DBPDRGA_0 + 0x40 * phyno));	//
-	dsb_sev();
-	*((volatile uint32_t*)(DBSC_DBPDRGD_0 + 0x40 * phyno)) = regdata;
-	i = *((volatile uint32_t*)(DBSC_DBPDRGD_0 + 0x40 * phyno));	//
-	i = *((volatile uint32_t*)(DBSC_DBPDRGD_0 + 0x40 * phyno));	//
-	dsb_sev();
-	(void)i;
-#endif
 }
-
 static void change_lpddr4_en(uintptr_t phychno, uint32_t mode)
 {
-/*
-		0x0000071A, 0x027F6E00, // PHY_PAD_FDBK_DRIVE:RW+:8:18:=0x000411 PHY_TDFI_PHY_WRDELAY:RW:0:1:=0x00
-		0x0000071B, 0x047F027F, // PHY_PAD_DQS_DRIVE:RW+:16:12:=0x0040 PHY_PAD_DATA_DRIVE:RW+:0:10:=0x0040
-		0x0000071C, 0x00027F6E, // PHY_PAD_ADDR_DRIVE:RW+:0:18:=0x000411 // LPDDR4_EN bit 14 is it needed?
-		0x0000071D, 0x00047F6E, // PHY_PAD_CLK_DRIVE:RW+:0:20:=0x000411
-		0x0000071E, 0x00030F68, // PHY_PAD_FDBK_TERM:RW+:0:18:=0x004410 //PVTP = 0x28, PVTN=0x3d, PVTr=0x10
-		0x0000071F, 0x00010F68, // PHY_PAD_DATA_TERM:RW+:0:17:=0x004410
-		0x00000720, 0x00010F68, // PHY_PAD_DQS_TERM:RW+:0:17:=0x004410
-		0x00000721, 0x00010F68, // PHY_PAD_ADDR_TERM:RW+:0:18:=0x004410
-		0x00000722, 0x00010F68, // PHY_PAD_CLK_TERM:RW+:0:18:=0x004410
-		0x00000723, 0x00027F6E, // PHY_PAD_CKE_DRIVE:RW+:0:18:=0x000411
-		0x00000724, 0x00010F68, // PHY_PAD_CKE_TERM:RW+:0:18:=0x004410
-		0x00000725, 0x00027F6E, // PHY_PAD_RST_DRIVE:RW+:0:18:=0x000411
-		0x00000726, 0x00010F68, // PHY_PAD_RST_TERM:RW+:0:18:=0x004410
-		0x00000727, 0x00027F6E, // PHY_PAD_CS_DRIVE:RW+:0:18:=0x000411
-		0x00000728, 0x00010F68, // PHY_PAD_CS_TERM:RW+:0:18:=0x004410
-*/
-
 	uint32_t i,from,to;
 	uint32_t set,clr;
 	uint32_t dataL;
 	uint32_t addr;
-
 #ifdef	DDR_LPDDR4_EN_OFF_FIRST
 #else
 	return;
 #endif
-
 	if(phychno>=4)
 	{
 		from=0; to=3;
@@ -2338,19 +1721,15 @@ static void change_lpddr4_en(uintptr_t phychno, uint32_t mode)
 	{
 		from=phychno; to=phychno;
 	}
-
-
 	for(i=from;i<=to;i++)
 	{
 #ifdef	DDR_LPDDR4_EN_OFF_FIRST
 		set = 1ULL <<14;
 		clr = ~set;
-
 		if(!mode)
 		{
 			set = 0;
 		};
-
 		addr=0x71c;	REG_DDRPHY_WRITE(i,addr,dataL=((REG_DDRPHY_READ(i,addr)&clr)|set) );
 		addr=0x71d;	REG_DDRPHY_WRITE(i,addr,dataL=((REG_DDRPHY_READ(i,addr)&clr)|set) );
 		addr=0x723;	REG_DDRPHY_WRITE(i,addr,dataL=((REG_DDRPHY_READ(i,addr)&clr)|set) );
@@ -2362,24 +1741,18 @@ static void change_lpddr4_en(uintptr_t phychno, uint32_t mode)
 		addr=0x727;	REG_DDRPHY_WRITE(i,addr,dataL=0x00027B22 );
 #endif
 	}
-
 }
-
 static void copy_csdelay(uint32_t	phychno, uint32_t s_byte)
 {
 	uint32_t	dataL[4];
-
 	dataL[0] = ((REG_DDRPHY_READ ( phychno, 0x00000712))& 0x000fff00) >> 8;
 	dataL[1] = ((REG_DDRPHY_READ ( phychno, 0x00000713))& 0x00000fff);
 	dataL[2] = ((REG_DDRPHY_READ ( phychno, 0x00000713))& 0x0fff0000) >> 16;
 	dataL[3] = ((REG_DDRPHY_READ ( phychno, 0x00000714))& 0x00000fff);
-
 	REG_DDRPHY_WRITE (phychno,0x00000712,( dataL[s_byte] << 8) |((REG_DDRPHY_READ ( phychno, 0x00000712)) & 0x0ff));
 	REG_DDRPHY_WRITE (phychno,0x00000713,((dataL[s_byte] << 16)| dataL[s_byte]));
 	REG_DDRPHY_WRITE (phychno,0x00000714,  dataL[s_byte]);
-
 }
-
 static void adjust_rddqsgatedelay(uintptr_t phychno)
 {
 	uint32_t	i;
@@ -2392,7 +1765,6 @@ static void adjust_rddqsgatedelay(uintptr_t phychno)
 	uint32_t	latL,dlyL;
 	uint32_t	maxlatL =0x0;
 	uint32_t	maxdlyL =0x0;
-
 #ifdef	DDR_DBS_DFI_WA
 	for(i=0;i<4;i++)
 	{
@@ -2409,14 +1781,13 @@ static void adjust_rddqsgatedelay(uintptr_t phychno)
 		}
 	}
 #endif
-
 	for(i=0;i<4;i++)
 	{
 		leL = (REG_DDRPHY_READ ( phychno, 0x00000429 + 0x80*i)>>16) & 0x3fff;
 		teL = (REG_DDRPHY_READ ( phychno, 0x0000042A + 0x80*i)>>0 ) & 0x3fff;
 		fsL = (REG_DDRPHY_READ ( phychno, 0x00000456 + 0x80*i)>>16 ) & 0x3ff;
 		meL = (leL+teL)>>1;
-		if(meL<fsL)meL=fsL;///CLIP
+		if(meL<fsL)meL=fsL;
 		dlyL = (meL-fsL)&0x1ff;
 		latL = ((meL-fsL)>>9) & 7;
 #ifdef	DDR_DBS_DFI_WA
@@ -2430,23 +1801,17 @@ static void adjust_rddqsgatedelay(uintptr_t phychno)
 		REG_DDRPHY_WRITE ( phychno, 0x0000044C + 0x80*i,d_dataL);
 	}
 }
-
-
 static void copy_dqdelay(uintptr_t phychno, uint32_t s_byte, uint32_t d_byte)
 {
 	uint32_t	i;
 	uint32_t	s_dataL;
 	uint32_t	d_dataL;
-
 	for (i=0x43A;i<=0x43E;i++)
 	{
-								// 43A-43E:PHY_CLK_WRDQx_SLAVE_DELAY_0
-								// 43F-442:PHY_RDDQx_SLAVE_DELAY_0
-								// 443-44B:PHY_RDDQS_DQx_FALL_SLAVE_DELAY_0
 		if(i==0x43E)
-		{			// 43E:PHY_CLK_WRDQS_SLAVE_DELAY_0:RW+:16:10
-			s_dataL = (REG_DDRPHY_READ ( phychno, i+s_byte*0x80)) & 0x0000ffff; // DM code
-			d_dataL = (REG_DDRPHY_READ ( phychno, i+d_byte*0x80)) & 0xffff0000; // DQS code
+		{
+			s_dataL = (REG_DDRPHY_READ ( phychno, i+s_byte*0x80)) & 0x0000ffff;
+			d_dataL = (REG_DDRPHY_READ ( phychno, i+d_byte*0x80)) & 0xffff0000;
 			REG_DDRPHY_WRITE (phychno,i+d_byte*0x80,(s_dataL|d_dataL));
 		}
 		else
@@ -2455,9 +1820,7 @@ static void copy_dqdelay(uintptr_t phychno, uint32_t s_byte, uint32_t d_byte)
 			REG_DDRPHY_WRITE (phychno,i+d_byte*0x80,s_dataL);
 		}
 	}
-
 }
-
 static uint32_t pvt_pi_training_go_all_soft(uint32_t freq)
 {
 	uint32_t flag;
@@ -2465,24 +1828,18 @@ static uint32_t pvt_pi_training_go_all_soft(uint32_t freq)
 	uint32_t phytrainingok;
 	uint32_t retry;
 	uintptr_t phychno;
-
 	PLL3_FREQ(freq,0);
-
 	for(phychno=0;phychno<DRAM_CH_CNT;phychno++)
 	{
-		//dfi_init_start negate
 		*((volatile uint32_t*)(DBSC_DBDFICNT_0+0x40*phychno)) = 0x00000010;
 		dsb_sev();
 	}
-
 	for(phychno=0;phychno<DRAM_CH_CNT;phychno++)
 	{
-		//////////////////////
 		*((volatile uint32_t*)(DBSC_DBPDRGA_0 + 0x040 * phychno)) = 0x200;
 		dsb_sev();
 		*((volatile uint32_t*)(DBSC_DBPDRGD_0 + 0x040 * phychno)) = 0x20410B01;
 		dsb_sev();
-
 		dsb_sev();
 		dsb_sev();
 	}
@@ -2493,40 +1850,25 @@ static uint32_t pvt_pi_training_go_all_soft(uint32_t freq)
 		dataL |= *((volatile uint32_t*)(DBSC_PLL_LOCK_0+0x100*3)) & 0x1f;
 		dsb_sev();
 	} while(dataL);
-
 	dsb_sev();
 	dsb_sev();
-
 	if(!(DDR_UPDT_WA&0x2000))
 	{
 		PLL3_FREQ(freq,2);
 		dsb_sev();
 		dsb_sev();
 	}
-
-//	//CHANGE IMPEDANCE CODE to LP4 MODE
-//	change_lpddr4_en(0xf,1);
-
 	for(phychno=0;phychno<DRAM_CH_CNT;phychno++)
 	{
-		//DFI FREQ
 		*((volatile uint32_t*)(DBSC_DFI_FREQ_0 +0x040 * phychno)) = 2;
-//		*((volatile uint32_t*)(DBSC_DFI_FREQ_0 +0x040 * phychno)) = 0;
 		dsb_sev();
-		//CHG_ACK
 		*((volatile uint32_t*)(DBSC_FREQ_CHG_ACK_0 + 0x40 * phychno)) = 0x0CF20000;
 		dsb_sev();
-//		//CHG_ACK
 		*((volatile uint32_t*)(DBSC_FREQ_CHG_ACK_0 + 0x40 * phychno)) = 0x0;
 		dsb_sev();
-
 		dsb_sev();
 		dsb_sev();
 	}
-
-
-	///////////////////////////////////////////////////////////////////////
-	//unlock check
 	do {
 		dataL  = *((volatile uint32_t*)(DBSC_PLL_LOCK_0+0x100*0)) & 0x1f;
 		dataL |= *((volatile uint32_t*)(DBSC_PLL_LOCK_0+0x100*1)) & 0x1f;
@@ -2534,61 +1876,40 @@ static uint32_t pvt_pi_training_go_all_soft(uint32_t freq)
 		dataL |= *((volatile uint32_t*)(DBSC_PLL_LOCK_0+0x100*3)) & 0x1f;
 		dsb_sev();
 	} while(dataL);
-
 	dsb_sev();
 	dsb_sev();
-
 	PLL3_FREQ(freq,0);
-
 	dsb_sev();
 	dsb_sev();
-
 	for(phychno=0;phychno<DRAM_CH_CNT;phychno++)
 	{
-		//DFI FREQ
-		*((volatile uint32_t*)(DBSC_DFI_FREQ_0 +0x040 * phychno)) =0;	// 0;
-//		*((volatile uint32_t*)(DBSC_DFI_FREQ_0 +0x040 * phychno)) =2;	// 2
-		//CHG_ACK
+		*((volatile uint32_t*)(DBSC_DFI_FREQ_0 +0x040 * phychno)) =0;
 		*((volatile uint32_t*)(DBSC_FREQ_CHG_ACK_0 + 0x40 * phychno)) = 0x0CF20000;
-		//CHG_ACK
 		*((volatile uint32_t*)(DBSC_FREQ_CHG_ACK_0 + 0x40 * phychno)) = 0x0;
-
 		dsb_sev();
 		dsb_sev();
 	}
-
-//END:timing critical:
-	//unlock check
 	do {
 		dataL  = *((volatile uint32_t*)(DBSC_PLL_LOCK_0+0x100*0)) & 0x1f;
 		dataL |= *((volatile uint32_t*)(DBSC_PLL_LOCK_0+0x100*1)) & 0x1f;
 		dataL |= *((volatile uint32_t*)(DBSC_PLL_LOCK_0+0x100*2)) & 0x1f;
 		dataL |= *((volatile uint32_t*)(DBSC_PLL_LOCK_0+0x100*3)) & 0x1f;
 	} while(dataL);
-
 	dsb_sev();
 	dsb_sev();
-
 	PLL3_FREQ(freq,2);
-
 	dsb_sev();
 	dsb_sev();
-
 	for(phychno=0;phychno<DRAM_CH_CNT;phychno++)
 	{
-		//DFI FREQ
 		*((volatile uint32_t*)(DBSC_DFI_FREQ_0 +0x040 * phychno)) = 2;
 		dsb_sev();
-		//CHG_ACK
 		*((volatile uint32_t*)(DBSC_FREQ_CHG_ACK_0 + 0x40 * phychno)) = 0x0CF20000;
 		dsb_sev();
-		//CHG_ACK
 		*((volatile uint32_t*)(DBSC_FREQ_CHG_ACK_0 + 0x40 * phychno)) = 0x0;
-
 		dsb_sev();
 		dsb_sev();
 	}
-
 	retry=100000;
 	flag=0;
 	while(retry>0)
@@ -2600,60 +1921,40 @@ static uint32_t pvt_pi_training_go_all_soft(uint32_t freq)
 			if(dataL&0x1)
 			{
 				flag |= (0x1<<phychno);
-				// TRAING OK
 			}
 		}
 		if((flag&DDR_PHYVALID)==DDR_PHYVALID)break;
 		retry--;
 	}
-
 	phytrainingok=flag;
-
 	for(phychno=0;phychno<DRAM_CH_CNT;phychno++)
 	{
 		dataL = REG_DDRPHY_READ ( phychno, 0x0000029B);
 		REG_DDRPHY_WRITE( phychno, 0x29c, dataL);
 	}
-
 	return phytrainingok;
 }
-
 inline void dsb_sev(void)
 {
 	__asm__ __volatile__ ("dsb sy");
-
 }
-
 static uint32_t REG_DDRPHY_READ ( uintptr_t phyno, uint32_t regadd)
 {
 	uint32_t i;
 
-#ifdef	DDR_DEBUG_REG_DDRPHY
 	dsb_sev();
 	*((volatile uint32_t*)(DBSC_DBPDRGA_0 + 0x40 * phyno)) = regadd;
 	dsb_sev();
-	i = *((volatile uint32_t*)(DBSC_DBPDRGA_0 + 0x40 * phyno));	//
-	dsb_sev();//add
-	i = *((volatile uint32_t*)(DBSC_DBPDRGA_0 + 0x40 * phyno));	//
-	dsb_sev();//add
-	i = *((volatile uint32_t*)(DBSC_DBPDRGD_0 + 0x40 * phyno));
-	dsb_sev();//add
+	i = *((volatile uint32_t*)(DBSC_DBPDRGA_0 + 0x40 * phyno));
+	dsb_sev();
+	i = *((volatile uint32_t*)(DBSC_DBPDRGA_0 + 0x40 * phyno));
+	dsb_sev();
 	i = *((volatile uint32_t*)(DBSC_DBPDRGD_0 + 0x40 * phyno));
 	dsb_sev();
-	return i ;
-#else
-	dsb_sev();
-	*((volatile uint32_t*)(DBSC_DBPDRGA_0 + 0x40 * phyno)) = regadd;
-	dsb_sev();
-	i = *((volatile uint32_t*)(DBSC_DBPDRGA_0 + 0x40 * phyno));	//
-	i = *((volatile uint32_t*)(DBSC_DBPDRGA_0 + 0x40 * phyno));	//
-	i = *((volatile uint32_t*)(DBSC_DBPDRGD_0 + 0x40 * phyno));
 	i = *((volatile uint32_t*)(DBSC_DBPDRGD_0 + 0x40 * phyno));
 	dsb_sev();
 	return i ;
-#endif
 }
-
 #ifdef	DDR_DEBUG_VREF
 static uint32_t InitDDR_0917(uint32_t freq, uint32_t vref)
 #else
@@ -2668,12 +1969,7 @@ static uint32_t InitDDR_0917(uint32_t freq)
 	uint32_t phytrainingok=0x0;
 	uint32_t retry;
 	uint32_t ch,slice;
-
-
 #ifdef DDR_BACKUPMODE
-///// Modify for BackUp (begin) /////////////////////////////////////////////////////////////////////
-
-	//Check GP1_8 (BKUP_TRG)
 	dataL = *((volatile uint32_t*)GPIO_INDT1);
 	if(dataL & BIT8){
 		ddrBackup = WARM_BOOT;
@@ -2681,106 +1977,60 @@ static uint32_t InitDDR_0917(uint32_t freq)
 	else{
 		ddrBackup = COLD_BOOT;
 	}
-
-///// Modify for BackUp (end) ///////////////////////////////////////////////////////////////////////
 #endif
-
-//	if(mode==0 || mode==1|| mode==3)
 	{
-		//DDR RESET ASSERT
 		*((volatile uint32_t*)DBSC_DBPDCNT0_0) = 0x01;
 		*((volatile uint32_t*)DBSC_DBPDCNT0_1) = 0x01;
 		*((volatile uint32_t*)DBSC_DBPDCNT0_2) = 0x01;
 		*((volatile uint32_t*)DBSC_DBPDCNT0_3) = 0x01;
-
 		dsb_sev();
-
 #ifdef	DDR_PLL3ONLY
 		dataL = *((volatile uint32_t*)DBSC_DBKIND);
-
-/*
-//		//reset pulse
-		*((volatile uint32_t*)CPG_CPGWPR) = ~0x40000000;
-		dsb_sev();
-		do {
-			*((volatile uint32_t*)CPG_SRCR4) =  0x40000000;
-//			dsb_sev();
-			*((volatile uint32_t*)CPG_SRSTCLR4) = 0x40000000;
-			dsb_sev();
-			dataL = *((volatile uint32_t*)DBSC_DBKIND);
-		} while (dataL!=0);
-*/
-		*((volatile uint32_t*)DBSC_DBPDLK_0) = 0x0000A55A;	//Unlock DDRPHY register
+		*((volatile uint32_t*)DBSC_DBPDLK_0) = 0x0000A55A;
 		*((volatile uint32_t*)DBSC_DBPDLK_1) = 0x0000A55A;
 		*((volatile uint32_t*)DBSC_DBPDLK_2) = 0x0000A55A;
 		*((volatile uint32_t*)DBSC_DBPDLK_3) = 0x0000A55A;
-
 		REG_DDRPHY_WRITE(0,0x229,0x0);
 		REG_DDRPHY_WRITE(1,0x229,0x0);
 		REG_DDRPHY_WRITE(2,0x229,0x0);
 		REG_DDRPHY_WRITE(3,0x229,0x0);
-
 		dataL=	*((volatile uint32_t*)CPG_PLLECR);
 		*((volatile uint32_t*)CPG_CPGWPR) = ~(dataL & 0xFFFFFFF7);
 		*((volatile uint32_t*)CPG_PLLECR) =   dataL & 0xFFFFFFF7;
-
 		dsb_sev();
-
-		// PLL3
-#ifdef	DDR_FREQCHG
 		j = *((volatile uint32_t*)CPG_PLL3CR);
-
 #ifdef	DDR_LOWFIX
 		j = (j&0x00ffff7f) | ((DDR_LOWFIX & 0xff) << 24);
-#else	// DDR_LOWFIX
+#else
 		j = (j&0x00ffff7f) | ((freq & 0xff) << 24) | 0x080;
-#endif	// DDR_LOWFIX
-
-#else	// DDR_FREQCHG
-		j = *((volatile uint32_t*)CPG_PLL3CR);
-		j = (j&0x00ffff7f) | ((freq << 24)&0xff000000)| ((DDR_FDIV << 7)&0x00000080);
-#endif	// DDR_FREQCHG
-
+#endif
 		*((volatile uint32_t*)CPG_CPGWPR) = ~j;
-		*((volatile uint32_t*)CPG_PLL3CR) =  j;		// CPG_PLL3CL
-
+		*((volatile uint32_t*)CPG_PLL3CR) =  j;
 		*((volatile uint32_t*)CPG_CPGWPR) = ~(dataL |0x8);
 		*((volatile uint32_t*)CPG_PLLECR) =   dataL |0x8;
-
 		do {
 			dataL=*((volatile uint32_t*)CPG_PLLECR);
 		} while( (dataL&0x800)==0 );
-
 		*((volatile uint32_t*)CPG_CPGWPR) = ~0x40000000;
 		do {
 			*((volatile uint32_t*)CPG_SRCR4) = 0x40000000;
 			*((volatile uint32_t*)CPG_SRSTCLR4) = 0x40000000;
 			dataL = *((volatile uint32_t*)DBSC_DBKIND);
 		} while (dataL!=0);
-
 		REG_DDRPHY_WRITE(0,0x229,0x100);
 		REG_DDRPHY_WRITE(1,0x229,0x100);
 		REG_DDRPHY_WRITE(2,0x229,0x100);
 		REG_DDRPHY_WRITE(3,0x229,0x100);
-
-#endif	//	DDR_PLL3ONLY
-
+#endif
 		pvt_dbsc_regset(freq);
-
-		//DDR RESET NEGATE
 		*((volatile uint32_t*)DBSC_DBPDCNT0_0) = 0x00;
 		*((volatile uint32_t*)DBSC_DBPDCNT0_1) = 0x00;
 		*((volatile uint32_t*)DBSC_DBPDCNT0_2) = 0x00;
 		*((volatile uint32_t*)DBSC_DBPDCNT0_3) = 0x00;
-
-		//(DDRPHY Kick Initialize Sequence)
-		*((volatile uint32_t*)DBSC_DBPDLK_0) = 0x0000A55A;	//Unlock DDRPHY register(AGAIN)
+		*((volatile uint32_t*)DBSC_DBPDLK_0) = 0x0000A55A;
 		*((volatile uint32_t*)DBSC_DBPDLK_1) = 0x0000A55A;
 		*((volatile uint32_t*)DBSC_DBPDLK_2) = 0x0000A55A;
 		*((volatile uint32_t*)DBSC_DBPDLK_3) = 0x0000A55A;
-
-		//(PHY parameter and PI parameter Initialize)	Initialize Leveling parameter including WDQLVL
-
 		for( i=0; i<DDR_PHY_NUM; i++ )
 		{
 			REG_DDRPHY_WRITE(0,DDR_PHY_suresh[i][0],DDR_PHY_suresh[i][1]);
@@ -2788,7 +2038,6 @@ static uint32_t InitDDR_0917(uint32_t freq)
 			REG_DDRPHY_WRITE(2,DDR_PHY_suresh[i][0],DDR_PHY_suresh[i][1]);
 			REG_DDRPHY_WRITE(3,DDR_PHY_suresh[i][0],DDR_PHY_suresh[i][1]);
 		}
-
 #if	DDR_ES1px==1
 #ifdef	DDR_DEBUG_ES1P1
 		if(((*((volatile uint32_t*)0xFFF00044)) & 0x00007FFF ) != 0x00004F00) {
@@ -2813,7 +2062,6 @@ static uint32_t InitDDR_0917(uint32_t freq)
 		}
 #endif
 #endif
-
 #ifdef DDR_2RANK	// 2Rank
 		for(i=0;i<DRAM_CH_CNT;i++)
 		{
@@ -2822,21 +2070,18 @@ static uint32_t InitDDR_0917(uint32_t freq)
 			REG_DDRPHY_WRITE(i,0x24b,((REG_DDRPHY_READ(i,0x24b) & 0xffff00ff) | ((DDR_CSMAP_GTLVL & 0xf) << 8 )));
 			REG_DDRPHY_WRITE(i,0x24b,((REG_DDRPHY_READ(i,0x24b) & 0xffffff00) | ((DDR_CSMAP_RDLVL & 0xf) << 0 )));
 			REG_DDRPHY_WRITE(i,0x23c,((REG_DDRPHY_READ(i,0x23c) & 0xff00ffff) | ((DDR_CSMAP_WRLVL & 0xf) << 16 )));
-//			REG_DDRPHY_WRITE(i,0x703,((REG_DDRPHY_READ(i,0x703) & 0xffff00ff) | ((DDR_CSMAP_CSLVL & 0xff) << 8 )));
 #ifdef	BOARD_KRIEK
 			REG_DDRPHY_WRITE(i,0x257,((REG_DDRPHY_READ(i,0x257) & 0xffffff00) | ((DDR_CSMAP_CALVL & 0xF) << 0 )));
 #else
-			REG_DDRPHY_WRITE(i,0x257,((REG_DDRPHY_READ(i,0x257) & 0xffffff00) | ((DDR_CSMAP_CALVL & 0x3) << 0 ))); // TMP
+			REG_DDRPHY_WRITE(i,0x257,((REG_DDRPHY_READ(i,0x257) & 0xffffff00) | ((DDR_CSMAP_CALVL & 0x3) << 0 )));
 #endif
 		}
 #ifdef	BOARD_KRIEK
 #else
-		REG_DDRPHY_WRITE(0,0x257,((REG_DDRPHY_READ(0,0x257) & 0xffffff00) | ((DDR_CSMAP_CALVL &0xf) << 0 ))); // OK
-		REG_DDRPHY_WRITE(1,0x257,((REG_DDRPHY_READ(1,0x257) & 0xffffff00) | ((DDR_CSMAP_CALVL &0x3) << 2 ))); // TMP
+		REG_DDRPHY_WRITE(0,0x257,((REG_DDRPHY_READ(0,0x257) & 0xffffff00) | ((DDR_CSMAP_CALVL &0xf) << 0 )));
+		REG_DDRPHY_WRITE(1,0x257,((REG_DDRPHY_READ(1,0x257) & 0xffffff00) | ((DDR_CSMAP_CALVL &0x3) << 2 )));
 #endif
-
-#endif	// DDR_2RANK
-
+#endif
 #ifdef	DDR_DRIVE
 		for( i=0; i<DDR_PHY_DRIVE_TERM_OVERWRITE_NUM; i++ )
 		{
@@ -2846,12 +2091,9 @@ static uint32_t InitDDR_0917(uint32_t freq)
 			REG_DDRPHY_WRITE(3,DDR_PHY_DDR_PHY_DRIVE_TERM_OVERWITE_1600[i][0],DDR_PHY_DDR_PHY_DRIVE_TERM_OVERWITE_1600[i][1]);
 		}
 #endif
-//		0x00000404, 0x03006E0E, // PHY_DQS_TSEL_ENABLE_0:RW:24:3:=0x01 PHY_DQ_TSEL_SELECT_0:RW:0:24:=0x665555
-//		0x00000405, 0x02006E0E, // PHY_TWO_CYC_PREAMBLE_0:RW:24:2:=0x02 PHY_DQS_TSEL_SELECT_0:RW:0:24:=0x665555
 #ifdef	DDR_TSEL_SELECT
 		{
 			uint32_t adr;
-
 			for(ch=0;ch<DRAM_CH_CNT;ch++)
 			{
 				for(slice=0;slice<4;slice++)
@@ -2875,7 +2117,6 @@ static uint32_t InitDDR_0917(uint32_t freq)
 			}
 		}
 #endif
-
 		for( i=0; i<DDR_PI_NUM; i++ )
 		{
 			REG_DDRPHY_WRITE(0,DDR_PI_suresh[i][0],DDR_PI_suresh[i][1]);
@@ -2883,11 +2124,9 @@ static uint32_t InitDDR_0917(uint32_t freq)
 			REG_DDRPHY_WRITE(2,DDR_PI_suresh[i][0],DDR_PI_suresh[i][1]);
 			REG_DDRPHY_WRITE(3,DDR_PI_suresh[i][0],DDR_PI_suresh[i][1]);
 		}
-
-// Traning Reg setting
 		if(freq>0x53)
 		{
-			//							// def 3200
+//										// def 3200
 		}
 		else if(freq>0x47)
 		{
@@ -2901,7 +2140,6 @@ static uint32_t InitDDR_0917(uint32_t freq)
 		{
 			freq1600_reg_set();
 		}
-
 #ifdef DDR_DEBUG_DBI
 		if(DDR_DEBUG_DBI == 1){
 			for(ch=0;ch<DRAM_CH_CNT;ch++){
@@ -2909,11 +2147,9 @@ static uint32_t InitDDR_0917(uint32_t freq)
 					REG_DDRPHY_WRITE(ch,0x406+0x80*slice,(REG_DDRPHY_READ(ch,0x406+0x80*slice) | 0x1 ));
 				}
 			}
-			*((volatile uint32_t*)DBSC_DBDBICNT)	= 0x00000001;	//dbien =1 (DBI enable)
+			*((volatile uint32_t*)DBSC_DBDBICNT)	= 0x00000001;
 		}
 #endif
-
-		//Set PCB bit swap connection
 		for( i=0; i<9+5; i++ )
 		{
 			REG_DDRPHY_WRITE(0,DDR_SIP_SWAP_CH0[i][0],DDR_SIP_SWAP_CH0[i][1]);
@@ -2921,20 +2157,17 @@ static uint32_t InitDDR_0917(uint32_t freq)
 			REG_DDRPHY_WRITE(2,DDR_SIP_SWAP_CH2[i][0],DDR_SIP_SWAP_CH2[i][1]);
 			REG_DDRPHY_WRITE(3,DDR_SIP_SWAP_CH3[i][0],DDR_SIP_SWAP_CH3[i][1]);
 		}
-
 		for (i=0;i<DRAM_CH_CNT;i++)
-		{	// ON_FLY_GATE_ADJUST_EN_0:RW:16:2:=0x03 PHY_GATE_SMPL2_SLAVE_DELAY_0:RW:0:9:=0x0066
+		{
 			REG_DDRPHY_WRITE(i,0x40B,REG_DDRPHY_READ(i,0x40B) & (0xfffcffff));
 			REG_DDRPHY_WRITE(i,0x48B,REG_DDRPHY_READ(i,0x48B) & (0xfffcffff));
 			REG_DDRPHY_WRITE(i,0x50B,REG_DDRPHY_READ(i,0x50B) & (0xfffcffff));
 			REG_DDRPHY_WRITE(i,0x58B,REG_DDRPHY_READ(i,0x58B) & (0xfffcffff));
 		}
-
 		if(DDR_CALVLSIDE== 0x0)
 		{
 			REG_DDRPHY_WRITE(0,0x709,((REG_DDRPHY_READ(0,0x709) & 0xffffff00) | 0x0000010));
 			REG_DDRPHY_WRITE(0,0x257,((REG_DDRPHY_READ(0,0x257) & 0xfffffff0) | 0x0000001));
-
 			REG_DDRPHY_WRITE(1,0x709,((REG_DDRPHY_READ(1,0x709) & 0xffffff00) | 0x0000011));
 			REG_DDRPHY_WRITE(1,0x257,((REG_DDRPHY_READ(1,0x257) & 0xfffffff0) | 0x0000001));
 			REG_DDRPHY_WRITE(1,0x60c,0x00543210);
@@ -2942,7 +2175,6 @@ static uint32_t InitDDR_0917(uint32_t freq)
 			REG_DDRPHY_WRITE(1,0x4a1,((REG_DDRPHY_READ(1,0x4a1) & 0xfffffffe) | 0x0000001));
 			REG_DDRPHY_WRITE(1,0x521,((REG_DDRPHY_READ(1,0x521) & 0xfffffffe) | 0x0000000));
 			REG_DDRPHY_WRITE(1,0x5a1,((REG_DDRPHY_READ(1,0x5a1) & 0xfffffffe) | 0x0000000));
-
 			REG_DDRPHY_WRITE(2,0x709,((REG_DDRPHY_READ(2,0x709) & 0xffffff00) | 0x0000000));
 			REG_DDRPHY_WRITE(2,0x257,((REG_DDRPHY_READ(2,0x257) & 0xfffffff0) | 0x0000001));
 			REG_DDRPHY_WRITE(2,0x60c,0x00DCBA98);
@@ -2950,7 +2182,6 @@ static uint32_t InitDDR_0917(uint32_t freq)
 			REG_DDRPHY_WRITE(2,0x4a1,((REG_DDRPHY_READ(2,0x4a1) & 0xfffffffe) | 0x0000000));
 			REG_DDRPHY_WRITE(2,0x521,((REG_DDRPHY_READ(2,0x521) & 0xfffffffe) | 0x0000001));
 			REG_DDRPHY_WRITE(2,0x5a1,((REG_DDRPHY_READ(2,0x5a1) & 0xfffffffe) | 0x0000001));
-
 			REG_DDRPHY_WRITE(3,0x709,((REG_DDRPHY_READ(3,0x709) & 0xffffff00) | 0x0000000));
 			REG_DDRPHY_WRITE(3,0x257,((REG_DDRPHY_READ(3,0x257) & 0xfffffff0) | 0x0000001));
 			REG_DDRPHY_WRITE(3,0x60c,0x00DCBA98);
@@ -2959,12 +2190,10 @@ static uint32_t InitDDR_0917(uint32_t freq)
 			REG_DDRPHY_WRITE(3,0x521,((REG_DDRPHY_READ(3,0x521) & 0xfffffffe) | 0x0000001));
 			REG_DDRPHY_WRITE(3,0x5a1,((REG_DDRPHY_READ(3,0x5a1) & 0xfffffffe) | 0x0000001));
 		}
-
 		if(DDR_CALVLSIDE== 0x1)
 		{
 			REG_DDRPHY_WRITE(0,0x709,((REG_DDRPHY_READ(0,0x709) & 0xffffff00) | 0x0000010));
 			REG_DDRPHY_WRITE(0,0x257,((REG_DDRPHY_READ(0,0x257) & 0xfffffff0) | 0x0000004));
-
 			REG_DDRPHY_WRITE(1,0x709,((REG_DDRPHY_READ(1,0x709) & 0xffffff00) | 0x0000011));
 			REG_DDRPHY_WRITE(1,0x257,((REG_DDRPHY_READ(1,0x257) & 0xfffffff0) | 0x0000004));
 			REG_DDRPHY_WRITE(1,0x60c,0x00DCBA98);
@@ -2972,7 +2201,6 @@ static uint32_t InitDDR_0917(uint32_t freq)
 			REG_DDRPHY_WRITE(1,0x4a1,((REG_DDRPHY_READ(1,0x4a1) & 0xfffffffe) | 0x0000001));
 			REG_DDRPHY_WRITE(1,0x521,((REG_DDRPHY_READ(1,0x521) & 0xfffffffe) | 0x0000000));
 			REG_DDRPHY_WRITE(1,0x5a1,((REG_DDRPHY_READ(1,0x5a1) & 0xfffffffe) | 0x0000000));
-
 			REG_DDRPHY_WRITE(2,0x709,((REG_DDRPHY_READ(2,0x709) & 0xffffff00) | 0x0000000));
 			REG_DDRPHY_WRITE(2,0x257,((REG_DDRPHY_READ(2,0x257) & 0xfffffff0) | 0x0000004));
 			REG_DDRPHY_WRITE(2,0x60c,0x00543210);
@@ -2980,7 +2208,6 @@ static uint32_t InitDDR_0917(uint32_t freq)
 			REG_DDRPHY_WRITE(2,0x4a1,((REG_DDRPHY_READ(2,0x4a1) & 0xfffffffe) | 0x0000000));
 			REG_DDRPHY_WRITE(2,0x521,((REG_DDRPHY_READ(2,0x521) & 0xfffffffe) | 0x0000001));
 			REG_DDRPHY_WRITE(2,0x5a1,((REG_DDRPHY_READ(2,0x5a1) & 0xfffffffe) | 0x0000001));
-
 			REG_DDRPHY_WRITE(3,0x709,((REG_DDRPHY_READ(3,0x709) & 0xffffff00) | 0x0000000));
 			REG_DDRPHY_WRITE(3,0x257,((REG_DDRPHY_READ(3,0x257) & 0xfffffff0) | 0x0000004));
 			REG_DDRPHY_WRITE(3,0x60c,0x00543210);
@@ -2989,13 +2216,25 @@ static uint32_t InitDDR_0917(uint32_t freq)
 			REG_DDRPHY_WRITE(3,0x521,((REG_DDRPHY_READ(3,0x521) & 0xfffffffe) | 0x0000001));
 			REG_DDRPHY_WRITE(3,0x5a1,((REG_DDRPHY_READ(3,0x5a1) & 0xfffffffe) | 0x0000001));
 		}
-
 #ifdef	DDR_DEBUG_VREF
 		for (i=0;i<DRAM_CH_CNT;i++)
 		{
 			REG_DDRPHY_WRITE(i,0x70F,((REG_DDRPHY_READ(i,0x70f) & 0x000000ff)|(vref << 8) ));
 			REG_DDRPHY_WRITE(i,0x710,(vref |(vref << 16) ));
 			REG_DDRPHY_WRITE(i,0x711,(vref |(vref << 16) ));
+		}
+#else
+#ifdef BOARD_KRIEK
+		if(((*((volatile uint32_t*)0xFFF00044)) & 0x00007FFF ) != 0x00004F00) {
+			dataL = 0x0F19;
+		}else {
+			dataL = DDR_VREF;
+		}
+		for (i=0;i<DRAM_CH_CNT;i++)
+		{
+			REG_DDRPHY_WRITE(i,0x70F,((REG_DDRPHY_READ(i,0x70f) & 0x000000ff)|(dataL << 8) ));
+			REG_DDRPHY_WRITE(i,0x710,(dataL |(dataL << 16) ));
+			REG_DDRPHY_WRITE(i,0x711,(dataL |(dataL << 16) ));
 		}
 #else
 		for (i=0;i<DRAM_CH_CNT;i++)
@@ -3005,37 +2244,32 @@ static uint32_t InitDDR_0917(uint32_t freq)
 			REG_DDRPHY_WRITE(i,0x711,(DDR_VREF |(DDR_VREF << 16) ));
 		}
 #endif
-
-
+#endif
 #ifdef	DDR_PAD_BOOST
 		for (i=0;i<DRAM_CH_CNT;i++)
 		{
-			REG_DDRPHY_WRITE(i,0x71B,((REG_DDRPHY_READ(i,0x71B) & 0xfbfffdff) ));	//phy_pad_dqs_drive ,phy_pad_data_drive
+			REG_DDRPHY_WRITE(i,0x71B,((REG_DDRPHY_READ(i,0x71B) & 0xfbfffdff) ));
 		}
 #else
 		for (i=0;i<DRAM_CH_CNT;i++)
 		{
-			REG_DDRPHY_WRITE(i,0x71B,((REG_DDRPHY_READ(i,0x71B) | 0x04000200) ));	//phy_pad_dqs_drive ,phy_pad_data_drive
+			REG_DDRPHY_WRITE(i,0x71B,((REG_DDRPHY_READ(i,0x71B) | 0x04000200) ));
 		}
 #endif
-
 #ifdef	DDR_PAD_ADDR_CS_DRIVE
 		for (i=0;i<DRAM_CH_CNT;i++){
-			REG_DDRPHY_WRITE(i,0x71C,DDR_PAD_ADDR_CS_DRIVE);	//pad_addr_drive
-			REG_DDRPHY_WRITE(i,0x727,DDR_PAD_ADDR_CS_DRIVE);	//pad_cs_drive
+			REG_DDRPHY_WRITE(i,0x71C,DDR_PAD_ADDR_CS_DRIVE);
+			REG_DDRPHY_WRITE(i,0x727,DDR_PAD_ADDR_CS_DRIVE);
 		}
 #endif
 #ifdef	DDR_PAD_CLK_DRIVE
 		for (i=0;i<DRAM_CH_CNT;i++){
-			REG_DDRPHY_WRITE(i,0x71D,DDR_PAD_CLK_DRIVE);		//pad_clk_drive
+			REG_DDRPHY_WRITE(i,0x71D,DDR_PAD_CLK_DRIVE);
 		}
 #endif
-
 #ifdef	DDR_ODT_SET
-
 #ifdef	DDR_DEBUG_ODTMODE
 		j = (*((volatile uint32_t*)RST_MODEMR) & 0x000A0000) >> 17;
-
 		if(j==0){
 			j = 0x5150;
 		} else if (j == 1) {
@@ -3045,7 +2279,6 @@ static uint32_t InitDDR_0917(uint32_t freq)
 		} else {
 			j = 0x5150;
 		};
-
 		for (i=0;i<DRAM_CH_CNT;i++)
 		{
 			REG_DDRPHY_WRITE(i,0x450,0x41410041 | (j & 0x0000FF00));
@@ -3057,7 +2290,6 @@ static uint32_t InitDDR_0917(uint32_t freq)
 			REG_DDRPHY_WRITE(i,0x551,0xC0014100 | (j & 0x000000FF));
 			REG_DDRPHY_WRITE(i,0x5d1,0xC0014100 | (j & 0x000000FF));
 		}
-
 #else
 		for (i=0;i<DRAM_CH_CNT;i++)
 		{
@@ -3072,7 +2304,6 @@ static uint32_t InitDDR_0917(uint32_t freq)
 		}
 #endif
 #endif
-
 #ifdef	DDR_DEBUG_PST_AMBLE
 		for (i=0;i<DRAM_CH_CNT;i++)
 		{
@@ -3082,28 +2313,16 @@ static uint32_t InitDDR_0917(uint32_t freq)
 			REG_DDRPHY_WRITE(i,0x58d,DDR_DEBUG_PST_AMBLE);
 		}
 #endif
-
-//#define CH0B
 #ifdef  CH0B
-		// CH0 CALVL for swap
-		// CH0 CALVL to CS[2] ( M2 dq_h -> soc M2 dq_h )
-		REG_DDRPHY_WRITE(0,0x0257,0x00181704);		// PI_CALVL_CS_MAP:RW:0:4:= 0x4
-		//0x0000060F, 0x01000000, // PHY_ADR_CALVL_DEVICE_MAP_0:RW:24:4:=0x01 PHY_ADR_CALVL_SWIZZLE1_1_0:RW:0:24:=0x000000	// SoC Byte3   -> DRAM Byte 3
+		REG_DDRPHY_WRITE(0,0x0257,0x00181704);
 		REG_DDRPHY_WRITE(0,0x060F,0x02DCBA98);
 #endif
-		// CH1 CALVL for swap
-		// CH1 CALVL can be done only for CS[2] ( M2 dq_h -> soc M2 dq_h )
-		REG_DDRPHY_WRITE(1,0x0257,0x00181704);		// PI_CALVL_CS_MAP:RW:0:4:= 0x4
+		REG_DDRPHY_WRITE(1,0x0257,0x00181704);
+		*((volatile uint32_t*)DBSC_DBDFIPMSTRCNF) = 0x00000001;
+	}
 
-		*((volatile uint32_t*)DBSC_DBDFIPMSTRCNF) = 0x00000001;	//DFI_PHYMSTR_ACK = 1
-	}	// (mode==0 || mode==1|| mode==3)
-
-
-	///////////////////////////////////////////////////////////////////////////////////////////////////////////end_of_mode1
 	pvt_lvl_enable_set(0x3f);
-
 	set_cacs_delay();
-
 #ifdef BOARD_SALVATOR_X
 	REG_DDRPHY_WRITE(0,0x44c,0x0004000c);
 	REG_DDRPHY_WRITE(0,0x4cc,0x0004000c);
@@ -3122,28 +2341,13 @@ static uint32_t InitDDR_0917(uint32_t freq)
 	REG_DDRPHY_WRITE(3,0x54c,0x00040066);
 	REG_DDRPHY_WRITE(3,0x5cc,0x000400c6);
 #endif
-
-// 9/24
-//cacs_capture_cnt//cacs_resp_wait_cnt
-//		0x00000257, 0x00181701, // PI_TDFI_CALVL_CC_F0:RW:16:10:=0x0018 PI_TDFI_CALVL_EN:RW:8:8:=0x17 PI_CALVL_CS_MAP:RW:0:4:=0x03
-//		0x00000258, 0x00280006, // PI_TDFI_CALVL_CC_F1:RW:16:10:=0x0028 PI_TDFI_CALVL_CAPTURE_F0:RW:0:10:=0x0006
-//		0x00000259, 0x00280016, // PI_TDFI_CALVL_CC_F2:RW:16:10:=0x0028 PI_TDFI_CALVL_CAPTURE_F1:RW:0:10:=0x0016
-//		0x0000025A, 0x00000016, // PI_TDFI_CALVL_CAPTURE_F2:RW:0:10:=0x0016
 	for(ch=0;ch<DRAM_CH_CNT;ch++){
-//		0x00000610, 0x00020010, // PHY_ADR_CALVL_RESP_WAIT_CNT_0:RW:24:4:=0x00 PHY_ADR_CALVL_CAPTURE_CNT_0:RW:16:4:=0x02 PHY_ADR_CALVL_NUM_PATTERNS_0:RW:8:2:=0x00 PHY_ADR_CALVL_RANK_CTRL_0:RW:0:5:=0x10
-//		0x0000060A, 0x00400320, // PHY_ADR_CALVL_COARSE_DLY_0:RW:16:11:=0x0040 PHY_ADR_CALVL_START_0:RW:0:11:=0x0320
-//		0x0000060B, 0x00000040, // PHY_ADR_CALVL_QTR_0:RW:0:11:=0x0040
-//		0x00000624, 0x00000003, // PHY_ADR_CALVL_DLY_STEP_0:RW+:0:4:=0x03
-
 		uint32_t cc=(DDR_CACS_CCCP>>16)&0xff;
 		uint32_t cp=(DDR_CACS_CCCP>>0)&0xff;
-
 		REG_DDRPHY_WRITE(ch,0x257,(REG_DDRPHY_READ(ch,0x257) & 0x0000ffff) | (cc<<16));
 		REG_DDRPHY_WRITE(ch,0x258,(REG_DDRPHY_READ(ch,0x258) & 0x00000000) | (cc<<16) | cp);
 		REG_DDRPHY_WRITE(ch,0x259,(REG_DDRPHY_READ(ch,0x259) & 0x00000000) | (cc<<16) | cp);
 		REG_DDRPHY_WRITE(ch,0x25a,(REG_DDRPHY_READ(ch,0x25a) & 0x00000000) | cp);
-
-
 		for(slice=0;slice<2;slice++){
 			REG_DDRPHY_WRITE(ch,0x610+0x80*slice,(REG_DDRPHY_READ(ch,0x610+0x80*slice) & 0xf0f0ffff )
 				| ((DDR_CACS_RESP_WAIT_CNT&0x0f)<<24)
@@ -3159,32 +2363,22 @@ static uint32_t InitDDR_0917(uint32_t freq)
 				| DDR_CACS_STEP
 			);
 		}
-
-//		0x00000704, 0x00020040, // PHY_CSLVL_CAPTURE_CNT:RW:16:4:=0x02 PHY_CSLVL_QTR:RW:0:11:=0x0040
-//		0x00000705, 0x00020055, // PHY_CSLVL_DEBUG_MODE:RW:24:1:=0x00 PHY_CSLVL_COARSE_CAPTURE_CNT:RW:16:4:=0x02 PHY_CSLVL_COARSE_DLY:RW:0:11:=0x0055
 		slice=0;
 		REG_DDRPHY_WRITE(ch,0x704+0x80*slice,(REG_DDRPHY_READ(ch,0x704+0x80*slice) & 0xfff0ffff) | ((DDR_CACS_CAPTURE_CNT&0x0f)<<16));
 		REG_DDRPHY_WRITE(ch,0x705+0x80*slice,(REG_DDRPHY_READ(ch,0x705+0x80*slice) & 0xfff0ffff) | ((DDR_CACS_CAPTURE_CNT&0x0f)<<16));
 	}
-//-------
-
 	dsb_sev();
 	dsb_sev();
 	dsb_sev();
-
 	PLL3_FREQ(freq,0);
-
 	dsb_sev();
 	dsb_sev();
 	dsb_sev();
-
 #ifdef	DDR_PAD_CAL_WA
 	for(i=0;i<DRAM_CH_CNT;i++)
 	{
-		REG_DDRPHY_WRITE(i,0x72c,REG_DDRPHY_READ(i,0x72c)& ~(1<<24) ); //init_start_disable clear
+		REG_DDRPHY_WRITE(i,0x72c,REG_DDRPHY_READ(i,0x72c)& ~(1<<24) );
 	}
-
-	// Rx Cal IE issue w/a
 	for(ch=0;ch<DRAM_CH_CNT;ch++)
 	{
 		for(slice=0;slice<4;slice++)
@@ -3193,7 +2387,6 @@ static uint32_t InitDDR_0917(uint32_t freq)
 			{
 				REG_DDRPHY_WRITE(ch,0x452+0x80*slice,REG_DDRPHY_READ(ch,0x452+0x80*slice) | (1<<16));
 			}
-//		0x00000433, 0x00200000, // PHY_RX_CAL_SAMPLE_WAIT_0:RW:16:8:=0x20 PHY_RX_CAL_OVERRIDE_0:RW:8:1:=0x00 SC_PHY_RX_CAL_START_0:WR:0:1:=0x00
 			if(DDR_TVAL2&0x2)
 			{
 				REG_DDRPHY_WRITE(ch,0x433+slice*0x80,REG_DDRPHY_READ(ch,0x433+slice*0x80)|0x100);
@@ -3206,63 +2399,51 @@ static uint32_t InitDDR_0917(uint32_t freq)
 	}
 	dsb_sev();
 #endif
-
-	*((volatile uint32_t*)DBSC_DBDFICNT_0) = 0x00000010;	//dbdficnt0 freq_ratio = 01 (2:1)init_start =1
+	*((volatile uint32_t*)DBSC_DBDFICNT_0) = 0x00000010;
 	*((volatile uint32_t*)DBSC_DBDFICNT_1) = 0x00000010;
 	*((volatile uint32_t*)DBSC_DBDFICNT_2) = 0x00000010;
 	*((volatile uint32_t*)DBSC_DBDFICNT_3) = 0x00000010;
 	dsb_sev();
-
 	dsb_sev();
 	dsb_sev();
-
-	*((volatile uint32_t*)DBSC_DBDFICNT_0) = 0x00000011;	//dbdficnt0 freq_ratio = 01 (2:1)init_start =1
+	*((volatile uint32_t*)DBSC_DBDFICNT_0) = 0x00000011;
 	*((volatile uint32_t*)DBSC_DBDFICNT_1) = 0x00000011;
 	*((volatile uint32_t*)DBSC_DBDFICNT_2) = 0x00000011;
 	*((volatile uint32_t*)DBSC_DBDFICNT_3) = 0x00000011;
 	dsb_sev();
-
 	dsb_sev();
 	dsb_sev();
-
-	*((volatile uint32_t*)DBSC_DBPDCNT_0) = 0x000000;	//dll_rst_n0 -> 1
+	*((volatile uint32_t*)DBSC_DBPDCNT_0) = 0x000000;
 	*((volatile uint32_t*)DBSC_DBPDCNT_1) = 0x000000;
 	*((volatile uint32_t*)DBSC_DBPDCNT_2) = 0x000000;
 	*((volatile uint32_t*)DBSC_DBPDCNT_3) = 0x000000;
 	dsb_sev();
-
-	*((volatile uint32_t*)DBSC_DBPDCNT_0) = 0x0000CF00;	//dll_rst_n0 -> 1
+	*((volatile uint32_t*)DBSC_DBPDCNT_0) = 0x0000CF00;
 	*((volatile uint32_t*)DBSC_DBPDCNT_1) = 0x0000CF00;
 	*((volatile uint32_t*)DBSC_DBPDCNT_2) = 0x0000CF00;
 	*((volatile uint32_t*)DBSC_DBPDCNT_3) = 0x0000CF00;
 	dsb_sev();
-
-	*((volatile uint32_t*)DBSC_DBPDCNT_0) = 0x0000CF01;	//dll_rst_n0 -> 1
+	*((volatile uint32_t*)DBSC_DBPDCNT_0) = 0x0000CF01;
 	*((volatile uint32_t*)DBSC_DBPDCNT_1) = 0x0000CF01;
 	*((volatile uint32_t*)DBSC_DBPDCNT_2) = 0x0000CF01;
 	*((volatile uint32_t*)DBSC_DBPDCNT_3) = 0x0000CF01;
 	dsb_sev();
-
 #ifdef DDR_BACKUPMODE
 ///// Modify for BackUp (begin) /////////////////////////////////////////////////////////////////////
-
 	if(ddrBackup==WARM_BOOT){
 		for(ch=0;ch<DRAM_CH_CNT;ch++)
 		{
-		*((volatile uint32_t*)DBSC_DBCMD) = 0x01040001|(0x00100000 * phychno);	//RSX chA rkA
-		WaitDBCMD();
+			*((volatile uint32_t*)DBSC_DBCMD) = 0x01040001|(0x00100000 * phychno);	//RSX chA rkA
+			WaitDBCMD();
 		}
-
 		//Set GP1_9(BKUP_REQB)=High
 		*((volatile uint32_t*)GPIO_OUTDT1) |= BIT9;
-
 		//Wait GP1_8(BKUP_TRG)=Low
 		i=1;
 		while(i){
 			dataL = *((volatile uint32_t*)GPIO_INDT1);
 			if( (dataL & BIT8)==0 ){ i=0; }
 			else{                    i++; }
-
 			// Warm Boot Time Out Error Check
 			if(i==1000){
 				ddrBackup = WARM_BOOT_TIMEOUT;
@@ -3272,18 +2453,14 @@ static uint32_t InitDDR_0917(uint32_t freq)
 	}
 ///// Modify for BackUp (end) ///////////////////////////////////////////////////////////////////////
 #endif
-
 	SoftDelay_ddr(1*1000); 	//wait for 1ms
-
 	phytrainingok=0;
-	//Need Handshake sequence betweed DBSC and PHY
 	if(DDR_UPDT_WA&0x40)
 	{
 		for(ch=0;ch<DRAM_CH_CNT;ch++)
 		{
 			for(slice=0;slice<4;slice++)
 			{
-//		0x00000433, 0x00200000, // PHY_RX_CAL_SAMPLE_WAIT_0:RW:16:8:=0x20 PHY_RX_CAL_OVERRIDE_0:RW:8:1:=0x00 SC_PHY_RX_CAL_START_0:WR:0:1:=0x00
 				if(DDR_TVAL2&0x2)
 				{
 					REG_DDRPHY_WRITE(ch,0x433+slice*0x80,REG_DDRPHY_READ(ch,0x433+slice*0x80)|0x1|0x100);
@@ -3296,7 +2473,6 @@ static uint32_t InitDDR_0917(uint32_t freq)
 		}
 		dsb_sev();
 	}
-
 	j=(DDR_UPDT_WA>>24)&0xff;
 	k=0;
 	for(phychno=0;phychno<DRAM_CH_CNT;phychno++)
@@ -3305,22 +2481,20 @@ static uint32_t InitDDR_0917(uint32_t freq)
 		for(i=0;i<=j;i++)
 		{
 			if(i>0)
-			{ //after first init, init_start should be negated so as to wakeup pll
-				*((volatile uint32_t*)(DBSC_DBDFICNT_0+0x40*phychno)) = 0x00000011;	//dbdficnt0 freq_ratio = 01 (2:1)init_start =1
+			{
+				*((volatile uint32_t*)(DBSC_DBDFICNT_0+0x40*phychno)) = 0x00000011;
 				dsb_sev();
-				*((volatile uint32_t*)(DBSC_DBDFICNT_0+0x40*phychno)) = 0x00000010;	//dbdficnt0 freq_ratio = 01 (2:1)init_start =0
+				*((volatile uint32_t*)(DBSC_DBDFICNT_0+0x40*phychno)) = 0x00000010;
 				dsb_sev();
-//			0x000004B3, 0x00200000, // PHY_RX_CAL_SAMPLE_WAIT_1:RW:16:8:=0x20 PHY_RX_CAL_OVERRIDE_1:RW:8:1:=0x00 SC_PHY_RX_CAL_START_1:WR:0:1:=0x00
 				for(retry=0;retry<4;retry++)
 				{
 					REG_DDRPHY_WRITE(phychno,0x433+retry*0x80,REG_DDRPHY_READ(phychno,0x433+retry*0x80)|0x1);
 				}
 			}
-
 			retry=0;
 			while(retry<2048)
 			{
-				dataL = *((volatile uint32_t*)(DBSC_INITCOMP_0+phychno*0x40));	//Wait for DBSC_INITCOMP_0[0] is 1
+				dataL = *((volatile uint32_t*)(DBSC_INITCOMP_0+phychno*0x40));
 				if((dataL & 0x00000001) == 0x1)	break;
 				retry++;
 			}
@@ -3334,13 +2508,11 @@ static uint32_t InitDDR_0917(uint32_t freq)
 			}
 		}
 	}
-
 	phytrainingok &=~k;
 	if((phytrainingok&DDR_PHYVALID)!=DDR_PHYVALID)
 	{
 		return phytrainingok;
 	}
-
 #ifdef	DDR_PAD_CAL_WA
 	{
 #ifdef	DDR_PAD_CAL_WA2
@@ -3350,7 +2522,6 @@ static uint32_t InitDDR_0917(uint32_t freq)
 		uint32_t pvtp_h,pvtp_l;
 		uint32_t pvtr;
 		uint32_t o_dataL;
-
 		for(j=0;j<DRAM_CH_CNT;j++){
 			dataL=REG_DDRPHY_READ(j,0x731);
 #ifdef	DDR_PAD_CAL_WA2
@@ -3370,31 +2541,23 @@ static uint32_t InitDDR_0917(uint32_t freq)
 				dataL=(o_dataL & 0xffe00000) | (((pvtr+DDR_PVTR_ADJ)&0x1f)<<12) | (((pvtn_h+pvtn_l)>>1)<<6) | ((pvtp_h+pvtp_l)>>1);
 #endif
 				REG_DDRPHY_WRITE(j,DDR_PHY_DDR_PHY_PVT_OVERWITE_1600[i][0],dataL);
-
 				dataL=REG_DDRPHY_READ(j,DDR_PHY_DDR_PHY_PVT_OVERWITE_1600[i][0]);
 			}
 		}
-
 		for(ch=0;ch<DRAM_CH_CNT;ch++)
 		{
 			for(slice=0;slice<4;slice++)
 			{
-				REG_DDRPHY_WRITE(ch,0x452+0x80*slice,REG_DDRPHY_READ(ch,0x452+0x80*slice) & ~(1<<16));//PAD_PHY_IE_MODE OFF
-//		0x00000433, 0x00200000, // PHY_RX_CAL_SAMPLE_WAIT_0:RW:16:8:=0x20 PHY_RX_CAL_OVERRIDE_0:RW:8:1:=0x00 SC_PHY_RX_CAL_START_0:WR:0:1:=0x00
+				REG_DDRPHY_WRITE(ch,0x452+0x80*slice,REG_DDRPHY_READ(ch,0x452+0x80*slice) & ~(1<<16));
 				REG_DDRPHY_WRITE(ch,0x433+slice*0x80,REG_DDRPHY_READ(ch,0x433+slice*0x80)&0xffff0000);
 			}
 		}
-
 	}
 #endif
-
 	if(DDR_RX_CAL_MAN&0x100)
 	{
 		rx_cal_manual1(phytrainingok);
 	}
-
-	//Need Handshake sequence betweed DBSC and PHY
-
 	if(DDR_UPDT_WA&0x2)
 	{
 		pvt_manual_update(0x0f);
@@ -3403,10 +2566,7 @@ static uint32_t InitDDR_0917(uint32_t freq)
 	{
 		pvt_manual_update(0xf0);
 	}
-
-	//CHANGE IMPEDANCE CODE to CMOS MODE
 	change_lpddr4_en(0xf,0);
-
 	for(phychno=0;phychno<DRAM_CH_CNT;phychno+=1)
 	{
 		if((DDR_PHYVALID&0x0f)==0x0f)
@@ -3420,7 +2580,6 @@ static uint32_t InitDDR_0917(uint32_t freq)
 				continue;
 			}
 		}
-
 #ifdef DDR_BACKUPMODE
 ///// Modify for BackUp (begin) /////////////////////////////////////////////////////////////////////
 		if(ddrBackup==COLD_BOOT){
@@ -3435,38 +2594,28 @@ static uint32_t InitDDR_0917(uint32_t freq)
 		WaitDBCMD();
 #endif
 		dsb_sev();
-
 		*((volatile uint32_t*)DBSC_DBCMD) = 0x08040000|(0x00100000 * phychno);	//PDE chA rkA
 		WaitDBCMD();
-
 		*((volatile uint32_t*)DBSC_DBCMD) = 0x08040000|(0x00100000 * phychno);	//PDE chA rkA
 		WaitDBCMD();
-
 		*((volatile uint32_t*)DBSC_DBCMD) = 0x08040001|(0x00100000 * phychno);	//PDX ch0 rk0
 		WaitDBCMD();
 		*((volatile uint32_t*)DBSC_DBCMD) = 0x08040001|(0x00100000 * phychno);	//PDX ch0 rk0
 		WaitDBCMD();
-
 		*((volatile uint32_t*)DBSC_DBCMD) = 0x0e040200|(0x00100000 * phychno);	//MRW chA rkA 02:00
 		WaitDBCMD();
-
 		*((volatile uint32_t*)DBSC_DBCMD) = 0x0e040300|(0x00100000 * phychno)|DDR_MR3;	//MRW chA rkA 03:31
 		WaitDBCMD();
-
 		*((volatile uint32_t*)DBSC_DBCMD) = 0x0e040100|(0x00100000 * phychno);	//MRW chA rkA 01:00
 		WaitDBCMD();
-
 		if((DDR_PHYMRW & (1<<phychno)) || (phychno==0x0f))
 		{/////////////////////////////////////////////////////////// phymrw
 			mode_register_set(freq, phychno, 0x40);
 			mode_register_set(freq, phychno, 0x00);
 		} /////////////////////////////////////////////////////////// phymrw
-
 		dsb_sev();
-
 		*((volatile uint32_t*)DBSC_DBCMD) = 0x0d04004F|(0x00100000 * phychno);	//MPC chA rkA 4FH (ZQCAL start)
 		WaitDBCMD();
-
 		*((volatile uint32_t*)DBSC_DBCMD) = 0x0d040051|(0x00100000 * phychno);	//MPC chA rkA 51H (ZQCAL latch)
 		WaitDBCMD();
 	}
@@ -3476,53 +2625,40 @@ static uint32_t InitDDR_0917(uint32_t freq)
 			j=0x276; dataL=REG_DDRPHY_READ(ch,j);
 			dataL=(dataL&0x00ffffff) | (DDR_MR3<<24);
 			REG_DDRPHY_WRITE(ch,j,dataL);
-
 			j=0x278; dataL=REG_DDRPHY_READ(ch,j);
 			dataL=(dataL&0xffff00ff) | (DDR_MR3<<8);
 			REG_DDRPHY_WRITE(ch,j,dataL);
-
 			j=0x279; dataL=REG_DDRPHY_READ(ch,j);
 			dataL=(dataL&0x00ffffff) | (DDR_MR3<<24);
 			REG_DDRPHY_WRITE(ch,j,dataL);
-
 			j=0x27b; dataL=REG_DDRPHY_READ(ch,j);
 			dataL=(dataL&0xff00ffff) | (DDR_MR3<<16);
 			REG_DDRPHY_WRITE(ch,j,dataL);
-
 			j=0x27d; dataL=REG_DDRPHY_READ(ch,j);
 			dataL=(dataL&0xffffff00) | (DDR_MR3<<0);
 			REG_DDRPHY_WRITE(ch,j,dataL);
-
 			j=0x27e; dataL=REG_DDRPHY_READ(ch,j);
 			dataL=(dataL&0xff00ffff) | (DDR_MR3<<16);
 			;REG_DDRPHY_WRITE(ch,j,dataL);
-
 			j=0x280; dataL=REG_DDRPHY_READ(ch,j);
 			dataL=(dataL&0xffff00ff) | (DDR_MR3<<8);
 			REG_DDRPHY_WRITE(ch,j,dataL);
-
 			j=0x281; dataL=REG_DDRPHY_READ(ch,j);
 			dataL=(dataL&0x00ffffff) | (DDR_MR3<<24);
 			REG_DDRPHY_WRITE(ch,j,dataL);
-
 			j=0x283; dataL=REG_DDRPHY_READ(ch,j);
 			dataL=(dataL&0xffff00ff) | (DDR_MR3<<8);
 			REG_DDRPHY_WRITE(ch,j,dataL);
-
 			j=0x285; dataL=REG_DDRPHY_READ(ch,j);
 			dataL=(dataL&0xffffff00) | (DDR_MR3<<0);
 			REG_DDRPHY_WRITE(ch,j,dataL);
-
 			j=0x286; dataL=REG_DDRPHY_READ(ch,j);
 			dataL=(dataL&0xff00ffff) | (DDR_MR3<<16);
 			REG_DDRPHY_WRITE(ch,j,dataL);
-
 			j=0x288; dataL=REG_DDRPHY_READ(ch,j);
 			dataL=(dataL&0xffffff00) | (DDR_MR3<<0);
 			REG_DDRPHY_WRITE(ch,j,dataL);
-
 		}
-
 		_set_reg(0x0f,0x277, 0,8,DDR_MR11);
 		_set_reg(0x0f,0x278,16,8,DDR_MR11);
 		_set_reg(0x0f,0x27a, 0,8,DDR_MR11);
@@ -3536,14 +2672,9 @@ static uint32_t InitDDR_0917(uint32_t freq)
 		_set_reg(0x0f,0x286,24,8,DDR_MR11);
 		_set_reg(0x0f,0x288, 8,8,DDR_MR11);
 	}
-
-	//CHANGE IMPEDANCE CODE to LPDDR4 MODE
 	change_lpddr4_en(0xf,1);
-
 	phytrainingok&=pvt_pi_training(freq);
 #ifdef	DDR_WDQLVL_CHAB_SWAP_WA
-//		wdqlvl(0x0f);
-//		wdqlvl(0x0f);
 	phytrainingok&=wdqlvl(phytrainingok);
 	phytrainingok&=wdqlvl(phytrainingok);
 #endif
@@ -3555,7 +2686,6 @@ static uint32_t InitDDR_0917(uint32_t freq)
 	{
 		pvt_manual_update(0xf0);
 	}
-
 	for(phychno=0;phychno<DRAM_CH_CNT;phychno+=1)
 	{
 		if((DDR_PHYVALID&phytrainingok& 0x0f)==0x0f)
@@ -3572,125 +2702,106 @@ static uint32_t InitDDR_0917(uint32_t freq)
 		mode_register_set(freq, phychno, 0x40);
 		mode_register_set(freq, phychno, 0x00);
 	}
-
 	if(DDR_UPDT_WA&0x38)
 	{
 		for(i=0;i<1000;i++)
 		{
-			//dummy
 			REG_DDRPHY_READ(0,0x229);
 			REG_DDRPHY_READ(1,0x229);
 			REG_DDRPHY_READ(2,0x229);
 			REG_DDRPHY_READ(3,0x229);
 		}
 	}
-
 	if(DDR_UPDT_WA&0x20)
 	{
 		REG_DDRPHY_WRITE(0,0x229,0x000);
 		REG_DDRPHY_WRITE(1,0x229,0x000);
 		REG_DDRPHY_WRITE(2,0x229,0x000);
 		REG_DDRPHY_WRITE(3,0x229,0x000);
-
 		REG_DDRPHY_WRITE(0,0x229,0x100);
 		REG_DDRPHY_WRITE(1,0x229,0x100);
 		REG_DDRPHY_WRITE(2,0x229,0x100);
 		REG_DDRPHY_WRITE(3,0x229,0x100);
 	}
-
 	if(DDR_UPDT_WA&0x08)
 	{
-		*((volatile uint32_t*)DBSC_DBPDCNT_0) = 0x0000CF00;	//dll_rst_n0 -> 1
+		*((volatile uint32_t*)DBSC_DBPDCNT_0) = 0x0000CF00;
 		*((volatile uint32_t*)DBSC_DBPDCNT_1) = 0x0000CF00;
 		*((volatile uint32_t*)DBSC_DBPDCNT_2) = 0x0000CF00;
 		*((volatile uint32_t*)DBSC_DBPDCNT_3) = 0x0000CF00;
 		dsb_sev();
-
 		for(i=0;i<1000;i++)
 		{
-			//dummy
 			REG_DDRPHY_READ(0,0x229);
 			REG_DDRPHY_READ(1,0x229);
 			REG_DDRPHY_READ(2,0x229);
 			REG_DDRPHY_READ(3,0x229);
 		}
 	}
-
 	if(DDR_UPDT_WA&0x10)
 	{
-		*((volatile uint32_t*)DBSC_DBDFICNT_0) = 0x00000010;	//dbdficnt0 freq_ratio = 01 (2:1)init_start =1
+		*((volatile uint32_t*)DBSC_DBDFICNT_0) = 0x00000010;
 		*((volatile uint32_t*)DBSC_DBDFICNT_1) = 0x00000010;
 		*((volatile uint32_t*)DBSC_DBDFICNT_2) = 0x00000010;
 		*((volatile uint32_t*)DBSC_DBDFICNT_3) = 0x00000010;
-		*((volatile uint32_t*)DBSC_DBDFICNT_0) = 0x00000011;	//dbdficnt0 freq_ratio = 01 (2:1)init_start =1
+		*((volatile uint32_t*)DBSC_DBDFICNT_0) = 0x00000011;
 		*((volatile uint32_t*)DBSC_DBDFICNT_1) = 0x00000011;
 		*((volatile uint32_t*)DBSC_DBDFICNT_2) = 0x00000011;
 		*((volatile uint32_t*)DBSC_DBDFICNT_3) = 0x00000011;
 		dsb_sev();
 	}
-
 	if(DDR_UPDT_WA&0x08)
 	{
-		*((volatile uint32_t*)DBSC_DBPDCNT_0) = 0x0000CF01;	//dll_rst_n0 -> 1
+		*((volatile uint32_t*)DBSC_DBPDCNT_0) = 0x0000CF01;
 		*((volatile uint32_t*)DBSC_DBPDCNT_1) = 0x0000CF01;
 		*((volatile uint32_t*)DBSC_DBPDCNT_2) = 0x0000CF01;
 		*((volatile uint32_t*)DBSC_DBPDCNT_3) = 0x0000CF01;
 		dsb_sev();
-
-		for(i=0;i<1000;i++){//dummy
+		for(i=0;i<1000;i++){
 			REG_DDRPHY_READ(0,0x229);
 			REG_DDRPHY_READ(1,0x229);
 			REG_DDRPHY_READ(2,0x229);
 			REG_DDRPHY_READ(3,0x229);
 		}
 	}
-
 	if(DDR_UPDT_WA&0x18)
 	{
 		for(i=0;i<1000;i++)
 		{
-			//dummy
 			REG_DDRPHY_READ(0,0x229);
 			REG_DDRPHY_READ(1,0x229);
 			REG_DDRPHY_READ(2,0x229);
 			REG_DDRPHY_READ(3,0x229);
 		}
 	}
-
 	if(DDR_UPDT_WA&0x10)
 	{
-		*((volatile uint32_t*)DBSC_DBDFICNT_0) = 0x00000010;	//dbdficnt0 freq_ratio = 01 (2:1)init_start =1
+		*((volatile uint32_t*)DBSC_DBDFICNT_0) = 0x00000010;
 		*((volatile uint32_t*)DBSC_DBDFICNT_1) = 0x00000010;
 		*((volatile uint32_t*)DBSC_DBDFICNT_2) = 0x00000010;
 		*((volatile uint32_t*)DBSC_DBDFICNT_3) = 0x00000010;
 		dsb_sev();
-
-		//Need Handshake sequence betweed DBSC and PHY
 		while(1)
 		{
-			dataL = *((volatile uint32_t*)DBSC_INITCOMP_0);	//Wait for DBSC_INITCOMP_0[0] is 1
+			dataL = *((volatile uint32_t*)DBSC_INITCOMP_0);
 			if((dataL & 0x00000001) == 0x1)	break;
 		}
-
 		while(1)
 		{
-			dataL = *((volatile uint32_t*)DBSC_INITCOMP_1);	//Wait for DBSC_INITCOMP_1[0] is 1
+			dataL = *((volatile uint32_t*)DBSC_INITCOMP_1);
 			if((dataL & 0x00000001) == 0x1)	break;
 		}
-
 		while(1)
 		{
-			dataL = *((volatile uint32_t*)DBSC_INITCOMP_2);	//Wait for DBSC_INITCOMP_2[0] is 1
+			dataL = *((volatile uint32_t*)DBSC_INITCOMP_2);
 			if((dataL & 0x00000001) == 0x1)	break;
 		}
-
 		while(1)
 		{
-			dataL = *((volatile uint32_t*)DBSC_INITCOMP_3);	//Wait for DBSC_INITCOMP_3[0] is 1
+			dataL = *((volatile uint32_t*)DBSC_INITCOMP_3);
 			if((dataL & 0x00000001) == 0x1)	break;
 		}
 	}
-
 #ifdef DDR_DEBUG_DBI
 		if(DDR_DEBUG_DBI == 2){
 			for(ch=0;ch<DRAM_CH_CNT;ch++){
@@ -3703,36 +2814,23 @@ static uint32_t InitDDR_0917(uint32_t freq)
 			*((volatile uint32_t*)DBSC_DBDBICNT)	= 0x00000001;	//dbien =1 (DBI enable)
 		}
 #endif
-
-
-
 	*((volatile uint32_t*)DBSC_DBBUS0CNF1) = 0x70000100;	//dbbus0cnf1
 	*((volatile uint32_t*)DBSC_DBBUS0CNF0) = 0x18010001;	//dbbus0cnf
-
-//Auto Refresh setting
-//	*((volatile uint32_t*)DBSC_DBRFCNF1) = 0x00081860;	//dbrfcnf1 refpmax=8 refint=6240
 #ifdef	DDR_DEBUG_REF
-	if(freq>0x53) *((volatile uint32_t*)DBSC_DBRFCNF1) = 0x00081860 >>1;	//dbrfcnf1 refpmax=8 refint=6240
+	if(freq>0x53) *((volatile uint32_t*)DBSC_DBRFCNF1) = 0x00081860 >>1;		//dbrfcnf1 refpmax=8 refint=6240
 	else if(freq>0x47) *((volatile uint32_t*)DBSC_DBRFCNF1) = 0x00081554 >>1;	//dbrfcnf1 refpmax=8 refint=5460
 	else if(freq>0x2f) *((volatile uint32_t*)DBSC_DBRFCNF1) = 0x00081248 >>1;	//dbrfcnf1 refpmax=8 refint=4680
-	else *((volatile uint32_t*)DBSC_DBRFCNF1) = 0x00080C30 >>1;	//dbrfcnf1 refpmax=8 refint=3120
+	else *((volatile uint32_t*)DBSC_DBRFCNF1) = 0x00080C30 >>1;					//dbrfcnf1 refpmax=8 refint=3120
 #else
-	if(freq>0x53) *((volatile uint32_t*)DBSC_DBRFCNF1) = 0x00081860;	//dbrfcnf1 refpmax=8 refint=6240
-	else if(freq>0x47) *((volatile uint32_t*)DBSC_DBRFCNF1) = 0x00081554;	//dbrfcnf1 refpmax=8 refint=5460
-	else if(freq>0x2f) *((volatile uint32_t*)DBSC_DBRFCNF1) = 0x00081248;	//dbrfcnf1 refpmax=8 refint=4680
-	else *((volatile uint32_t*)DBSC_DBRFCNF1) = 0x00080C30;	//dbrfcnf1 refpmax=8 refint=3120
+	if(freq>0x53) *((volatile uint32_t*)DBSC_DBRFCNF1) = 0x00081860;			//dbrfcnf1 refpmax=8 refint=6240
+	else if(freq>0x47) *((volatile uint32_t*)DBSC_DBRFCNF1) = 0x00081554;		//dbrfcnf1 refpmax=8 refint=5460
+	else if(freq>0x2f) *((volatile uint32_t*)DBSC_DBRFCNF1) = 0x00081248;		//dbrfcnf1 refpmax=8 refint=4680
+	else *((volatile uint32_t*)DBSC_DBRFCNF1) = 0x00080C30;						//dbrfcnf1 refpmax=8 refint=3120
 #endif
-	*((volatile uint32_t*)DBSC_DBRFCNF2) = 0x00010000|DBSC_REFINTS;	//dbrfcnf2 refpmin=1 refints=0
-
-#ifdef	BOARD_KRIEK	// ch0,ch2 2rank
-#ifdef	 DDR_KRIEK_MEMSWAP
-	*((volatile uint32_t*)DBSC_DBMEMSWAPCONF0) = 0x6;
-	*((volatile uint32_t*)DBSC_DBMEMCONF_2_0) = 0x0;
-	*((volatile uint32_t*)DBSC_DBMEMCONF_2_1) = 0x0;
-#else
+	*((volatile uint32_t*)DBSC_DBRFCNF2) = 0x00010000|DBSC_REFINTS;				//dbrfcnf2 refpmin=1 refints=0
+#ifdef	BOARD_KRIEK
 	*((volatile uint32_t*)DBSC_DBMEMCONF_1_0) = 0x0;
 	*((volatile uint32_t*)DBSC_DBMEMCONF_1_1) = 0x0;
-#endif
 	*((volatile uint32_t*)DBSC_DBMEMCONF_3_0) = 0x0;
 	*((volatile uint32_t*)DBSC_DBMEMCONF_3_1) = 0x0;
 #else
@@ -3743,7 +2841,6 @@ static uint32_t InitDDR_0917(uint32_t freq)
 		*((volatile uint32_t*)DBSC_DBMEMCONF_3_1) = 0x0;
 	}
 #endif
-
 	*((volatile uint32_t*)DBSC_DBMEMCONF_0_2) = 0x0;
 	*((volatile uint32_t*)DBSC_DBMEMCONF_0_3) = 0x0;
 	*((volatile uint32_t*)DBSC_DBMEMCONF_1_2) = 0x0;
@@ -3752,9 +2849,7 @@ static uint32_t InitDDR_0917(uint32_t freq)
 	*((volatile uint32_t*)DBSC_DBMEMCONF_2_3) = 0x0;
 	*((volatile uint32_t*)DBSC_DBMEMCONF_3_2) = 0x0;
 	*((volatile uint32_t*)DBSC_DBMEMCONF_3_3) = 0x0;
-
-	*((volatile uint32_t*)DBSC_DBRFEN) = 0x00000001;	//dbrfen
-
+	*((volatile uint32_t*)DBSC_DBRFEN) = 0x00000001;
 #ifdef DDR_BACKUPMODE
 ///// Modify for BackUp (begin) /////////////////////////////////////////////////////////////////////
 	if(ddrBackup==WARM_BOOT){
@@ -3762,9 +2857,7 @@ static uint32_t InitDDR_0917(uint32_t freq)
 		//(b)	Self-Refreshing (When the Clock is Stopped)
 		//Use the following procedure to release self-refresh mode.
 		//1.Restart the supply of the clock signal to the DBSC4 and wait until they settle.
-
 		//2.Reconfigure the PHY unit to suit the PHY specification.
-
 		//3.Set the ARFEN bit to 1 in the auto-refresh enable register (DBRFEN). 
 //		*((volatile uint32_t*)DBSC_DBRFEN)	= 0x00000001;
 		
@@ -3792,29 +2885,22 @@ static uint32_t InitDDR_0917(uint32_t freq)
 		//10.Set the ACCEN bit to 1 (enabling access) in the SDRAM access enable register (DBACEN).
 //		*((volatile uint32_t*)DBSC_DBACEN)	= 0x00000001;
 	}
-
 ///// Modify for BackUp (end) ///////////////////////////////////////////////////////////////////////
 #endif
-
 //DRAM ACCESS enable
 	*((volatile uint32_t*)DBSC_DBACEN) = 0x00000001;	//dbacen
-
 	return phytrainingok;
 }
-
 #if 0
-void freq2800_reg_set()
+static void freq2800_reg_set()
 {
 	uint32_t i;
-
 	for(i=0;i<DRAM_CH_CNT;i++)
 	{
 		REG_DDRPHY_WRITE(i,0x22B, (DDR2800_PI_CASLAT_LIN<<24)|(DDR2800_PI_WRLAT<<16)|(DDR2800_PI_CASLAT_LIN<<8)|(DDR2800_PI_WRLAT<<0));
 		REG_DDRPHY_WRITE(i,0x22C, 0x00020000|(DDR2800_PI_CASLAT_LIN<<8)|(DDR2800_PI_WRLAT<<0));
-
 		REG_DDRPHY_WRITE(i,0x252, (DDR2800_PI_RDLAT_ADJ<<16)|(DDR2800_PI_RDLAT_ADJ<<8)|(DDR2800_PI_RDLAT_ADJ<<0));
 		REG_DDRPHY_WRITE(i,0x253, (DDR2800_PI_WRLAT_ADJ<<16)|(DDR2800_PI_WRLAT_ADJ<<8)|(DDR2800_PI_WRLAT_ADJ<<0));
-
 		REG_DDRPHY_WRITE(i,0x28A, (DDR2800_PI_TFC<<16)|(DDR2800_PI_TFC<<0));
 		REG_DDRPHY_WRITE(i,0x28B, (DDR2800_PI_TRTP<<24)|(DDR2800_PI_TCCD<<16)|(DDR2800_PI_TFC<<0));
 		REG_DDRPHY_WRITE(i,0x28C, (DDR2800_PI_TWR<<24) |(DDR2800_PI_TWTR<<16)|(DDR2800_PI_TRCD<<8)|(DDR2800_PI_TRP<<0));
@@ -3827,7 +2913,6 @@ void freq2800_reg_set()
 		REG_DDRPHY_WRITE(i,0x293, (DDR2800_PI_TWR<<8)|(DDR2800_PI_TWTR<<0));
 		REG_DDRPHY_WRITE(i,0x294, (DDR2800_PI_TRAS_MIN<<24)|(DDR2800_PI_TRAS_MAX<<0));
 		REG_DDRPHY_WRITE(i,0x295, (DDR2800_PI_TMRW<<24) | (DDR2800_PI_TMRD<<16)|(DDR2800_PI_TCCDMW<<8)|(DDR2800_PI_TDQSCK_MAX<<0));
-
 		REG_DDRPHY_WRITE(i,0x276, (DDR_MR3 <<24)|(DDR2800_PI_MR2 <<16)|(DDR2800_PI_MR1 <<8)|0x00);
 		REG_DDRPHY_WRITE(i,0x277, (DDR2800_PI_MR1 <<24)|(PI_MR14<<16)|(PI_MR12<<8)|(PI_MR11<<0));
 		REG_DDRPHY_WRITE(i,0x278, (PI_MR12<<24)|(PI_MR11<<16)|(DDR_MR3 <<8)|(DDR2800_PI_MR2 <<0));
@@ -3848,61 +2933,55 @@ void freq2800_reg_set()
 		REG_DDRPHY_WRITE(i,0x287, (DDR2800_PI_MR2 <<24)|(DDR2800_PI_MR1 <<16)|(PI_MR14<<8)|(PI_MR12<<0));
 		REG_DDRPHY_WRITE(i,0x288, (PI_MR14<<24)|(PI_MR12<<16)|(PI_MR11<<8)|(DDR_MR3 <<0));
 		REG_DDRPHY_WRITE(i,0x289, 0x00020000                              |(PI_MR13<<0));
-
-		REG_DDRPHY_WRITE(i,0x247, 0x0a0a0a05);	//PI_RD_TO_ODTH_F2:RW:24:6:=0x15 PI_RD_TO_ODTH_F1:RW:16:6:=0x15 PI_RD_TO_ODTH_F0:RW:8:6:=0x04 PI_WR_TO_ODTH_F2:RW:0:6:=0x08
-		REG_DDRPHY_WRITE(i,0x254, 0x02030303);	//PI_TDFI_PHY_WRDATA:RW:24:3:=0x02 PI_TDFI_WRCSLAT_F2:RW:16:7:=0x06 PI_TDFI_WRCSLAT_F1:RW:8:7:=0x06 PI_TDFI_WRCSLAT_F0:RW:0:7:=0x01
-		REG_DDRPHY_WRITE(i,0x257, 0x00201701);	//PI_TDFI_CALVL_CC_F0:RW:16:10:=0x0018 PI_TDFI_CALVL_EN:RW:8:8:=0x17 PI_CALVL_CS_MAP:RW:0:4:=0x03
-		REG_DDRPHY_WRITE(i,0x258, 0x0020000e);	//PI_TDFI_CALVL_CC_F1:RW:16:10:=0x0028 PI_TDFI_CALVL_CAPTURE_F0:RW:0:10:=0x000e
-		REG_DDRPHY_WRITE(i,0x259, 0x0020000e);	//PI_TDFI_CALVL_CC_F2:RW:16:10:=0x0028 PI_TDFI_CALVL_CAPTURE_F1:RW:0:10:=0x000e
-		REG_DDRPHY_WRITE(i,0x25A, 0x0000000e);	//PI_TDFI_CALVL_CAPTURE_F2:RW:0:10:=0x0016
-		REG_DDRPHY_WRITE(i,0x25F, 0x00C8020A);	//PI_TCAENT_F0:RW:16:14:=0x0005 PI_TMRZ_F0:RW:8:5:=0x01 PI_TCACKEH:RW:0:5:=0x0a
-		REG_DDRPHY_WRITE(i,0x260, 0x0200C802);	//PI_TMRZ_F2:RW:24:5:=0x03 PI_TCAENT_F1:RW:8:14:=0x018d PI_TMRZ_F1:RW:0:5:=0x03
-		REG_DDRPHY_WRITE(i,0x261, 0x000A00C8);	//PI_CA_TRAIN_VREF_EN:RW:24:1:=0x01 PI_TCAEXT:RW:16:5:=0x0a PI_TCAENT_F2:RW:0:14:=0x018d
-		REG_DDRPHY_WRITE(i,0x262, 0x00C90100);	//PI_TVREF_SHORT_F0:RW:16:10:=0x0006 PI_TDFI_CASEL_F0:RW:8:5:=0x01 PI_TDFI_CACSCA_F0:RW:0:5:=0x00
-		REG_DDRPHY_WRITE(i,0x263, 0x010000C9);	//PI_TDFI_CASEL_F1:RW:24:5:=0x01 PI_TDFI_CACSCA_F1:RW:16:5:=0x00 PI_TVREF_LONG_F0:RW:0:10:=0x0006
-		REG_DDRPHY_WRITE(i,0x268, 0x07070705);	//PI_TDFI_CALVL_STROBE_F2:RW:24:4:=0x09 PI_TDFI_CALVL_STROBE_F1:RW:16:4:=0x09 PI_TDFI_CALVL_STROBE_F0:RW:8:4:=0x06 PI_TDFI_INIT_COMPLETE_MIN:RW:0:8:=0x05
-		REG_DDRPHY_WRITE(i,0x26D, 0x10100100);	//PI_TCKEHDQS_F1:RW:24:6:=0x18 PI_TCKEHDQS_F0:RW:16:6:=0x02 PI_REFRESH_BETWEEN_SEGMENT_DISABLE:RW_D:8:1:=0x01 PI_DRAM_CLK_DISABLE_DEASSERT_SEL:RW:0:1:=0x00
-		REG_DDRPHY_WRITE(i,0x26E, 0x00010110);	//PI_WDQLVL_BST_NUM:RW:16:3:=0x01 PI_WDQLVL_VREF_EN:RW:8:1:=0x01 PI_TCKEHDQS_F2:RW:0:6:=0x18
-		REG_DDRPHY_WRITE(i,0x2A8, 0x00185000);	//PI_TDFI_CTRLUPD_MAX_F0:RW:8:16:=0x008c PI_TDFI_CTRLUPD_MIN:RD:0:4:=0x00
-		REG_DDRPHY_WRITE(i,0x2A9, 0x0000f320);	//PI_TDFI_CTRLUPD_INTERVAL_F0:RW:0:32:=0x00000578
-		REG_DDRPHY_WRITE(i,0x2AA, 0x00001850);	//PI_TDFI_CTRLUPD_MAX_F1:RW:0:16:=0x304c
-		REG_DDRPHY_WRITE(i,0x2AB, 0x0000f320);	//PI_TDFI_CTRLUPD_INTERVAL_F1:RW:0:32:=0x0001e2f8
-		REG_DDRPHY_WRITE(i,0x2AC, 0x00001850);	//PI_TDFI_CTRLUPD_MAX_F2:RW:0:16:=0x304c
-		REG_DDRPHY_WRITE(i,0x2AD, 0x0000f320);	//PI_TDFI_CTRLUPD_INTERVAL_F2:RW:0:32:=0x0001e2f8
-
-		REG_DDRPHY_WRITE(i,0x44C, 0x00020109);	//PHY_WRITE_PATH_LAT_ADD_0:RW+:24:3:=0x00 PHY_RDDQS_LATENCY_ADJUST_0:RW+:16:4:=0x04 PHY_RDDQS_GATE_SLAVE_DELAY_0:RW+:0:10:=0x0109
-		REG_DDRPHY_WRITE(i,0x452, 0x070000C0);	//PHY_RDDATA_EN_DLY_0:RW+:24:4:=0x0e PHY_IE_MODE_0:RW+:16:2:=0x00 PHY_RDDATA_EN_IE_DLY_0:RW+:8:2:=0x00 PHY_DQS_IE_TIMING_0:RW+:0:8:=0xc0
-		REG_DDRPHY_WRITE(i,0x453, 0x00100006);	//PHY_MASTER_DELAY_START_0:RW+:16:10:=0x0010 PHY_SW_MASTER_MODE_0:RW+:8:4:=0x00 PHY_RDDATA_EN_TSEL_DLY_0:RW+:0:4:=0x0c
-		REG_DDRPHY_WRITE(i,0x454, 0x0C054208);	//PHY_WRLVL_DLY_STEP_0:RW+:24:4:=0x0c PHY_RPTR_UPDATE_0:RW+:16:4:=0x06 PHY_MASTER_DELAY_WAIT_0:RW+:8:8:=0x42 PHY_MASTER_DELAY_STEP_0:RW+:0:6:=0x08
-		REG_DDRPHY_WRITE(i,0x4CC, 0x00020109);	//PHY_WRITE_PATH_LAT_ADD_1:RW+:24:3:=0x00 PHY_RDDQS_LATENCY_ADJUST_1:RW+:16:4:=0x04 PHY_RDDQS_GATE_SLAVE_DELAY_1:RW+:0:10:=0x0109
-		REG_DDRPHY_WRITE(i,0x4D2, 0x070000C0);	//PHY_RDDATA_EN_DLY_1:RW+:24:4:=0x0e PHY_IE_MODE_1:RW+:16:2:=0x00 PHY_RDDATA_EN_IE_DLY_1:RW+:8:2:=0x00 PHY_DQS_IE_TIMING_1:RW+:0:8:=0xc0
-		REG_DDRPHY_WRITE(i,0x4D3, 0x00100006);	//PHY_MASTER_DELAY_START_1:RW+:16:10:=0x0010 PHY_SW_MASTER_MODE_1:RW+:8:4:=0x00 PHY_RDDATA_EN_TSEL_DLY_1:RW+:0:4:=0x0c
-		REG_DDRPHY_WRITE(i,0x4D4, 0x0C054208);	//PHY_WRLVL_DLY_STEP_1:RW+:24:4:=0x0c PHY_RPTR_UPDATE_1:RW+:16:4:=0x06 PHY_MASTER_DELAY_WAIT_1:RW+:8:8:=0x42 PHY_MASTER_DELAY_STEP_1:RW+:0:6:=0x08
-		REG_DDRPHY_WRITE(i,0x54C, 0x00020109);	//PHY_WRITE_PATH_LAT_ADD_2:RW+:24:3:=0x00 PHY_RDDQS_LATENCY_ADJUST_2:RW+:16:4:=0x04 PHY_RDDQS_GATE_SLAVE_DELAY_2:RW+:0:10:=0x0109
-		REG_DDRPHY_WRITE(i,0x552, 0x070000C0);	//PHY_RDDATA_EN_DLY_2:RW+:24:4:=0x0e PHY_IE_MODE_2:RW+:16:2:=0x00 PHY_RDDATA_EN_IE_DLY_2:RW+:8:2:=0x00 PHY_DQS_IE_TIMING_2:RW+:0:8:=0xc0
-		REG_DDRPHY_WRITE(i,0x553, 0x00100006);	//PHY_MASTER_DELAY_START_2:RW+:16:10:=0x0010 PHY_SW_MASTER_MODE_2:RW+:8:4:=0x00 PHY_RDDATA_EN_TSEL_DLY_2:RW+:0:4:=0x0c
-		REG_DDRPHY_WRITE(i,0x554, 0x0C054208);	//PHY_WRLVL_DLY_STEP_2:RW+:24:4:=0x0c PHY_RPTR_UPDATE_2:RW+:16:4:=0x06 PHY_MASTER_DELAY_WAIT_2:RW+:8:8:=0x42 PHY_MASTER_DELAY_STEP_2:RW+:0:6:=0x08
-		REG_DDRPHY_WRITE(i,0x5CC, 0x00020109);	//PHY_WRITE_PATH_LAT_ADD_3:RW+:24:3:=0x00 PHY_RDDQS_LATENCY_ADJUST_3:RW+:16:4:=0x04 PHY_RDDQS_GATE_SLAVE_DELAY_3:RW+:0:10:=0x0109
-		REG_DDRPHY_WRITE(i,0x5D2, 0x070000C0);	//PHY_RDDATA_EN_DLY_3:RW+:24:4:=0x0e PHY_IE_MODE_3:RW+:16:2:=0x00 PHY_RDDATA_EN_IE_DLY_3:RW+:8:2:=0x00 PHY_DQS_IE_TIMING_3:RW+:0:8:=0xc0
-		REG_DDRPHY_WRITE(i,0x5D3, 0x00100006);	//PHY_MASTER_DELAY_START_3:RW+:16:10:=0x0010 PHY_SW_MASTER_MODE_3:RW+:8:4:=0x00 PHY_RDDATA_EN_TSEL_DLY_3:RW+:0:4:=0x0c
-		REG_DDRPHY_WRITE(i,0x5D4, 0x0C054208);	//PHY_WRLVL_DLY_STEP_3:RW+:24:4:=0x0c PHY_RPTR_UPDATE_3:RW+:16:4:=0x06 PHY_MASTER_DELAY_WAIT_3:RW+:8:8:=0x42 PHY_MASTER_DELAY_STEP_3:RW+:0:6:=0x08
-		REG_DDRPHY_WRITE(i,0x719, 0x00000303);	//PHY_LP_WAKEUP:RW:24:4:=0x00 PHY_LP4_BOOT_LOW_FREQ_SEL:RW:16:1:=0x01 PHY_TCKSRE_WAIT:RW:8:4:=0x05 PHY_PLL_TESTOUT_SEL:RW:0:3:=0x03
+		REG_DDRPHY_WRITE(i,0x247, 0x0a0a0a05);
+		REG_DDRPHY_WRITE(i,0x254, 0x02030303);
+		REG_DDRPHY_WRITE(i,0x257, 0x00201701);
+		REG_DDRPHY_WRITE(i,0x258, 0x0020000e);
+		REG_DDRPHY_WRITE(i,0x259, 0x0020000e);
+		REG_DDRPHY_WRITE(i,0x25A, 0x0000000e);
+		REG_DDRPHY_WRITE(i,0x25F, 0x00C8020A);
+		REG_DDRPHY_WRITE(i,0x260, 0x0200C802);
+		REG_DDRPHY_WRITE(i,0x261, 0x000A00C8);
+		REG_DDRPHY_WRITE(i,0x262, 0x00C90100);
+		REG_DDRPHY_WRITE(i,0x263, 0x010000C9);
+		REG_DDRPHY_WRITE(i,0x268, 0x07070705);
+		REG_DDRPHY_WRITE(i,0x26D, 0x10100100);
+		REG_DDRPHY_WRITE(i,0x26E, 0x00010110);
+		REG_DDRPHY_WRITE(i,0x2A8, 0x00185000);
+		REG_DDRPHY_WRITE(i,0x2A9, 0x0000f320);
+		REG_DDRPHY_WRITE(i,0x2AA, 0x00001850);
+		REG_DDRPHY_WRITE(i,0x2AB, 0x0000f320);
+		REG_DDRPHY_WRITE(i,0x2AC, 0x00001850);
+		REG_DDRPHY_WRITE(i,0x2AD, 0x0000f320);
+		
+		REG_DDRPHY_WRITE(i,0x44C, 0x00020109);
+		REG_DDRPHY_WRITE(i,0x452, 0x070000C0);
+		REG_DDRPHY_WRITE(i,0x453, 0x00100006);
+		REG_DDRPHY_WRITE(i,0x454, 0x0C054208);
+		REG_DDRPHY_WRITE(i,0x4CC, 0x00020109);
+		REG_DDRPHY_WRITE(i,0x4D2, 0x070000C0);
+		REG_DDRPHY_WRITE(i,0x4D3, 0x00100006);
+		REG_DDRPHY_WRITE(i,0x4D4, 0x0C054208);
+		REG_DDRPHY_WRITE(i,0x54C, 0x00020109);
+		REG_DDRPHY_WRITE(i,0x552, 0x070000C0);
+		REG_DDRPHY_WRITE(i,0x553, 0x00100006);
+		REG_DDRPHY_WRITE(i,0x554, 0x0C054208);
+		REG_DDRPHY_WRITE(i,0x5CC, 0x00020109);
+		REG_DDRPHY_WRITE(i,0x5D2, 0x070000C0);
+		REG_DDRPHY_WRITE(i,0x5D3, 0x00100006);
+		REG_DDRPHY_WRITE(i,0x5D4, 0x0C054208);
+		REG_DDRPHY_WRITE(i,0x719, 0x00000303);
 	}
 }
-
-
-void freq2400_reg_set()
+static void freq2400_reg_set()
 {
 	uint32_t i;
-
 	for(i=0;i<DRAM_CH_CNT;i++)
 	{
 		REG_DDRPHY_WRITE(i,0x22B, (DDR2400_PI_CASLAT_LIN<<24)|(DDR2400_PI_WRLAT<<16)|(DDR2400_PI_CASLAT_LIN<<8)|(DDR2400_PI_WRLAT<<0));
 		REG_DDRPHY_WRITE(i,0x22C, 0x00020000|(DDR2400_PI_CASLAT_LIN<<8)|(DDR2400_PI_WRLAT<<0));
-
 		REG_DDRPHY_WRITE(i,0x252, (DDR2400_PI_RDLAT_ADJ<<16)|(DDR2400_PI_RDLAT_ADJ<<8)|(DDR2400_PI_RDLAT_ADJ<<0));
 		REG_DDRPHY_WRITE(i,0x253, (DDR2400_PI_WRLAT_ADJ<<16)|(DDR2400_PI_WRLAT_ADJ<<8)|(DDR2400_PI_WRLAT_ADJ<<0));
-
 		REG_DDRPHY_WRITE(i,0x28A, (DDR2400_PI_TFC<<16)|(DDR2400_PI_TFC<<0));
 		REG_DDRPHY_WRITE(i,0x28B, (DDR2400_PI_TRTP<<24)|(DDR2400_PI_TCCD<<16)|(DDR2400_PI_TFC<<0));
 		REG_DDRPHY_WRITE(i,0x28C, (DDR2400_PI_TWR<<24) |(DDR2400_PI_TWTR<<16)|(DDR2400_PI_TRCD<<8)|(DDR2400_PI_TRP<<0));
@@ -3915,7 +2994,6 @@ void freq2400_reg_set()
 		REG_DDRPHY_WRITE(i,0x293, (DDR2400_PI_TWR<<8)|(DDR2400_PI_TWTR<<0));
 		REG_DDRPHY_WRITE(i,0x294, (DDR2400_PI_TRAS_MIN<<24)|(DDR2400_PI_TRAS_MAX<<0));
 		REG_DDRPHY_WRITE(i,0x295, (DDR2400_PI_TMRW<<24) | (DDR2400_PI_TMRD<<16)|(DDR2400_PI_TCCDMW<<8)|(DDR2400_PI_TDQSCK_MAX<<0));
-
 		REG_DDRPHY_WRITE(i,0x276, (DDR_MR3 <<24)|(DDR2400_PI_MR2 <<16)|(DDR2400_PI_MR1 <<8)|0x00);
 		REG_DDRPHY_WRITE(i,0x277, (DDR2400_PI_MR1 <<24)|(PI_MR14<<16)|(PI_MR12<<8)|(PI_MR11<<0));
 		REG_DDRPHY_WRITE(i,0x278, (PI_MR12<<24)|(PI_MR11<<16)|(DDR_MR3 <<8)|(DDR2400_PI_MR2 <<0));
@@ -3937,60 +3015,56 @@ void freq2400_reg_set()
 		REG_DDRPHY_WRITE(i,0x288, (PI_MR14<<24)|(PI_MR12<<16)|(PI_MR11<<8)|(DDR_MR3 <<0));
 		REG_DDRPHY_WRITE(i,0x289, 0x00020000                              |(PI_MR13<<0));
 
-		REG_DDRPHY_WRITE(i,0x247, 0x0a0a0a05);	//PI_RD_TO_ODTH_F2:RW:24:6:=0x15 PI_RD_TO_ODTH_F1:RW:16:6:=0x15 PI_RD_TO_ODTH_F0:RW:8:6:=0x04 PI_WR_TO_ODTH_F2:RW:0:6:=0x08
-		REG_DDRPHY_WRITE(i,0x254, 0x02030303);	//PI_TDFI_PHY_WRDATA:RW:24:3:=0x02 PI_TDFI_WRCSLAT_F2:RW:16:7:=0x06 PI_TDFI_WRCSLAT_F1:RW:8:7:=0x06 PI_TDFI_WRCSLAT_F0:RW:0:7:=0x01
-		REG_DDRPHY_WRITE(i,0x257, 0x00201701);	//PI_TDFI_CALVL_CC_F0:RW:16:10:=0x0018 PI_TDFI_CALVL_EN:RW:8:8:=0x17 PI_CALVL_CS_MAP:RW:0:4:=0x03
-		REG_DDRPHY_WRITE(i,0x258, 0x0020000e);	//PI_TDFI_CALVL_CC_F1:RW:16:10:=0x0028 PI_TDFI_CALVL_CAPTURE_F0:RW:0:10:=0x000e
-		REG_DDRPHY_WRITE(i,0x259, 0x0020000e);	//PI_TDFI_CALVL_CC_F2:RW:16:10:=0x0028 PI_TDFI_CALVL_CAPTURE_F1:RW:0:10:=0x000e
-		REG_DDRPHY_WRITE(i,0x25A, 0x0000000e);	//PI_TDFI_CALVL_CAPTURE_F2:RW:0:10:=0x0016
-		REG_DDRPHY_WRITE(i,0x25F, 0x00C8020A);	//PI_TCAENT_F0:RW:16:14:=0x0005 PI_TMRZ_F0:RW:8:5:=0x01 PI_TCACKEH:RW:0:5:=0x0a
-		REG_DDRPHY_WRITE(i,0x260, 0x0200C802);	//PI_TMRZ_F2:RW:24:5:=0x03 PI_TCAENT_F1:RW:8:14:=0x018d PI_TMRZ_F1:RW:0:5:=0x03
-		REG_DDRPHY_WRITE(i,0x261, 0x000A00C8);	//PI_CA_TRAIN_VREF_EN:RW:24:1:=0x01 PI_TCAEXT:RW:16:5:=0x0a PI_TCAENT_F2:RW:0:14:=0x018d
-		REG_DDRPHY_WRITE(i,0x262, 0x00C90100);	//PI_TVREF_SHORT_F0:RW:16:10:=0x0006 PI_TDFI_CASEL_F0:RW:8:5:=0x01 PI_TDFI_CACSCA_F0:RW:0:5:=0x00
-		REG_DDRPHY_WRITE(i,0x263, 0x010000C9);	//PI_TDFI_CASEL_F1:RW:24:5:=0x01 PI_TDFI_CACSCA_F1:RW:16:5:=0x00 PI_TVREF_LONG_F0:RW:0:10:=0x0006
-		REG_DDRPHY_WRITE(i,0x268, 0x07070705);	//PI_TDFI_CALVL_STROBE_F2:RW:24:4:=0x09 PI_TDFI_CALVL_STROBE_F1:RW:16:4:=0x09 PI_TDFI_CALVL_STROBE_F0:RW:8:4:=0x06 PI_TDFI_INIT_COMPLETE_MIN:RW:0:8:=0x05
-		REG_DDRPHY_WRITE(i,0x26D, 0x10100100);	//PI_TCKEHDQS_F1:RW:24:6:=0x18 PI_TCKEHDQS_F0:RW:16:6:=0x02 PI_REFRESH_BETWEEN_SEGMENT_DISABLE:RW_D:8:1:=0x01 PI_DRAM_CLK_DISABLE_DEASSERT_SEL:RW:0:1:=0x00
-		REG_DDRPHY_WRITE(i,0x26E, 0x00010110);	//PI_WDQLVL_BST_NUM:RW:16:3:=0x01 PI_WDQLVL_VREF_EN:RW:8:1:=0x01 PI_TCKEHDQS_F2:RW:0:6:=0x18
-		REG_DDRPHY_WRITE(i,0x2A8, 0x00185000);	//PI_TDFI_CTRLUPD_MAX_F0:RW:8:16:=0x008c PI_TDFI_CTRLUPD_MIN:RD:0:4:=0x00
-		REG_DDRPHY_WRITE(i,0x2A9, 0x0000f320);	//PI_TDFI_CTRLUPD_INTERVAL_F0:RW:0:32:=0x00000578
-		REG_DDRPHY_WRITE(i,0x2AA, 0x00001850);	//PI_TDFI_CTRLUPD_MAX_F1:RW:0:16:=0x304c
-		REG_DDRPHY_WRITE(i,0x2AB, 0x0000f320);	//PI_TDFI_CTRLUPD_INTERVAL_F1:RW:0:32:=0x0001e2f8
-		REG_DDRPHY_WRITE(i,0x2AC, 0x00001850);	//PI_TDFI_CTRLUPD_MAX_F2:RW:0:16:=0x304c
-		REG_DDRPHY_WRITE(i,0x2AD, 0x0000f320);	//PI_TDFI_CTRLUPD_INTERVAL_F2:RW:0:32:=0x0001e2f8
-
-		REG_DDRPHY_WRITE(i,0x44C, 0x00020109);	//PHY_WRITE_PATH_LAT_ADD_0:RW+:24:3:=0x00 PHY_RDDQS_LATENCY_ADJUST_0:RW+:16:4:=0x04 PHY_RDDQS_GATE_SLAVE_DELAY_0:RW+:0:10:=0x0109
-		REG_DDRPHY_WRITE(i,0x452, 0x070000C0);	//PHY_RDDATA_EN_DLY_0:RW+:24:4:=0x0e PHY_IE_MODE_0:RW+:16:2:=0x00 PHY_RDDATA_EN_IE_DLY_0:RW+:8:2:=0x00 PHY_DQS_IE_TIMING_0:RW+:0:8:=0xc0
-		REG_DDRPHY_WRITE(i,0x453, 0x00100006);	//PHY_MASTER_DELAY_START_0:RW+:16:10:=0x0010 PHY_SW_MASTER_MODE_0:RW+:8:4:=0x00 PHY_RDDATA_EN_TSEL_DLY_0:RW+:0:4:=0x0c
-		REG_DDRPHY_WRITE(i,0x454, 0x0C054208);	//PHY_WRLVL_DLY_STEP_0:RW+:24:4:=0x0c PHY_RPTR_UPDATE_0:RW+:16:4:=0x06 PHY_MASTER_DELAY_WAIT_0:RW+:8:8:=0x42 PHY_MASTER_DELAY_STEP_0:RW+:0:6:=0x08
-		REG_DDRPHY_WRITE(i,0x4CC, 0x00020109);	//PHY_WRITE_PATH_LAT_ADD_1:RW+:24:3:=0x00 PHY_RDDQS_LATENCY_ADJUST_1:RW+:16:4:=0x04 PHY_RDDQS_GATE_SLAVE_DELAY_1:RW+:0:10:=0x0109
-		REG_DDRPHY_WRITE(i,0x4D2, 0x070000C0);	//PHY_RDDATA_EN_DLY_1:RW+:24:4:=0x0e PHY_IE_MODE_1:RW+:16:2:=0x00 PHY_RDDATA_EN_IE_DLY_1:RW+:8:2:=0x00 PHY_DQS_IE_TIMING_1:RW+:0:8:=0xc0
-		REG_DDRPHY_WRITE(i,0x4D3, 0x00100006);	//PHY_MASTER_DELAY_START_1:RW+:16:10:=0x0010 PHY_SW_MASTER_MODE_1:RW+:8:4:=0x00 PHY_RDDATA_EN_TSEL_DLY_1:RW+:0:4:=0x0c
-		REG_DDRPHY_WRITE(i,0x4D4, 0x0C054208);	//PHY_WRLVL_DLY_STEP_1:RW+:24:4:=0x0c PHY_RPTR_UPDATE_1:RW+:16:4:=0x06 PHY_MASTER_DELAY_WAIT_1:RW+:8:8:=0x42 PHY_MASTER_DELAY_STEP_1:RW+:0:6:=0x08
-		REG_DDRPHY_WRITE(i,0x54C, 0x00020109);	//PHY_WRITE_PATH_LAT_ADD_2:RW+:24:3:=0x00 PHY_RDDQS_LATENCY_ADJUST_2:RW+:16:4:=0x04 PHY_RDDQS_GATE_SLAVE_DELAY_2:RW+:0:10:=0x0109
-		REG_DDRPHY_WRITE(i,0x552, 0x070000C0);	//PHY_RDDATA_EN_DLY_2:RW+:24:4:=0x0e PHY_IE_MODE_2:RW+:16:2:=0x00 PHY_RDDATA_EN_IE_DLY_2:RW+:8:2:=0x00 PHY_DQS_IE_TIMING_2:RW+:0:8:=0xc0
-		REG_DDRPHY_WRITE(i,0x553, 0x00100006);	//PHY_MASTER_DELAY_START_2:RW+:16:10:=0x0010 PHY_SW_MASTER_MODE_2:RW+:8:4:=0x00 PHY_RDDATA_EN_TSEL_DLY_2:RW+:0:4:=0x0c
-		REG_DDRPHY_WRITE(i,0x554, 0x0C054208);	//PHY_WRLVL_DLY_STEP_2:RW+:24:4:=0x0c PHY_RPTR_UPDATE_2:RW+:16:4:=0x06 PHY_MASTER_DELAY_WAIT_2:RW+:8:8:=0x42 PHY_MASTER_DELAY_STEP_2:RW+:0:6:=0x08
-		REG_DDRPHY_WRITE(i,0x5CC, 0x00020109);	//PHY_WRITE_PATH_LAT_ADD_3:RW+:24:3:=0x00 PHY_RDDQS_LATENCY_ADJUST_3:RW+:16:4:=0x04 PHY_RDDQS_GATE_SLAVE_DELAY_3:RW+:0:10:=0x0109
-		REG_DDRPHY_WRITE(i,0x5D2, 0x070000C0);	//PHY_RDDATA_EN_DLY_3:RW+:24:4:=0x0e PHY_IE_MODE_3:RW+:16:2:=0x00 PHY_RDDATA_EN_IE_DLY_3:RW+:8:2:=0x00 PHY_DQS_IE_TIMING_3:RW+:0:8:=0xc0
-		REG_DDRPHY_WRITE(i,0x5D3, 0x00100006);	//PHY_MASTER_DELAY_START_3:RW+:16:10:=0x0010 PHY_SW_MASTER_MODE_3:RW+:8:4:=0x00 PHY_RDDATA_EN_TSEL_DLY_3:RW+:0:4:=0x0c
-		REG_DDRPHY_WRITE(i,0x5D4, 0x0C054208);	//PHY_WRLVL_DLY_STEP_3:RW+:24:4:=0x0c PHY_RPTR_UPDATE_3:RW+:16:4:=0x06 PHY_MASTER_DELAY_WAIT_3:RW+:8:8:=0x42 PHY_MASTER_DELAY_STEP_3:RW+:0:6:=0x08
-		REG_DDRPHY_WRITE(i,0x719, 0x00000303);	//PHY_LP_WAKEUP:RW:24:4:=0x00 PHY_LP4_BOOT_LOW_FREQ_SEL:RW:16:1:=0x01 PHY_TCKSRE_WAIT:RW:8:4:=0x05 PHY_PLL_TESTOUT_SEL:RW:0:3:=0x03
+		REG_DDRPHY_WRITE(i,0x247, 0x0a0a0a05);
+		REG_DDRPHY_WRITE(i,0x254, 0x02030303);
+		REG_DDRPHY_WRITE(i,0x257, 0x00201701);
+		REG_DDRPHY_WRITE(i,0x258, 0x0020000e);
+		REG_DDRPHY_WRITE(i,0x259, 0x0020000e);
+		REG_DDRPHY_WRITE(i,0x25A, 0x0000000e);
+		REG_DDRPHY_WRITE(i,0x25F, 0x00C8020A);
+		REG_DDRPHY_WRITE(i,0x260, 0x0200C802);
+		REG_DDRPHY_WRITE(i,0x261, 0x000A00C8);
+		REG_DDRPHY_WRITE(i,0x262, 0x00C90100);
+		REG_DDRPHY_WRITE(i,0x263, 0x010000C9);
+		REG_DDRPHY_WRITE(i,0x268, 0x07070705);
+		REG_DDRPHY_WRITE(i,0x26D, 0x10100100);
+		REG_DDRPHY_WRITE(i,0x26E, 0x00010110);
+		REG_DDRPHY_WRITE(i,0x2A8, 0x00185000);
+		REG_DDRPHY_WRITE(i,0x2A9, 0x0000f320);
+		REG_DDRPHY_WRITE(i,0x2AA, 0x00001850);
+		REG_DDRPHY_WRITE(i,0x2AB, 0x0000f320);
+		REG_DDRPHY_WRITE(i,0x2AC, 0x00001850);
+		REG_DDRPHY_WRITE(i,0x2AD, 0x0000f320);
+		
+		REG_DDRPHY_WRITE(i,0x44C, 0x00020109);
+		REG_DDRPHY_WRITE(i,0x452, 0x070000C0);
+		REG_DDRPHY_WRITE(i,0x453, 0x00100006);
+		REG_DDRPHY_WRITE(i,0x454, 0x0C054208);
+		REG_DDRPHY_WRITE(i,0x4CC, 0x00020109);
+		REG_DDRPHY_WRITE(i,0x4D2, 0x070000C0);
+		REG_DDRPHY_WRITE(i,0x4D3, 0x00100006);
+		REG_DDRPHY_WRITE(i,0x4D4, 0x0C054208);
+		REG_DDRPHY_WRITE(i,0x54C, 0x00020109);
+		REG_DDRPHY_WRITE(i,0x552, 0x070000C0);
+		REG_DDRPHY_WRITE(i,0x553, 0x00100006);
+		REG_DDRPHY_WRITE(i,0x554, 0x0C054208);
+		REG_DDRPHY_WRITE(i,0x5CC, 0x00020109);
+		REG_DDRPHY_WRITE(i,0x5D2, 0x070000C0);
+		REG_DDRPHY_WRITE(i,0x5D3, 0x00100006);
+		REG_DDRPHY_WRITE(i,0x5D4, 0x0C054208);
+		REG_DDRPHY_WRITE(i,0x719, 0x00000303);
 	}
 }
 #endif
-
 static void freq1600_reg_set()
 {
 	uint32_t i;
-
 	for(i=0;i<DRAM_CH_CNT;i++)
 	{
 		REG_DDRPHY_WRITE(i,0x22B, (DDR1600_PI_CASLAT_LIN<<24)|(DDR1600_PI_WRLAT<<16)|(DDR1600_PI_CASLAT_LIN<<8)|(DDR1600_PI_WRLAT<<0));
 		REG_DDRPHY_WRITE(i,0x22C, 0x00020000|(DDR1600_PI_CASLAT_LIN<<8)|(DDR1600_PI_WRLAT<<0));
-
 		REG_DDRPHY_WRITE(i,0x252, (DDR1600_PI_RDLAT_ADJ<<16)|(DDR1600_PI_RDLAT_ADJ<<8)|(DDR1600_PI_RDLAT_ADJ<<0));
 		REG_DDRPHY_WRITE(i,0x253, (DDR1600_PI_WRLAT_ADJ<<16)|(DDR1600_PI_WRLAT_ADJ<<8)|(DDR1600_PI_WRLAT_ADJ<<0));
-
 		REG_DDRPHY_WRITE(i,0x28A, (DDR1600_PI_TFC<<16)|(DDR1600_PI_TFC<<0));
 		REG_DDRPHY_WRITE(i,0x28B, (DDR1600_PI_TRTP<<24)|(DDR1600_PI_TCCD<<16)|(DDR1600_PI_TFC<<0));
 		REG_DDRPHY_WRITE(i,0x28C, (DDR1600_PI_TWR<<24) |(DDR1600_PI_TWTR<<16)|(DDR1600_PI_TRCD<<8)|(DDR1600_PI_TRP<<0));
@@ -4003,7 +3077,6 @@ static void freq1600_reg_set()
 		REG_DDRPHY_WRITE(i,0x293, (DDR1600_PI_TWR<<8)|(DDR1600_PI_TWTR<<0));
 		REG_DDRPHY_WRITE(i,0x294, (DDR1600_PI_TRAS_MIN<<24)|(DDR1600_PI_TRAS_MAX<<0));
 		REG_DDRPHY_WRITE(i,0x295, (DDR1600_PI_TMRW<<24) | (DDR1600_PI_TMRD<<16)|(DDR1600_PI_TCCDMW<<8)|(DDR1600_PI_TDQSCK_MAX<<0));
-
 		REG_DDRPHY_WRITE(i,0x276, (PI_MR3 <<24)|(DDR1600_PI_MR2 <<16)|(DDR1600_PI_MR1 <<8)|0x00);
 		REG_DDRPHY_WRITE(i,0x277, (DDR1600_PI_MR1 <<24)|(PI_MR14<<16)|(PI_MR12<<8)|(PI_MR11<<0));
 		REG_DDRPHY_WRITE(i,0x278, (PI_MR12<<24)|(PI_MR11<<16)|(PI_MR3 <<8)|(DDR1600_PI_MR2 <<0));
@@ -4024,85 +3097,61 @@ static void freq1600_reg_set()
 		REG_DDRPHY_WRITE(i,0x287, (DDR1600_PI_MR2 <<24)|(DDR1600_PI_MR1 <<16)|(PI_MR14<<8)|(PI_MR12<<0));
 		REG_DDRPHY_WRITE(i,0x288, (PI_MR14<<24)|(PI_MR12<<16)|(PI_MR11<<8)|(PI_MR3 <<0));
 		REG_DDRPHY_WRITE(i,0x289, 0x00020000                              |(PI_MR13<<0));
-
-		REG_DDRPHY_WRITE(i,0x247, 0x0a0a0a05);	//PI_RD_TO_ODTH_F2:RW:24:6:=0x15 PI_RD_TO_ODTH_F1:RW:16:6:=0x15 PI_RD_TO_ODTH_F0:RW:8:6:=0x04 PI_WR_TO_ODTH_F2:RW:0:6:=0x08
-		REG_DDRPHY_WRITE(i,0x254, 0x02030303);	//PI_TDFI_PHY_WRDATA:RW:24:3:=0x02 PI_TDFI_WRCSLAT_F2:RW:16:7:=0x06 PI_TDFI_WRCSLAT_F1:RW:8:7:=0x06 PI_TDFI_WRCSLAT_F0:RW:0:7:=0x01
-		REG_DDRPHY_WRITE(i,0x257, 0x00201701);	//PI_TDFI_CALVL_CC_F0:RW:16:10:=0x0018 PI_TDFI_CALVL_EN:RW:8:8:=0x17 PI_CALVL_CS_MAP:RW:0:4:=0x03
-		REG_DDRPHY_WRITE(i,0x258, 0x0020000e);	//PI_TDFI_CALVL_CC_F1:RW:16:10:=0x0028 PI_TDFI_CALVL_CAPTURE_F0:RW:0:10:=0x000e
-		REG_DDRPHY_WRITE(i,0x259, 0x0020000e);	//PI_TDFI_CALVL_CC_F2:RW:16:10:=0x0028 PI_TDFI_CALVL_CAPTURE_F1:RW:0:10:=0x000e
-		REG_DDRPHY_WRITE(i,0x25A, 0x0000000e);	//PI_TDFI_CALVL_CAPTURE_F2:RW:0:10:=0x0016
-		REG_DDRPHY_WRITE(i,0x25F, 0x00C8020A);	//PI_TCAENT_F0:RW:16:14:=0x0005 PI_TMRZ_F0:RW:8:5:=0x01 PI_TCACKEH:RW:0:5:=0x0a
-		REG_DDRPHY_WRITE(i,0x260, 0x0200C802);	//PI_TMRZ_F2:RW:24:5:=0x03 PI_TCAENT_F1:RW:8:14:=0x018d PI_TMRZ_F1:RW:0:5:=0x03
-		REG_DDRPHY_WRITE(i,0x261, 0x000A00C8);	//PI_CA_TRAIN_VREF_EN:RW:24:1:=0x01 PI_TCAEXT:RW:16:5:=0x0a PI_TCAENT_F2:RW:0:14:=0x018d
-		REG_DDRPHY_WRITE(i,0x262, 0x00C90100);	//PI_TVREF_SHORT_F0:RW:16:10:=0x0006 PI_TDFI_CASEL_F0:RW:8:5:=0x01 PI_TDFI_CACSCA_F0:RW:0:5:=0x00
-		REG_DDRPHY_WRITE(i,0x263, 0x010000C9);	//PI_TDFI_CASEL_F1:RW:24:5:=0x01 PI_TDFI_CACSCA_F1:RW:16:5:=0x00 PI_TVREF_LONG_F0:RW:0:10:=0x0006
-		REG_DDRPHY_WRITE(i,0x268, 0x07070705);	//PI_TDFI_CALVL_STROBE_F2:RW:24:4:=0x09 PI_TDFI_CALVL_STROBE_F1:RW:16:4:=0x09 PI_TDFI_CALVL_STROBE_F0:RW:8:4:=0x06 PI_TDFI_INIT_COMPLETE_MIN:RW:0:8:=0x05
-		REG_DDRPHY_WRITE(i,0x26D, 0x10100100);	//PI_TCKEHDQS_F1:RW:24:6:=0x18 PI_TCKEHDQS_F0:RW:16:6:=0x02 PI_REFRESH_BETWEEN_SEGMENT_DISABLE:RW_D:8:1:=0x01 PI_DRAM_CLK_DISABLE_DEASSERT_SEL:RW:0:1:=0x00
-		REG_DDRPHY_WRITE(i,0x26E, 0x00010110);	//PI_WDQLVL_BST_NUM:RW:16:3:=0x01 PI_WDQLVL_VREF_EN:RW:8:1:=0x01 PI_TCKEHDQS_F2:RW:0:6:=0x18
-		REG_DDRPHY_WRITE(i,0x2A8, 0x00185000);	//PI_TDFI_CTRLUPD_MAX_F0:RW:8:16:=0x008c PI_TDFI_CTRLUPD_MIN:RD:0:4:=0x00
-		REG_DDRPHY_WRITE(i,0x2A9, 0x0000f320);	//PI_TDFI_CTRLUPD_INTERVAL_F0:RW:0:32:=0x00000578
-		REG_DDRPHY_WRITE(i,0x2AA, 0x00001850);	//PI_TDFI_CTRLUPD_MAX_F1:RW:0:16:=0x304c
-		REG_DDRPHY_WRITE(i,0x2AB, 0x0000f320);	//PI_TDFI_CTRLUPD_INTERVAL_F1:RW:0:32:=0x0001e2f8
-		REG_DDRPHY_WRITE(i,0x2AC, 0x00001850);	//PI_TDFI_CTRLUPD_MAX_F2:RW:0:16:=0x304c
-		REG_DDRPHY_WRITE(i,0x2AD, 0x0000f320);	//PI_TDFI_CTRLUPD_INTERVAL_F2:RW:0:32:=0x0001e2f8
-
-		REG_DDRPHY_WRITE(i,0x44C, 0x00020109);	//PHY_WRITE_PATH_LAT_ADD_0:RW+:24:3:=0x00 PHY_RDDQS_LATENCY_ADJUST_0:RW+:16:4:=0x04 PHY_RDDQS_GATE_SLAVE_DELAY_0:RW+:0:10:=0x0109
-		REG_DDRPHY_WRITE(i,0x452, 0x070000C0);	//PHY_RDDATA_EN_DLY_0:RW+:24:4:=0x0e PHY_IE_MODE_0:RW+:16:2:=0x00 PHY_RDDATA_EN_IE_DLY_0:RW+:8:2:=0x00 PHY_DQS_IE_TIMING_0:RW+:0:8:=0xc0
-		REG_DDRPHY_WRITE(i,0x453, 0x00100006);	//PHY_MASTER_DELAY_START_0:RW+:16:10:=0x0010 PHY_SW_MASTER_MODE_0:RW+:8:4:=0x00 PHY_RDDATA_EN_TSEL_DLY_0:RW+:0:4:=0x0c
-		REG_DDRPHY_WRITE(i,0x454, 0x0C054208);	//PHY_WRLVL_DLY_STEP_0:RW+:24:4:=0x0c PHY_RPTR_UPDATE_0:RW+:16:4:=0x06 PHY_MASTER_DELAY_WAIT_0:RW+:8:8:=0x42 PHY_MASTER_DELAY_STEP_0:RW+:0:6:=0x08
-		REG_DDRPHY_WRITE(i,0x4CC, 0x00020109);	//PHY_WRITE_PATH_LAT_ADD_1:RW+:24:3:=0x00 PHY_RDDQS_LATENCY_ADJUST_1:RW+:16:4:=0x04 PHY_RDDQS_GATE_SLAVE_DELAY_1:RW+:0:10:=0x0109
-		REG_DDRPHY_WRITE(i,0x4D2, 0x070000C0);	//PHY_RDDATA_EN_DLY_1:RW+:24:4:=0x0e PHY_IE_MODE_1:RW+:16:2:=0x00 PHY_RDDATA_EN_IE_DLY_1:RW+:8:2:=0x00 PHY_DQS_IE_TIMING_1:RW+:0:8:=0xc0
-		REG_DDRPHY_WRITE(i,0x4D3, 0x00100006);	//PHY_MASTER_DELAY_START_1:RW+:16:10:=0x0010 PHY_SW_MASTER_MODE_1:RW+:8:4:=0x00 PHY_RDDATA_EN_TSEL_DLY_1:RW+:0:4:=0x0c
-		REG_DDRPHY_WRITE(i,0x4D4, 0x0C054208);	//PHY_WRLVL_DLY_STEP_1:RW+:24:4:=0x0c PHY_RPTR_UPDATE_1:RW+:16:4:=0x06 PHY_MASTER_DELAY_WAIT_1:RW+:8:8:=0x42 PHY_MASTER_DELAY_STEP_1:RW+:0:6:=0x08
-		REG_DDRPHY_WRITE(i,0x54C, 0x00020109);	//PHY_WRITE_PATH_LAT_ADD_2:RW+:24:3:=0x00 PHY_RDDQS_LATENCY_ADJUST_2:RW+:16:4:=0x04 PHY_RDDQS_GATE_SLAVE_DELAY_2:RW+:0:10:=0x0109
-		REG_DDRPHY_WRITE(i,0x552, 0x070000C0);	//PHY_RDDATA_EN_DLY_2:RW+:24:4:=0x0e PHY_IE_MODE_2:RW+:16:2:=0x00 PHY_RDDATA_EN_IE_DLY_2:RW+:8:2:=0x00 PHY_DQS_IE_TIMING_2:RW+:0:8:=0xc0
-		REG_DDRPHY_WRITE(i,0x553, 0x00100006);	//PHY_MASTER_DELAY_START_2:RW+:16:10:=0x0010 PHY_SW_MASTER_MODE_2:RW+:8:4:=0x00 PHY_RDDATA_EN_TSEL_DLY_2:RW+:0:4:=0x0c
-		REG_DDRPHY_WRITE(i,0x554, 0x0C054208);	//PHY_WRLVL_DLY_STEP_2:RW+:24:4:=0x0c PHY_RPTR_UPDATE_2:RW+:16:4:=0x06 PHY_MASTER_DELAY_WAIT_2:RW+:8:8:=0x42 PHY_MASTER_DELAY_STEP_2:RW+:0:6:=0x08
-		REG_DDRPHY_WRITE(i,0x5CC, 0x00020109);	//PHY_WRITE_PATH_LAT_ADD_3:RW+:24:3:=0x00 PHY_RDDQS_LATENCY_ADJUST_3:RW+:16:4:=0x04 PHY_RDDQS_GATE_SLAVE_DELAY_3:RW+:0:10:=0x0109
-		REG_DDRPHY_WRITE(i,0x5D2, 0x070000C0);	//PHY_RDDATA_EN_DLY_3:RW+:24:4:=0x0e PHY_IE_MODE_3:RW+:16:2:=0x00 PHY_RDDATA_EN_IE_DLY_3:RW+:8:2:=0x00 PHY_DQS_IE_TIMING_3:RW+:0:8:=0xc0
-		REG_DDRPHY_WRITE(i,0x5D3, 0x00100006);	//PHY_MASTER_DELAY_START_3:RW+:16:10:=0x0010 PHY_SW_MASTER_MODE_3:RW+:8:4:=0x00 PHY_RDDATA_EN_TSEL_DLY_3:RW+:0:4:=0x0c
-		REG_DDRPHY_WRITE(i,0x5D4, 0x0C054208);	//PHY_WRLVL_DLY_STEP_3:RW+:24:4:=0x0c PHY_RPTR_UPDATE_3:RW+:16:4:=0x06 PHY_MASTER_DELAY_WAIT_3:RW+:8:8:=0x42 PHY_MASTER_DELAY_STEP_3:RW+:0:6:=0x08
-		REG_DDRPHY_WRITE(i,0x719, 0x00000303);	//PHY_LP_WAKEUP:RW:24:4:=0x00 PHY_LP4_BOOT_LOW_FREQ_SEL:RW:16:1:=0x01 PHY_TCKSRE_WAIT:RW:8:4:=0x05 PHY_PLL_TESTOUT_SEL:RW:0:3:=0x03
+		
+		REG_DDRPHY_WRITE(i,0x247, 0x0a0a0a05);
+		REG_DDRPHY_WRITE(i,0x254, 0x02030303);
+		REG_DDRPHY_WRITE(i,0x257, 0x00201701);
+		REG_DDRPHY_WRITE(i,0x258, 0x0020000e);
+		REG_DDRPHY_WRITE(i,0x259, 0x0020000e);
+		REG_DDRPHY_WRITE(i,0x25A, 0x0000000e);
+		REG_DDRPHY_WRITE(i,0x25F, 0x00C8020A);
+		REG_DDRPHY_WRITE(i,0x260, 0x0200C802);
+		REG_DDRPHY_WRITE(i,0x261, 0x000A00C8);
+		REG_DDRPHY_WRITE(i,0x262, 0x00C90100);
+		REG_DDRPHY_WRITE(i,0x263, 0x010000C9);
+		REG_DDRPHY_WRITE(i,0x268, 0x07070705);
+		REG_DDRPHY_WRITE(i,0x26D, 0x10100100);
+		REG_DDRPHY_WRITE(i,0x26E, 0x00010110);
+		REG_DDRPHY_WRITE(i,0x2A8, 0x00185000);
+		REG_DDRPHY_WRITE(i,0x2A9, 0x0000f320);
+		REG_DDRPHY_WRITE(i,0x2AA, 0x00001850);
+		REG_DDRPHY_WRITE(i,0x2AB, 0x0000f320);
+		REG_DDRPHY_WRITE(i,0x2AC, 0x00001850);
+		REG_DDRPHY_WRITE(i,0x2AD, 0x0000f320);
+		
+		REG_DDRPHY_WRITE(i,0x44C, 0x00020109);
+		REG_DDRPHY_WRITE(i,0x452, 0x070000C0);
+		REG_DDRPHY_WRITE(i,0x453, 0x00100006);
+		REG_DDRPHY_WRITE(i,0x454, 0x0C054208);
+		REG_DDRPHY_WRITE(i,0x4CC, 0x00020109);
+		REG_DDRPHY_WRITE(i,0x4D2, 0x070000C0);
+		REG_DDRPHY_WRITE(i,0x4D3, 0x00100006);
+		REG_DDRPHY_WRITE(i,0x4D4, 0x0C054208);
+		REG_DDRPHY_WRITE(i,0x54C, 0x00020109);
+		REG_DDRPHY_WRITE(i,0x552, 0x070000C0);
+		REG_DDRPHY_WRITE(i,0x553, 0x00100006);
+		REG_DDRPHY_WRITE(i,0x554, 0x0C054208);
+		REG_DDRPHY_WRITE(i,0x5CC, 0x00020109);
+		REG_DDRPHY_WRITE(i,0x5D2, 0x070000C0);
+		REG_DDRPHY_WRITE(i,0x5D3, 0x00100006);
+		REG_DDRPHY_WRITE(i,0x5D4, 0x0C054208);
+		REG_DDRPHY_WRITE(i,0x719, 0x00000303);
 	}
 }
-
 #ifdef	DDR_WDQLVL_CHAB_SWAP_WA
 #define WDQCNT 0x1f
-
-//static uint32_t wdq_org_val[4][4][5];//ch slice reg
-uint32_t wdq_org_val[4][4][5];//ch slice reg
-//#define DO_T
-//#define DO_L
-//uint32_t wdqlvl_core(register uint32_t phych_mask, register uint32_t phase, register uint32_t _WDQCNT) {
-//	register uint32_t ch,retry,done;
-//	register uint32_t kick;
-//	register uint32_t dataL;
+uint32_t wdq_org_val[4][4][5];
 uint32_t wdqlvl_core( uint32_t phych_mask,  uint32_t phase,  uint32_t _WDQCNT) {
 	uintptr_t ch;
 	uint32_t retry,done;
 	uint32_t kick;
 	uint32_t dataL;
-
-//DEL	register uint32_t sp_o;
-
-//DEL	__asm__ __volatile__ ("mov %0,sp" : "=r"(sp_o));
-//DEL	kick=0xeb007ff0;
-//DEL	__asm__ __volatile__ ("mov sp,%0" : : "r"(kick));
-
 	kick=0x34000000 | (phase<<17) | 0x100;
-
-	//PREPARE ADDR REGISTER (for WDQLVL_CS and WDQLVL_REQ)
-//		0x00000272, 0x34000000, // PI_TDFI_WDQLVL_EN:RW:24:8:=0x34 PI_WDQLVL_CS:RW:16:2:=0x00 PI_WDQLVL_REQ:WR:8:1:=0x00 PI_WDQLVL_PERIODIC:RW:0:1:=0x00
-
 	for(ch=0;ch<DRAM_CH_CNT;ch++)
 		*((volatile uint32_t*)(DBSC_DBPDRGA_0+0x40*ch))=0x272;
-
 	if(_WDQCNT&0x4){
-		//LOCK DEVCNT  --------------------> start critical
-		*((volatile uint32_t*)DBSC_DBCMD) = 0x02840001;	//LOCK ALL CH
-//		*((volatile uint32_t*)DBSC_DBCMD) = 0x0F840000;	//dummy read
-//		*((volatile uint32_t*)DBSC_DBCMD) = 0x0E840800;	//dummy write (MR8 is RO)
-		*((volatile uint32_t*)DBSC_DBCMD) = 0x04840010;	//PRE ALL
+		*((volatile uint32_t*)DBSC_DBCMD) = 0x02840001;
+		*((volatile uint32_t*)DBSC_DBCMD) = 0x04840010;
 		WaitDBCMD();
 		dsb_sev();
 	}
@@ -4133,30 +3182,19 @@ uint32_t wdqlvl_core( uint32_t phych_mask,  uint32_t phase,  uint32_t _WDQCNT) {
 #endif
 		}
 	}
-
 	if(_WDQCNT&0x4){
-	//UNLOCK DEVCNT
-		*((volatile uint32_t*)DBSC_DBCMD) = 0x02840000;	//UNLOCK ALL CH	
+		*((volatile uint32_t*)DBSC_DBCMD) = 0x02840000;
 	}
 	if(_WDQCNT&0x10){
 		for(ch=0;ch<DRAM_CH_CNT;ch++){
 			if(!(phych_mask & (1<<ch)))continue;
-			//WLVLREQ
-			*((volatile uint32_t*)(DBSC_DBPDRGD_0+0x40*ch))=kick;//REG_DDRPHY_WRITE ( ch, 0x00000272, kick);
+			*((volatile uint32_t*)(DBSC_DBPDRGD_0+0x40*ch))=kick;
 		}
 		dsb_sev();
 	}
-
-	//PREPARE ADDR REGISTER (for SWLVL_OP_DONE)
 	for(ch=0;ch<DRAM_CH_CNT;ch++)
 		*((volatile uint32_t*)(DBSC_DBPDRGA_0+0x40*ch))=0x230;
 	dsb_sev();
-/*	BAD POS (
-	if(_WDQCNT&0x4){
-	//UNLOCK DEVCNT
-		*((volatile uint32_t*)DBSC_DBCMD) = 0x02840000;	//UNLOCK ALL CH	
-	}
-*/
 	retry=0x100000;
 	done=(~phych_mask)&0x0f;
 	if(_WDQCNT&0x10){
@@ -4172,68 +3210,52 @@ uint32_t wdqlvl_core( uint32_t phych_mask,  uint32_t phase,  uint32_t _WDQCNT) {
 	} else {
 		done=phych_mask;
 	}
-
 	*((volatile uint32_t*)(DBSC_DBDFICNT_0+0x00)) = 0x00000010;
 	*((volatile uint32_t*)(DBSC_DBDFICNT_0+0x40)) = 0x00000010;
 	*((volatile uint32_t*)(DBSC_DBDFICNT_0+0x80)) = 0x00000010;
 	*((volatile uint32_t*)(DBSC_DBDFICNT_0+0xC0)) = 0x00000010;
-
 	if(_WDQCNT&0x20){
-		*((volatile uint32_t*)(DBSC_DBPDCNT_0+0x00)) = 0x0000CF00;	//dll_rst_n 0
+		*((volatile uint32_t*)(DBSC_DBPDCNT_0+0x00)) = 0x0000CF00;
 		*((volatile uint32_t*)(DBSC_DBPDCNT_0+0x40)) = 0x0000CF00;
 		*((volatile uint32_t*)(DBSC_DBPDCNT_0+0x80)) = 0x0000CF00;
 		*((volatile uint32_t*)(DBSC_DBPDCNT_0+0xC0)) = 0x0000CF00;
-//	dsb_sev();
-		*((volatile uint32_t*)(DBSC_DBPDCNT_0+0x00)) = 0x0000CF01;	//dll_rst_n 1
+		*((volatile uint32_t*)(DBSC_DBPDCNT_0+0x00)) = 0x0000CF01;
 		*((volatile uint32_t*)(DBSC_DBPDCNT_0+0x40)) = 0x0000CF01;
 		*((volatile uint32_t*)(DBSC_DBPDCNT_0+0x80)) = 0x0000CF01;
 		*((volatile uint32_t*)(DBSC_DBPDCNT_0+0xC0)) = 0x0000CF01;
 	}
 	dsb_sev();
-					//DDR_2_PUTSTR("dll_rst_n ->0=>1 ",1);
-
 	if(_WDQCNT&0x4){
-	//UNLOCK DEVCNT
-		*((volatile uint32_t*)DBSC_DBCMD) = 0x02840000;	//UNLOCK ALL CH	
+		*((volatile uint32_t*)DBSC_DBCMD) = 0x02840000;
 	}
-//<--------end critical
-//DEL	__asm__ __volatile__ ("mov sp,%0" : : "r"(sp_o));
-
 	return done;
 }
-
 uint32_t wdqlvl_core0(uint32_t phych_mask, uint32_t *phase_p){
 	uintptr_t	ch;
 	uint32_t	done;
 	uint32_t	phase=0;
-
-//////////////////////////////////////////////////////////==>
 	if(phase){
 		phase=0;
 	} else {
 		phase=1;
 	}
-	if(1){//clear PINT_STATUS
-		uint32_t tmp[4];
-		for(ch=0;ch<DRAM_CH_CNT;ch++){
-			*((volatile uint32_t*)(DBSC_DBPDRGA_0+0x40*ch))=0x29b;
-		}
-		dsb_sev();
-		for(ch=0;ch<DRAM_CH_CNT;ch++){
-			tmp[ch]=*((volatile uint32_t*)(DBSC_DBPDRGD_0+0x40*ch));
-		}
-		dsb_sev();
-		for(ch=0;ch<DRAM_CH_CNT;ch++){
-			*((volatile uint32_t*)(DBSC_DBPDRGA_0+0x40*ch))=0x29c;
-		}
-		dsb_sev();
-		for(ch=0;ch<DRAM_CH_CNT;ch++){
-			*((volatile uint32_t*)(DBSC_DBPDRGD_0+0x40*ch))=tmp[ch];
-		}
-		dsb_sev();
+	uint32_t tmp[4];
+	for(ch=0;ch<DRAM_CH_CNT;ch++){
+		*((volatile uint32_t*)(DBSC_DBPDRGA_0+0x40*ch))=0x29b;
 	}
-//clear 16BIT_DRAM_CONNECT
-//		0x00000238, 0x01000000, // PI_16BIT_DRAM_CONNECT:RW_D:24:1:=0x01 PI_SRE_PERIOD_EN:RW:16:1:=0x00 PI_DFS_PERIOD_EN:RW:8:1:=0x00 PI_SEQUENTIAL_LVL_REQ:WR:0:1:=0x00
+	dsb_sev();
+	for(ch=0;ch<DRAM_CH_CNT;ch++){
+		tmp[ch]=*((volatile uint32_t*)(DBSC_DBPDRGD_0+0x40*ch));
+	}
+	dsb_sev();
+	for(ch=0;ch<DRAM_CH_CNT;ch++){
+		*((volatile uint32_t*)(DBSC_DBPDRGA_0+0x40*ch))=0x29c;
+	}
+	dsb_sev();
+	for(ch=0;ch<DRAM_CH_CNT;ch++){
+		*((volatile uint32_t*)(DBSC_DBPDRGD_0+0x40*ch))=tmp[ch];
+	}
+	dsb_sev();
 	for(ch=0;ch<DRAM_CH_CNT;ch++){
 		*((volatile uint32_t*)(DBSC_DBPDRGA_0+0x40*ch))=0x238;
 	}
@@ -4242,8 +3264,6 @@ uint32_t wdqlvl_core0(uint32_t phych_mask, uint32_t *phase_p){
 		*((volatile uint32_t*)(DBSC_DBPDRGD_0+0x40*ch))=0;
 	}
 	dsb_sev();
-//set EXIT -> OP_DONE is cleared
-//		0x00000233, 0x00000000, // PI_SWLVL_EXIT:WR:24:1:=0x00 PI_SWLVL_START:WR:16:1:=0x00 PI_SW_LEVELING_MODE:RW:8:3:=0x00 PI_SW_CALVL_RESP_0:RD:0:2:=0x00
 	for(ch=0;ch<DRAM_CH_CNT;ch++){
 		*((volatile uint32_t*)(DBSC_DBPDRGA_0+0x40*ch))=0x233;
 	}
@@ -4253,15 +3273,10 @@ uint32_t wdqlvl_core0(uint32_t phych_mask, uint32_t *phase_p){
 	}
 	dsb_sev();
 	if(WDQCNT&0x2){
-//for prefetch
-//		done=wdqlvl_core(0, phase,WDQCNT);
 		done=wdqlvl_core(phych_mask, phase,WDQCNT);
 	} else {
 		done=0x0f;
 	}
-
-//set EXIT -> OP_DONE is cleared
-//		0x00000233, 0x00000000, // PI_SWLVL_EXIT:WR:24:1:=0x00 PI_SWLVL_START:WR:16:1:=0x00 PI_SW_LEVELING_MODE:RW:8:3:=0x00 PI_SW_CALVL_RESP_0:RD:0:2:=0x00
 	for(ch=0;ch<DRAM_CH_CNT;ch++){
 		*((volatile uint32_t*)(DBSC_DBPDRGA_0+0x40*ch))=0x233;
 	}
@@ -4270,46 +3285,12 @@ uint32_t wdqlvl_core0(uint32_t phych_mask, uint32_t *phase_p){
 		*((volatile uint32_t*)(DBSC_DBPDRGD_0+0x40*ch))=0x01000000;
 	}
 	dsb_sev();
-//	if((done&phych_mask)!=phych_mask){
-//		uint32_t tmp;
-//		DDR_3_PUTSTR("ERR",1);
-//		for(ch=0;ch<DRAM_CH_CNT;ch++){
-//			*((volatile uint32_t*)(DBSC_DBPDRGA_0+0x40*ch))=0x29b;
-//		}
-//		dsb_sev();
-//		for(ch=0;ch<DRAM_CH_CNT;ch++){
-//			tmp=*((volatile uint32_t*)(DBSC_DBPDRGD_0+0x40*ch));
-//			DDR_3_PUTHEX(" PINT_STATUS=",tmp,4,0);
-//		}
-//		DDR_3_PUTSTR("",1);
-//		for(ch=0;ch<DRAM_CH_CNT;ch++){
-//			*((volatile uint32_t*)(DBSC_DBPDRGA_0+0x40*ch))=0x216;
-//		}
-//		dsb_sev();
-//		for(ch=0;ch<DRAM_CH_CNT;ch++){
-//			tmp=*((volatile uint32_t*)(DBSC_DBPDRGD_0+0x40*ch));
-//			DDR_3_PUTHEX(" PI_CONT_STS=",tmp,4,0);
-//		}
-//	}
-//////////////////////////////////////////////////////////<==
 	*phase_p=phase;
 	return done;
 }
-
-
 uint32_t wdqlvl(uint32_t phych_mask){
 	int ch,slice,i,done;
 	uint32_t phase;
-//	uint32_t byte_disable[4][2]; //ch , phase
-
-//	byte_disable[0][0]=0x0c;
-//	byte_disable[1][0]=0x09;
-//	byte_disable[2][0]=0x05;
-//	byte_disable[3][0]=0x05;
-//	byte_disable[0][1]=0x03;
-//	byte_disable[1][1]=0x06;
-//	byte_disable[2][1]=0x0a;
-//	byte_disable[3][1]=0x0a;
 	for(ch=0;ch<DRAM_CH_CNT;ch++){
 		for(slice=0;slice<4;slice++){
 			for(i=0;i<5;i++){
@@ -4317,483 +3298,7 @@ uint32_t wdqlvl(uint32_t phych_mask){
 			}
 		}
 	}
-
-
 	done=wdqlvl_core0(phych_mask, &phase);
-
-//	for(ch=0;ch<DRAM_CH_CNT;ch++){
-//		for(slice=0;slice<4;slice++){
-//			for(i=0;i<4;i++){
-//				if(byte_disable[ch][phase] & (1<<slice)){
-//				} else {
-//				}
-//			}
-//		}
-//	}
-
 	return done;
 }
-
-#endif
-
-
-#ifdef DDR_DEBUG_MEMCHK
-/////////////////////////////////////////////////////////////////////////////
-/**********************************************************/
-/* Extend DDR RAM Check                                   */
-/**********************************************************/
-uint32_t CkExtendDdrRamCheck( void* ramAddr )
-{
-	volatile uint32_t *read_adr;
-	uint32_t data;
-	uint32_t loop, i;
-
-	read_adr = (uint32_t *)ramAddr;
-
-	PutStr("Data=0x5A5A5A5A",0);
-
-	/* Write */
-	data = 0x5A5A5A5A;
-	for (loop = 0; loop < 0x100000; loop++) {
-		read_adr[loop] = data;
-	}
-
-	/* Verify */
-	data = 0x5A5A5A5A;
-	for (loop = 0; loop < 0x100000; loop++) {
-		if (read_adr[loop] != data) {
-//			SetEndTP2(&read_adr[loop],read_adr[loop],data,1,4);
-			return((-1));
-		}
-	}
-
-	DelStr(15);
-	PutStr("Data=0xA5A5A5A5",0);
-
-	/* Write */
-	data = 0xA5A5A5A5;
-	for (loop = 0; loop < 0x100000; loop++) {
-		read_adr[loop] = data;
-	}
-
-	/* Verify */
-	data = 0xA5A5A5A5;
-	for (loop = 0; loop < 0x100000; loop++) {
-		if (read_adr[loop] != data) {
-//			SetEndTP2(&read_adr[loop],read_adr[loop],data,1,4);
-			mprintf("  %x:%x -> %x\n",&read_adr[loop],read_adr[loop],data);
-			return((-1));
-		}
-	}
-
-	DelStr(15);
-	PutStr("Data=0x12345678",0);
-
-	/* Write */
-	data = 0x12345678;
-	for (loop = 0; loop < 0x100000; loop++) {
-		read_adr[loop] = data;
-		data += 0x11111111;
-	}
-
-	/* Verify */
-	data = 0x12345678;
-	for (loop = 0; loop < 0x100000; loop++) {
-		if (read_adr[loop] != data) {
-//			SetEndTP2(&read_adr[loop],read_adr[loop],data,1,4);
-			mprintf(" %x:%x -> %x\n",&read_adr[loop],read_adr[loop],data);
-			return((-1));
-		}
-		data += 0x11111111;
-	}
-
-	DelStr(15);
-
-	return(0);
-}
-
-uint32_t TpExtendDdrRamCheck(void)
-{
-	mprintf("\n");
-
-if(DDR_PHYVALID & 0x1) {
-	mprintf("Check:0x04_00000000 ... ");
-	if( CkExtendDdrRamCheck((void*)0x0000000400000000) ){
-		mprintf("Fail!\n");
-		return (-1);
-	}
-	mprintf("Pass!\n");
-}
-
-if(DDR_PHYVALID & 0x2) {
-	mprintf("Check:0x05_00000000 ... ");
-	if( CkExtendDdrRamCheck((void*)0x0000000500000000) ){
-		mprintf("Fail!\n");
-		return (-1);
-	}
-	mprintf("Pass!\n");
-}
-
-if(DDR_PHYVALID & 0x4) {
-	mprintf("Check:0x06_00000000 ... ");
-	if( CkExtendDdrRamCheck((void*)0x0000000600000000) ){
-		mprintf("Fail!\n");
-		return (-1);
-	}
-	mprintf("Pass!\n");
-}
-
-if(DDR_PHYVALID & 0x8) {
-	mprintf("Check:0x07_00000000 ... ");
-	if( CkExtendDdrRamCheck((void*)0x0000000700000000) ){
-		mprintf("Fail!\n");
-		return (-1);
-	}
-	mprintf("Pass!\n");
-}
-
-//	SetEndTP(0,0,0,0,0);
-	return (0);
-}
-////////////////////////////////
-extern char gKeyBuf[64];
-
-void memcheck_ddr(void) {
-	uintptr_t mem1st;
-	char decRtn;
-	char buf[256];
-	char *p;
-	char value;
-	uintptr_t tmpData;
-
-	uint64_t i,dataL;
-	uint32_t phychno,errorstop,ptn01;
-	uint32_t errordisp;
-	uint32_t errorcount;
-	uint32_t errorcountsum;
-	uint32_t valid,loop,loopt;
-	errorstop = 0;
-	errordisp = 1000;
-	ptn01 = 0;
-	valid = 0;
-
-	strcpy(buf,gKeyBuf);
-	p=strtok(buf," ");
-	p=strtok(NULL," ");
-	while(p!=NULL){
-		if(strcmp(p,"0")==0){
-			phychno = 0;
-		}
-		if(strcmp(p,"1")==0){
-			phychno = 1;
-		}
-		if(strcmp(p,"2")==0){
-			phychno = 2;
-		}
-		if(strcmp(p,"3")==0){
-			phychno = 3;
-		}
-		if(strcmp(p,"e")==0){
-			errorstop = 1;
-		}
-		if(strcmp(p,"a")==0){
-			p=strtok(NULL," ");
-			DecodeHexAscStr(&tmpData,p);
-			valid=tmpData;
-//			msglvl = 3;
-		}
-		if(strcmp(p,"d")==0){
-			p=strtok(NULL," ");
-			DecodeHexAscStr(&tmpData,p);
-			errordisp=tmpData;
-		}
-		if(strcmp(p,"ptn")==0){
-			ptn01 = 1;
-		}
-		p=strtok(NULL," ");
-	}
-
-	if(valid!=0){loopt=4;} else {loopt=1;}
-	for(loop=0;loop<loopt;loop++){
-		if(valid!=0){
-			if((valid&(1<<loop))==0)continue;
-			phychno = loop;
-		}
-
-		if(valid==0) mprintf("DDR Test CH= %X\n",phychno);
-
-		errorcountsum=0;
-		if(ptn01 ==0){
-//			DDR_2_PUTSTR("All 1 Write",1);
-			if(valid==0) mprintf("All 1 Write\n");
-			for(i=0x400000000+(phychno * 0x100000000);i<(0x400100000+(phychno * 0x100000000));i+=4){
-				if((i & 0x0ffff)==0){
-//					DDR_2_PUTHEX( " ADD :" , i, 8, 1);
-					if(valid==0) mprintf(" ADD :%08X\n",i);
-				}
-				*((volatile uint32_t*)i) = 0xffffffff;
-			}
-//			DDR_2_PUTSTR("Read cmp",1);
-			if(valid==0) mprintf("Read cmp\n");
-			errorcount=0;
-			for(i=0x400000000+(phychno * 0x100000000);i<(0x400100000+(phychno * 0x100000000));i+=4){
-				if((i & 0x0ffff)==0){
-//					DDR_2_PUTHEX( " ADD :" , i, 8, 1);
-					if(valid==0) mprintf(" ADD :%08X\n",i);
-				}
-				dataL = *((volatile uint32_t*)i);
-				if(dataL != 0xffffffff){
-					errorcount++;
-					errorcountsum++;
-					if(errordisp){
-						errordisp--;
-//						DDR_2_PUTHEX( "Error ADD :" , i, 8, 0);
-//						DDR_2_PUTHEX( " Read Data :" , dataL, 4, 1);
-						if(valid==0) mprintf("Error ADD :%08X Read Data :%04X\n",i,dataL);
-					}
-					if(errorstop==1) return;
-				}
-			}
-//			DDR_2_PUTHEX( "Error count(hex)= :" , errorcount, 8, 1);
-			if(valid==0) mprintf("Error count(hex)= :%08X\n",errorcount);
-//			DDR_2_PUTSTR("All 0 Write",1);
-			if(valid==0) mprintf("All 0 Write\n");
-			for(i=0x400000000+(phychno * 0x100000000);i<(0x400100000+(phychno * 0x100000000));i+=4){
-				if((i & 0x0ffff)==0){
-//					DDR_2_PUTHEX( " ADD :" , i, 8, 1);
-					if(valid==0) mprintf(" ADD :%08X\n",i);
-				}
-				*((volatile uint32_t*)i) = 0x0;
-			}
-
-//			DDR_2_PUTSTR("Read cmp",1);
-			if(valid==0) mprintf("Read cmp\n");
-			errorcount=0;
-			for(i=0x400000000+(phychno * 0x100000000);i<(0x400100000+(phychno * 0x100000000));i+=4){
-				if((i & 0x0ffff)==0){
-//					DDR_2_PUTHEX( " ADD :" , i, 8, 1);
-					if(valid==0) mprintf(" ADD :%08X\n",i);
-				}
-				dataL = *((volatile uint32_t*)i);
-				if(dataL != 0x0){
-					errorcount++;
-					errorcountsum++;
-					if(errordisp){
-						errordisp--;
-//						DDR_2_PUTHEX( "Error ADD :" , i, 8, 0);
-//						DDR_2_PUTHEX( " Read Data :" , dataL, 4, 1);
-						if(valid==0) mprintf("Error ADD :%08X Read Data :%04X\n",i,dataL);
-					}
-					if(errorstop==1) return;
-				}
-			}
-//			DDR_2_PUTHEX( "Error count(hex)= :" , errorcount, 8, 1);
-			if(valid==0) mprintf("Error count(hex)= :%08X\n",errorcount);
-		} else {
-//			DDR_2_PUTSTR("All 0 Write",1);
-			if(valid==0) mprintf("All 0 Write\n");
-			for(i=0x400000000+(phychno * 0x100000000);i<(0x400100000+(phychno * 0x100000000));i+=4){
-				if((i & 0x0ffff)==0){
-//					DDR_2_PUTHEX( " ADD :" , i, 8, 1);
-					if(valid==0) mprintf(" ADD :%08X\n",i);
-				}
-				*((volatile uint32_t*)i) = 0x0;
-			}
-
-//			DDR_2_PUTSTR("Read cmp",1);
-			if(valid==0) mprintf("Read cmp\n");
-			errorcount=0;
-			for(i=0x400000000+(phychno * 0x100000000);i<(0x400100000+(phychno * 0x100000000));i+=4){
-				if((i & 0x0ffff)==0){
-//					DDR_2_PUTHEX( " ADD :" , i, 8, 1);
-					if(valid==0) mprintf(" ADD :%08X\n",i);
-				}
-				dataL = *((volatile uint32_t*)i);
-				if(dataL != 0x0){
-					errorcount++;
-					errorcountsum++;
-					if(errordisp){
-						errordisp--;
-//						DDR_2_PUTHEX( "Error ADD :" , i, 8, 0);
-//						DDR_2_PUTHEX( " Read Data :" , dataL, 4, 1);
-						if(valid==0) mprintf("Error ADD :%08X Read Data :%04X\n",i,dataL);
-					}
-					if(errorstop==1) return;
-				}
-			}
-//			DDR_2_PUTHEX( "Error count(hex)= :" , errorcount, 8, 1);
-//			DDR_2_PUTSTR("All 1 Write",1);
-			if(valid==0) mprintf("Error count(hex)= :%08X\n",errorcount);
-			if(valid==0) mprintf("All 1 Write\n");
-			for(i=0x400000000+(phychno * 0x100000000);i<(0x400100000+(phychno * 0x100000000));i+=4){
-				if((i & 0x0ffff)==0){
-//					DDR_2_PUTHEX( " ADD :" , i, 8, 1);
-					if(valid==0) mprintf(" ADD :%08X\n",i);
-				}
-				*((volatile uint32_t*)i) = 0xffffffff;
-			}
-
-//			DDR_2_PUTSTR("Read cmp",1);
-			if(valid==0) mprintf("Read cmp\n");
-			errorcount=0;
-			for(i=0x400000000+(phychno * 0x100000000);i<(0x400100000+(phychno * 0x100000000));i+=4){
-				if((i & 0x0ffff)==0){
-//					DDR_2_PUTHEX( " ADD :" , i, 8, 1);
-					if(valid==0) mprintf(" ADD :%08X\n",i);
-				}
-				dataL = *((volatile uint32_t*)i);
-				if(dataL != 0xffffffff){
-					errorcount++;
-					errorcountsum++;
-					if(errordisp){
-						errordisp--;
-//						DDR_2_PUTHEX( "Error ADD :" , i, 8, 0);
-//						DDR_2_PUTHEX( " Read Data :" , dataL, 4, 1);
-						if(valid==0) mprintf("Error ADD :%08X Read Data :%04X\n",i,dataL);
-					}
-					if(errorstop==1) return;
-				}
-			}
-//			DDR_2_PUTHEX( "Error count(hex)= :" , errorcount, 8, 1);
-			if(valid==0) mprintf("Error count(hex)= :%08X\n",errorcount);
-		}
-
-//		DDR_2_PUTSTR("1/0 Write",1);
-			if(valid==0) mprintf("1/0 Write\n");
-		for(i=0x400000000+(phychno * 0x100000000);i<(0x400100000+(phychno * 0x100000000));i+=8){
-			if((i & 0x0ffff)==0){
-//				DDR_2_PUTHEX( " ADD :" , i, 8, 1);
-				if(valid==0) mprintf(" ADD :%08X\n",i);
-				}
-			*((volatile uint32_t*)i) = 0xffffffff;
-			*((volatile uint32_t*)(i+4)) = 0x00000000;
-		}
-
-//		DDR_2_PUTSTR("Read cmp",1);
-		if(valid==0) mprintf("Read cmp\n");
-		errorcount=0;
-		for(i=0x400000000+(phychno * 0x100000000);i<(0x400100000+(phychno * 0x100000000));i+=8){
-			if((i & 0x0ffff)==0){
-//				DDR_2_PUTHEX( " ADD :" , i, 8, 1);
-				if(valid==0) mprintf(" ADD :%08X\n",i);
-			}
-			dataL = *((volatile uint32_t*)i);
-			if(dataL != 0xffffffff){
-				errorcount++;
-				errorcountsum++;
-				if(errordisp){
-					errordisp--;
-//					DDR_2_PUTHEX( "Error ADD :" , i, 8, 0);
-//					DDR_2_PUTHEX( " Read Data :" , dataL, 4, 1);
-					if(valid==0) mprintf("Error ADD :%08X Read Data :%04X\n",i,dataL);
-				}
-				if(errorstop==1) return;
-			}
-			dataL = *((volatile uint32_t*)(i+4));
-			if(dataL != 0x00000000){
-				errorcount++;
-				errorcountsum++;
-				if(errordisp){
-					errordisp--;
-//					DDR_2_PUTHEX( "Error ADD :" , i, 8, 0);
-//					DDR_2_PUTHEX( " Read Data :" , dataL, 4, 1);
-					if(valid==0) mprintf("Error ADD :%08X Read Data :%04X\n",i,dataL);
-				}
-				if(errorstop==1) return;
-			}
-		}
-//		DDR_2_PUTHEX( "Error count(hex)= :" , errorcount, 8, 1);
-		if(valid==0) mprintf("Error count(hex)= :%08X\n",errorcount);
-
-//		DDR_2_PUTSTR("0/1 Write",1);
-		if(valid==0) mprintf("0/1 Write\n");
-		for(i=0x400000000+(phychno * 0x100000000);i<(0x400100000+(phychno * 0x100000000));i+=8){
-			if((i & 0x0ffff)==0){
-//				DDR_2_PUTHEX( " ADD :" , i, 8, 1);
-				if(valid==0) mprintf(" ADD :%08X\n",i);
-			}
-			*((volatile uint32_t*)i) = 0x00000000;
-			*((volatile uint32_t*)(i+4)) = 0xffffffff;
-		}
-
-//		DDR_2_PUTSTR("Read cmp",1);
-		if(valid==0) mprintf("Read cmp\n");
-		errorcount=0;
-		for(i=0x400000000+(phychno * 0x100000000);i<(0x400100000+(phychno * 0x100000000));i+=8){
-			if((i & 0x0ffff)==0){
-//				DDR_2_PUTHEX( " ADD :" , i, 8, 1);
-				if(valid==0) mprintf(" ADD :%08X\n",i);
-			}
-			dataL = *((volatile uint32_t*)i);
-			if(dataL != 0x00000000){
-				errorcount++;
-				errorcountsum++;
-				if(errordisp){
-					errordisp--;
-//					DDR_2_PUTHEX( "Error ADD :" , i, 8, 0);
-//					DDR_2_PUTHEX( " Read Data :" , dataL, 4, 1);
-					if(valid==0) mprintf("Error ADD :%08X Read Data :%04X\n",i,dataL);
-				}
-				if(errorstop==1) return;
-			}
-			dataL = *((volatile uint32_t*)(i+4));
-			if(dataL != 0xffffffff){
-				errorcount++;
-				errorcountsum++;
-				if(errordisp){
-					errordisp--;
-//					DDR_2_PUTHEX( "Error ADD :" , i, 8, 0);
-//					DDR_2_PUTHEX( " Read Data :" , dataL, 4, 1);
-					if(valid==0) mprintf("Error ADD :%08X Read Data :%04X\n",i,dataL);
-				}
-				if(errorstop==1) return;
-			}
-		}
-//		DDR_2_PUTHEX( "Error count(hex)= :" , errorcount, 8, 1);
-		if(valid==0) mprintf("Error count(hex)= :%08X\n",errorcount);
-
-//		DDR_2_PUTSTR("Addr Write",1);
-		if(valid==0) mprintf("Addr Write\n");
-		for(i=0x400000000+(phychno * 0x100000000);i<(0x400100000+(phychno * 0x100000000));i+=4){
-			if((i & 0x0ffff)==0){
-//				DDR_2_PUTHEX( " ADD :" , i, 8, 1);
-				if(valid==0) mprintf(" ADD :%08X\n",i);
-			}
-			*((volatile uint32_t*)i) = (uint32_t)(i & 0xffffffff);
-		}
-
-//		DDR_2_PUTSTR("Read cmp",1);
-		if(valid==0) mprintf("Read cmp\n");
-		errorcount=0;
-		for(i=0x400000000+(phychno * 0x100000000);i<(0x400100000+(phychno * 0x100000000));i+=4){
-			if((i & 0x0ffff)==0){
-//				DDR_2_PUTHEX( " ADD :" , i, 8, 1);
-				if(valid==0) mprintf(" ADD :%08X\n",i);
-			}
-			dataL = *((volatile uint32_t*)i);
-			if(dataL != ((uint32_t)(i & 0xffffffff))){
-				errorcount++;
-				errorcountsum++;
-				if(errordisp){
-					errordisp--;
-//					DDR_2_PUTHEX( "Error ADD :" , i, 8, 0);
-//					DDR_2_PUTHEX( " Read Data :" , dataL, 4, 1);
-					if(valid==0) mprintf("Error ADD :%08X Read Data :%04X\n",i,dataL);
-				}
-				if(errorstop==1) return;
-			}
-		}
-//		DDR_2_PUTHEX( "Error count(hex)= :" , errorcount, 8, 1);
-		if(valid==0) mprintf("Error count(hex)= :%08X\n",errorcount);
-
-//		DDR_3_PUTHEX("DDR Test CH= ",phychno,1,0);
-//		DDR_3_PUTHEX( " Error count TOTAL (hex)=: " , errorcountsum, 4, 1);
-		mprintf("DDR Test CH= %x  Error count TOTAL (hex)=: %x\n",phychno,errorcountsum);
-
-	} //loop
-	mprintf("Memory Check End.\n");
-
-}
-
-///////////////////////////////////////////////////////
 #endif

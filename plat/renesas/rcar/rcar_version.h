@@ -34,9 +34,8 @@
 
 #include	<arch_helpers.h>
 
-#define		VER_SIZE		5
-#define		VERSION_OF_RENESAS	"1.0.5"
+#define		VERSION_OF_RENESAS	"1.0.6"
 
-extern const uint8_t	version_of_renesas[VER_SIZE];
+extern const uint8_t	version_of_renesas[];
 
 #endif	/* RCAR_VERSION_H__	*/

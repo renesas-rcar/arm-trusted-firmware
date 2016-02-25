@@ -29,13 +29,14 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <mmio.h>
+#include "rcar_def.h"
 #include "bl2_cpg_register.h"
 #include "bl2_cpg_write.h"
 #include "bl2_cpg_init.h"
-#include "mmio.h"
 
 typedef struct {
-	uint32_t	adr;
+	uintptr_t	adr;
 	uint32_t	val;
 } reg_setting_t;
 
@@ -48,7 +49,7 @@ static const reg_setting_t reg_setting[] = {
 	/* Secure Module Stop Control Register 1 */
 	{SCMSTPCR1,		0xFFFFFFFFU},
 	/* Secure Module Stop Control Register 2 */
-	{SCMSTPCR2,		0xEBFDFFFFU},
+	{SCMSTPCR2,		0xEBFFFFFFU},
 	/* Secure Module Stop Control Register 3 */
 	{SCMSTPCR3,		0xFFFFFFFFU},
 	/* Secure Module Stop Control Register 4 */
@@ -72,7 +73,7 @@ static const reg_setting_t reg_setting[] = {
 	/* Secure Software Reset Access Enable Control Register 1 */
 	{SCSRSTECR1,		0x00000000U},
 	/* Secure Software Reset Access Enable Control Register 2 */
-	{SCSRSTECR2,		0x14020000U},
+	{SCSRSTECR2,		0x14000000U},
 	/* Secure Software Reset Access Enable Control Register 3 */
 	{SCSRSTECR3,		0x00000000U},
 	/* Secure Software Reset Access Enable Control Register 4 */
@@ -90,15 +91,46 @@ static const reg_setting_t reg_setting[] = {
 	/* Secure Software Reset Access Enable Control Register 10 */
 	{SCSRSTECR10,		0x00000000U},
 	/* Secure Software Reset Access Enable Control Register 11 */
-	{SCSRSTECR11,		0x00000000U}
+	{SCSRSTECR11,		0x00000000U},
+
+#if RCAR_MASTER_BOOT_CPU == RCAR_BOOT_CA5X
+	/* CPG (REALTIME) registers */
+
+	/* Realtime Module Stop Control Register 0 */
+	{RMSTPCR0,		0x00200000U},
+	/* Realtime Module Stop Control Register 1 */
+	{RMSTPCR1,		0xFFFFFFFFU},
+	/* Realtime Module Stop Control Register 2 */
+	{RMSTPCR2,		0x340E2FDCU},
+	/* Realtime Module Stop Control Register 3 */
+	{RMSTPCR3,		0xFFFFFFDFU},
+	/* Realtime Module Stop Control Register 4 */
+	{RMSTPCR4,		0x80000184U},
+	/* Realtime Module Stop Control Register 5 */
+	{RMSTPCR5,		0xC3FFFFFFU},
+	/* Realtime Module Stop Control Register 6 */
+	{RMSTPCR6,		0xFFFFFFFFU},
+	/* Realtime Module Stop Control Register 7 */
+	{RMSTPCR7,		0xFFFFFFFFU},
+	/* Realtime Module Stop Control Register 8 */
+	{RMSTPCR8,		0x01F1FFF4U},
+	/* Realtime Module Stop Control Register 9 */
+	{RMSTPCR9,		0xFFFFFFFEU},
+	/* Realtime Module Stop Control Register 10 */
+	{RMSTPCR10,		0xFFFEFFE0U},
+	/* Realtime Module Stop Control Register 11 */
+	{RMSTPCR11,		0x00000037U}
+#endif
 };
 
 void bl2_cpg_init(void)
 {
-	uint32_t	i,
-			ie = sizeof(reg_setting) / sizeof(reg_setting_t);
+	uint32_t	i;
+	uint32_t	ie;
 
-	for (i = 0; i < ie; i++) {
+	ie = (uint32_t)(sizeof(reg_setting) / sizeof(reg_setting_t));
+
+	for (i = 0U; i < ie; i++) {
 		cpg_write(reg_setting[i].adr, reg_setting[i].val);
 	}
 }

@@ -74,6 +74,11 @@
 #define	WDTRSTCR_PASSWORD	(0xA55A0000U)
 #define	WDTRSTCR_RWDT_RSTMSK	((uint32_t)1U << 0U)
 
+/* IPMMUregisters */
+#define IPMMU_MM_BASE		(0xE67B0000U)	/* IPMMU-MM */
+#define IPMMUMM_SYSCTRL		(IPMMU_MM_BASE + 0x0500U)
+#define IPMMUMM_SYSAUX		(IPMMU_MM_BASE + 0x0504U)
+
 /* MIDR */
 #define MIDR_CA57		(0x0D07U << MIDR_PN_SHIFT)
 #define MIDR_CA53		(0x0D03U << MIDR_PN_SHIFT)
@@ -228,6 +233,71 @@ struct entry_point_info *bl2_plat_get_bl31_ep_info(void)
 	return bl31_ep_info;
 }
 
+/* Settings for Lossy Decompression */
+#define LOSSY_PARAMS_BASE 		(0x47FD7000U)
+
+#define	AXI_DCMPAREACRA0		(0xE6784100U)
+#define	AXI_DCMPAREACRB0		(0xE6784104U)
+
+#define LOSSY_ENABLE			(0x80000000U)
+#define LOSSY_DISABLE			(0x00000000U)
+
+#define LOSSY_FMT_YUVPLANAR		(0x00000000U)
+#define LOSSY_FMT_YUV422INTLV	(0x20000000U)
+#define LOSSY_FMT_ARGB8888		(0x40000000U)
+
+/* Settings of Entry 0 */
+#define	LOSSY_ST_ADDR0			(0x54000000U)
+#define	LOSSY_END_ADDR0			(0x57000000U)
+#define	LOSSY_FMT0				LOSSY_FMT_YUVPLANAR
+#define	LOSSY_ENA_DIS0			LOSSY_ENABLE
+
+/* Settings of Entry 1 */
+#define	LOSSY_ST_ADDR1			0x0 /* Undefined */
+#define	LOSSY_END_ADDR1			0x0 /* Undefined */
+#define	LOSSY_FMT1				LOSSY_FMT_ARGB8888
+#define	LOSSY_ENA_DIS1			LOSSY_DISABLE
+
+/* Settings of Entry 2 */
+#define	LOSSY_ST_ADDR2			0x0 /* Undefined */
+#define	LOSSY_END_ADDR2			0x0 /* Undefined */
+#define	LOSSY_FMT2				LOSSY_FMT_YUV422INTLV
+#define	LOSSY_ENA_DIS2			LOSSY_DISABLE
+
+typedef struct bl2_lossy_info {
+	uint32_t magic;
+	uint32_t a0;
+	uint32_t b0;
+} bl2_lossy_info_t;
+
+void bl2_lossy_setting(uint32_t no, uint32_t start_addr, uint32_t end_addr,
+	uint32_t format, uint32_t enable)
+{
+	uint32_t reg;
+	bl2_lossy_info_t *bl2_lossy_info;
+
+	/* Setting of the start address and format */
+	reg = format | (start_addr >> 20);
+	mmio_write_32(AXI_DCMPAREACRA0 + 0x8 * no, reg);
+
+	/* Setting of the end address */
+	mmio_write_32(AXI_DCMPAREACRB0 + 0x8 * no,
+		(end_addr >> 20));
+
+	/* Enable or Disable of Lossy setting */
+	mmio_write_32(AXI_DCMPAREACRA0 + 0x8 * no, (reg | enable));
+
+	bl2_lossy_info = (bl2_lossy_info_t *)(LOSSY_PARAMS_BASE);
+	bl2_lossy_info += no;
+	bl2_lossy_info->magic = 0x12345678;
+	bl2_lossy_info->a0 = mmio_read_32(AXI_DCMPAREACRA0 + 0x8 * no);
+	bl2_lossy_info->b0 = mmio_read_32(AXI_DCMPAREACRB0 + 0x8 * no);
+
+	NOTICE("     Entry %d: DCMPAREACRAx:0x%x DCMPAREACRBx:0x%x\n", no,
+		mmio_read_32(AXI_DCMPAREACRA0 + 0x8 * no),
+		mmio_read_32(AXI_DCMPAREACRB0 + 0x8 * no));
+}
+
 /*******************************************************************************
  * BL1 has passed the extents of the trusted SRAM that should be visible to BL2
  * in x0. This memory layout is sitting at the base of the free trusted SRAM.
@@ -371,12 +441,14 @@ void bl2_early_platform_setup(meminfo_t *mem_layout)
 
 	/* Initialize secure configuration */
 	bl2_secure_setting();
+#endif
 
 	bl2_avs_setting();	/*  Proceed with separated AVS processing */
 
 	/* Initialize CPG configuration */
 	bl2_cpg_init();
 
+#if RCAR_MASTER_BOOT_CPU == RCAR_BOOT_CA5X
 	bl2_avs_setting();	/*  Proceed with separated AVS processing */
 
 	/* initialize QoS configration */
@@ -399,9 +471,9 @@ void bl2_early_platform_setup(meminfo_t *mem_layout)
 	mmio_write_32(CPG_CA57DBGRCR,
 			DBGCPUPREN | mmio_read_32(CPG_CA57DBGRCR));
 
-	/* STA restriction check for R-Car H3 ES1.0 */
+	/* STA restriction check for R-Car H3 WS1.0 */
 	reg = mmio_read_32(RCAR_PRR) & (RCAR_PRODUCT_MASK | RCAR_CUT_MASK);
-	if (reg  == RCAR_PRODUCT_H3_ES10) {
+	if (reg  == RCAR_PRODUCT_H3_CUT10) {
 		/* PLL0, PLL2, PLL4 setting */
 		reg = mmio_read_32(CPG_PLL2CR);
 		reg &= ~((uint32_t)1U << 5U);	/* bit5 = 0 */
@@ -415,6 +487,19 @@ void bl2_early_platform_setup(meminfo_t *mem_layout)
 		reg &= ~((uint32_t)1U << 12U);	/* bit12 = 0 */
 		mmio_write_32(CPG_PLL0CR, reg);
 	}
+
+	NOTICE("BL2: Lossy Decomp areas\n");
+	/* Lossy setting : entry 0 */
+	bl2_lossy_setting(0, LOSSY_ST_ADDR0, LOSSY_END_ADDR0,
+		LOSSY_FMT0, LOSSY_ENA_DIS0);
+
+	/* Lossy setting : entry 1 */
+	bl2_lossy_setting(1, LOSSY_ST_ADDR1, LOSSY_END_ADDR1,
+		LOSSY_FMT1, LOSSY_ENA_DIS1);
+
+	/* Lossy setting : entry 2 */
+	bl2_lossy_setting(2, LOSSY_ST_ADDR2, LOSSY_END_ADDR2,
+		LOSSY_FMT2, LOSSY_ENA_DIS2);
 
 	/* Initialise the IO layer and register platform IO devices */
 	rcar_io_setup();
@@ -432,6 +517,10 @@ void bl2_platform_setup(void)
 	 * other platforms might have more programmable security devices
 	 * present.
 	 */
+
+	/* IPMMU-MM setting for linux */
+	mmio_write_32(IPMMUMM_SYSCTRL, 0xC0000000U);
+	mmio_write_32(IPMMUMM_SYSAUX, 0x01000000U);
 }
 
 /* Flush the TF params and the TF plat params */

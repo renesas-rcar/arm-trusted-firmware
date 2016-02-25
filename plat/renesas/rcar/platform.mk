@@ -95,7 +95,7 @@ $(eval $(call add_define,RCAR_CUT_10))
 $(eval $(call add_define,RCAR_CUT_11))
 
 ifndef LSI
-  $(error "Error: Unknown LSI. Please use RCAR_LSI=<LSI name> to specify the LSI")
+  $(error "Error: Unknown LSI. Please use LSI=<LSI name> to specify the LSI")
 else
   ifeq (${LSI},H3)
     RCAR_LSI:=${RCAR_H3}

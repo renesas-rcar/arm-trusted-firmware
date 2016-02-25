@@ -163,23 +163,6 @@
 #define	ARM_IRQ_SEC_CRYPT		(102U)						/* Crypt Engine sec							*/
 #define	ARM_IRQ_SEC_CRYPT_SecPKA	( 97U)						/* Crypt Engine PKA sec							*/
 #define	ARM_IRQ_SEC_CRYPT_PubPKA	( 98U)						/* Crypt Engine PKA pub							*/
-#define	ARM_IRQ_SEC_DMAC2_ERR		(448U)						/* SYS-DMAC2 err							*/
-#define	ARM_IRQ_SEC_DMAC2_0		(449U)						/* SYS-DMAC2.ch0							*/
-#define	ARM_IRQ_SEC_DMAC2_1		(450U)						/* SYS-DMAC2.ch1							*/
-#define	ARM_IRQ_SEC_DMAC2_2		(451U)						/* SYS-DMAC2.ch2							*/
-#define	ARM_IRQ_SEC_DMAC2_3		(452U)						/* SYS-DMAC2.ch3							*/
-#define	ARM_IRQ_SEC_DMAC2_4		(453U)						/* SYS-DMAC2.ch4							*/
-#define	ARM_IRQ_SEC_DMAC2_5		(454U)						/* SYS-DMAC2.ch5							*/
-#define	ARM_IRQ_SEC_DMAC2_6		(455U)						/* SYS-DMAC2.ch6							*/
-#define	ARM_IRQ_SEC_DMAC2_7		(456U)						/* SYS-DMAC2.ch7							*/
-#define	ARM_IRQ_SEC_DMAC2_8		(457U)						/* SYS-DMAC2.ch8							*/
-#define	ARM_IRQ_SEC_DMAC2_9		(458U)						/* SYS-DMAC2.ch9							*/
-#define	ARM_IRQ_SEC_DMAC2_10		(459U)						/* SYS-DMAC2.ch10							*/
-#define	ARM_IRQ_SEC_DMAC2_11		(460U)						/* SYS-DMAC2.ch11							*/
-#define	ARM_IRQ_SEC_DMAC2_12		(461U)						/* SYS-DMAC2.ch12							*/
-#define	ARM_IRQ_SEC_DMAC2_13		(462U)						/* SYS-DMAC2.ch13							*/
-#define	ARM_IRQ_SEC_DMAC2_14		(463U)						/* SYS-DMAC2.ch14							*/
-#define	ARM_IRQ_SEC_DMAC2_15		(429U)						/* SYS-DMAC2.ch15							*/
 
 /****************************************************************************************************************************************************************/
 /*																				*/
@@ -251,7 +234,9 @@
 #define RCAR_MAJOR_SHIFT		(4U)
 #define RCAR_MINOR_SHIFT		(0U)
 #define RCAR_MAJOR_OFFSET		(1U)
-#define RCAR_PRODUCT_H3_ES10		(0x00004F00U)	/* R-Car H3 ES1.0 */
+#define RCAR_PRODUCT_H3_CUT10		(RCAR_PRODUCT_H3 | 0x00U) /* H3 WS1.0 */
+#define RCAR_PRODUCT_H3_CUT11		(RCAR_PRODUCT_H3 | 0x01U) /* H3 WS1.1 */
+#define RCAR_PRODUCT_M3_CUT10		(RCAR_PRODUCT_M3 | 0x00U) /* M3 */
 /****************************************************************************************************************************************************************/
 /* Memory mapped Generic timer interfaces  */
 /****************************************************************************************************************************************************************/

@@ -43,7 +43,7 @@
 #include "../rcar_private.h"
 #include "../rcar_version.h"
 
-const uint8_t version_of_renesas[VER_SIZE] __attribute__((__section__(".version"))) = VERSION_OF_RENESAS;
+const uint8_t version_of_renesas[] __attribute__((__section__(".version"))) = VERSION_OF_RENESAS;
 
 #define MAP_SHARED_RAM	MAP_REGION_FLAT(RCAR_SHARED_MEM_BASE,		\
 					RCAR_SHARED_MEM_SIZE,		\
@@ -67,7 +67,7 @@ const uint8_t version_of_renesas[VER_SIZE] __attribute__((__section__(".version"
 
 #define MAP_ATFW_LOG	MAP_REGION_FLAT(RCAR_BL31_LOG_BASE,		\
 					RCAR_BL31_LOG_SIZE,		\
-					MT_MEMORY | MT_RW | MT_SECURE)
+					MT_DEVICE | MT_RW | MT_SECURE)
 
 /*
  * Table of regions for various BL stages to map using the MMU.

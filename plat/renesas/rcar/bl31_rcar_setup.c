@@ -115,24 +115,7 @@ const unsigned int irq_sec_array[] = {
 	ARM_IRQ_SEC_WDT,		/* 173		*/
 	ARM_IRQ_SEC_CRYPT,		/* 102		*/
 	ARM_IRQ_SEC_CRYPT_SecPKA,	/* 97		*/
-	ARM_IRQ_SEC_CRYPT_PubPKA,	/* 98		*/
-	ARM_IRQ_SEC_DMAC2_ERR,		/* 448		*/
-	ARM_IRQ_SEC_DMAC2_0,		/* 449		*/
-	ARM_IRQ_SEC_DMAC2_1,		/* 450		*/
-	ARM_IRQ_SEC_DMAC2_2,		/* 451		*/
-	ARM_IRQ_SEC_DMAC2_3,		/* 452		*/
-	ARM_IRQ_SEC_DMAC2_4,		/* 453		*/
-	ARM_IRQ_SEC_DMAC2_5,		/* 454		*/
-	ARM_IRQ_SEC_DMAC2_6,		/* 455		*/
-	ARM_IRQ_SEC_DMAC2_7,		/* 456		*/
-	ARM_IRQ_SEC_DMAC2_8,		/* 457		*/
-	ARM_IRQ_SEC_DMAC2_9,		/* 458		*/
-	ARM_IRQ_SEC_DMAC2_10,		/* 459		*/
-	ARM_IRQ_SEC_DMAC2_11,		/* 460		*/
-	ARM_IRQ_SEC_DMAC2_12,		/* 461		*/
-	ARM_IRQ_SEC_DMAC2_13,		/* 462		*/
-	ARM_IRQ_SEC_DMAC2_14,		/* 463		*/
-	ARM_IRQ_SEC_DMAC2_15		/* 429		*/
+	ARM_IRQ_SEC_CRYPT_PubPKA	/* 98		*/
 };
 
 uint32_t rcar_boot_kind_flag __attribute__((section("data")));
