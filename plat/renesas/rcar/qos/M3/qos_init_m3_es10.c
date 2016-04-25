@@ -34,7 +34,7 @@
 #include "qos_init_m3_es10.h"
 
 
-#define	RCAR_QOS_VERSION		"rev.0.12"
+#define	RCAR_QOS_VERSION		"rev.0.13"
 
 #define	RCAR_QOS_NONE			(3U)
 #define	RCAR_QOS_TYPE_GFX		(0U)
@@ -765,7 +765,7 @@ void qos_init_m3_es10(void)
 	io_write_32(RALLOC_FIXTH, 0x000F0005U);
 	io_write_32(RALLOC_RAEN,  0x00000001U);
 	io_write_32(RALLOC_REGGD, 0x00000000U);
-	io_write_64(RALLOC_DANN,  0x0202020204040404U);
+	io_write_64(RALLOC_DANN,  0x0202000004040404U);
 	io_write_32(RALLOC_DANT,  0x00181008U);
 	io_write_32(RALLOC_EC,    0x00000000U);
 	io_write_64(RALLOC_EMS,   0x0000000000000000U);
@@ -800,14 +800,14 @@ void qos_init_m3_es10(void)
 
 	/* 3DG bus Leaf setting */
 	io_write_32(0xFD820808U, 0x00001234U);
-	io_write_32(0xFD820800U, 0x0000003FU);
-	io_write_32(0xFD821800U, 0x0000003FU);
-	io_write_32(0xFD822800U, 0x0000003FU);
-	io_write_32(0xFD823800U, 0x0000003FU);
-	io_write_32(0xFD824800U, 0x0000003FU);
-	io_write_32(0xFD825800U, 0x0000003FU);
-	io_write_32(0xFD826800U, 0x0000003FU);
-	io_write_32(0xFD827800U, 0x0000003FU);
+	io_write_32(0xFD820800U, 0x00000006U);
+	io_write_32(0xFD821800U, 0x00000006U);
+	io_write_32(0xFD822800U, 0x00000006U);
+	io_write_32(0xFD823800U, 0x00000006U);
+	io_write_32(0xFD824800U, 0x00000006U);
+	io_write_32(0xFD825800U, 0x00000006U);
+	io_write_32(0xFD826800U, 0x00000006U);
+	io_write_32(0xFD827800U, 0x00000006U);
 
 	/* Resource Alloc start */
 	io_write_32(RALLOC_RAEN,  0x00000001U);

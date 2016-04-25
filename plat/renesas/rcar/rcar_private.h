@@ -166,4 +166,7 @@ void rcar_affinst_on_finish(unsigned int afflvl, unsigned int state);
 void rcar_affinst_suspend_finish(unsigned int afflvl, unsigned int state);
 int rcar_validate_power_state(unsigned int power_state);
 
+/* Function prototypes for read and write to the CPU system registers */
+void iciallu(void);
+
 #endif /* RCAR_PRIVATE_H__ */

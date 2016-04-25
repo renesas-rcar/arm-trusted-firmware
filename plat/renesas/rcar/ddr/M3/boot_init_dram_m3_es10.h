@@ -34,4 +34,4 @@
 
 extern void InitDram_m3_es10(void);
 
-#endif /* __BOOT_INIT_DRAM_H3_WS11_ */
+#endif /* __BOOT_INIT_DRAM_M3_ES10_*/

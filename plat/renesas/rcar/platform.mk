@@ -123,7 +123,7 @@ endif
 
 # Process RCAR_SECURE_BOOT flag
 ifndef RCAR_SECURE_BOOT
-RCAR_SECURE_BOOT := 0
+RCAR_SECURE_BOOT := 1
 endif
 $(eval $(call add_define,RCAR_SECURE_BOOT))
 

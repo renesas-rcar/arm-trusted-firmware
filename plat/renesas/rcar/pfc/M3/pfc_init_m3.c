@@ -31,7 +31,9 @@
 
 #include <stdint.h>		/* for uint32_t */
 #include <mmio.h>
+#include "bl2_cpg_init.h"
 #include "pfc_init_m3.h"
+#include "../../rcar_def.h"
 
 
 /* GPIO base address */
@@ -816,18 +818,115 @@
 #define	MOD_SEL2_VIN4_B		((uint32_t)1U << 0U)
 
 
+/* SCIF3 Registers for Dummy write */
+#define SCIF3_BASE		(0xE6C50000U)
+#define SCIF3_SCFCR		(SCIF3_BASE + 0x0018U)
+#define SCIF3_SCFDR		(SCIF3_BASE + 0x001CU)
+#define SCFCR_DATA		(0x0000U)
+
+/* Realtime module stop control */
+#define	CPG_BASE		(0xE6150000U)
+#define CPG_MSTPSR0		(CPG_BASE + 0x0030U)
+#define CPG_RMSTPCR0		(CPG_BASE + 0x0110U)
+#define RMSTPCR0_RTDMAC		(0x00200000U)
+
+/* RT-DMAC Registers */
+#define RTDMAC_CH		(0U)		/* choose 0 to 15 */
+
+#define RTDMAC_BASE		(0xFFC10000U)
+#define RTDMAC_RDMOR		(RTDMAC_BASE + 0x0060U)
+#define RTDMAC_RDMCHCLR		(RTDMAC_BASE + 0x0080U)
+#define RTDMAC_RDMSAR(x)	(RTDMAC_BASE + 0x8000U + (0x80U * (x)))
+#define RTDMAC_RDMDAR(x)	(RTDMAC_BASE + 0x8004U + (0x80U * (x)))
+#define RTDMAC_RDMTCR(x)	(RTDMAC_BASE + 0x8008U + (0x80U * (x)))
+#define RTDMAC_RDMCHCR(x)	(RTDMAC_BASE + 0x800CU + (0x80U * (x)))
+#define RTDMAC_RDMCHCRB(x)	(RTDMAC_BASE + 0x801CU + (0x80U * (x)))
+#define RTDMAC_RDMDPBASE(x)	(RTDMAC_BASE + 0x8050U + (0x80U * (x)))
+#define RTDMAC_DESC_BASE	(RTDMAC_BASE + 0xA000U)
+#define RTDMAC_DESC_RDMSAR	(RTDMAC_DESC_BASE + 0x0000U)
+#define RTDMAC_DESC_RDMDAR	(RTDMAC_DESC_BASE + 0x0004U)
+#define RTDMAC_DESC_RDMTCR	(RTDMAC_DESC_BASE + 0x0008U)
+
+#define RDMOR_DME		(0x0001U)
+#define RDMCHCR_DPM_INFINITE	(0x30000000U)
+#define RDMCHCR_RPT_TCR		(0x02000000U)
+#define RDMCHCR_TS_2		(0x00000010U)
+#define RDMCHCR_RS_AUTO		(0x00000400U)
+#define RDMCHCR_DE		(0x00000001U)
+#define RDMCHCRB_DRST		(0x00008000U)
+#define RDMDPBASE_SEL_EXT	(0x00000001U)
+
+
+static void StartRtDma0_Descriptor(void);
 static void pfc_reg_write(uint32_t addr, uint32_t data);
+
+
+static void StartRtDma0_Descriptor(void)
+{
+	uint32_t reg;
+
+	reg = mmio_read_32(RCAR_PRR);
+	reg &= (RCAR_PRODUCT_MASK | RCAR_CUT_MASK);
+	if (reg == (RCAR_PRODUCT_M3_CUT10)) {
+		/* Module stop clear */
+		while((mmio_read_32(CPG_MSTPSR0) & RMSTPCR0_RTDMAC) != 0U) {
+			reg = mmio_read_32(CPG_RMSTPCR0);
+			reg &= ~RMSTPCR0_RTDMAC;
+			cpg_write(CPG_RMSTPCR0, reg);
+		}
+
+		/* Initialize ch0, Reset Descriptor */
+		mmio_write_32(RTDMAC_RDMCHCLR, ((uint32_t)1U << RTDMAC_CH));
+		mmio_write_32(RTDMAC_RDMCHCRB(RTDMAC_CH), RDMCHCRB_DRST);
+
+		/* Enable DMA */
+		mmio_write_16(RTDMAC_RDMOR, RDMOR_DME);
+
+		/* Set first transfer */
+		mmio_write_32(RTDMAC_RDMSAR(RTDMAC_CH), RCAR_PRR);
+		mmio_write_32(RTDMAC_RDMDAR(RTDMAC_CH), SCIF3_SCFDR);
+		mmio_write_32(RTDMAC_RDMTCR(RTDMAC_CH), 0x00000001U);
+
+		/* Set descriptor */
+		mmio_write_32(RTDMAC_DESC_RDMSAR, 0x00000000U);
+		mmio_write_32(RTDMAC_DESC_RDMDAR, 0x00000000U);
+		mmio_write_32(RTDMAC_DESC_RDMTCR, 0x00200000U);
+		mmio_write_32(RTDMAC_RDMCHCRB(RTDMAC_CH),  RDMCHCRB_DRST);
+		mmio_write_32(RTDMAC_RDMDPBASE(RTDMAC_CH), RDMDPBASE_SEL_EXT);
+
+		/* Set transfer parameter, Start transfer */
+		mmio_write_32(RTDMAC_RDMCHCR(RTDMAC_CH), RDMCHCR_DPM_INFINITE
+						       | RDMCHCR_RPT_TCR
+						       | RDMCHCR_TS_2
+						       | RDMCHCR_RS_AUTO
+						       | RDMCHCR_DE);
+	}
+}
 
 static void pfc_reg_write(uint32_t addr, uint32_t data)
 {
+	uint32_t prr;
+
+	prr = mmio_read_32(RCAR_PRR);
+	prr &= (RCAR_PRODUCT_MASK | RCAR_CUT_MASK);
+
 	mmio_write_32(PFC_PMMR, ~data);
+	if (prr == (RCAR_PRODUCT_M3_CUT10)) {
+		mmio_write_16(SCIF3_SCFCR, SCFCR_DATA);	/* Dummy write */
+	}
 	mmio_write_32((uintptr_t)addr, data);
+	if (prr == (RCAR_PRODUCT_M3_CUT10)) {
+		mmio_write_16(SCIF3_SCFCR, SCFCR_DATA);	/* Dummy write */
+	}
 }
 
 
 void pfc_init_m3(void)
 {
 	uint32_t reg;
+
+	/* Work around for PFC eratta */
+	StartRtDma0_Descriptor();
 
 	/* initialize module select */
 	pfc_reg_write(PFC_MOD_SEL0, MOD_SEL0_MSIOF3_A

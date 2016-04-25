@@ -31,7 +31,7 @@
 
 #include <mmio.h>
 #include <debug.h>
-#include "bl2_cpg_write.h"
+#include "bl2_cpg_init.h"
 #include "bl2_cpg_register.h"
 #include "avs_driver.h"
 

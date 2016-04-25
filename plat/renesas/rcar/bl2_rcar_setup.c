@@ -53,6 +53,7 @@
 #include "rcar_version.h"
 #include "bl2_swdt.h"
 #include "avs_driver.h"
+#include "scif.h"
 
 
 /* CPG write protect registers */
@@ -105,8 +106,6 @@ typedef uint32_t(*ROM_GETLCS_API)(uint32_t *pLcs);
 #define TARGET_NAME		"R-Car M3"
 #endif
 
-/* Instruction Cache Invalidate All to PoU */
-DEFINE_SYSOP_TYPE_FUNC(ic, iallu)	/* ICIALLU instruction macro */
 
 /*******************************************************************************
  * Declarations of linker defined symbols which will help us find the layout
@@ -328,6 +327,9 @@ void bl2_early_platform_setup(meminfo_t *mem_layout)
 	pfc_init();
 #endif
 
+	/* Initialize CPG configuration */
+	bl2_cpg_init();
+
 	/* Initialize the console to provide early debug support */
 	(void)console_init(0U, 0U, 0U);
 
@@ -426,6 +428,11 @@ void bl2_early_platform_setup(meminfo_t *mem_layout)
 	InitDram();
 
 	bl2_avs_setting();	/*  Proceed with separated AVS processing */
+
+	/* initialize QoS configration */
+	qos_init();
+
+	bl2_avs_setting();	/*  Proceed with separated AVS processing */
 #endif
 
 	/* Initialize RPC */
@@ -441,18 +448,6 @@ void bl2_early_platform_setup(meminfo_t *mem_layout)
 
 	/* Initialize secure configuration */
 	bl2_secure_setting();
-#endif
-
-	bl2_avs_setting();	/*  Proceed with separated AVS processing */
-
-	/* Initialize CPG configuration */
-	bl2_cpg_init();
-
-#if RCAR_MASTER_BOOT_CPU == RCAR_BOOT_CA5X
-	bl2_avs_setting();	/*  Proceed with separated AVS processing */
-
-	/* initialize QoS configration */
-	qos_init();
 #endif
 
 	bl2_avs_end();		/* End of AVS Settings */
@@ -526,14 +521,13 @@ void bl2_platform_setup(void)
 /* Flush the TF params and the TF plat params */
 void bl2_plat_flush_bl31_params(void)
 {
-#if 0
-	flush_dcache_range((unsigned long)PARAMS_BASE, \
-				sizeof(bl2_to_bl31_params_mem_t));
-#endif
 	uint32_t val;
 
 	/* disable the System WDT, FIQ and GIC	*/
 	bl2_swdt_release();
+
+	/* Finalize a console of provide early debug support */
+	console_finalize();
 
 	/* Disable instruction cache */
 	val = (uint32_t)read_sctlr_el1();

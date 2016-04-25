@@ -46,6 +46,7 @@
 	.globl	plat_crash_console_init
 	.globl	plat_crash_console_putc
 	.globl	plat_reset_handler
+	.globl	iciallu
 
 	.extern	platform_set_stack
 	.extern	rcar_log_init
@@ -428,3 +429,15 @@ apply_l2_ram_latencies:
 
 	ret
 endfunc plat_reset_handler
+
+
+	/* ---------------------------------------------
+	 * void iciallu(void)
+	 * Instruction Cache Invalidate All to PoU
+	 * ---------------------------------------------
+	 */
+func iciallu
+	ic	iallu
+
+	ret
+endfunc iciallu

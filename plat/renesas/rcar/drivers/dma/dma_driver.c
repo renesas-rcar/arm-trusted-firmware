@@ -31,8 +31,9 @@
 
 #include <stdint.h>
 #include <string.h>
+#include <mmio.h>
 #include "bl2_cpg_register.h"
-#include "bl2_cpg_write.h"
+#include "bl2_cpg_init.h"
 #include "bl2_dma_register.h"
 #include "dma_driver.h"
 #include "debug.h"

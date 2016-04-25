@@ -32,7 +32,6 @@
 #include <mmio.h>
 #include "rcar_def.h"
 #include "bl2_cpg_register.h"
-#include "bl2_cpg_write.h"
 #include "bl2_cpg_init.h"
 
 typedef struct {
@@ -97,7 +96,7 @@ static const reg_setting_t reg_setting[] = {
 	/* CPG (REALTIME) registers */
 
 	/* Realtime Module Stop Control Register 0 */
-	{RMSTPCR0,		0x00200000U},
+	{RMSTPCR0,		0x00000000U},
 	/* Realtime Module Stop Control Register 1 */
 	{RMSTPCR1,		0xFFFFFFFFU},
 	/* Realtime Module Stop Control Register 2 */
@@ -133,4 +132,11 @@ void bl2_cpg_init(void)
 	for (i = 0U; i < ie; i++) {
 		cpg_write(reg_setting[i].adr, reg_setting[i].val);
 	}
+}
+
+void cpg_write(uintptr_t regadr, uint32_t regval)
+{
+	uint32_t value = (regval);
+	mmio_write_32((uintptr_t)CPG_CPGWPR,~value);
+	mmio_write_32(regadr,value);
 }
