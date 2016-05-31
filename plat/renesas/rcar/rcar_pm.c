@@ -41,6 +41,7 @@
 #include <psci.h>
 #include <errno.h>
 #include "drivers/pwrc/rcar_pwrc.h"
+#include "drivers/iic_dvfs/iic_dvfs.h"
 #include "rcar_def.h"
 #include "rcar_private.h"
 
@@ -50,10 +51,6 @@ static void rcar_cpu_pwrdwn_common(void);
 static void rcar_cluster_pwrdwn_common(void);
 static void __dead2 rcar_system_off(void);
 static void __dead2 rcar_system_reset(void);
-
-static int32_t cpu_on_check(uint64_t mpidr);
-
-extern int32_t platform_is_primary_cpu(uint64_t mpidr);
 
 /*******************************************************************************
  * Private RCAR function to program the mailbox for a cpu before it is released
@@ -306,68 +303,32 @@ void rcar_affinst_suspend_finish(unsigned int afflvl, unsigned int state)
  ******************************************************************************/
 static void __dead2 rcar_system_off(void)
 {
-	uint64_t my_cpu;
-	int32_t rtn_primary;
-	int32_t rtn_on;
+	int32_t error;
 
-	my_cpu = read_mpidr_el1();
-	rtn_primary = platform_is_primary_cpu(my_cpu);
-	rtn_on = cpu_on_check(my_cpu);
-	if ((rtn_primary != 0) && (rtn_on == 0)) {
-		rcar_pwrc_cpuoff(my_cpu);
-		rcar_pwrc_clusteroff(my_cpu);
-	} else {
-		panic();
+	error = rcar_iic_dvfs_send(SLAVE_ADDR_PMIC
+					,REG_ADDR_DVFS_SetVID
+					,REG_DATA_DVFS_SetVID_0V);
+	if (error != 0) {
+		ERROR("BL3-1:Failed the SYSTEM-OFF.\n");
 	}
 	wfi();
-
 	ERROR("RCAR System Off: operation not handled.\n");
 	panic();
 }
 
 static void __dead2 rcar_system_reset(void)
 {
-	rcar_pwrc_system_reset();
+	int32_t error;
 
+	error = rcar_iic_dvfs_send(SLAVE_ADDR_PMIC
+					,REG_ADDR_BKUP_Mode_Cnt
+					,REG_DATA_P_ALL_OFF);
+	if (error != 0) {
+		ERROR("BL3-1:Failed the SYSTEM-RESET.\n");
+	}
+	wfi();
 	ERROR("RCAR System Reset: operation not handled.\n");
 	panic();
-}
-
-static int32_t cpu_on_check(uint64_t mpidr)
-{
-	uint64_t i;
-	uint64_t j;
-	uint64_t cpu_count;
-	uintptr_t reg_PSTR;
-	uint32_t status;
-	uint64_t my_cpu;
-	int32_t rtn;
-
-	const uint64_t cpu_num_in_core[PLATFORM_MAX_AFFLVL + 1] = {
-			(uint64_t)PLATFORM_CLUSTER0_CORE_COUNT,
-			(uint64_t)PLATFORM_CLUSTER1_CORE_COUNT
-	};
-	const uintptr_t registerPSTR[PLATFORM_MAX_AFFLVL + 1] = {
-			RCAR_CA57PSTR,
-			RCAR_CA53PSTR
-	};
-
-	rtn = 0;
-	my_cpu = mpidr & ((uint64_t)((MPIDR_CLUSTER_MASK) | (MPIDR_CPU_MASK)));
-	for (i = 0U; i < ((uint64_t)(PLATFORM_MAX_AFFLVL + 1U)); i++) {
-		cpu_count = cpu_num_in_core[i];
-		reg_PSTR = registerPSTR[i];
-		for (j = 0U; j < cpu_count; j++) {
-			if (my_cpu != ((i * 0x100U) + j)) {
-				status = mmio_read_32(reg_PSTR) >> (j * 4U);
-				if ((status & 0x00000003U) == 0U) {
-					rtn--;
-				}
-			}
-		}
-	}
-	return (rtn);
-
 }
 
 /*******************************************************************************

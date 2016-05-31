@@ -40,11 +40,7 @@
 
 #include "rcarboot.h"
 
-#if RCAR_MASTER_BOOT_CPU == RCAR_BOOT_CA5X
 #define RCAR_BOOT_KEY_CERT	(0xE6300C00U)
-#elif RCAR_MASTER_BOOT_CPU == RCAR_BOOT_CR7
-#define RCAR_BOOT_KEY_CERT	(0xE6300400U)
-#endif
 #if RCAR_LSI == RCAR_H3
 #define RCAR_SBROM_API		(0xeb10dd64U)
 #elif RCAR_LSI == RCAR_M3

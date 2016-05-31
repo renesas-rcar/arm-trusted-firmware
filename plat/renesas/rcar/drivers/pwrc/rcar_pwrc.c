@@ -279,11 +279,6 @@ void rcar_pwrc_clusteroff(uint64_t mpidr)
 	rcar_lock_release();
 }
 
-void rcar_pwrc_system_reset(void)
-{
-	mmio_write_32(RCAR_SRESCR, (0x5AA50000U | BIT_SOFTRESET));
-}
-
 /* Nothing else to do here apart from initializing the lock */
 void rcar_pwrc_setup(void)
 {

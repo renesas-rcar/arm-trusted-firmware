@@ -43,6 +43,17 @@
 #define SWDT_WTCNT		(SWDT_BASE + 0x0000U)
 #define SWDT_WTCSRA		(SWDT_BASE + 0x0004U)
 #define SWDT_WTCSRB		(SWDT_BASE + 0x0008U)
+#define SWDT_GICD_BASE		(0xF1010000U)
+#define SWDT_GICC_BASE		(0xF1020000U)
+#define SWDT_GICD_CTLR		(SWDT_GICD_BASE + 0x0000U)
+#define SWDT_GICD_IGROUPR	(SWDT_GICD_BASE + 0x0080U)
+#define SWDT_GICD_ISPRIORITYR	(SWDT_GICD_BASE + 0x0400U)
+#define SWDT_GICC_CTLR		(SWDT_GICC_BASE + 0x0000U)
+#define SWDT_GICC_PMR		(SWDT_GICC_BASE + 0x0004U)
+#define SWDT_GICD_ITARGETSR	(SWDT_GICD_BASE + 0x0800U)
+#define IGROUPR_NUM		(16U)
+#define ISPRIORITY_NUM		(128U)
+#define ITARGET_MASK		((uint32_t)0x03U)
 
 #define WDTRSTCR_UPPER_BYTE	(0xA55A0000U)
 #define WTCSRA_UPPER_BYTE	(0xA5A5A500U)
@@ -153,9 +164,28 @@ static void bl2_swdt_disable(void)
 
 void bl2_swdt_release(void)
 {
+	uintptr_t p_gicd_ctlr = (uintptr_t)SWDT_GICD_CTLR;
+	uintptr_t p_igroupr = (uintptr_t)SWDT_GICD_IGROUPR;
+	uintptr_t p_ispriorityr = (uintptr_t)SWDT_GICD_ISPRIORITYR;
+	uintptr_t p_gicc_ctlr = (uintptr_t)SWDT_GICC_CTLR;
+	uintptr_t p_pmr = (uintptr_t)SWDT_GICC_PMR;
+	uintptr_t p_itargetsr = (uintptr_t)(SWDT_GICD_ITARGETSR
+				+ (ARM_IRQ_SEC_WDT & (uint32_t)(~ITARGET_MASK)));
+	uint32_t i;
+
         bl2_swdt_disable();
         disable_fiq();
         arm_gic_cpuif_deactivate();
+	for (i=0U; i<IGROUPR_NUM; i++) {
+		mmio_write_32((p_igroupr + (uint32_t)(i * 4U)), 0U);
+	}
+	for (i=0U; i<ISPRIORITY_NUM; i++) {
+		mmio_write_32((p_ispriorityr + (uint32_t)(i * 4U)), 0U);
+	}
+	mmio_write_32(p_itargetsr, 0U);
+	mmio_write_32(p_gicd_ctlr, 0U);
+	mmio_write_32(p_gicc_ctlr, 0U);
+	mmio_write_32(p_pmr, 0U);
 }
 
 void bl2_swdt_exec(uint64_t addr)

@@ -146,13 +146,8 @@
  * size plus a little space for growth.
  */
 #define	RCAR_SECRAM_BASE		(0xE6300000)
-#if RCAR_MASTER_BOOT_CPU == RCAR_BOOT_CA5X
 #define BL2_BASE			(0xE6302000)
 #define BL2_LIMIT			(0xE632E800)
-#elif RCAR_MASTER_BOOT_CPU == RCAR_BOOT_CR7
-#define BL2_BASE			(0x43F20000)
-#define BL2_LIMIT			(0x43F4C800)
-#endif
 
 /*******************************************************************************
  * BL31 specific defines.

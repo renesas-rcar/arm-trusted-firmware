@@ -105,6 +105,8 @@ static void startDMA(uint32_t dst, uint32_t src, uint32_t len)
 	mmio_write_32(DMA_DMASAR32,src);
 	/* DMA 64bytes-unit transfer  count 32 */
 	mmio_write_32(DMA_DMATCR32,len >> 6);
+	/* DMA DMA Secure Control Register 32 to 47 */
+	mmio_write_32(DMA_DMASEC2,0x00000001U);
 	/* DMA channel control 32 */
 	mmio_write_32(DMA_DMACHCR32,0x00105409U);
 }
@@ -120,6 +122,8 @@ static void endDMA(void)
 			break;
 		}
 	}
+	/* DMA DMA Secure Control Register 32 to 47 */
+	mmio_write_32(DMA_DMASEC2,0x00000000U);
 	/* DMA operation 2 */
 	mmio_write_16(DMA_DMAOR2,0x0000U);
 	/* DMA channel clear 2 */

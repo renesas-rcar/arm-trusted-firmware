@@ -29,14 +29,17 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef	RCAR_VERSION_H__
-#define	RCAR_VERSION_H__
+#ifndef IIC_DVFS_H__
+#define IIC_DVFS_H__
 
-#include	<arch_helpers.h>
+#define SLAVE_ADDR_PMIC		(0x30U)
 
-#define		VERSION_OF_RENESAS	"1.0.8"
-#define		VERSION_OF_RENESAS_MAXLEN	(128)
+#define	REG_ADDR_DVFS_SetVID	(0x54U)
+#define	REG_DATA_DVFS_SetVID_0V	(0x00U)
 
-extern const uint8_t	version_of_renesas[VERSION_OF_RENESAS_MAXLEN];
+#define	REG_ADDR_BKUP_Mode_Cnt	(0x20U)
+#define	REG_DATA_P_ALL_OFF	(0x80U)
 
-#endif	/* RCAR_VERSION_H__	*/
+int32_t rcar_iic_dvfs_send(uint8_t slave_addr, uint8_t reg_addr, uint8_t reg_data);
+
+#endif  /* IIC_DVFS_H__ */

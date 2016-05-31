@@ -90,13 +90,15 @@ static const reg_setting_t reg_setting[] = {
 	/* Secure Software Reset Access Enable Control Register 10 */
 	{SCSRSTECR10,		0x00000000U},
 	/* Secure Software Reset Access Enable Control Register 11 */
-	{SCSRSTECR11,		0x00000000U},
+	{SCSRSTECR11,		0x00000000U}
+};
 
-#if RCAR_MASTER_BOOT_CPU == RCAR_BOOT_CA5X
+static const reg_setting_t reg_setting_rt[] = {
+
 	/* CPG (REALTIME) registers */
 
 	/* Realtime Module Stop Control Register 0 */
-	{RMSTPCR0,		0x00000000U},
+	{RMSTPCR0,		0x00200000U},
 	/* Realtime Module Stop Control Register 1 */
 	{RMSTPCR1,		0xFFFFFFFFU},
 	/* Realtime Module Stop Control Register 2 */
@@ -119,18 +121,31 @@ static const reg_setting_t reg_setting[] = {
 	{RMSTPCR10,		0xFFFEFFE0U},
 	/* Realtime Module Stop Control Register 11 */
 	{RMSTPCR11,		0x00000037U}
-#endif
 };
 
 void bl2_cpg_init(void)
 {
 	uint32_t	i;
 	uint32_t	ie;
+	uint32_t	modemr;
 
 	ie = (uint32_t)(sizeof(reg_setting) / sizeof(reg_setting_t));
 
 	for (i = 0U; i < ie; i++) {
 		cpg_write(reg_setting[i].adr, reg_setting[i].val);
+	}
+
+	modemr = mmio_read_32(RCAR_MODEMR);
+	modemr &= MODEMR_BOOT_CPU_MASK;
+
+
+	if((modemr == MODEMR_BOOT_CPU_CA57) ||
+	   (modemr == MODEMR_BOOT_CPU_CA53)) {
+		ie = (uint32_t)(sizeof(reg_setting_rt) / sizeof(reg_setting_t));
+
+		for (i = 0U; i < ie; i++) {
+			cpg_write(reg_setting_rt[i].adr, reg_setting_rt[i].val);
+		}
 	}
 }
 

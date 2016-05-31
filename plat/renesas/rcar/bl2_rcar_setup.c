@@ -62,8 +62,9 @@
 #define	CPGWPR_PASSWORD		(0x5A5AFFFFU)
 #define	CPGWPCR_PASSWORD	(0xA5A50000U)
 
-/* CA57 Debug Resource control registers */
+/* CA5x Debug Resource control registers */
 #define	CPG_CA57DBGRCR		(CPG_BASE + 0x2180U)
+#define	CPG_CA53DBGRCR		(CPG_BASE + 0x1180U)
 #define	DBGCPUPREN		((uint32_t)1U << 19U)
 #define	CPG_PLL0CR		(CPG_BASE + 0x00D8U)
 #define	CPG_PLL2CR		(CPG_BASE + 0x002CU)
@@ -232,6 +233,7 @@ struct entry_point_info *bl2_plat_get_bl31_ep_info(void)
 	return bl31_ep_info;
 }
 
+#if (RCAR_LOSSY_ENABLE == 1)
 /* Settings for Lossy Decompression */
 #define LOSSY_PARAMS_BASE 		(0x47FD7000U)
 
@@ -296,6 +298,7 @@ void bl2_lossy_setting(uint32_t no, uint32_t start_addr, uint32_t end_addr,
 		mmio_read_32(AXI_DCMPAREACRA0 + 0x8 * no),
 		mmio_read_32(AXI_DCMPAREACRB0 + 0x8 * no));
 }
+#endif /* #if (RCAR_LOSSY_ENABLE == 1) */
 
 /*******************************************************************************
  * BL1 has passed the extents of the trusted SRAM that should be visible to BL2
@@ -310,6 +313,8 @@ void bl2_early_platform_setup(meminfo_t *mem_layout)
 	const ROM_GETLCS_API	ROM_GetLcs = ROM_GETLCS_API_ADDR;
 	uint32_t reg;
 	uint32_t lcs;
+	uint32_t modemr;
+	char msg[128];
 	const char *str;
 	const char *cpu_ca57        = "CA57";
 	const char *cpu_ca53        = "CA53";
@@ -322,10 +327,14 @@ void bl2_early_platform_setup(meminfo_t *mem_layout)
 	const char *lcs_fa          = "FA";
 	const char *unknown         = "unknown";
 
-#if RCAR_MASTER_BOOT_CPU == RCAR_BOOT_CA5X
-	/* initialize Pin Function */
-	pfc_init();
-#endif
+	modemr = mmio_read_32(RCAR_MODEMR);
+	modemr &= MODEMR_BOOT_CPU_MASK;
+
+	if((modemr == MODEMR_BOOT_CPU_CA57) ||
+	   (modemr == MODEMR_BOOT_CPU_CA53)) {
+		/* initialize Pin Function */
+		pfc_init();
+	}
 
 	/* Initialize CPG configuration */
 	bl2_cpg_init();
@@ -362,7 +371,9 @@ void bl2_early_platform_setup(meminfo_t *mem_layout)
 		str = unknown;
 		break;
 	}
-	NOTICE("BL2: R-Car Gen3 Initial Program Loader(%s) Rev.%s\n", str, version_of_renesas);
+	(void)sprintf(msg, "BL2: R-Car Gen3 Initial Program Loader(%s) Rev.%s\n"
+						, str, version_of_renesas);
+	NOTICE("%s", msg);
 
 	bl2_avs_setting();	/*  Proceed with separated AVS processing */
 	
@@ -379,9 +390,10 @@ void bl2_early_platform_setup(meminfo_t *mem_layout)
 		str = unknown;
 		break;
 	}
-	NOTICE("BL2: PRR is R-Car %s ES%d.%d\n", str,
-		((reg & RCAR_MAJOR_MASK) >> RCAR_MAJOR_SHIFT) + RCAR_MAJOR_OFFSET,
-		 (reg & RCAR_MINOR_MASK));
+	(void)sprintf(msg, "BL2: PRR is R-Car %s ES%d.%d\n", str,
+		((reg & RCAR_MAJOR_MASK) >> RCAR_MAJOR_SHIFT)
+		 + RCAR_MAJOR_OFFSET, (reg & RCAR_MINOR_MASK));
+	NOTICE("%s", msg);
 	if((reg & RCAR_PRODUCT_MASK) != TARGET_PRODUCT) {
 		ERROR("BL2: This IPL has been built for the %s.\n", 
 								TARGET_NAME);
@@ -416,24 +428,26 @@ void bl2_early_platform_setup(meminfo_t *mem_layout)
 	} else {
 		str = unknown;
 	}
-	NOTICE("BL2: LCM state is %s\n", str);
+	(void)sprintf(msg, "BL2: LCM state is %s\n", str);
+	NOTICE("%s", msg);
 
 	bl2_avs_setting();	/*  Proceed with separated AVS processing */
 	
 	/* Setup the BL2 memory layout */
 	bl2_tzram_layout = *mem_layout;
 
-#if RCAR_MASTER_BOOT_CPU == RCAR_BOOT_CA5X
-	/* Initialize SDRAM */
-	InitDram();
+	if((modemr == MODEMR_BOOT_CPU_CA57) ||
+	   (modemr == MODEMR_BOOT_CPU_CA53)) {
+		/* Initialize SDRAM */
+		InitDram();
 
-	bl2_avs_setting();	/*  Proceed with separated AVS processing */
+		bl2_avs_setting();/*  Proceed with separated AVS processing */
 
-	/* initialize QoS configration */
-	qos_init();
+		/* initialize QoS configration */
+		qos_init();
 
-	bl2_avs_setting();	/*  Proceed with separated AVS processing */
-#endif
+		bl2_avs_setting();	/*  Proceed with separated AVS processing */
+	}
 
 	/* Initialize RPC */
 	initRPC();
@@ -443,12 +457,10 @@ void bl2_early_platform_setup(meminfo_t *mem_layout)
 	/* Initialize DMA */
 	initDMA();
 
-#if RCAR_MASTER_BOOT_CPU == RCAR_BOOT_CA5X
 	bl2_avs_setting();	/*  Proceed with separated AVS processing */
 
 	/* Initialize secure configuration */
 	bl2_secure_setting();
-#endif
 
 	bl2_avs_end();		/* End of AVS Settings */
 
@@ -462,9 +474,11 @@ void bl2_early_platform_setup(meminfo_t *mem_layout)
 	mmio_write_32(CPG_CPGWPR, CPGWPR_PASSWORD);
 	mmio_write_32(CPG_CPGWPCR, CPGWPCR_PASSWORD);
 
-	/* CA57 debug resource control */
+	/* CA5x debug resource control */
 	mmio_write_32(CPG_CA57DBGRCR,
 			DBGCPUPREN | mmio_read_32(CPG_CA57DBGRCR));
+	mmio_write_32(CPG_CA53DBGRCR,
+			DBGCPUPREN | mmio_read_32(CPG_CA53DBGRCR));
 
 	/* STA restriction check for R-Car H3 WS1.0 */
 	reg = mmio_read_32(RCAR_PRR) & (RCAR_PRODUCT_MASK | RCAR_CUT_MASK);
@@ -483,6 +497,7 @@ void bl2_early_platform_setup(meminfo_t *mem_layout)
 		mmio_write_32(CPG_PLL0CR, reg);
 	}
 
+#if (RCAR_LOSSY_ENABLE == 1)
 	NOTICE("BL2: Lossy Decomp areas\n");
 	/* Lossy setting : entry 0 */
 	bl2_lossy_setting(0, LOSSY_ST_ADDR0, LOSSY_END_ADDR0,
@@ -495,6 +510,7 @@ void bl2_early_platform_setup(meminfo_t *mem_layout)
 	/* Lossy setting : entry 2 */
 	bl2_lossy_setting(2, LOSSY_ST_ADDR2, LOSSY_END_ADDR2,
 		LOSSY_FMT2, LOSSY_ENA_DIS2);
+#endif /* #if (RCAR_LOSSY_ENABLE == 1) */
 
 	/* Initialise the IO layer and register platform IO devices */
 	rcar_io_setup();

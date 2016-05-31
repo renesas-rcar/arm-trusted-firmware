@@ -74,6 +74,7 @@ BL31_SOURCES		+=	drivers/arm/cci/cci.c				\
 				plat/renesas/rcar/rcar_pm.c			\
 				plat/renesas/rcar/drivers/memdrv/rcar_console.S	\
 				plat/renesas/rcar/drivers/memdrv/rcar_printf.c	\
+				plat/renesas/rcar/drivers/iic_dvfs/iic_dvfs.c	\
 				plat/renesas/rcar/rcar_topology.c		\
 				plat/renesas/rcar/aarch64/rcar_helpers.S	\
 				plat/renesas/rcar/aarch64/rcar_common.c		\
@@ -139,12 +140,6 @@ RCAR_DRAM_SPLIT := 0
 endif
 $(eval $(call add_define,RCAR_DRAM_SPLIT))
 
-# Process RCAR_MASTER_BOOT_CPU flag
-ifndef RCAR_MASTER_BOOT_CPU
-RCAR_MASTER_BOOT_CPU := 0
-endif
-$(eval $(call add_define,RCAR_MASTER_BOOT_CPU))
-
 # Process RCAR_BL33_EXECUTION_EL flag
 ifndef RCAR_BL33_EXECUTION_EL
 RCAR_BL33_EXECUTION_EL := 0
@@ -164,6 +159,12 @@ else
 AVS_SETTING_ENABLE := 1
 endif
 $(eval $(call add_define,AVS_SETTING_ENABLE))
+
+# Process RCAR_LOSSY_ENABLE flag
+ifndef RCAR_LOSSY_ENABLE
+RCAR_LOSSY_ENABLE := 0
+endif
+$(eval $(call add_define,RCAR_LOSSY_ENABLE))
 
 include plat/renesas/rcar/ddr/ddr.mk
 include plat/renesas/rcar/qos/qos.mk

@@ -81,22 +81,28 @@ void bl2_interrupt_error_type(uint32_t wrong_type)
 		"SERR AARCH32"
 	};
 	uint32_t interrupt_id;
+	char msg[128];
 
 	if (wrong_type >= SWDT_ERROR_TYPE) {
 		/* Clear the interrupt request	*/
 		(void)arm_gic_acknowledge_interrupt();
 		ERROR("\n");
-		ERROR("BL2: bl2_interrupt_error_type error, invalid type = %d\n"
+		(void)sprintf(msg,
+			"BL2: bl2_interrupt_error_type error, invalid type = %d\n"
 			,wrong_type);
+		ERROR("%s", msg);
 		/* endless loop		*/
 		panic();
-	}
-	interrupt_id = arm_gic_acknowledge_interrupt() & INT_ID_MASK;
-	bl2_swdt_release();
+	} else {
+		interrupt_id = arm_gic_acknowledge_interrupt() & INT_ID_MASK;
+		bl2_swdt_release();
 
-	ERROR("\n");
-	ERROR("BL2: This interrupt is not FIQ, interrupt type = %s, ID = %d\n"
+		ERROR("\n");
+		(void)sprintf(msg,
+			"BL2: This interrupt is not FIQ, interrupt type = %s, ID = %d\n"
 			,&interrupt_ex[wrong_type][0], interrupt_id);
-	/* Endless loop		*/
-	panic();
+		ERROR("%s", msg);
+		/* Endless loop		*/
+		panic();
+	}
 }

@@ -73,7 +73,6 @@ void rcar_pwrc_enable_interrupt_wakeup(uint64_t mpidr);
 void rcar_pwrc_disable_interrupt_wakeup(uint64_t mpidr);
 uint32_t rcar_pwrc_status(uint64_t mpidr);
 uint32_t rcar_pwrc_get_cpu_wkr(uint64_t mpidr);
-void rcar_pwrc_system_reset(void);
 
 #endif /*__ASSEMBLY__*/
 

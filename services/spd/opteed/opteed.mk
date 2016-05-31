@@ -36,4 +36,4 @@ SPD_SOURCES		:=	services/spd/opteed/opteed_common.c	\
 				services/spd/opteed/opteed_main.c	\
 				services/spd/opteed/opteed_pm.c
 
-NEED_BL32		:=	yes
+NEED_BL32		:=	no

@@ -847,14 +847,15 @@
 #define RTDMAC_DESC_RDMDAR	(RTDMAC_DESC_BASE + 0x0004U)
 #define RTDMAC_DESC_RDMTCR	(RTDMAC_DESC_BASE + 0x0008U)
 
-#define RDMOR_DME		(0x0001U)
-#define RDMCHCR_DPM_INFINITE	(0x30000000U)
-#define RDMCHCR_RPT_TCR		(0x02000000U)
-#define RDMCHCR_TS_2		(0x00000010U)
-#define RDMCHCR_RS_AUTO		(0x00000400U)
-#define RDMCHCR_DE		(0x00000001U)
-#define RDMCHCRB_DRST		(0x00008000U)
-#define RDMDPBASE_SEL_EXT	(0x00000001U)
+#define RDMOR_DME		(0x0001U)	/* DMA Master Enable */
+#define RDMCHCR_DPM_INFINITE	(0x30000000U)	/* Infinite repeat mode */
+#define RDMCHCR_RPT_TCR		(0x02000000U)	/* enable to update TCR */
+#define RDMCHCR_TS_2		(0x00000008U)	/* Word(2byte) units transfer */
+#define RDMCHCR_RS_AUTO		(0x00000400U)	/* Auto request */
+#define RDMCHCR_DE		(0x00000001U)	/* DMA Enable */
+#define RDMCHCRB_DRST		(0x00008000U)	/* Descriptor reset */
+#define RDMCHCRB_SLM_256	(0x00000080U)	/* once in 256 clock cycle */
+#define RDMDPBASE_SEL_EXT	(0x00000001U)	/* External memory use */
 
 
 static void StartRtDma0_Descriptor(void);
@@ -891,8 +892,9 @@ static void StartRtDma0_Descriptor(void)
 		mmio_write_32(RTDMAC_DESC_RDMSAR, 0x00000000U);
 		mmio_write_32(RTDMAC_DESC_RDMDAR, 0x00000000U);
 		mmio_write_32(RTDMAC_DESC_RDMTCR, 0x00200000U);
-		mmio_write_32(RTDMAC_RDMCHCRB(RTDMAC_CH),  RDMCHCRB_DRST);
-		mmio_write_32(RTDMAC_RDMDPBASE(RTDMAC_CH), RDMDPBASE_SEL_EXT);
+		mmio_write_32(RTDMAC_RDMCHCRB(RTDMAC_CH), RDMCHCRB_SLM_256);
+		mmio_write_32(RTDMAC_RDMDPBASE(RTDMAC_CH), RTDMAC_DESC_BASE
+							 | RDMDPBASE_SEL_EXT);
 
 		/* Set transfer parameter, Start transfer */
 		mmio_write_32(RTDMAC_RDMCHCR(RTDMAC_CH), RDMCHCR_DPM_INFINITE
