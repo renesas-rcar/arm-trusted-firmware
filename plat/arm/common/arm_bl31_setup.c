@@ -40,6 +40,7 @@
 #include <mmio.h>
 #include <plat_arm.h>
 #include <platform.h>
+#include <platform_def.h>
 
 
 /*
@@ -179,16 +180,16 @@ void bl31_early_platform_setup(bl31_params_t *from_bl2,
 	 * No need for locks as no other CPU is active.
 	 */
 	arm_cci_init();
-#if RESET_TO_BL31
+
 	/*
-	 * Enable CCI coherency for the primary CPU's cluster
-	 * (if earlier BL has not already done so).
+	 * Enable CCI coherency for the primary CPU's cluster.
+	 * Earlier bootloader stages might already do this (e.g. Trusted
+	 * Firmware's BL1 does it) but we can't assume so. There is no harm in
+	 * executing this code twice anyway.
 	 * Platform specific PSCI code will enable coherency for other
 	 * clusters.
 	 */
 	cci_enable_snoop_dvm_reqs(MPIDR_AFFLVL1_VAL(read_mpidr()));
-
-#endif /* RESET_TO_BL31 */
 }
 
 /*******************************************************************************
@@ -219,16 +220,13 @@ void arm_bl31_platform_setup(void)
 	reg_val = (1 << CNTACR_RPCT_SHIFT) | (1 << CNTACR_RVCT_SHIFT);
 	reg_val |= (1 << CNTACR_RFRQ_SHIFT) | (1 << CNTACR_RVOFF_SHIFT);
 	reg_val |= (1 << CNTACR_RWVT_SHIFT) | (1 << CNTACR_RWPT_SHIFT);
-	mmio_write_32(ARM_SYS_TIMCTL_BASE + CNTACR_BASE(1), reg_val);
+	mmio_write_32(ARM_SYS_TIMCTL_BASE + CNTACR_BASE(PLAT_ARM_NSTIMER_FRAME_ID), reg_val);
 
-	reg_val = (1 << CNTNSAR_NS_SHIFT(1));
+	reg_val = (1 << CNTNSAR_NS_SHIFT(PLAT_ARM_NSTIMER_FRAME_ID));
 	mmio_write_32(ARM_SYS_TIMCTL_BASE + CNTNSAR, reg_val);
 
 	/* Initialize power controller before setting up topology */
 	plat_arm_pwrc_setup();
-
-	/* Topologies are best known to the platform. */
-	plat_arm_topology_setup();
 }
 
 void bl31_platform_setup(void)

@@ -99,40 +99,28 @@
 	.size \_name, . - \_name
 	.endm
 
-	/* ---------------------------------------------
-	 * Find the type of reset and jump to handler
-	 * if present. If the handler is null then it is
-	 * a cold boot. The primary cpu will set up the
-	 * platform while the secondaries wait for
-	 * their turn to be woken up
-	 * ---------------------------------------------
+	/*
+	 * Theses macros are used to create function labels for deprecated
+	 * APIs. If WARN_DEPRECATED is non zero, the callers of these APIs
+	 * will fail to link and cause build failure.
 	 */
-	.macro wait_for_entrypoint
-wait_for_entrypoint:
-	mrs	x0, mpidr_el1
-	bl	platform_get_entrypoint
-	cbnz	x0, do_warm_boot
-	mrs	x0, mpidr_el1
-	bl	platform_is_primary_cpu
-	cbnz	x0, do_cold_boot
-
-	/* ---------------------------------------------
-	 * Perform any platform specific secondary cpu
-	 * actions
-	 * ---------------------------------------------
-	 */
-	bl	plat_secondary_cold_boot_setup
-	b	wait_for_entrypoint
-
-	do_warm_boot:
-	/* ---------------------------------------------
-	 * Jump to BL31 for all warm boot init.
-	 * ---------------------------------------------
-	 */
-	blr	x0
-
-	do_cold_boot:
+#if WARN_DEPRECATED
+	.macro func_deprecated _name
+	func deprecated\_name
 	.endm
+
+	.macro endfunc_deprecated _name
+	endfunc deprecated\_name
+	.endm
+#else
+	.macro func_deprecated _name
+	func \_name
+	.endm
+
+	.macro endfunc_deprecated _name
+	endfunc \_name
+	.endm
+#endif
 
 	/*
 	 * This macro declares an array of 1 or more stacks, properly
@@ -150,6 +138,7 @@ wait_for_entrypoint:
 	.space ((\_count) * (\_size)), 0
 	.endm
 
+#if ENABLE_PLAT_COMPAT
 	/*
 	 * This macro calculates the base address of an MP stack using the
 	 * platform_get_core_pos() index, the name of the stack storage and
@@ -160,6 +149,21 @@ wait_for_entrypoint:
 	 */
 	.macro get_mp_stack _name, _size
 	bl  platform_get_core_pos
+	ldr x2, =(\_name + \_size)
+	mov x1, #\_size
+	madd x0, x0, x1, x2
+	.endm
+#endif
+
+	/*
+	 * This macro calculates the base address of the current CPU's MP stack
+	 * using the plat_my_core_pos() index, the name of the stack storage
+	 * and the size of each stack
+	 * Out: X0 = physical address of stack base
+	 * Clobber: X30, X1, X2
+	 */
+	.macro get_my_mp_stack _name, _size
+	bl  plat_my_core_pos
 	ldr x2, =(\_name + \_size)
 	mov x1, #\_size
 	madd x0, x0, x1, x2

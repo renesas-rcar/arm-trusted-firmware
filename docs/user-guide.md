@@ -6,22 +6,25 @@ Contents :
 1.  [Introduction](#1--introduction)
 2.  [Host machine requirements](#2--host-machine-requirements)
 3.  [Tools](#3--tools)
-4.  [Building the Trusted Firmware](#4--building-the-trusted-firmware)
-5.  [Obtaining the normal world software](#5--obtaining-the-normal-world-software)
-6.  [Preparing the images to run on FVP](#6--preparing-the-images-to-run-on-fvp)
-7.  [Running the software on FVP](#7--running-the-software-on-fvp)
-8.  [Running the software on Juno](#8--running-the-software-on-juno)
+4.  [Getting the Trusted Firmware source code](#4--getting-the-trusted-firmware-source-code)
+5.  [Building the Trusted Firmware](#5--building-the-trusted-firmware)
+6.  [Building the rest of the software stack](#6--building-the-rest-of-the-software-stack)
+7.  [Preparing the images to run on FVP](#7--preparing-the-images-to-run-on-fvp)
+8.  [Running the software on FVP](#8--running-the-software-on-fvp)
+9.  [Running the software on Juno](#9--running-the-software-on-juno)
 
 
 1.  Introduction
 ----------------
+
 This document describes how to build ARM Trusted Firmware and run it with a
 tested set of other software components using defined configurations on the Juno
 ARM development platform and ARM Fixed Virtual Platform (FVP) models. It is
 possible to use other software components, configurations and platforms but that
 is outside the scope of this document.
 
-This document should be used in conjunction with the [Firmware Design].
+This document should be used in conjunction with the [Firmware Design] and the
+[Linaro release notes][Linaro releases].
 
 
 2.  Host machine requirements
@@ -32,57 +35,79 @@ running the FVP models is a dual-core processor running at 2GHz with 12GB of
 RAM.  For best performance, use a machine with a quad-core processor running at
 2.6GHz with 16GB of RAM.
 
-The software has been tested on Ubuntu 12.04.04 (64-bit).  Packages used
-for building the software were installed from that distribution unless
-otherwise specified.
-
+The software has been tested on Ubuntu 14.04 LTS (64-bit). Packages used for
+building the software were installed from that distribution unless otherwise
+specified.
 
 3.  Tools
 ---------
 
-The following tools are required to use the ARM Trusted Firmware:
-
-*   `git` package to obtain source code.
-
-*   `build-essential`, `uuid-dev` and `iasl` packages for building UEFI and the
-    Firmware Image Package (FIP) tool.
-
-*   `bc` and `ncurses-dev` packages for building Linux.
+In addition to the prerequisite tools listed on the
+[Linaro release notes][Linaro releases], the following tools are needed to use
+the ARM Trusted Firmware:
 
 *   `device-tree-compiler` package for building the Flattened Device Tree (FDT)
     source files (`.dts` files) provided with this software.
 
-*   Baremetal GNU GCC tools. Verified packages can be downloaded from [Linaro]
-    [Linaro Toolchain]. The rest of this document assumes that the
-    `gcc-linaro-aarch64-none-elf-4.9-2014.07_linux.tar.xz` tools are used.
-
-        wget http://releases.linaro.org/14.07/components/toolchain/binaries/gcc-linaro-aarch64-none-elf-4.9-2014.07_linux.tar.xz
-        tar -xf gcc-linaro-aarch64-none-elf-4.9-2014.07_linux.tar.xz
-
 *   `libssl-dev` package to build the certificate generation tool when support
     for Trusted Board Boot is needed.
 
-*   (Optional) For debugging, ARM [Development Studio 5 (DS-5)][DS-5] v5.20.
+*   (Optional) For debugging, ARM [Development Studio 5 (DS-5)][DS-5] v5.21.
 
 
-4.  Building the Trusted Firmware
+4.  Getting the Trusted Firmware source code
+--------------------------------------------
+
+The Trusted Firmware source code can be obtained as part of the standard Linaro
+releases, which provide a full software stack, including the Trusted Firmware,
+normal world firmware, Linux kernel and device tree, file system as well as any
+additional micro-controller firmware required by the platform. Please follow the
+instructions on the [Linaro release notes][Linaro releases], section 2.2
+"Downloading the software sources" and section 2.3 "Downloading the filesystem
+binaries".
+
+Note: Both the LSK kernel or the latest tracking kernel can be used along the
+ARM Trusted Firmware, choose the one that best suits your needs.
+
+The Trusted Firmware source code can then be found in the `arm-tf/` directory.
+This is the full git repository cloned from Github. The revision checked out by
+the `repo` tool is indicated by the manifest file. Depending on the manifest
+file you're using, this might not be the latest development version. To
+synchronize your copy of the repository and get the latest updates, use the
+following commands:
+
+    # Change to the Trusted Firmware directory.
+    cd arm-tf
+
+    # Download the latest code from Github.
+    git fetch github
+
+    # Update your working copy to the latest master.
+    # This command will create a local branch master that tracks the remote
+    # branch master from Github.
+    git checkout --track github/master
+
+
+Alternatively, the Trusted Firmware source code can be fetched on its own
+from GitHub:
+
+    git clone https://github.com/ARM-software/arm-trusted-firmware.git
+
+However, the rest of this document assumes that you got the Trusted Firmware
+as part of the Linaro release.
+
+
+5.  Building the Trusted Firmware
 ---------------------------------
 
-To build the Trusted Firmware images, follow these steps:
+To build the Trusted Firmware images, change to the root directory of the
+Trusted Firmware source tree and follow these steps:
 
-1.  Clone the ARM Trusted Firmware repository from GitHub:
-
-        git clone https://github.com/ARM-software/arm-trusted-firmware.git
-
-2.  Change to the trusted firmware directory:
-
-        cd arm-trusted-firmware
-
-3.  Set the compiler path, specify a Non-trusted Firmware image (BL3-3) and
+1.  Set the compiler path, specify a Non-trusted Firmware image (BL3-3) and
     a valid platform, and then build:
 
-        CROSS_COMPILE=<path-to-aarch64-gcc>/bin/aarch64-none-elf- \
-        BL33=<path-to>/<bl33_image>                               \
+        CROSS_COMPILE=<path-to-aarch64-gcc>/bin/aarch64-linux-gnu- \
+        BL33=<path-to>/<bl33_image>                                \
         make PLAT=<platform> all fip
 
     If `PLAT` is not specified, `fvp` is assumed by default. See the "Summary of
@@ -90,7 +115,7 @@ To build the Trusted Firmware images, follow these steps:
 
     The BL3-3 image corresponds to the software that is executed after switching
     to the non-secure world. UEFI can be used as the BL3-3 image. Refer to the
-    "Obtaining the normal world software" section below.
+    "Building the rest of the software stack" section below.
 
     The TSP (Test Secure Payload), corresponding to the BL3-2 image, is not
     compiled in by default. Refer to the "Building the Test Secure Payload"
@@ -118,17 +143,17 @@ To build the Trusted Firmware images, follow these steps:
     For more information on FIPs, see the "Firmware Image Package" section in
     the [Firmware Design].
 
-4.  (Optional) Some platforms may require a BL3-0 image to boot. This image can
+2.  (Optional) Some platforms may require a BL3-0 image to boot. This image can
     be included in the FIP when building the Trusted Firmware by specifying the
     `BL30` build option:
 
         BL30=<path-to>/<bl30_image>
 
-5.  Output binary files `bl1.bin` and `fip.bin` are both required to boot the
+3.  Output binary files `bl1.bin` and `fip.bin` are both required to boot the
     system. How these files are used is platform specific. Refer to the
     platform documentation on how to use the firmware images.
 
-6.  (Optional) Build products for a specific build variant can be removed using:
+4.  (Optional) Build products for a specific build variant can be removed using:
 
         make DEBUG=<D> PLAT=<platform> clean
 
@@ -138,7 +163,7 @@ To build the Trusted Firmware images, follow these steps:
 
         make realclean
 
-7.  (Optional) Path to binary for certain BL stages (BL2, BL3-1 and BL3-2) can be
+5.  (Optional) Path to binary for certain BL stages (BL2, BL3-1 and BL3-2) can be
     provided by specifying the BLx=<path-to>/<blx_image> where BLx is the BL stage.
     This will bypass the build of the BL component from source, but will include
     the specified binary in the final FIP image. Please note that BL3-2 will be
@@ -265,16 +290,8 @@ performed.
 *   `TRUSTED_BOARD_BOOT`: Boolean flag to include support for the Trusted Board
     Boot feature. When set to '1', BL1 and BL2 images include support to load
     and verify the certificates and images in a FIP. The default value is '0'.
-    A successful build, when `TRUSTED_BOARD_BOOT=1`, depends upon the correct
-    initialization of the `AUTH_MOD` option. Generation and inclusion of
-    certificates in the FIP depends upon the value of the `GENERATE_COT` option.
-
-*   `AUTH_MOD`: This option is used when `TRUSTED_BOARD_BOOT=1`. It specifies
-    the name of the authentication module that will be used in the Trusted Board
-    Boot sequence. The module must be located in `common/auth/<module name>`
-    directory. The directory must contain a makefile `<module name>.mk` which
-    will be used to build the module. More information can be found in
-    [Trusted Board Boot]. The default module name is 'none'.
+    Generation and inclusion of certificates in the FIP depends upon the value
+    of the `GENERATE_COT` option.
 
 *   `GENERATE_COT`: Boolean flag used to build and execute the `cert_create`
     tool to create certificates as per the Chain of Trust described in
@@ -297,38 +314,107 @@ performed.
     certificate generation tool to create new keys in case no valid keys are
     present or specified. Allowed options are '0' or '1'. Default is '1'.
 
+*   `SAVE_KEYS`: This option is used when `GENERATE_COT=1`. It tells the
+    certificate generation tool to save the keys used to establish the Chain of
+    Trust. Allowed options are '0' or '1'. Default is '0' (do not save).
+
+    Note: This option depends on 'CREATE_KEYS' to be enabled. If the keys
+    already exist in disk, they will be overwritten without further notice.
+
 *   `ROT_KEY`: This option is used when `GENERATE_COT=1`. It specifies the
-    file that contains the ROT private key in PEM format.
+    file that contains the ROT private key in PEM format. If `SAVE_KEYS=1`, this
+    file name will be used to save the key.
 
 *   `TRUSTED_WORLD_KEY`: This option is used when `GENERATE_COT=1`. It
     specifies the file that contains the Trusted World private key in PEM
-    format.
+    format. If `SAVE_KEYS=1`, this file name will be used to save the key.
 
 *   `NON_TRUSTED_WORLD_KEY`: This option is used when `GENERATE_COT=1`. It
     specifies the file that contains the Non-Trusted World private key in PEM
-    format.
+    format. If `SAVE_KEYS=1`, this file name will be used to save the key.
 
 *   `BL30_KEY`: This option is used when `GENERATE_COT=1`. It specifies the
-    file that contains the BL3-0 private key in PEM format.
+    file that contains the BL3-0 private key in PEM format. If `SAVE_KEYS=1`,
+    this file name will be used to save the key.
 
 *   `BL31_KEY`: This option is used when `GENERATE_COT=1`. It specifies the
-    file that contains the BL3-1 private key in PEM format.
+    file that contains the BL3-1 private key in PEM format. If `SAVE_KEYS=1`,
+    this file name will be used to save the key.
 
 *   `BL32_KEY`: This option is used when `GENERATE_COT=1`. It specifies the
-    file that contains the BL3-2 private key in PEM format.
+    file that contains the BL3-2 private key in PEM format. If `SAVE_KEYS=1`,
+    this file name will be used to save the key.
 
 *   `BL33_KEY`: This option is used when `GENERATE_COT=1`. It specifies the
-    file that contains the BL3-3 private key in PEM format.
+    file that contains the BL3-3 private key in PEM format. If `SAVE_KEYS=1`,
+    this file name will be used to save the key.
+
+*   `PROGRAMMABLE_RESET_ADDRESS`: This option indicates whether the reset
+    vector address can be programmed or is fixed on the platform. It can take
+    either 0 (fixed) or 1 (programmable). Default is 0. If the platform has a
+    programmable reset address, it is expected that a CPU will start executing
+    code directly at the right address, both on a cold and warm reset. In this
+    case, there is no need to identify the entrypoint on boot and this has
+    implication for `plat_get_my_entrypoint()` platform porting interface.
+    (see the [Porting Guide] for details)
+
+*   `PSCI_EXTENDED_STATE_ID`: As per PSCI1.0 Specification, there are 2 formats
+    possible for the PSCI power-state parameter viz original and extended
+    State-ID formats. This flag if set to 1, configures the generic PSCI layer
+    to use the extended format. The default value of this flag is 0, which
+    means by default the original power-state format is used by the PSCI
+    implementation. This flag should be specified by the platform makefile
+    and it governs the return value of PSCI_FEATURES API for CPU_SUSPEND
+    smc function id.
+
+*   `WARN_DEPRECATED`: This option decides whether to warn the usage of
+    deprecated platform APIs and context management helpers within Trusted
+    Firmware. It can take the value 1 (warn the use of deprecated APIs) or
+    0. The default is 0.
 
 #### ARM development platform specific build options
 
-*   `ARM_TSP_RAM_LOCATION_ID`: location of the TSP binary. Options:
+*   `ARM_TSP_RAM_LOCATION`: location of the TSP binary. Options:
     -   `tsram` : Trusted SRAM (default option)
     -   `tdram` : Trusted DRAM (if available)
     -   `dram`  : Secure region in DRAM (configured by the TrustZone controller)
 
 For a better understanding of these options, the ARM development platform memory
 map is explained in the [Firmware Design].
+
+*   `ARM_ROTPK_LOCATION`: used when `TRUSTED_BOARD_BOOT=1`. It specifies the
+    location of the ROTPK hash returned by the function `plat_get_rotpk_info()`
+    for ARM platforms. Depending on the selected option, the proper private key
+    must be specified using the `ROT_KEY` option when building the Trusted
+    Firmware. This private key will be used by the certificate generation tool
+    to sign the BL2 and Trusted Key certificates. Available options for
+    `ARM_ROTPK_LOCATION` are:
+
+    -   `regs` : return the ROTPK hash stored in the Trusted root-key storage
+        registers. The private key corresponding to this ROTPK hash is not
+        currently available.
+    -   `devel_rsa` : return a development public key hash embedded in the BL1
+        and BL2 binaries. This hash has been obtained from the RSA public key
+        `arm_rotpk_rsa.der`, located in `plat/arm/board/common/rotpk`. To use
+        this option, `arm_rotprivk_rsa.pem` must be specified as `ROT_KEY` when
+        creating the certificates.
+
+*   `ARM_RECOM_STATE_ID_ENC`: The PSCI1.0 specification recommends an encoding
+    for the construction of composite state-ID in the power-state parameter.
+    The existing PSCI clients currently do not support this encoding of
+    State-ID yet. Hence this flag is used to configure whether to use the
+    recommended State-ID encoding or not. The default value of this flag is 0,
+    in which case the platform is configured to expect NULL in the State-ID
+    field of power-state parameter.
+
+#### ARM CSS platform specific build options
+
+*   `CSS_DETECT_PRE_1_7_0_SCP`: Boolean flag to detect SCP version
+    incompatibility. Version 1.7.0 of the SCP firmware made a non-backwards
+    compatible change to the MTL protocol, used for AP/SCP communication.
+    Trusted Firmware no longer supports earlier SCP versions. If this option is
+    set to 1 then Trusted Firmware will detect if an earlier version is in use.
+    Default is 1.
 
 
 ### Creating a Firmware Image Package
@@ -390,8 +476,8 @@ Existing package entries can be individially updated:
 
 To compile a debug version and make the build more verbose use
 
-    CROSS_COMPILE=<path-to-aarch64-gcc>/bin/aarch64-none-elf- \
-    BL33=<path-to>/<bl33_image>                               \
+    CROSS_COMPILE=<path-to-aarch64-gcc>/bin/aarch64-linux-gnu- \
+    BL33=<path-to>/<bl33_image>                                \
     make PLAT=<platform> DEBUG=1 V=1 all fip
 
 AArch64 GCC uses DWARF version 4 debugging symbols by default. Some tools (for
@@ -409,9 +495,9 @@ platforms** section in the [Firmware Design]).
 
 Extra debug options can be passed to the build system by setting `CFLAGS`:
 
-    CFLAGS='-O0 -gdwarf-2'                                    \
-    CROSS_COMPILE=<path-to-aarch64-gcc>/bin/aarch64-none-elf- \
-    BL33=<path-to>/<bl33_image>                               \
+    CFLAGS='-O0 -gdwarf-2'                                     \
+    CROSS_COMPILE=<path-to-aarch64-gcc>/bin/aarch64-linux-gnu- \
+    BL33=<path-to>/<bl33_image>                                \
     make PLAT=<platform> DEBUG=1 V=1 all fip
 
 
@@ -425,8 +511,8 @@ must be recompiled as well. For more information on SPs and SPDs, see the
 First clean the Trusted Firmware build directory to get rid of any previous
 BL3-1 binary. Then to build the TSP image and include it into the FIP use:
 
-    CROSS_COMPILE=<path-to-aarch64-gcc>/bin/aarch64-none-elf- \
-    BL33=<path-to>/<bl33_image>                               \
+    CROSS_COMPILE=<path-to-aarch64-gcc>/bin/aarch64-linux-gnu- \
+    BL33=<path-to>/<bl33_image>                                \
     make PLAT=<platform> SPD=tspd all fip
 
 An additional boot loader binary file is created in the `build` directory:
@@ -473,24 +559,57 @@ The Trusted Board Boot feature is described in [Trusted Board Boot]. The
 following steps should be followed to build a FIP image with support for this
 feature.
 
-1.  Fulfill the dependencies of the `polarssl` authentication module by checking
-    out the tag `polarssl-1.3.9` from the [PolarSSL Repository].
+1.  Fulfill the dependencies of the `mbedtls` cryptographic and image parser
+    modules by checking out the tag `mbedtls-1.3.11` from the
+    [mbedTLS Repository].
 
-    The `common/auth/polarssl/polarssl.mk` contains the list of PolarSSL source
-    files the module depends upon. `common/auth/polarssl/polarssl_config.h`
-    contains the configuration options required to build the PolarSSL sources.
+    The `drivers/auth/mbedtls/mbedtls_*.mk` files contain the list of mbedTLS
+    source files the modules depend upon.
+    `include/drivers/auth/mbedtls/mbedtls_config.h` contains the configuration
+    options required to build the mbedTLS sources.
 
-    Note that the PolarSSL SSL library is licensed under the GNU GPL version 2
-    or later license. Using PolarSSL source code will affect the licensing of
+    Note that the mbedTLS library is licensed under the GNU GPL version 2
+    or later license. Using mbedTLS source code will affect the licensing of
     Trusted Firmware binaries that are built using this library.
 
 2.  Ensure that the following command line variables are set while invoking
     `make` to build Trusted Firmware:
 
-    *   `POLARSSL_DIR=<path of the directory containing PolarSSL sources>`
-    *   `AUTH_MOD=polarssl`
+    *   `MBEDTLS_DIR=<path of the directory containing mbedTLS sources>`
     *   `TRUSTED_BOARD_BOOT=1`
     *   `GENERATE_COT=1`
+
+    In the case of ARM platforms, the location of the ROTPK hash must also be
+    specified at build time. Two locations are currently supported (see
+    `ARM_ROTPK_LOCATION` build option):
+
+    *   `ARM_ROTPK_LOCATION=regs`: the ROTPK hash is obtained from the Trusted
+        root-key storage registers present in the platform. On Juno, this
+        registers are read-only. On FVP Base and Cortex models, the registers
+        are read-only, but the value can be specified using the command line
+        option `bp.trusted_key_storage.public_key` when launching the model.
+        On both Juno and FVP models, the default value corresponds to an
+        ECDSA-SECP256R1 public key hash, whose private part is not currently
+        available.
+
+    *   `ARM_ROTPK_LOCATION=devel_rsa`: use the ROTPK hash that is hardcoded
+        in the ARM platform port. The private/public RSA key pair may be
+        found in `plat/arm/board/common/rotpk`.
+
+    Example of command line using RSA development keys:
+
+        CROSS_COMPILE=<path-to-aarch64-gcc>/bin/aarch64-linux-gnu-      \
+        BL33=<path-to>/<bl33_image>                                     \
+        MBEDTLS_DIR=<path of the directory containing mbedTLS sources>  \
+        make PLAT=<platform> TRUSTED_BOARD_BOOT=1 GENERATE_COT=1        \
+        ARM_ROTPK_LOCATION=devel_rsa                                    \
+        ROT_KEY=plat/arm/board/common/rotpk/arm_rotprivk_rsa.pem        \
+        all fip
+
+    The result of this build will be the bl1.bin and the fip.bin binaries, with
+    the difference that the FIP will include the certificates corresponding to
+    the Chain of Trust described in the TBBR-client document. These certificates
+    can also be found in the output build directory.
 
 
 ### Checking source code style
@@ -516,121 +635,71 @@ set the `BASE_COMMIT` variable to your desired branch. By default, `BASE_COMMIT`
 is set to `origin/master`.
 
 
-5.  Obtaining the normal world software
----------------------------------------
+6.  Building the rest of the software stack
+-------------------------------------------
 
-### Obtaining EDK2
+The Linaro release provides a set of scripts that automate the process of
+building all components of the software stack. However, the scripts only support
+a limited number of Trusted Firmware build options. Therefore, it is recommended
+to modify these scripts to build all components except Trusted Firmware, and
+build Trusted Firmware separately as described in the section "Building the
+Trusted Firmware" above.
 
-Potentially any kind of non-trusted firmware may be used with the ARM Trusted
-Firmware but the software has only been tested with the EFI Development Kit 2
-(EDK2) open source implementation of the UEFI specification.
+The instructions below are targeted at an OpenEmbedded filesystem.
 
-To build the software to be compatible with the Foundation and Base FVPs, or the
-Juno platform, follow these steps:
+1.  To exclude Trusted Firmware from the automated build process, edit the
+    variant file `build-scripts/variants/<platform>-oe`, where `<platform>`
+    is either `fvp` or `juno`. Add the following lines at the end of the file:
 
-1.  Clone the [EDK2 source code][EDK2] from GitHub:
+        # Disable ARM Trusted Firmware build
+        ARM_TF_BUILD_ENABLED=0
 
-        git clone -n https://github.com/tianocore/edk2.git
+2.  Launch the build script:
 
-    Not all required features are available in the EDK2 mainline yet. These can
-    be obtained from the ARM-software EDK2 repository instead:
+        CROSS_COMPILE=aarch64-linux-gnu- \
+        build-scripts/build-all.sh <platform>-oe
 
-        cd edk2
-        git remote add -f --tags arm-software https://github.com/ARM-software/edk2.git
-        git checkout --detach v2.1-rc0
+### Preparing the Firmware Image Package
 
-2.  Copy build config templates to local workspace
+The EDK2 binary should be specified as `BL33` in the `make` command line when
+building the Trusted Firmware. See the "Building the Trusted Firmware" section
+above. The EDK2 binary for use with the ARM Trusted Firmware can be found here:
 
-        # in edk2/
-        . edksetup.sh
+    uefi/edk2/Build/ArmVExpress-FVP-AArch64-Minimal/DEBUG_GCC49/FV/FVP_AARCH64_EFI.fd   [for FVP]
+    uefi/edk2/Build/ArmJuno/DEBUG_GCC49/FV/BL33_AP_UEFI.fd                              [for Juno]
 
-3.  Build the EDK2 host tools
+### Building an alternative EDK2
 
-        make -C BaseTools clean
-        make -C BaseTools
+*   By default, EDK2 is built in debug mode. To build a release version instead,
+    change the following line in the variant file:
 
-4.  Build the EDK2 software
+        UEFI_BUILD_MODE=DEBUG
 
-    1.  Build for FVP
+    into:
 
-            GCC49_AARCH64_PREFIX=<absolute-path-to-aarch64-gcc>/bin/aarch64-none-elf- \
-            make -f ArmPlatformPkg/Scripts/Makefile EDK2_ARCH=AARCH64 \
-            EDK2_DSC=ArmPlatformPkg/ArmVExpressPkg/ArmVExpress-FVP-AArch64.dsc \
-            EDK2_TOOLCHAIN=GCC49 EDK2_BUILD=RELEASE \
-            EDK2_MACROS="-n 6 -D ARM_FOUNDATION_FVP=1"
+        UEFI_BUILD_MODE=RELEASE
 
-        The EDK2 binary for use with the ARM Trusted Firmware can then be found
-        here:
+*   On FVP, if legacy GICv2 locations are used, the EDK2 platform makefile must
+    be updated. This is required as EDK2 does not support probing for the GIC
+    location. To do this, first clean the EDK2 build directory:
 
-             Build/ArmVExpress-FVP-AArch64/RELEASE_GCC49/FV/FVP_AARCH64_EFI.fd
+        build-scripts/build-uefi.sh fvp-oe clean
 
-    2.  Build for Juno
+    Then edit the following file:
 
-            GCC49_AARCH64_PREFIX=<absolute-path-to-aarch64-gcc>/bin/aarch64-none-elf- \
-            make -f ArmPlatformPkg/ArmJunoPkg/Makefile EDK2_ARCH=AARCH64 \
-            EDK2_TOOLCHAIN=GCC49 EDK2_BUILD=RELEASE
+        uefi/edk2/ArmPlatformPkg/ArmVExpressPkg/ArmVExpress-FVP-AArch64.mak
 
-        The EDK2 binary for use with the ARM Trusted Firmware can then be found
-        here:
-
-            Build/ArmJuno/RELEASE_GCC49/FV/BL33_AP_UEFI.fd
-
-    The EDK2 binary should be specified as `BL33` in in the `make` command line
-    when building the Trusted Firmware. See the "Building the Trusted Firmware"
-    section above.
-
-5.  (Optional) To build EDK2 in debug mode, remove `EDK2_BUILD=RELEASE` from the
-    command line.
-
-6.  (Optional) To boot Linux using a VirtioBlock file-system, the command line
-    passed from EDK2 to the Linux kernel must be modified as described in the
-    "Obtaining a root file-system" section below.
-
-7.  (Optional) If legacy GICv2 locations are used, the EDK2 platform description
-    must be updated. This is required as EDK2 does not support probing for the
-    GIC location. To do this, first clean the EDK2 build directory.
-
-        make -f ArmPlatformPkg/Scripts/Makefile EDK2_ARCH=AARCH64          \
-        EDK2_DSC=ArmPlatformPkg/ArmVExpressPkg/ArmVExpress-FVP-AArch64.dsc \
-        EDK2_TOOLCHAIN=ARMGCC clean
-
-    Then rebuild EDK2 as described in step 3, using the following flag:
+    and add the following build flag into the `EDK2_MACROS` variable:
 
         -D ARM_FVP_LEGACY_GICV2_LOCATION=1
+
+    Then rebuild everything as described above in step 2.
 
     Finally rebuild the Trusted Firmware to generate a new FIP using the
     instructions in the "Building the Trusted Firmware" section.
 
 
-### Obtaining a Linux kernel
-
-Preparing a Linux kernel for use on the FVPs can be done as follows
-(GICv2 support only):
-
-1.  Clone Linux:
-
-        git clone git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git
-
-    Not all required features are available in the kernel mainline yet. These
-    can be obtained from the ARM-software Linux repository instead:
-
-        cd linux
-        git remote add -f --tags arm-software https://github.com/ARM-software/linux.git
-        git checkout --detach 1.3-Juno
-
-2.  Build with the Linaro GCC tools.
-
-        # in linux/
-        make mrproper
-        make ARCH=arm64 defconfig
-
-        CROSS_COMPILE=<path-to-aarch64-gcc>/bin/aarch64-none-elf- \
-        make -j6 ARCH=arm64
-
-The compiled Linux image will now be found at `arch/arm64/boot/Image`.
-
-
-6.  Preparing the images to run on FVP
+7.  Preparing the images to run on FVP
 --------------------------------------
 
 ### Obtaining the Flattened Device Trees
@@ -640,6 +709,9 @@ FDT files are required. FDTs for the Foundation and Base FVPs can be found in
 the Trusted Firmware source directory under `fdts/`. The Foundation FVP has a
 subset of the Base FVP components. For example, the Foundation FVP lacks CLCD
 and MMC support, and has only one CPU cluster.
+
+Note: It is not recommended to use the FDTs built along the kernel because not
+all FDTs are available from there.
 
 *   `fvp-base-gicv2-psci.dtb`
 
@@ -668,110 +740,16 @@ and MMC support, and has only one CPU cluster.
     For use with Foundation FVP with Base memory map configuration and Linux
     GICv3 support.
 
-
 Copy the chosen FDT blob as `fdt.dtb` to the directory from which the FVP
 is launched. Alternatively a symbolic link may be used.
 
 ### Preparing the kernel image
 
-Copy the kernel image file `arch/arm64/boot/Image` to the directory from which
-the FVP is launched. Alternatively a symbolic link may be used.
-
-### Obtaining a root file-system
-
-To prepare a Linaro LAMP based Open Embedded file-system, the following
-instructions can be used as a guide. The file-system can be provided to Linux
-via VirtioBlock or as a RAM-disk. Both methods are described below.
-
-#### Prepare VirtioBlock
-
-To prepare a VirtioBlock file-system, do the following:
-
-1.  Download and unpack the disk image.
-
-    NOTE: The unpacked disk image grows to 3 GiB in size.
-
-        wget http://releases.linaro.org/14.12/openembedded/aarch64/vexpress64-openembedded_lamp-armv8-gcc-4.9_20141211-701.img.gz
-        gunzip vexpress64-openembedded_lamp-armv8-gcc-4.9_20141211-701.img.gz
-
-2.  Make sure the Linux kernel has Virtio support enabled using
-    `make ARCH=arm64 menuconfig`.
-
-        Device Drivers  ---> Virtio drivers  ---> <*> Platform bus driver for memory mapped virtio devices
-        Device Drivers  ---> [*] Block devices  --->  <*> Virtio block driver
-        File systems    ---> <*> The Extended 4 (ext4) filesystem
-
-    If some of these configurations are missing, enable them, save the kernel
-    configuration, then rebuild the kernel image using the instructions
-    provided in the section "Obtaining a Linux kernel".
-
-3.  Change the Kernel command line to include `root=/dev/vda2`. This can either
-    be done in the EDK2 boot menu or in the platform file. Editing the platform
-    file and rebuilding EDK2 will make the change persist. To do this:
-
-    1.  In EDK2, edit the following file:
-
-            ArmPlatformPkg/ArmVExpressPkg/ArmVExpress-FVP-AArch64.dsc
-
-    2.  Add `root=/dev/vda2` to:
-
-            gArmPlatformTokenSpaceGuid.PcdDefaultBootArgument|"<Other default options>"
-
-    3.  Remove the entry:
-
-            gArmPlatformTokenSpaceGuid.PcdDefaultBootInitrdPath|""
-
-    4.  Rebuild EDK2 (see "Obtaining UEFI" section above).
-
-4.  The file-system image file should be provided to the model environment by
-    passing it the correct command line option. In the FVPs the following
-    option should be provided in addition to the ones described in the
-    "Running the software on FVP" section below.
-
-    NOTE: A symbolic link to this file cannot be used with the FVP; the path
-    to the real file must be provided.
-
-    On the Base FVPs:
-
-        -C bp.virtioblockdevice.image_path="<path-to>/<file-system-image>"
-
-    On the Foundation FVP:
-
-        --block-device="<path-to>/<file-system-image>"
-
-5.  Ensure that the FVP doesn't output any error messages. If the following
-    error message is displayed:
-
-        ERROR: BlockDevice: Failed to open "<path-to>/<file-system-image>"!
-
-    then make sure the path to the file-system image in the model parameter is
-    correct and that read permission is correctly set on the file-system image
-    file.
-
-#### Prepare RAM-disk
-
-To prepare a RAM-disk root file-system, do the following:
-
-1.  Download the file-system image:
-
-        wget http://releases.linaro.org/14.12/openembedded/aarch64/linaro-image-lamp-genericarmv8-20141212-729.rootfs.tar.gz
-
-2.  Modify the Linaro image:
-
-        # Prepare for use as RAM-disk. Normally use MMC, NFS or VirtioBlock.
-        # Be careful, otherwise you could damage your host file-system.
-        mkdir tmp; cd tmp
-        sudo sh -c "zcat ../linaro-image-lamp-genericarmv8-20141212-729.rootfs.tar.gz | cpio -id"
-        sudo ln -s sbin/init .
-        sudo sh -c "echo 'devtmpfs /dev devtmpfs mode=0755,nosuid 0 0' >> etc/fstab"
-        sudo sh -c "find . | cpio --quiet -H newc -o | gzip -3 -n > ../filesystem.cpio.gz"
-        cd ..
-
-3.  Copy the resultant `filesystem.cpio.gz` to the directory where the FVP is
-    launched from. Alternatively a symbolic link may be used.
+Copy the kernel image file `linux/arch/arm64/boot/Image` to the directory from
+which the FVP is launched. Alternatively a symbolic link may be used.
 
 
-7.  Running the software on FVP
+8.  Running the software on FVP
 -------------------------------
 
 This version of the ARM Trusted Firmware has been tested on the following ARM
@@ -804,28 +782,32 @@ downloaded for free from [ARM's website][ARM FVP website].
 The following `Foundation_Platform` parameters should be used to boot Linux with
 4 CPUs using the ARM Trusted Firmware.
 
-NOTE: Using the `--block-device` parameter is not necessary if a Linux RAM-disk
-file-system is used (see the "Obtaining a File-system" section above).
-
-NOTE: The `--data="<path to FIP binary>"@0x8000000` parameter is used to load a
-Firmware Image Package at the start of NOR FLASH0 (see the "Building the
-Trusted Firmware" section above).
-
-    <path-to>/Foundation_Platform             \
-    --cores=4                                 \
-    --secure-memory                           \
-    --visualization                           \
-    --gicv3                                   \
-    --data="<path-to>/<bl1-binary>"@0x0       \
-    --data="<path-to>/<FIP-binary>"@0x8000000 \
+    <path-to>/Foundation_Platform                   \
+    --cores=4                                       \
+    --secure-memory                                 \
+    --visualization                                 \
+    --gicv3                                         \
+    --data="<path-to>/<bl1-binary>"@0x0             \
+    --data="<path-to>/<FIP-binary>"@0x08000000      \
+    --data="<path-to>/<fdt>"@0x83000000             \
+    --data="<path-to>/<kernel-binary>"@0x80080000   \
     --block-device="<path-to>/<file-system-image>"
+
+1.  The `--data="<path-to-some-binary>"@0x...` parameters are used to load
+    binaries into memory.
+
+    *   BL1 is loaded at the start of the Trusted ROM.
+    *   The Firmware Image Package is loaded at the start of NOR FLASH0.
+    *   The Linux kernel image and device tree are loaded in DRAM.
+
+2.  The `--block-device` parameter is used to specify the path to the file
+    system image provided to Linux via VirtioBlock. Note that it must point to
+    the real file and that a symbolic link to this file cannot be used with the
+    FVP.
 
 The default use-case for the Foundation FVP is to enable the GICv3 device in
 the model but use the GICv2 FDT, in order for Linux to drive the GIC in GICv2
 emulation mode.
-
-The memory mapped addresses `0x0` and `0x8000000` correspond to the start of
-trusted ROM and NOR FLASH0 respectively.
 
 ### Notes regarding Base FVP configuration options
 
@@ -840,9 +822,17 @@ sections.
     still work (and run much faster) without this option but this will hide any
     cache maintenance defects in the software.
 
-3.  Using the `-C bp.virtioblockdevice.image_path` parameter is not necessary
-    if a Linux RAM-disk file-system is used (see the "Obtaining a root
-    file-system" section above).
+3.  The `-C bp.virtioblockdevice.image_path` parameter is used to specify the
+    path to the file system image provided to Linux via VirtioBlock. Note that
+    it must point to the real file and that a symbolic link to this file cannot
+    be used with the FVP. Ensure that the FVP doesn't output any error messages.
+    If the following error message is displayed:
+
+        ERROR: BlockDevice: Failed to open "<path-to>/<file-system-image>"!
+
+    then make sure the path to the file-system image in the model parameter is
+    correct and that read permission is correctly set on the file-system image
+    file.
 
 4.  Setting the `-C bp.secure_memory` parameter to `1` is only supported on
     Base FVP versions 5.4 and newer. Setting this parameter to `0` is also
@@ -850,30 +840,33 @@ sections.
     instructs the FVP to provide some helpful information if a secure memory
     violation occurs.
 
-5.  This and the following notes only apply when the firmware is built with
+5.  The `--data="<path-to-some-binary>"@<base-address-of-binary>` parameter is
+    used to load images into Base FVP memory. The base addresses used should
+    match the image base addresses used while linking the images. This parameter
+    is used to load the Linux kernel image and device tree into DRAM.
+
+6.  This and the following notes only apply when the firmware is built with
     the `RESET_TO_BL31` option.
 
     The `--data="<path-to><bl31|bl32|bl33-binary>"@<base-address-of-binary>`
-    parameter is used to load bootloader images into Base FVP memory (see the
-    "Building the Trusted Firmware" section above). The base addresses used
-    should match the image base addresses in `platform_def.h` used while linking
-    the images. The BL3-2 image is only needed if BL3-1 has been built to expect
-    a Secure-EL1 Payload.
+    parameter is needed to load the individual bootloader images in memory.
+    BL32 image is only needed if BL31 has been built to expect a Secure-EL1
+    Payload.
 
-6.  The `-C cluster<X>.cpu<Y>.RVBAR=@<base-address-of-bl31>` parameter, where
+7.  The `-C cluster<X>.cpu<Y>.RVBAR=@<base-address-of-bl31>` parameter, where
     X and Y are the cluster and CPU numbers respectively, is used to set the
     reset vector for each core.
 
-7.  Changing the default value of `FVP_SHARED_DATA_LOCATION` will also require
+8.  Changing the default value of `FVP_SHARED_DATA_LOCATION` will also require
     changing the value of
     `--data="<path-to><bl31-binary>"@<base-address-of-bl31>` and
     `-C cluster<X>.cpu<X>.RVBAR=@<base-address-of-bl31>`, to the new value of
-    `BL31_BASE` in `platform_def.h`.
+    `BL31_BASE`.
 
-8.  Changing the default value of `FVP_TSP_RAM_LOCATION` will also require
+9.  Changing the default value of `FVP_TSP_RAM_LOCATION` will also require
     changing the value of
     `--data="<path-to><bl32-binary>"@<base-address-of-bl32>` to the new value of
-    `BL32_BASE` in `platform_def.h`.
+    `BL32_BASE`.
 
 
 ### Running on the AEMv8 Base FVP with reset to BL1 entrypoint
@@ -884,15 +877,17 @@ information about some of the options to run the software.
 The following `FVP_Base_AEMv8A-AEMv8A` parameters should be used to boot Linux
 with 8 CPUs using the ARM Trusted Firmware.
 
-    <path-to>/FVP_Base_AEMv8A-AEMv8A                       \
-    -C pctl.startup=0.0.0.0                                \
-    -C bp.secure_memory=1                                  \
-    -C bp.tzc_400.diagnostics=1                            \
-    -C cluster0.NUM_CORES=4                                \
-    -C cluster1.NUM_CORES=4                                \
-    -C cache_state_modelled=1                              \
-    -C bp.secureflashloader.fname="<path-to>/<bl1-binary>" \
-    -C bp.flashloader0.fname="<path-to>/<FIP-binary>"      \
+    <path-to>/FVP_Base_AEMv8A-AEMv8A                            \
+    -C pctl.startup=0.0.0.0                                     \
+    -C bp.secure_memory=1                                       \
+    -C bp.tzc_400.diagnostics=1                                 \
+    -C cluster0.NUM_CORES=4                                     \
+    -C cluster1.NUM_CORES=4                                     \
+    -C cache_state_modelled=1                                   \
+    -C bp.secureflashloader.fname="<path-to>/<bl1-binary>"      \
+    -C bp.flashloader0.fname="<path-to>/<FIP-binary>"           \
+    --data cluster0.cpu0="<path-to>/<fdt>"@0x83000000           \
+    --data cluster0.cpu0="<path-to>/<kernel-binary>"@0x80080000 \
     -C bp.virtioblockdevice.image_path="<path-to>/<file-system-image>"
 
 ### Running on the Cortex-A57-A53 Base FVP with reset to BL1 entrypoint
@@ -903,13 +898,15 @@ information about some of the options to run the software.
 The following `FVP_Base_Cortex-A57x4-A53x4` model parameters should be used to
 boot Linux with 8 CPUs using the ARM Trusted Firmware.
 
-    <path-to>/FVP_Base_Cortex-A57x4-A53x4                  \
-    -C pctl.startup=0.0.0.0                                \
-    -C bp.secure_memory=1                                  \
-    -C bp.tzc_400.diagnostics=1                            \
-    -C cache_state_modelled=1                              \
-    -C bp.secureflashloader.fname="<path-to>/<bl1-binary>" \
-    -C bp.flashloader0.fname="<path-to>/<FIP-binary>"      \
+    <path-to>/FVP_Base_Cortex-A57x4-A53x4                       \
+    -C pctl.startup=0.0.0.0                                     \
+    -C bp.secure_memory=1                                       \
+    -C bp.tzc_400.diagnostics=1                                 \
+    -C cache_state_modelled=1                                   \
+    -C bp.secureflashloader.fname="<path-to>/<bl1-binary>"      \
+    -C bp.flashloader0.fname="<path-to>/<FIP-binary>"           \
+    --data cluster0.cpu0="<path-to>/<fdt>"@0x83000000           \
+    --data cluster0.cpu0="<path-to>/<kernel-binary>"@0x80080000 \
     -C bp.virtioblockdevice.image_path="<path-to>/<file-system-image>"
 
 ### Running on the AEMv8 Base FVP with reset to BL3-1 entrypoint
@@ -938,6 +935,8 @@ with 8 CPUs using the ARM Trusted Firmware.
     --data cluster0.cpu0="<path-to>/<bl31-binary>"@0x04023000    \
     --data cluster0.cpu0="<path-to>/<bl32-binary>"@0x04001000    \
     --data cluster0.cpu0="<path-to>/<bl33-binary>"@0x88000000    \
+    --data cluster0.cpu0="<path-to>/<fdt>"@0x83000000            \
+    --data cluster0.cpu0="<path-to>/<kernel-binary>"@0x80080000  \
     -C bp.virtioblockdevice.image_path="<path-to>/<file-system-image>"
 
 ### Running on the Cortex-A57-A53 Base FVP with reset to BL3-1 entrypoint
@@ -964,6 +963,8 @@ boot Linux with 8 CPUs using the ARM Trusted Firmware.
     --data cluster0.cpu0="<path-to>/<bl31-binary>"@0x04023000    \
     --data cluster0.cpu0="<path-to>/<bl32-binary>"@0x04001000    \
     --data cluster0.cpu0="<path-to>/<bl33-binary>"@0x88000000    \
+    --data cluster0.cpu0="<path-to>/<fdt>"@0x83000000            \
+    --data cluster0.cpu0="<path-to>/<kernel-binary>"@0x80080000  \
     -C bp.virtioblockdevice.image_path="<path-to>/<file-system-image>"
 
 ### Configuring the GICv2 memory map
@@ -1048,39 +1049,38 @@ The `bp.variant` parameter corresponds to the build variant field of the
 detect the legacy VE memory map while configuring the GIC.
 
 
-8.  Running the software on Juno
+9.  Running the software on Juno
 --------------------------------
+
+This version of the ARM Trusted Firmware has been tested on Juno r0 and Juno r1.
+
+To execute the versions of software components on Juno referred to in this
+document, the latest Juno board recovery image must be installed. If you
+have an earlier version installed or are unsure which version is installed,
+follow the recovery image update instructions in the [Juno Software Guide]
+on the [ARM Connected Community] website. The latest Juno board recovery image
+can be obtained from [Linaro releases], see section 2.7 "Using prebuilt
+binaries".
 
 ### Preparing Trusted Firmware images
 
-To execute the versions of software components on Juno referred to in this
-document, the latest [Juno Board Recovery Image] must be installed. If you
-have an earlier version installed or are unsure which version is installed,
-follow the recovery image update instructions in the [Juno Software Guide]
-on the [ARM Connected Community] website.
+The Juno platform requires a BL0 and a BL30 image to boot up. The BL0 image
+contains the ROM firmware that runs on the SCP (System Control Processor),
+whereas the BL30 image contains the SCP Runtime firmware. Both images are
+embedded within the Juno board recovery image, these are the files `bl0.bin`
+and `bl30.bin`.
 
-The Juno platform requires a BL3-0 image to boot up. This image contains the
-runtime firmware that runs on the SCP (System Control Processor). This image is
-embedded within the [Juno Board Recovery Image] but can also be
-[downloaded directly][Juno SCP Firmware].
+The BL30 file must be part of the FIP image. Therefore, its path must be
+supplied using the `BL30` variable on the command line when building the
+FIP. Please refer to the section "Building the Trusted Firmware".
 
-Rebuild the Trusted Firmware specifying the BL3-0 image. Refer to the section
-"Building the Trusted Firmware". Alternatively, the FIP image can be updated
-manually with the BL3-0 image:
-
-    fip_create --dump --bl30 <path-to>/<bl30-binary> <path-to>/<FIP-binary>
-
-### Obtaining the Flattened Device Tree
-
-Juno's device tree blob is built along with the kernel. It is located in:
-
-    <path-to-linux>/arch/arm64/boot/dts/juno.dtb
+After building Trusted Firmware, the files `bl1.bin` and `fip.bin` need copying
+to the `SOFTWARE/` directory as explained in the [Juno Software Guide].
 
 ### Other Juno software information
 
 Please refer to the [Juno Software Guide] to:
 
-*   Deploy a root filesystem
 *   Install and run the Juno binaries on the board
 *   Obtain any other Juno software information
 
@@ -1090,15 +1090,12 @@ Please refer to the [Juno Software Guide] to:
 _Copyright (c) 2013-2015, ARM Limited and Contributors. All rights reserved._
 
 
-[Firmware Design]:  ./firmware-design.md
-
+[Firmware Design]:             firmware-design.md
+[Linaro releases]:             http://releases.linaro.org/15.06/members/arm/platforms
 [ARM FVP website]:             http://www.arm.com/fvp
 [ARM Connected Community]:     http://community.arm.com
 [Juno Software Guide]:         http://community.arm.com/docs/DOC-8396
-[Juno Board Recovery Image]:   http://community.arm.com/servlet/JiveServlet/download/9427-1-15432/board_recovery_image_0.10.1.zip
-[Juno SCP Firmware]:           http://community.arm.com/servlet/JiveServlet/download/9427-1-15422/bl30.bin.zip
-[Linaro Toolchain]:            http://releases.linaro.org/14.07/components/toolchain/binaries/
-[EDK2]:                        http://github.com/tianocore/edk2
 [DS-5]:                        http://www.arm.com/products/tools/software-tools/ds-5/index.php
-[Polarssl Repository]:         https://github.com/polarssl/polarssl.git
+[mbedTLS Repository]:          https://github.com/ARMmbed/mbedtls.git
+[Porting Guide]:               ./porting-guide.md
 [Trusted Board Boot]:          trusted-board-boot.md

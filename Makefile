@@ -66,6 +66,9 @@ ARM_CCI_PRODUCT_ID	:=	400
 ASM_ASSERTION		:=	${DEBUG}
 # Build option to choose whether Trusted firmware uses Coherent memory or not.
 USE_COHERENT_MEM	:=	1
+# Flag used to choose the power state format viz Extended State-ID or the Original
+# format.
+PSCI_EXTENDED_STATE_ID	:=	0
 # Default FIP file name
 FIP_NAME		:= fip.bin
 # By default, use the -pedantic option in the gcc command line
@@ -73,9 +76,14 @@ DISABLE_PEDANTIC	:= 0
 # Flags to generate the Chain of Trust
 GENERATE_COT		:= 0
 CREATE_KEYS		:= 1
+SAVE_KEYS		:= 0
 # Flags to build TF with Trusted Boot support
 TRUSTED_BOARD_BOOT	:= 0
-AUTH_MOD		:= none
+# By default, consider that the platform's reset address is not programmable.
+# The platform Makefile is free to override this value.
+PROGRAMMABLE_RESET_ADDRESS	:= 0
+# Build flag to warn about usage of deprecated platform and framework APIs
+WARN_DEPRECATED	:= 0
 
 # Checkpatch ignores
 CHECK_IGNORE		=	--ignore COMPLEX_MACRO \
@@ -163,6 +171,16 @@ msg_start:
 
 include ${PLAT_MAKEFILE_FULL}
 
+# If the platform has not defined ENABLE_PLAT_COMPAT, then enable it by default
+ifndef ENABLE_PLAT_COMPAT
+ENABLE_PLAT_COMPAT := 1
+endif
+
+# Include the platform compatibility helpers for PSCI
+ifneq (${ENABLE_PLAT_COMPAT}, 0)
+include plat/compat/plat_compat.mk
+endif
+
 # Include the CPU specific operations makefile. By default all CPU errata
 # workarounds and CPU specifc optimisations are disabled. This can be
 # overridden by the platform.
@@ -211,7 +229,9 @@ INCLUDES		+=	-Iinclude/bl31			\
 				-Iinclude/common		\
 				-Iinclude/drivers		\
 				-Iinclude/drivers/arm		\
+				-Iinclude/drivers/auth		\
 				-Iinclude/drivers/io		\
+				-Iinclude/drivers/ti/uart	\
 				-Iinclude/lib			\
 				-Iinclude/lib/aarch64		\
 				-Iinclude/lib/cpus/aarch64	\
@@ -263,13 +283,30 @@ $(eval $(call add_define,LOG_LEVEL))
 $(eval $(call assert_boolean,USE_COHERENT_MEM))
 $(eval $(call add_define,USE_COHERENT_MEM))
 
+# Process PSCI_EXTENDED_STATE_ID flag
+$(eval $(call assert_boolean,PSCI_EXTENDED_STATE_ID))
+$(eval $(call add_define,PSCI_EXTENDED_STATE_ID))
+
 # Process Generate CoT flags
 $(eval $(call assert_boolean,GENERATE_COT))
 $(eval $(call assert_boolean,CREATE_KEYS))
+$(eval $(call assert_boolean,SAVE_KEYS))
 
 # Process TRUSTED_BOARD_BOOT flag
 $(eval $(call assert_boolean,TRUSTED_BOARD_BOOT))
 $(eval $(call add_define,TRUSTED_BOARD_BOOT))
+
+# Process PROGRAMMABLE_RESET_ADDRESS flag
+$(eval $(call assert_boolean,PROGRAMMABLE_RESET_ADDRESS))
+$(eval $(call add_define,PROGRAMMABLE_RESET_ADDRESS))
+
+# Process ENABLE_PLAT_COMPAT flag
+$(eval $(call assert_boolean,ENABLE_PLAT_COMPAT))
+$(eval $(call add_define,ENABLE_PLAT_COMPAT))
+
+# Process WARN_DEPRECATED flag
+$(eval $(call assert_boolean,WARN_DEPRECATED))
+$(eval $(call add_define,WARN_DEPRECATED))
 
 ASFLAGS			+= 	-nostdinc -ffreestanding -Wa,--fatal-warnings	\
 				-Werror -Wmissing-include-dirs			\
@@ -324,28 +361,15 @@ ifneq (${GENERATE_COT},0)
 
     ifneq (${CREATE_KEYS},0)
         $(eval CRT_ARGS += -n)
+        ifneq (${SAVE_KEYS},0)
+            $(eval CRT_ARGS += -k)
+        endif
     endif
     $(eval CRT_ARGS += $(if ${ROT_KEY}, --rot-key ${ROT_KEY}))
     $(eval CRT_ARGS += $(if ${TRUSTED_WORLD_KEY}, --trusted-world-key ${TRUSTED_WORLD_KEY}))
     $(eval CRT_ARGS += $(if ${NON_TRUSTED_WORLD_KEY}, --non-trusted-world-key ${NON_TRUSTED_WORLD_KEY}))
     $(eval CRT_ARGS += --trusted-key-cert ${TRUSTED_KEY_CERT})
-endif
-
-# Check Trusted Board Boot options
-ifneq (${TRUSTED_BOARD_BOOT},0)
-    ifeq (${AUTH_MOD},none)
-        $(error Error: When TRUSTED_BOARD_BOOT=1, AUTH_MOD has to be the name of a valid authentication module)
-    else
-        # We expect to locate an *.mk file under the specified AUTH_MOD directory
-        AUTH_MAKE := $(shell m="common/auth/${AUTH_MOD}/${AUTH_MOD}.mk"; [ -f "$$m" ] && echo "$$m")
-        ifeq (${AUTH_MAKE},)
-            $(error Error: No common/auth/${AUTH_MOD}/${AUTH_MOD}.mk located)
-        endif
-        $(info Including ${AUTH_MAKE})
-        include ${AUTH_MAKE}
-    endif
-
-    BL_COMMON_SOURCES	+=	common/auth.c
+    $(eval CRT_ARGS += $(if ${KEY_ALG}, --key-alg ${KEY_ALG}))
 endif
 
 # Check if -pedantic option should be used
@@ -517,7 +541,6 @@ $(eval FIP_ARGS += $(if $4,--bl$(1)-cert $(BUILD_PLAT)/bl$(1).crt))
 $(eval FIP_ARGS += $(if $4,$(if $5,--bl$(1)-key-cert $(BUILD_PLAT)/bl$(1)_key.crt)))
 
 $(eval CRT_DEPS += $(if $4,$(2),))
-$(eval CRT_DEPS += $(if $4,$(if $6,$(6),)))
 $(eval CRT_ARGS += $(if $4,--bl$(1) $(2)))
 $(eval CRT_ARGS += $(if $4,$(if $6,--bl$(1)-key $(6))))
 $(eval CRT_ARGS += $(if $4,--bl$(1)-cert $(BUILD_PLAT)/bl$(1).crt))

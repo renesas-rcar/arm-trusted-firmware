@@ -44,7 +44,8 @@ BL2_SOURCES		+=	plat/arm/css/common/css_bl2_setup.c		\
 
 BL31_SOURCES		+=	plat/arm/css/common/css_mhu.c			\
 				plat/arm/css/common/css_pm.c			\
-				plat/arm/css/common/css_scpi.c
+				plat/arm/css/common/css_scpi.c			\
+				plat/arm/css/common/css_topology.c
 
 
 ifneq (${RESET_TO_BL31},0)
@@ -53,3 +54,11 @@ ifneq (${RESET_TO_BL31},0)
 endif
 
 NEED_BL30		:=	yes
+
+# Enable option to detect whether the SCP ROM firmware in use predates version
+# 1.7.0 and therefore, is incompatible.
+CSS_DETECT_PRE_1_7_0_SCP	:=	1
+
+# Process CSS_DETECT_PRE_1_7_0_SCP flag
+$(eval $(call assert_boolean,CSS_DETECT_PRE_1_7_0_SCP))
+$(eval $(call add_define,CSS_DETECT_PRE_1_7_0_SCP))

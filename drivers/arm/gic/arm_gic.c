@@ -47,9 +47,9 @@
 	(GIC_HIGHEST_NS_PRIORITY << 16) | \
 	(GIC_HIGHEST_NS_PRIORITY << 24))
 
-static unsigned int g_gicc_base;
-static unsigned int g_gicd_base;
-static unsigned long g_gicr_base;
+static uintptr_t g_gicc_base;
+static uintptr_t g_gicd_base;
+static uintptr_t g_gicr_base;
 static const unsigned int *g_irq_sec_ptr;
 static unsigned int g_num_irqs;
 
@@ -62,7 +62,7 @@ static unsigned int g_num_irqs;
  ******************************************************************************/
 static void gicv3_cpuif_setup(void)
 {
-	unsigned int scr_val, val;
+	unsigned int val;
 	uintptr_t base;
 
 	/*
@@ -93,35 +93,9 @@ static void gicv3_cpuif_setup(void)
 	while (val & WAKER_CA)
 		val = gicr_read_waker(base);
 
-	/*
-	 * We need to set SCR_EL3.NS in order to see GICv3 non-secure state.
-	 * Restore SCR_EL3.NS again before exit.
-	 */
-	scr_val = read_scr();
-	write_scr(scr_val | SCR_NS_BIT);
-	isb();	/* ensure NS=1 takes effect before accessing ICC_SRE_EL2 */
-
-	/*
-	 * By default EL2 and NS-EL1 software should be able to enable GICv3
-	 * System register access without any configuration at EL3. But it turns
-	 * out that GICC PMR as set in GICv2 mode does not affect GICv3 mode. So
-	 * we need to set it here again. In order to do that we need to enable
-	 * register access. We leave it enabled as it should be fine and might
-	 * prevent problems with later software trying to access GIC System
-	 * Registers.
-	 */
 	val = read_icc_sre_el3();
 	write_icc_sre_el3(val | ICC_SRE_EN | ICC_SRE_SRE);
-
-	val = read_icc_sre_el2();
-	write_icc_sre_el2(val | ICC_SRE_EN | ICC_SRE_SRE);
-
-	write_icc_pmr_el1(GIC_PRI_MASK);
-	isb();	/* commit ICC_* changes before setting NS=0 */
-
-	/* Restore SCR_EL3 */
-	write_scr(scr_val);
-	isb();	/* ensure NS=0 takes effect immediately */
+	isb();
 }
 
 /*******************************************************************************
@@ -323,12 +297,11 @@ static void arm_gic_distif_setup(void)
 /*******************************************************************************
  * Initialize the ARM GIC driver with the provided platform inputs
 ******************************************************************************/
-void arm_gic_init(unsigned int gicc_base,
-		unsigned int gicd_base,
-		unsigned long gicr_base,
-		const unsigned int *irq_sec_ptr,
-		unsigned int num_irqs
-		)
+void arm_gic_init(uintptr_t gicc_base,
+		  uintptr_t gicd_base,
+		  uintptr_t gicr_base,
+		  const unsigned int *irq_sec_ptr,
+		  unsigned int num_irqs)
 {
 	unsigned int val;
 
@@ -401,7 +374,7 @@ uint32_t arm_gic_get_pending_interrupt_type(void)
 	uint32_t id;
 
 	assert(g_gicc_base);
-	id = gicc_read_hppir(g_gicc_base);
+	id = gicc_read_hppir(g_gicc_base) & INT_ID_MASK;
 
 	/* Assume that all secure interrupts are S-EL1 interrupts */
 	if (id < 1022)
@@ -423,7 +396,7 @@ uint32_t arm_gic_get_pending_interrupt_id(void)
 	uint32_t id;
 
 	assert(g_gicc_base);
-	id = gicc_read_hppir(g_gicc_base);
+	id = gicc_read_hppir(g_gicc_base) & INT_ID_MASK;
 
 	if (id < 1022)
 		return id;
@@ -435,7 +408,7 @@ uint32_t arm_gic_get_pending_interrupt_id(void)
 	 * Find out which non-secure interrupt it is under the assumption that
 	 * the GICC_CTLR.AckCtl bit is 0.
 	 */
-	return gicc_read_ahppir(g_gicc_base);
+	return gicc_read_ahppir(g_gicc_base) & INT_ID_MASK;
 }
 
 /*******************************************************************************

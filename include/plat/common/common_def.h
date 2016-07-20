@@ -47,40 +47,6 @@
  */
 #define FIRMWARE_WELCOME_STR		"Booting Trusted Firmware\n"
 
-/* Trusted Boot Firmware BL2 */
-#define BL2_IMAGE_NAME			"bl2.bin"
-
-/* SCP Firmware BL3-0 */
-#define BL30_IMAGE_NAME			"bl30.bin"
-
-/* EL3 Runtime Firmware BL31 */
-#define BL31_IMAGE_NAME			"bl31.bin"
-
-/* Secure Payload BL32 (Trusted OS) */
-#define BL32_IMAGE_NAME			"bl32.bin"
-
-/* Non-Trusted Firmware BL33 */
-#define BL33_IMAGE_NAME			"bl33.bin"
-
-/* Firmware Image Package */
-#define FIP_IMAGE_NAME			"fip.bin"
-
-#if TRUSTED_BOARD_BOOT
-/* Certificates */
-# define BL2_CERT_NAME			"bl2.crt"
-# define TRUSTED_KEY_CERT_NAME		"trusted_key.crt"
-
-# define BL30_KEY_CERT_NAME		"bl30_key.crt"
-# define BL31_KEY_CERT_NAME		"bl31_key.crt"
-# define BL32_KEY_CERT_NAME		"bl32_key.crt"
-# define BL33_KEY_CERT_NAME		"bl33_key.crt"
-
-# define BL30_CERT_NAME			"bl30.crt"
-# define BL31_CERT_NAME			"bl31.crt"
-# define BL32_CERT_NAME			"bl32.crt"
-# define BL33_CERT_NAME			"bl33.crt"
-#endif /* TRUSTED_BOARD_BOOT */
-
 /*
  * Some of the platform porting definitions use the 'ull' suffix in order to
  * avoid subtle integer overflow errors due to implicit integer type promotion
@@ -101,6 +67,17 @@
   #define MAKE_ULL(x)			x
 #endif
 
+/*
+ * Macros to wrap declarations of deprecated APIs within Trusted Firmware.
+ * The callers of these APIs will continue to compile as long as the build
+ * flag WARN_DEPRECATED is zero. Else the compiler will emit a warning
+ * when the callers of these APIs are compiled.
+ */
+#if WARN_DEPRECATED
+#define __warn_deprecated	__attribute__ ((deprecated))
+#else
+#define __warn_deprecated
+#endif
 
 #endif /* __COMMON_DEF_H__ */
 

@@ -33,15 +33,16 @@ PLAT		:= none
 V		:= 0
 DEBUG		:= 0
 BINARY		:= ${PROJECT}
+OPENSSL_DIR	:= /usr
 
 OBJECTS := src/cert.o \
            src/ext.o \
            src/key.o \
            src/main.o \
-           src/tbb_cert.o \
-           src/tbb_ext.o \
-           src/tbb_key.o \
-           src/sha.o
+           src/sha.o \
+           src/tbbr/tbb_cert.o \
+           src/tbbr/tbb_ext.o \
+           src/tbbr/tbb_key.o
 
 CFLAGS := -Wall -std=c99
 
@@ -69,8 +70,8 @@ endif
 
 # Make soft links and include from local directory otherwise wrong headers
 # could get pulled in from firmware tree.
-INC_DIR := -I ./include -I ${PLAT_INCLUDE}
-LIB_DIR :=
+INC_DIR := -I ./include -I ${PLAT_INCLUDE} -I ${OPENSSL_DIR}/include
+LIB_DIR := -L ${OPENSSL_DIR}/lib
 LIB := -lssl -lcrypto
 
 CC := gcc

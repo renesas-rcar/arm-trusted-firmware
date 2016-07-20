@@ -30,8 +30,10 @@
 #ifndef __ARM_DEF_H__
 #define __ARM_DEF_H__
 
+#include <arch.h>
 #include <common_def.h>
 #include <platform_def.h>
+#include <tbbr_img_def.h>
 #include <xlat_tables.h>
 
 
@@ -45,6 +47,25 @@
 #define ARM_CLUSTER_COUNT		2ull
 
 #define ARM_CACHE_WRITEBACK_SHIFT	6
+
+/*
+ * Macros mapping the MPIDR Affinity levels to ARM Platform Power levels. The
+ * power levels have a 1:1 mapping with the MPIDR affinity levels.
+ */
+#define ARM_PWR_LVL0		MPIDR_AFFLVL0
+#define ARM_PWR_LVL1		MPIDR_AFFLVL1
+
+/*
+ *  Macros for local power states in ARM platforms encoded by State-ID field
+ *  within the power-state parameter.
+ */
+/* Local power state for power domains in Run state. */
+#define ARM_LOCAL_STATE_RUN	0
+/* Local power state for retention. Valid only for CPU power domains */
+#define ARM_LOCAL_STATE_RET	1
+/* Local power state for OFF/power-down. Valid for CPU and cluster power
+   domains */
+#define ARM_LOCAL_STATE_OFF	2
 
 /* Memory location options for TSP */
 #define ARM_TRUSTED_SRAM_ID		0
@@ -152,19 +173,28 @@
 
 #define ARM_CONSOLE_BAUDRATE		115200
 
-/* TZC related constants */
-#define ARM_TZC_BASE			0x2a4a0000
-
-
 /******************************************************************************
  * Required platform porting definitions common to all ARM standard platforms
  *****************************************************************************/
 
 #define ADDR_SPACE_SIZE			(1ull << 32)
 
-#define PLATFORM_NUM_AFFS		(ARM_CLUSTER_COUNT + \
+#define PLAT_NUM_PWR_DOMAINS		(ARM_CLUSTER_COUNT + \
 					 PLATFORM_CORE_COUNT)
-#define PLATFORM_MAX_AFFLVL		MPIDR_AFFLVL1
+#define PLAT_MAX_PWR_LVL		ARM_PWR_LVL1
+
+/*
+ * This macro defines the deepest retention state possible. A higher state
+ * id will represent an invalid or a power down state.
+ */
+#define PLAT_MAX_RET_STATE		ARM_LOCAL_STATE_RET
+
+/*
+ * This macro defines the deepest power down states possible. Any state ID
+ * higher than this is invalid.
+ */
+#define PLAT_MAX_OFF_STATE		ARM_LOCAL_STATE_OFF
+
 
 #define PLATFORM_CORE_COUNT		(PLAT_ARM_CLUSTER0_CORE_COUNT + \
 					 PLAT_ARM_CLUSTER1_CORE_COUNT)
@@ -175,14 +205,6 @@
  * integrated and external caches.
  */
 #define CACHE_WRITEBACK_GRANULE		(1 << ARM_CACHE_WRITEBACK_SHIFT)
-
-#if !USE_COHERENT_MEM
-/*
- * Size of the per-cpu data in bytes that should be reserved in the generic
- * per-cpu data structure for the ARM platform port.
- */
-#define PLAT_PCPU_DATA_SIZE		2
-#endif
 
 
 /*******************************************************************************
@@ -200,7 +222,7 @@
 #if TRUSTED_BOARD_BOOT
 #define BL1_RW_BASE			(ARM_BL_RAM_BASE +		\
 						ARM_BL_RAM_SIZE -	\
-						0x8000)
+						0x9000)
 #else
 #define BL1_RW_BASE			(ARM_BL_RAM_BASE +		\
 						ARM_BL_RAM_SIZE -	\
@@ -216,7 +238,7 @@
  * size plus a little space for growth.
  */
 #if TRUSTED_BOARD_BOOT
-#define BL2_BASE			(BL31_BASE - 0x1C000)
+#define BL2_BASE			(BL31_BASE - 0x1D000)
 #else
 #define BL2_BASE			(BL31_BASE - 0xC000)
 #endif
@@ -269,6 +291,12 @@
  * ID of the secure physical generic timer interrupt used by the TSP.
  */
 #define TSP_IRQ_SEC_PHY_TIMER		ARM_IRQ_SEC_PHY_TIMER
+
+
+/*
+ * One cache line needed for bakery locks on ARM platforms
+ */
+#define PLAT_PERCPU_BAKERY_LOCK_SIZE		(1 * CACHE_WRITEBACK_GRANULE)
 
 
 #endif /* __ARM_DEF_H__ */

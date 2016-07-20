@@ -28,20 +28,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 #
 
-PLAT_INCLUDES		+=	-Iinclude/plat/arm/board/common/
+PLAT_BL_COMMON_SOURCES	+=	plat/arm/board/common/board_css_common.c
 
-PLAT_BL_COMMON_SOURCES	+=	drivers/arm/pl011/pl011_console.S			\
-				plat/arm/board/common/aarch64/board_arm_helpers.S	\
-				plat/arm/board/common/board_css_common.c
-
-
-#BL1_SOURCES		+=
-
-#BL2_SOURCES		+=
-
-#BL31_SOURCES		+=
-
-ifneq (${TRUSTED_BOARD_BOOT},0)
-  BL1_SOURCES		+=	plat/arm/board/common/board_arm_trusted_boot.c
-  BL2_SOURCES		+=	plat/arm/board/common/board_arm_trusted_boot.c
-endif
+include plat/arm/board/common/board_common.mk

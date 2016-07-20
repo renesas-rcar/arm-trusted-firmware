@@ -90,18 +90,6 @@
 	(_p)->h.attr = (uint32_t)(_attr) ; \
 	} while (0)
 
-/*******************************************************************************
- * Constant that indicates if this is the first version of the reset handler
- * contained in an image. This will be the case when the image is BL1 or when
- * its BL3-1 and RESET_TO_BL31 is true. This constant enables a subsequent
- * version of the reset handler to perform actions that override the ones
- * performed in the first version of the code. This will be required when the
- * first version exists in an un-modifiable image e.g. a BootROM image.
- ******************************************************************************/
-#if IMAGE_BL1 || (IMAGE_BL31 && RESET_TO_BL31)
-#define FIRST_RESET_HANDLER_CALL
-#endif
-
 #ifndef __ASSEMBLY__
 #include <cdefs.h> /* For __dead2 */
 #include <cassert.h>
@@ -195,9 +183,9 @@ typedef struct image_info {
  * This structure represents the superset of information that can be passed to
  * BL31 e.g. while passing control to it from BL2. The BL32 parameters will be
  * populated only if BL2 detects its presence. A pointer to a structure of this
- * type should be passed in X3 to BL31's cold boot entrypoint
+ * type should be passed in X0 to BL3-1's cold boot entrypoint.
  *
- * Use of this structure and the X3 parameter is not mandatory: the BL3-1
+ * Use of this structure and the X0 parameter is not mandatory: the BL3-1
  * platform code can use other mechanisms to provide the necessary information
  * about BL3-2 and BL3-3 to the common and SPD code.
  *
@@ -213,6 +201,15 @@ typedef struct bl31_params {
 	entry_point_info_t *bl33_ep_info;
 	image_info_t *bl33_image_info;
 } bl31_params_t;
+
+/*
+ * load_auth_image() return values
+ */
+enum {
+	LOAD_SUCCESS,		/* Load + authentication success */
+	LOAD_ERR,		/* Load error */
+	LOAD_AUTH_ERR		/* Authentication error */
+};
 
 
 /*
@@ -237,13 +234,17 @@ CASSERT(sizeof(unsigned long) ==
  * Function & variable prototypes
  ******************************************************************************/
 unsigned long page_align(unsigned long, unsigned);
-void change_security_state(unsigned int);
-unsigned long image_size(const char *);
+unsigned long image_size(unsigned int image_id);
 int load_image(meminfo_t *mem_layout,
-	       const char *image_name,
-	       uint64_t image_base,
+	       unsigned int image_id,
+	       uintptr_t image_base,
 	       image_info_t *image_data,
 	       entry_point_info_t *entry_point_info);
+int load_auth_image(meminfo_t *mem_layout,
+		    unsigned int image_name,
+		    uintptr_t image_base,
+		    image_info_t *image_data,
+		    entry_point_info_t *entry_point_info);
 extern const char build_message[];
 extern const char version_string[];
 

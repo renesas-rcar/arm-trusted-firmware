@@ -60,7 +60,7 @@ typedef struct {
  * Unlike the SCPI protocol, the boot protocol uses the same memory region
  * for both AP -> SCP and SCP -> AP transfers; define the address of this...
  */
-#define BOM_SHARED_MEM		(MHU_SECURE_BASE + 0x0080)
+#define BOM_SHARED_MEM		SCP_COM_SHARED_MEM_BASE
 #define BOM_CMD_HEADER		((bom_cmd_t *) BOM_SHARED_MEM)
 #define BOM_CMD_PAYLOAD		((void *) (BOM_SHARED_MEM + sizeof(bom_cmd_t)))
 
@@ -148,6 +148,24 @@ int scp_bootloader_transfer(void *image, unsigned int image_size)
 	cmd_info_payload->checksum = checksum;
 
 	scp_boot_message_send(sizeof(*cmd_info_payload));
+#if CSS_DETECT_PRE_1_7_0_SCP
+	{
+		const uint32_t deprecated_scp_nack_cmd = 0x404;
+		uint32_t mhu_status;
+
+		VERBOSE("Detecting SCP version incompatibility\n");
+
+		mhu_status = mhu_secure_message_wait();
+		if (mhu_status == deprecated_scp_nack_cmd) {
+			ERROR("Detected an incompatible version of the SCP firmware.\n");
+			ERROR("Only versions from v1.7.0 onwards are supported.\n");
+			ERROR("Please update the SCP firmware.\n");
+			return -1;
+		}
+
+		VERBOSE("SCP version looks OK\n");
+	}
+#endif /* CSS_DETECT_PRE_1_7_0_SCP */
 	response = scp_boot_message_wait(sizeof(response));
 	scp_boot_message_end();
 
@@ -163,7 +181,7 @@ int scp_bootloader_transfer(void *image, unsigned int image_size)
 
 	BOM_CMD_HEADER->id = BOOT_CMD_DATA;
 	cmd_data_payload = BOM_CMD_PAYLOAD;
-	cmd_data_payload->offset = (uintptr_t) image - MHU_SECURE_BASE;
+	cmd_data_payload->offset = (uintptr_t) image - ARM_TRUSTED_SRAM_BASE;
 	cmd_data_payload->block_size = image_size;
 
 	scp_boot_message_send(sizeof(*cmd_data_payload));

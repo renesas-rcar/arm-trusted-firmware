@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2013-2015, ARM Limited and Contributors. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -52,8 +52,7 @@ static void tspd_cpu_on_handler(uint64_t target_cpu)
 static int32_t tspd_cpu_off_handler(uint64_t unused)
 {
 	int32_t rc = 0;
-	uint64_t mpidr = read_mpidr();
-	uint32_t linear_id = platform_get_core_pos(mpidr);
+	uint32_t linear_id = plat_my_core_pos();
 	tsp_context_t *tsp_ctx = &tspd_sp_context[linear_id];
 
 	assert(tsp_vectors);
@@ -83,11 +82,10 @@ static int32_t tspd_cpu_off_handler(uint64_t unused)
  * This cpu is being suspended. S-EL1 state must have been saved in the
  * resident cpu (mpidr format) if it is a UP/UP migratable TSP.
  ******************************************************************************/
-static void tspd_cpu_suspend_handler(uint64_t unused)
+static void tspd_cpu_suspend_handler(uint64_t max_off_pwrlvl)
 {
 	int32_t rc = 0;
-	uint64_t mpidr = read_mpidr();
-	uint32_t linear_id = platform_get_core_pos(mpidr);
+	uint32_t linear_id = plat_my_core_pos();
 	tsp_context_t *tsp_ctx = &tspd_sp_context[linear_id];
 
 	assert(tsp_vectors);
@@ -117,8 +115,7 @@ static void tspd_cpu_suspend_handler(uint64_t unused)
 static void tspd_cpu_on_finish_handler(uint64_t unused)
 {
 	int32_t rc = 0;
-	uint64_t mpidr = read_mpidr();
-	uint32_t linear_id = platform_get_core_pos(mpidr);
+	uint32_t linear_id = plat_my_core_pos();
 	tsp_context_t *tsp_ctx = &tspd_sp_context[linear_id];
 	entry_point_info_t tsp_on_entrypoint;
 
@@ -131,12 +128,12 @@ static void tspd_cpu_on_finish_handler(uint64_t unused)
 				tsp_ctx);
 
 	/* Initialise this cpu's secure context */
-	cm_init_context(mpidr, &tsp_on_entrypoint);
+	cm_init_my_context(&tsp_on_entrypoint);
 
 #if TSPD_ROUTE_IRQ_TO_EL3
 	/*
 	 * Disable the NS interrupt locally since it will be enabled globally
-	 * within cm_init_context.
+	 * within cm_init_my_context.
 	 */
 	disable_intr_rm_local(INTR_TYPE_NS, SECURE);
 #endif
@@ -160,20 +157,19 @@ static void tspd_cpu_on_finish_handler(uint64_t unused)
  * completed the preceding suspend call. Use that context to program an entry
  * into the TSP to allow it to do any remaining book keeping
  ******************************************************************************/
-static void tspd_cpu_suspend_finish_handler(uint64_t suspend_level)
+static void tspd_cpu_suspend_finish_handler(uint64_t max_off_pwrlvl)
 {
 	int32_t rc = 0;
-	uint64_t mpidr = read_mpidr();
-	uint32_t linear_id = platform_get_core_pos(mpidr);
+	uint32_t linear_id = plat_my_core_pos();
 	tsp_context_t *tsp_ctx = &tspd_sp_context[linear_id];
 
 	assert(tsp_vectors);
 	assert(get_tsp_pstate(tsp_ctx->state) == TSP_PSTATE_SUSPEND);
 
-	/* Program the entry point, suspend_level and enter the SP */
+	/* Program the entry point, max_off_pwrlvl and enter the SP */
 	write_ctx_reg(get_gpregs_ctx(&tsp_ctx->cpu_ctx),
 		      CTX_GPREG_X0,
-		      suspend_level);
+		      max_off_pwrlvl);
 	cm_set_elr_el3(SECURE, (uint64_t) &tsp_vectors->cpu_resume_entry);
 	rc = tspd_synchronous_sp_entry(tsp_ctx);
 
@@ -203,8 +199,7 @@ static int32_t tspd_cpu_migrate_info(uint64_t *resident_cpu)
  ******************************************************************************/
 static void tspd_system_off(void)
 {
-	uint64_t mpidr = read_mpidr();
-	uint32_t linear_id = platform_get_core_pos(mpidr);
+	uint32_t linear_id = plat_my_core_pos();
 	tsp_context_t *tsp_ctx = &tspd_sp_context[linear_id];
 
 	assert(tsp_vectors);
@@ -224,8 +219,7 @@ static void tspd_system_off(void)
  ******************************************************************************/
 static void tspd_system_reset(void)
 {
-	uint64_t mpidr = read_mpidr();
-	uint32_t linear_id = platform_get_core_pos(mpidr);
+	uint32_t linear_id = plat_my_core_pos();
 	tsp_context_t *tsp_ctx = &tspd_sp_context[linear_id];
 
 	assert(tsp_vectors);

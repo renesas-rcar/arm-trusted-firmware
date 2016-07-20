@@ -184,7 +184,7 @@ BL1 performs minimal architectural initialization as follows.
 
 #### Platform initialization
 
-BL1 enables issuing of snoop and DVM (Distributed Virtual Memory) requests from
+BL1 enables issuing of snoop and DVM (Distributed Virtual Memory) requests to
 the CCI slave interface corresponding to the cluster that includes the
 primary CPU. BL1 also initializes a UART (PL011 console), which enables access
 to the `printf` family of functions in BL1.
@@ -334,7 +334,9 @@ the clock frequency of the system counter, which is provided by the platform.
 BL3-1 performs detailed platform initialization, which enables normal world
 software to function correctly. It also retrieves entrypoint information for
 the BL3-3 image loaded by BL2 from the platform defined memory address populated
-by BL2. BL3-1 also initializes a UART (PL011 console), which enables
+by BL2. It enables issuing of snoop and DVM (Distributed Virtual Memory)
+requests to the CCI slave interface corresponding to the cluster that includes
+the primary CPU. BL3-1 also initializes a UART (PL011 console), which enables
 access to the `printf` family of functions in BL3-1.  It enables the system
 level implementation of the generic timer through the memory mapped interface.
 
@@ -345,9 +347,9 @@ level implementation of the generic timer through the memory mapped interface.
     -   Disable the legacy interrupt bypass mechanism.
     -   Configure the priority mask register to allow interrupts of all
         priorities to be signaled to the CPU interface.
-    -   Mark SGIs 8-15, the secure physical timer interrupt (#29) and the
-        trusted watchdog interrupt (#56) as group0 (secure).
-    -   Target the trusted watchdog interrupt to CPU0.
+    -   Mark SGIs 8-15 and the other secure interrupts on the platform
+        as group0 (secure).
+    -   Target all secure SPIs to CPU0.
     -   Enable these group0 interrupts in the GIC distributor.
     -   Configure all other interrupts as group1 (non-secure).
     -   Enable signaling of group0 interrupts in the GIC distributor.
@@ -412,8 +414,7 @@ updated to develop and exploit new functionality.
 
 #### Required CPU state when calling `bl31_entrypoint()` during cold boot
 
-This function must only be called by the primary CPU, if this is called by any
-other CPU the firmware will abort.
+This function must only be called by the primary CPU.
 
 On entry to this function the calling primary CPU must be executing in AArch64
 EL3, little-endian data access, and all interrupt sources masked:
@@ -542,11 +543,6 @@ described for BL1 above. On a warm boot a CPU is directed to the PSCI
 implementation via a platform defined mechanism. On a cold boot, the platform
 must place any secondary CPUs into a safe state while the primary CPU executes
 a modified BL3-1 initialization, as described below.
-
-#### Architectural initialization
-
-As the first image to execute in this configuration BL3-1 must ensure that
-interconnect coherency is enabled (if required) before enabling the MMU.
 
 #### Platform initialization
 
@@ -759,7 +755,7 @@ required support.
 |`CPU_FREEZE`           | No      |                                           |
 |`CPU_DEFAULT_SUSPEND`  | No      |                                           |
 |`CPU_HW_STATE`         | No      |                                           |
-|`SYSTEM_SUSPEND`       | No      |                                           |
+|`SYSTEM_SUSPEND`       | Yes*    |                                           |
 |`PSCI_SET_SUSPEND_MODE`| No      |                                           |
 |`PSCI_STAT_RESIDENCY`  | No      |                                           |
 |`PSCI_STAT_COUNT`      | No      |                                           |
@@ -962,7 +958,7 @@ The sample crash output is shown below.
 ---------------------------------
 
 Trusted Firmware implements a framework that allows CPU and platform ports to
-perform actions immediately after a CPU is released from reset in both the cold
+perform actions very early after a CPU is released from reset in both the cold
 and warm boot paths. This is done by calling the `reset_handler()` function in
 both the BL1 and BL3-1 images. It in turn calls the platform and CPU specific
 reset handling functions.
@@ -971,33 +967,12 @@ Details for implementing a CPU specific reset handler can be found in
 Section 8. Details for implementing a platform specific reset handler can be
 found in the [Porting Guide](see the `plat_reset_handler()` function).
 
-When adding functionality to a reset handler, the following points should be
-kept in mind.
-
-1.   The first reset handler in the system exists either in a ROM image
-     (e.g. BL1), or BL3-1 if `RESET_TO_BL31` is true. This may be detected at
-     compile time using the constant `FIRST_RESET_HANDLER_CALL`.
-
-2.   When considering ROM images, it's important to consider non TF-based ROMs
-     and ROMs based on previous versions of the TF code.
-
-3.   If the functionality should be applied to a ROM and there is no possibility
-     of a ROM being used that does not apply the functionality (or equivalent),
-     then the functionality should be applied within a `#if
-     FIRST_RESET_HANDLER_CALL` block.
-
-4.   If the functionality should execute in BL3-1 in order to override or
-     supplement a ROM version of the functionality, then the functionality
-     should be applied in the `#else` part of a `#if FIRST_RESET_HANDLER_CALL`
-     block.
-
-5.   If the functionality should be applied to a ROM but there is a possibility
-     of ROMs being used that do not apply the functionality, then the
-     functionality should be applied outside of a `FIRST_RESET_HANDLER_CALL`
-     block, so that BL3-1 has an opportunity to apply the functionality instead.
-     In this case, additional code may be needed to cope with different ROMs
-     that do or do not apply the functionality.
-
+When adding functionality to a reset handler, keep in mind that if a different
+reset handling behavior is required between the first and the subsequent
+invocations of the reset handling code, this should be detected at runtime.
+In other words, the reset handler should be able to detect whether an action has
+already been performed and act as appropriate. Possible courses of actions are,
+e.g. skip the action the second time, or undo/redo it.
 
 8.  CPU specific operations framework
 -----------------------------
@@ -1548,38 +1523,52 @@ approach described above.
 The below sections analyze the data structures allocated in the coherent memory
 region and the changes required to allocate them in normal memory.
 
-### PSCI Affinity map nodes
+### Coherent memory usage in PSCI implementation
 
-The `psci_aff_map` data structure stores the hierarchial node information for
-each affinity level in the system including the PSCI states associated with them.
-By default, this data structure is allocated in the coherent memory region in
-the Trusted Firmware because it can be accessed by multiple CPUs, either with
-their caches enabled or disabled.
+The `psci_non_cpu_pd_nodes` data structure stores the platform's power domain
+tree information for state management of power domains. By default, this data
+structure is allocated in the coherent memory region in the Trusted Firmware
+because it can be accessed by multple CPUs, either with caches enabled or
+disabled.
 
-	typedef struct aff_map_node {
-		unsigned long mpidr;
-		unsigned char ref_count;
-		unsigned char state;
-		unsigned char level;
-	#if USE_COHERENT_MEM
-		bakery_lock_t lock;
-	#else
-		unsigned char aff_map_index;
-	#endif
-	} aff_map_node_t;
+typedef struct non_cpu_pwr_domain_node {
+        /*
+         * Index of the first CPU power domain node level 0 which has this node
+         * as its parent.
+         */
+        unsigned int cpu_start_idx;
+
+        /*
+         * Number of CPU power domains which are siblings of the domain indexed
+         * by 'cpu_start_idx' i.e. all the domains in the range 'cpu_start_idx
+         * -> cpu_start_idx + ncpus' have this node as their parent.
+         */
+        unsigned int ncpus;
+
+        /*
+         * Index of the parent power domain node.
+         * TODO: Figure out whether to whether using pointer is more efficient.
+         */
+        unsigned int parent_node;
+
+        plat_local_state_t local_state;
+
+        unsigned char level;
+
+        /* For indexing the psci_lock array*/
+        unsigned char lock_index;
+} non_cpu_pd_node_t;
 
 In order to move this data structure to normal memory, the use of each of its
-fields must be analyzed. Fields like `mpidr` and `level` are only written once
-during cold boot. Hence removing them from coherent memory involves only doing
-a clean and invalidate of the cache lines after these fields are written.
+fields must be analyzed. Fields like `cpu_start_idx`, `ncpus`, `parent_node`
+`level` and `lock_index` are only written once during cold boot. Hence removing
+them from coherent memory involves only doing a clean and invalidate of the
+cache lines after these fields are written.
 
-The fields `state` and `ref_count` can be concurrently accessed by multiple
-CPUs in different cache states. A Lamport's Bakery lock is used to ensure mutual
-exlusion to these fields. As a result, it is possible to move these fields out
-of coherent memory by performing software cache maintenance on them. The field
-`lock` is the bakery lock data structure when `USE_COHERENT_MEM` is enabled.
-The `aff_map_index` is used to identify the bakery lock when `USE_COHERENT_MEM`
-is disabled.
+The field `local_state` can be concurrently accessed by multiple CPUs in
+different cache states. A Lamport's Bakery lock `psci_locks` is used to ensure
+mutual exlusion to this field and a clean and invalidate is needed after it
+is written.
 
 ### Bakery lock data
 
@@ -1588,9 +1577,13 @@ and is accessed by multiple CPUs with mismatched attributes. `bakery_lock_t` is
 defined as follows:
 
     typedef struct bakery_lock {
-        int owner;
-        volatile char entering[BAKERY_LOCK_MAX_CPUS];
-        volatile unsigned number[BAKERY_LOCK_MAX_CPUS];
+        /*
+         * The lock_data is a bit-field of 2 members:
+         * Bit[0]       : choosing. This field is set when the CPU is
+         *                choosing its bakery number.
+         * Bits[1 - 15] : number. This is the bakery number allocated.
+         */
+        volatile uint16_t lock_data[BAKERY_LOCK_MAX_CPUS];
     } bakery_lock_t;
 
 It is a characteristic of Lamport's Bakery algorithm that the volatile per-CPU
@@ -1614,16 +1607,13 @@ the update made by CPU0 as well.
 
 To use bakery locks when `USE_COHERENT_MEM` is disabled, the lock data structure
 has been redesigned. The changes utilise the characteristic of Lamport's Bakery
-algorithm mentioned earlier. The per-CPU fields of the new lock structure are
-aligned such that they are allocated on separate cache lines. The per-CPU data
-framework in Trusted Firmware is used to achieve this. This enables software to
+algorithm mentioned earlier. The bakery_lock structure only allocates the memory
+for a single CPU. The macro `DEFINE_BAKERY_LOCK` allocates all the bakery locks
+needed for a CPU into a section `bakery_lock`. The linker allocates the memory
+for other cores by using the total size allocated for the bakery_lock section
+and multiplying it with (PLATFORM_CORE_COUNT - 1). This enables software to
 perform software cache maintenance on the lock data structure without running
 into coherency issues associated with mismatched attributes.
-
-The per-CPU data framework enables consolidation of data structures on the
-fewest cache lines possible. This saves memory as compared to the scenario where
-each data structure is separately aligned to the cache line boundary to achieve
-the same effect.
 
 The bakery lock data structure `bakery_info_t` is defined for use when
 `USE_COHERENT_MEM` is disabled as follows:
@@ -1640,12 +1630,10 @@ The bakery lock data structure `bakery_info_t` is defined for use when
 
 The `bakery_info_t` represents a single per-CPU field of one lock and
 the combination of corresponding `bakery_info_t` structures for all CPUs in the
-system represents the complete bakery lock. It is embedded in the per-CPU
-data framework `cpu_data` as shown below:
+system represents the complete bakery lock. The view in memory for a system
+with n bakery locks are:
 
-      CPU0 cpu_data
-    ------------------
-    | ....           |
+    bakery_lock section start
     |----------------|
     | `bakery_info_t`| <-- Lock_0 per-CPU field
     |    Lock_0      |     for CPU0
@@ -1658,12 +1646,11 @@ data framework `cpu_data` as shown below:
     | `bakery_info_t`| <-- Lock_N per-CPU field
     |    Lock_N      |     for CPU0
     ------------------
-
-
-      CPU1 cpu_data
+    |    XXXXX       |
+    | Padding to     |
+    | next Cache WB  | <--- Calculate PERCPU_BAKERY_LOCK_SIZE, allocate
+    |  Granule       |       continuous memory for remaining CPUs.
     ------------------
-    | ....           |
-    |----------------|
     | `bakery_info_t`| <-- Lock_0 per-CPU field
     |    Lock_0      |     for CPU1
     |----------------|
@@ -1675,14 +1662,20 @@ data framework `cpu_data` as shown below:
     | `bakery_info_t`| <-- Lock_N per-CPU field
     |    Lock_N      |     for CPU1
     ------------------
+    |    XXXXX       |
+    | Padding to     |
+    | next Cache WB  |
+    |  Granule       |
+    ------------------
 
-Consider a system of 2 CPUs with 'N' bakery locks as shown above.  For an
+Consider a system of 2 CPUs with 'N' bakery locks as shown above. For an
 operation on Lock_N, the corresponding `bakery_info_t` in both CPU0 and CPU1
-`cpu_data` need to be fetched and appropriate cache operations need to be
-performed for each access.
+`bakery_lock` section need to be fetched and appropriate cache operations need
+to be performed for each access.
 
-For multiple bakery locks, an array of `bakery_info_t` is declared in `cpu_data`
-and each lock is given an `id` to identify it in the array.
+On ARM Platforms, bakery locks are used in psci (`psci_locks`) and power controller
+driver (`arm_lock`).
+
 
 ### Non Functional Impact of removing coherent memory
 
@@ -1705,10 +1698,9 @@ Juno ARM development platform.
 As mentioned earlier, almost a page of memory can be saved by disabling
 `USE_COHERENT_MEM`. Each platform needs to consider these trade-offs to decide
 whether coherent memory should be used. If a platform disables
-`USE_COHERENT_MEM` and needs to use bakery locks in the porting layer, it should
-reserve memory in `cpu_data` by defining the macro `PLAT_PCPU_DATA_SIZE` (see
-the [Porting Guide]). Refer to the reference platform code for examples.
-
+`USE_COHERENT_MEM` and needs to use bakery locks in the porting layer, it can
+optionally define macro `PLAT_PERCPU_BAKERY_LOCK_SIZE`  (see the [Porting
+Guide]). Refer to the reference platform code for examples.
 
 12.  Code Structure
 -------------------

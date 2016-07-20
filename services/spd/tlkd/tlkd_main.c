@@ -54,9 +54,9 @@
 extern const spd_pm_ops_t tlkd_pm_ops;
 
 /*******************************************************************************
- * Array to keep track of per-cpu Secure Payload state
+ * Per-cpu Secure Payload state
  ******************************************************************************/
-static tlk_context_t tlk_ctx;
+tlk_context_t tlk_ctx;
 
 /* TLK UID: RFC-4122 compliant UUID (version-5, sha-1) */
 DEFINE_SVC_UUID(tlk_uuid,
@@ -121,7 +121,6 @@ int32_t tlkd_setup(void)
  ******************************************************************************/
 int32_t tlkd_init(void)
 {
-	uint64_t mpidr = read_mpidr();
 	entry_point_info_t *tlk_entry_point;
 
 	/*
@@ -131,7 +130,7 @@ int32_t tlkd_init(void)
 	tlk_entry_point = bl31_plat_get_next_image_ep_info(SECURE);
 	assert(tlk_entry_point);
 
-	cm_init_context(mpidr, tlk_entry_point);
+	cm_init_my_context(tlk_entry_point);
 
 	/*
 	 * Arrange for an entry into the test secure payload.
@@ -384,6 +383,31 @@ uint64_t tlkd_smc_handler(uint32_t smc_fid,
 		 * the original request through a synchronous entry
 		 * into the SP. Jump back to the original C runtime
 		 * context.
+		 */
+		tlkd_synchronous_sp_exit(&tlk_ctx, x1);
+
+	/*
+	 * These function IDs are used only by TLK to indicate it has
+	 * finished:
+	 * 1. suspending itself after an earlier psci cpu_suspend
+	 *    request.
+	 * 2. resuming itself after an earlier psci cpu_suspend
+	 *    request.
+	 * 3. powering down after an earlier psci system_off/system_reset
+	 *    request.
+	 */
+	case TLK_SUSPEND_DONE:
+	case TLK_RESUME_DONE:
+	case TLK_SYSTEM_OFF_DONE:
+
+		if (ns)
+			SMC_RET1(handle, SMC_UNK);
+
+		/*
+		 * TLK reports completion. TLKD must have initiated the
+		 * original request through a synchronous entry into the SP.
+		 * Jump back to the original C runtime context, and pass x1 as
+		 * return value to the caller
 		 */
 		tlkd_synchronous_sp_exit(&tlk_ctx, x1);
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2013-2015, ARM Limited and Contributors. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -30,91 +30,44 @@
 
 #include <arch.h>
 #include <asm_macros.S>
+#include <el3_common_macros.S>
 #include <psci.h>
 #include <xlat_tables.h>
 
-	.globl	psci_aff_on_finish_entry
-	.globl	psci_aff_suspend_finish_entry
+	.globl	psci_entrypoint
 	.globl	psci_power_down_wfi
 
-	/* -----------------------------------------------------
-	 * This cpu has been physically powered up. Depending
-	 * upon whether it was resumed from suspend or simply
-	 * turned on, call the common power on finisher with
-	 * the handlers (chosen depending upon original state).
-	 * -----------------------------------------------------
+	/* --------------------------------------------------------------------
+	 * This CPU has been physically powered up. It is either resuming from
+	 * suspend or has simply been turned on. In both cases, call the power
+	 * on finisher.
+	 * --------------------------------------------------------------------
 	 */
-func psci_aff_on_finish_entry
-	adr	x23, psci_afflvl_on_finishers
-	b	psci_aff_common_finish_entry
-
-psci_aff_suspend_finish_entry:
-	adr	x23, psci_afflvl_suspend_finishers
-
-psci_aff_common_finish_entry:
-#if !RESET_TO_BL31
-	/* ---------------------------------------------
-	 * Perform any processor specific actions which
-	 * undo or are in addition to the actions
-	 * performed by the reset handler in the BootROM
-	 * (BL1) e.g. cache, tlb invalidations, errata
-	 * workarounds etc.
-	 * ---------------------------------------------
+func psci_entrypoint
+	/*
+	 * On the warm boot path, most of the EL3 initialisations performed by
+	 * 'el3_entrypoint_common' must be skipped:
+	 *
+	 *  - Only when the platform bypasses the BL1/BL3-1 entrypoint by
+	 *    programming the reset address do we need to set the CPU endianness.
+	 *    In other cases, we assume this has been taken care by the
+	 *    entrypoint code.
+	 *
+	 *  - No need to determine the type of boot, we know it is a warm boot.
+	 *
+	 *  - Do not try to distinguish between primary and secondary CPUs, this
+	 *    notion only exists for a cold boot.
+	 *
+	 *  - No need to initialise the memory or the C runtime environment,
+	 *    it has been done once and for all on the cold boot path.
 	 */
-	bl      reset_handler
-
-	/* ---------------------------------------------
-	 * Enable the instruction cache, stack pointer
-	 * and data access alignment checks.
-	 * It can be assumed that BL3-1 entrypoint code
-	 * will do this when RESET_TO_BL31 is set. The
-	 * same  assumption cannot be made when another
-	 * boot loader executes before BL3-1 in the warm
-	 * boot path e.g. BL1.
-	 * ---------------------------------------------
-	 */
-	mov	x1, #(SCTLR_I_BIT | SCTLR_A_BIT | SCTLR_SA_BIT)
-	mrs	x0, sctlr_el3
-	orr	x0, x0, x1
-	msr	sctlr_el3, x0
-	isb
-#endif
-
-	/* ---------------------------------------------
-	 * Initialise the pcpu cache pointer for the CPU
-	 * ---------------------------------------------
-	 */
-	bl	init_cpu_data_ptr
-
-	/* ---------------------------------------------
-	 * Set the exception vectors
-	 * ---------------------------------------------
-	 */
-	adr	x0, runtime_exceptions
-	msr	vbar_el3, x0
-	isb
-
-	/* ---------------------------------------------
-	 * Enable the SError interrupt now that the
-	 * exception vectors have been setup.
-	 * ---------------------------------------------
-	 */
-	msr	daifclr, #DAIF_ABT_BIT
-
-	/* ---------------------------------------------
-	 * Use SP_EL0 for the C runtime stack.
-	 * ---------------------------------------------
-	 */
-	msr	spsel, #0
-
-	/* --------------------------------------------
-	 * Give ourselves a stack whose memory will be
-	 * marked as Normal-IS-WBWA when the MMU is
-	 * enabled.
-	 * --------------------------------------------
-	 */
-	mrs	x0, mpidr_el1
-	bl	platform_set_stack
+	el3_entrypoint_common					\
+		_set_endian=PROGRAMMABLE_RESET_ADDRESS		\
+		_warm_boot_mailbox=0				\
+		_secondary_cold_boot=0				\
+		_init_memory=0					\
+		_init_c_runtime=0				\
+		_exception_vectors=runtime_exceptions
 
 	/* --------------------------------------------
 	 * Enable the MMU with the DCache disabled. It
@@ -136,19 +89,10 @@ psci_aff_common_finish_entry:
 	mov	x0, #DISABLE_DCACHE
 	bl	bl31_plat_enable_mmu
 
-	/* ---------------------------------------------
-	 * Call the finishers starting from affinity
-	 * level 0.
-	 * ---------------------------------------------
-	 */
-	bl	get_power_on_target_afflvl
-	mov	x2, x23
-	mov	x1, x0
-	mov	x0, #MPIDR_AFFLVL0
-	bl	psci_afflvl_power_on_finish
+	bl	psci_power_up_finish
 
 	b	el3_exit
-endfunc psci_aff_on_finish_entry
+endfunc psci_entrypoint
 
 	/* --------------------------------------------
 	 * This function is called to indicate to the

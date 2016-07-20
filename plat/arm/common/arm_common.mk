@@ -46,7 +46,25 @@ endif
 # Process flags
 $(eval $(call add_define,ARM_TSP_RAM_LOCATION_ID))
 
-PLAT_INCLUDES		+=	-Iinclude/plat/arm/common			\
+# For the original power-state parameter format, the State-ID can be encoded
+# according to the recommended encoding or zero. This flag determines which
+# State-ID encoding to be parsed.
+ARM_RECOM_STATE_ID_ENC := 0
+
+# If the PSCI_EXTENDED_STATE_ID is set, then the recommended state ID need to
+# be used. Else throw a build error.
+ifeq (${PSCI_EXTENDED_STATE_ID}, 1)
+  ifeq (${ARM_RECOM_STATE_ID_ENC}, 0)
+    $(error "Incompatible STATE_ID build option specified")
+  endif
+endif
+
+# Process ARM_RECOM_STATE_ID_ENC flag
+$(eval $(call assert_boolean,ARM_RECOM_STATE_ID_ENC))
+$(eval $(call add_define,ARM_RECOM_STATE_ID_ENC))
+
+PLAT_INCLUDES		+=	-Iinclude/common/tbbr				\
+				-Iinclude/plat/arm/common			\
 				-Iinclude/plat/arm/common/aarch64
 
 
@@ -56,6 +74,7 @@ PLAT_BL_COMMON_SOURCES	+=	lib/aarch64/xlat_tables.c			\
 				plat/common/aarch64/plat_common.c
 
 BL1_SOURCES		+=	drivers/arm/cci/cci.c				\
+				drivers/arm/ccn/ccn.c				\
 				drivers/io/io_fip.c				\
 				drivers/io/io_memmap.c				\
 				drivers/io/io_storage.c				\
@@ -73,6 +92,7 @@ BL2_SOURCES		+=	drivers/arm/tzc400/tzc400.c			\
 				plat/common/aarch64/platform_up_stack.S
 
 BL31_SOURCES		+=	drivers/arm/cci/cci.c				\
+				drivers/arm/ccn/ccn.c				\
 				drivers/arm/gic/arm_gic.c			\
 				drivers/arm/gic/gic_v2.c			\
 				drivers/arm/gic/gic_v3.c			\
@@ -82,4 +102,33 @@ BL31_SOURCES		+=	drivers/arm/cci/cci.c				\
 				plat/arm/common/arm_security.c			\
 				plat/arm/common/arm_topology.c			\
 				plat/common/plat_gic.c				\
-				plat/common/aarch64/platform_mp_stack.S
+				plat/common/aarch64/platform_mp_stack.S		\
+				plat/common/aarch64/plat_psci_common.c
+
+ifneq (${TRUSTED_BOARD_BOOT},0)
+
+    # By default, ARM platforms use RSA keys
+    KEY_ALG		:=	rsa
+
+    # Include common TBB sources
+    AUTH_SOURCES	:=	drivers/auth/auth_mod.c				\
+    				drivers/auth/crypto_mod.c			\
+    				drivers/auth/img_parser_mod.c			\
+    				drivers/auth/tbbr/tbbr_cot.c			\
+
+    BL1_SOURCES		+=	${AUTH_SOURCES}
+    BL2_SOURCES		+=	${AUTH_SOURCES}
+
+    MBEDTLS_KEY_ALG	:=	${KEY_ALG}
+
+    # We expect to locate the *.mk files under the directories specified below
+    CRYPTO_LIB_MK := drivers/auth/mbedtls/mbedtls_crypto.mk
+    IMG_PARSER_LIB_MK := drivers/auth/mbedtls/mbedtls_x509.mk
+
+    $(info Including ${CRYPTO_LIB_MK})
+    include ${CRYPTO_LIB_MK}
+
+    $(info Including ${IMG_PARSER_LIB_MK})
+    include ${IMG_PARSER_LIB_MK}
+
+endif

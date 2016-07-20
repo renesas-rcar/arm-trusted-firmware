@@ -61,6 +61,13 @@ SECTIONS
 #endif
         *(.text*)
         *(.rodata*)
+
+        /* Ensure 8-byte alignment for descriptors and ensure inclusion */
+        . = ALIGN(8);
+        __PARSER_LIB_DESCS_START__ = .;
+        KEEP(*(.img_parser_lib_descs))
+        __PARSER_LIB_DESCS_END__ = .;
+
         *(.vectors)
         __RO_END_UNALIGNED__ = .;
         /*
@@ -71,6 +78,12 @@ SECTIONS
         . = NEXT(4096);
         __RO_END__ = .;
     } >RAM
+
+    /*
+     * Define a linker symbol to mark start of the RW memory area for this
+     * image.
+     */
+    __RW_START__ = . ;
 
     .data . : {
         __DATA_START__ = .;
@@ -125,6 +138,11 @@ SECTIONS
     } >RAM
 #endif
 
+    /*
+     * Define a linker symbol to mark end of the RW memory area for this
+     * image.
+     */
+    __RW_END__ = .;
     __BL2_END__ = .;
 
     __BSS_SIZE__ = SIZEOF(.bss);

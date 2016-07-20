@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2013-2015, ARM Limited and Contributors. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -99,6 +99,20 @@ func tsp_entrypoint
 	isb
 
 	/* ---------------------------------------------
+	 * Invalidate the RW memory used by the BL32
+	 * image. This includes the data and NOBITS
+	 * sections. This is done to safeguard against
+	 * possible corruption of this memory by dirty
+	 * cache lines in a system cache as a result of
+	 * use by an earlier boot loader stage.
+	 * ---------------------------------------------
+	 */
+	adr	x0, __RW_START__
+	adr	x1, __RW_END__
+	sub	x1, x1, x0
+	bl	inv_dcache_range
+
+	/* ---------------------------------------------
 	 * Zero out NOBITS sections. There are 2 of them:
 	 *   - the .bss section;
 	 *   - the coherent memory section.
@@ -122,8 +136,7 @@ func tsp_entrypoint
 	 * primary cpu is running at the moment.
 	 * --------------------------------------------
 	 */
-	mrs	x0, mpidr_el1
-	bl	platform_set_stack
+	bl	plat_set_my_stack
 
 	/* ---------------------------------------------
 	 * Perform early platform setup & platform
@@ -248,8 +261,7 @@ func tsp_cpu_on_entry
 	 * enabled.
 	 * --------------------------------------------
 	 */
-	mrs	x0, mpidr_el1
-	bl	platform_set_stack
+	bl	plat_set_my_stack
 
 	/* --------------------------------------------
 	 * Enable the MMU with the DCache disabled. It

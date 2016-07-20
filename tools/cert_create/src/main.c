@@ -46,9 +46,9 @@
 #include "key.h"
 #include "platform_oid.h"
 #include "sha.h"
-#include "tbb_ext.h"
-#include "tbb_cert.h"
-#include "tbb_key.h"
+#include "tbbr/tbb_ext.h"
+#include "tbbr/tbb_cert.h"
+#include "tbbr/tbb_key.h"
 
 /*
  * Helper macros to simplify the code. This macro assigns the return value of
@@ -79,7 +79,7 @@
 #define MAX_FILENAME_LEN		1024
 #define VAL_DAYS			7300
 #define ID_TO_BIT_MASK(id)		(1 << id)
-#define NVCOUNTER_VALUE			0
+#define NUM_ELEM(x)			((sizeof(x)) / (sizeof(x[0])))
 
 /* Files */
 enum {
@@ -112,16 +112,12 @@ enum {
 };
 
 /* Global options */
+static int key_alg;
 static int new_keys;
 static int save_keys;
 static int print_cert;
 static int bl30_present;
 static int bl32_present;
-
-/* We are not checking nvcounters in TF. Include them in the certificates but
- * the value will be set to 0 */
-static int tf_nvcounter;
-static int non_tf_nvcounter;
 
 /* Info messages created in the Makefile */
 extern const char build_msg[];
@@ -137,6 +133,13 @@ static char *strdup(const char *str)
 	}
 	return dup;
 }
+
+static const char *key_algs_str[] = {
+	[KEY_ALG_RSA] = "rsa",
+#ifndef OPENSSL_NO_EC
+	[KEY_ALG_ECDSA] = "ecdsa"
+#endif /* OPENSSL_NO_EC */
+};
 
 /* Command line options */
 static const struct option long_opt[] = {
@@ -166,6 +169,7 @@ static const struct option long_opt[] = {
 	{"bl32-key", required_argument, 0, BL32_KEY_ID},
 	{"bl33-key", required_argument, 0, BL33_KEY_ID},
 	/* Common options */
+	{"key-alg", required_argument, 0, 'a'},
 	{"help", no_argument, 0, 'h'},
 	{"save-keys", no_argument, 0, 'k'},
 	{"new-chain", no_argument, 0, 'n'},
@@ -189,6 +193,7 @@ static void print_help(const char *cmd)
 		printf("        --%s <file>  \\\n", long_opt[i].name);
 	}
 	printf("\n");
+	printf("-a    Key algorithm: rsa (default), ecdsa\n");
 	printf("-h    Print help and exit\n");
 	printf("-k    Save key pairs into files. Filenames must be provided\n");
 	printf("-n    Generate new key pairs if no key files are provided\n");
@@ -198,30 +203,49 @@ static void print_help(const char *cmd)
 	exit(0);
 }
 
+static int get_key_alg(const char *key_alg_str)
+{
+	int i;
+
+	for (i = 0 ; i < NUM_ELEM(key_algs_str) ; i++) {
+		if (0 == strcmp(key_alg_str, key_algs_str[i])) {
+			return i;
+		}
+	}
+
+	return -1;
+}
+
 static void check_cmd_params(void)
 {
+	/* Only save new keys */
+	if (save_keys && !new_keys) {
+		ERROR("Only new keys can be saved to disk\n");
+		exit(1);
+	}
+
 	/* BL2, BL31 and BL33 are mandatory */
-	if (certs[BL2_CERT].bin == NULL) {
+	if (extensions[BL2_HASH_EXT].data.fn == NULL) {
 		ERROR("BL2 image not specified\n");
 		exit(1);
 	}
 
-	if (certs[BL31_CERT].bin == NULL) {
+	if (extensions[BL31_HASH_EXT].data.fn == NULL) {
 		ERROR("BL31 image not specified\n");
 		exit(1);
 	}
 
-	if (certs[BL33_CERT].bin == NULL) {
+	if (extensions[BL33_HASH_EXT].data.fn == NULL) {
 		ERROR("BL33 image not specified\n");
 		exit(1);
 	}
 
 	/* BL30 and BL32 are optional */
-	if (certs[BL30_CERT].bin != NULL) {
+	if (extensions[BL30_HASH_EXT].data.fn != NULL) {
 		bl30_present = 1;
 	}
 
-	if (certs[BL32_CERT].bin != NULL) {
+	if (extensions[BL32_HASH_EXT].data.fn != NULL) {
 		bl32_present = 1;
 	}
 
@@ -269,21 +293,25 @@ static void check_cmd_params(void)
 int main(int argc, char *argv[])
 {
 	STACK_OF(X509_EXTENSION) * sk = NULL;
-	X509_EXTENSION *hash_ext = NULL;
-	X509_EXTENSION *nvctr_ext = NULL;
-	X509_EXTENSION *trusted_key_ext = NULL;
-	X509_EXTENSION *non_trusted_key_ext = NULL;
+	X509_EXTENSION *cert_ext = NULL;
+	ext_t *ext = NULL;
+	cert_t *cert;
 	FILE *file = NULL;
-	int i, tz_nvctr_nid, ntz_nvctr_nid, hash_nid, pk_nid;
+	int i, j, ext_nid;
 	int c, opt_idx = 0;
+	unsigned int err_code;
 	unsigned char md[SHA256_DIGEST_LENGTH];
+	const EVP_MD *md_info;
 
 	NOTICE("CoT Generation Tool: %s\n", build_msg);
 	NOTICE("Target platform: %s\n", platform_msg);
 
+	/* Set default options */
+	key_alg = KEY_ALG_RSA;
+
 	while (1) {
 		/* getopt_long stores the option index here. */
-		c = getopt_long(argc, argv, "hknp", long_opt, &opt_idx);
+		c = getopt_long(argc, argv, "ahknp", long_opt, &opt_idx);
 
 		/* Detect the end of the options. */
 		if (c == -1) {
@@ -291,6 +319,13 @@ int main(int argc, char *argv[])
 		}
 
 		switch (c) {
+		case 'a':
+			key_alg = get_key_alg(optarg);
+			if (key_alg < 0) {
+				ERROR("Invalid key algorithm '%s'\n", optarg);
+				exit(1);
+			}
+			break;
 		case 'h':
 			print_help(argv[0]);
 			break;
@@ -304,19 +339,19 @@ int main(int argc, char *argv[])
 			print_cert = 1;
 			break;
 		case BL2_ID:
-			certs[BL2_CERT].bin = strdup(optarg);
+			extensions[BL2_HASH_EXT].data.fn = strdup(optarg);
 			break;
 		case BL30_ID:
-			certs[BL30_CERT].bin = strdup(optarg);
+			extensions[BL30_HASH_EXT].data.fn = strdup(optarg);
 			break;
 		case BL31_ID:
-			certs[BL31_CERT].bin = strdup(optarg);
+			extensions[BL31_HASH_EXT].data.fn = strdup(optarg);
 			break;
 		case BL32_ID:
-			certs[BL32_CERT].bin = strdup(optarg);
+			extensions[BL32_HASH_EXT].data.fn = strdup(optarg);
 			break;
 		case BL33_ID:
-			certs[BL33_CERT].bin = strdup(optarg);
+			extensions[BL33_HASH_EXT].data.fn = strdup(optarg);
 			break;
 		case BL2_CERT_ID:
 			certs[BL2_CERT].fn = strdup(optarg);
@@ -376,305 +411,125 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	/* Set the value of the NVCounters */
-	tf_nvcounter = NVCOUNTER_VALUE;
-	non_tf_nvcounter = NVCOUNTER_VALUE;
-
 	/* Check command line arguments */
 	check_cmd_params();
 
 	/* Register the new types and OIDs for the extensions */
-	if (ext_init(tbb_ext) != 0) {
-		ERROR("Cannot initialize TBB extensions\n");
+	if (ext_register(extensions) != 0) {
+		ERROR("Cannot register TBB extensions\n");
 		exit(1);
 	}
 
-	/* Get non-volatile counters NIDs */
-	CHECK_OID(tz_nvctr_nid, TZ_FW_NVCOUNTER_OID);
-	CHECK_OID(ntz_nvctr_nid, NTZ_FW_NVCOUNTER_OID);
+	/* Indicate SHA256 as image hash algorithm in the certificate
+	 * extension */
+	md_info = EVP_sha256();
 
 	/* Load private keys from files (or generate new ones) */
-	if (new_keys) {
-		for (i = 0 ; i < NUM_KEYS ; i++) {
-			if (!key_new(&keys[i])) {
-				ERROR("Error creating %s\n", keys[i].desc);
+	for (i = 0 ; i < num_keys ; i++) {
+		/* First try to load the key from disk */
+		if (key_load(&keys[i], &err_code)) {
+			/* Key loaded successfully */
+			continue;
+		}
+
+		/* Key not loaded. Check the error code */
+		if (err_code == KEY_ERR_MALLOC) {
+			/* Cannot allocate memory. Abort. */
+			ERROR("Malloc error while loading '%s'\n", keys[i].fn);
+			exit(1);
+		} else if (err_code == KEY_ERR_LOAD) {
+			/* File exists, but it does not contain a valid private
+			 * key. Abort. */
+			ERROR("Error loading '%s'\n", keys[i].fn);
+			exit(1);
+		}
+
+		/* File does not exist, could not be opened or no filename was
+		 * given */
+		if (new_keys) {
+			/* Try to create a new key */
+			NOTICE("Creating new key for '%s'\n", keys[i].desc);
+			if (!key_create(&keys[i], key_alg)) {
+				ERROR("Error creating key '%s'\n", keys[i].desc);
 				exit(1);
 			}
+		} else {
+			if (err_code == KEY_ERR_OPEN) {
+				ERROR("Error opening '%s'\n", keys[i].fn);
+			} else {
+				ERROR("Key '%s' not specified\n", keys[i].desc);
+			}
+			exit(1);
 		}
-	} else {
-		for (i = 0 ; i < NUM_KEYS ; i++) {
-			if (!key_load(&keys[i])) {
-				ERROR("Error loading %s\n", keys[i].desc);
+	}
+
+	/* Create the certificates */
+	for (i = 0 ; i < num_certs ; i++) {
+
+		cert = &certs[i];
+
+		/* Create a new stack of extensions. This stack will be used
+		 * to create the certificate */
+		CHECK_NULL(sk, sk_X509_EXTENSION_new_null());
+
+		for (j = 0 ; j < cert->num_ext ; j++) {
+
+			ext = &extensions[cert->ext[j]];
+
+			/* Get OpenSSL internal ID for this extension */
+			CHECK_OID(ext_nid, ext->oid);
+
+			/*
+			 * Three types of extensions are currently supported:
+			 *     - EXT_TYPE_NVCOUNTER
+			 *     - EXT_TYPE_HASH
+			 *     - EXT_TYPE_PKEY
+			 */
+			switch (ext->type) {
+			case EXT_TYPE_NVCOUNTER:
+				CHECK_NULL(cert_ext, ext_new_nvcounter(ext_nid,
+						EXT_CRIT, ext->data.nvcounter));
+				break;
+			case EXT_TYPE_HASH:
+				if (ext->data.fn == NULL) {
+					break;
+				}
+				if (!sha_file(ext->data.fn, md)) {
+					ERROR("Cannot calculate hash of %s\n",
+						ext->data.fn);
+					exit(1);
+				}
+				CHECK_NULL(cert_ext, ext_new_hash(ext_nid,
+						EXT_CRIT, md_info, md,
+						SHA256_DIGEST_LENGTH));
+				break;
+			case EXT_TYPE_PKEY:
+				CHECK_NULL(cert_ext, ext_new_key(ext_nid,
+					EXT_CRIT, keys[ext->data.key].key));
+				break;
+			default:
+				ERROR("Unknown extension type in %s\n",
+						cert->cn);
 				exit(1);
 			}
+
+			/* Push the extension into the stack */
+			sk_X509_EXTENSION_push(sk, cert_ext);
 		}
-	}
 
-	/* *********************************************************************
-	 * BL2 certificate (Trusted Boot Firmware certificate):
-	 *     - Self-signed with OEM ROT private key
-	 *     - Extensions:
-	 *         - TrustedFirmwareNVCounter (TODO)
-	 *         - BL2 hash
-	 **********************************************************************/
-	CHECK_NULL(sk, sk_X509_EXTENSION_new_null());
-
-	/* Add the NVCounter as a critical extension */
-	CHECK_NULL(nvctr_ext, ext_new_nvcounter(tz_nvctr_nid, EXT_CRIT,
-			tf_nvcounter));
-	sk_X509_EXTENSION_push(sk, nvctr_ext);
-
-	/* Add hash of BL2 as an extension */
-	if (!sha_file(certs[BL2_CERT].bin, md)) {
-		ERROR("Cannot calculate the hash of %s\n", certs[BL2_CERT].bin);
-		exit(1);
-	}
-	CHECK_OID(hash_nid, BL2_HASH_OID);
-	CHECK_NULL(hash_ext, ext_new_hash(hash_nid, EXT_CRIT, md,
-			SHA256_DIGEST_LENGTH));
-	sk_X509_EXTENSION_push(sk, hash_ext);
-
-	/* Create certificate. Signed with ROT key */
-	if (!cert_new(&certs[BL2_CERT], VAL_DAYS, 0, sk)) {
-		ERROR("Cannot create %s\n", certs[BL2_CERT].cn);
-		exit(1);
-	}
-	sk_X509_EXTENSION_free(sk);
-
-	/* *********************************************************************
-	 * Trusted Key certificate:
-	 *     - Self-signed with OEM ROT private key
-	 *     - Extensions:
-	 *         - TrustedFirmwareNVCounter (TODO)
-	 *         - TrustedWorldPK
-	 *         - NonTrustedWorldPK
-	 **********************************************************************/
-	CHECK_NULL(sk, sk_X509_EXTENSION_new_null());
-	CHECK_NULL(nvctr_ext, ext_new_nvcounter(tz_nvctr_nid, EXT_CRIT,
-			tf_nvcounter));
-	sk_X509_EXTENSION_push(sk, nvctr_ext);
-	CHECK_OID(pk_nid, TZ_WORLD_PK_OID);
-	CHECK_NULL(trusted_key_ext, ext_new_key(pk_nid, EXT_CRIT,
-			keys[TRUSTED_WORLD_KEY].key));
-	sk_X509_EXTENSION_push(sk, trusted_key_ext);
-	CHECK_OID(pk_nid, NTZ_WORLD_PK_OID);
-	CHECK_NULL(non_trusted_key_ext, ext_new_key(pk_nid, EXT_CRIT,
-			keys[NON_TRUSTED_WORLD_KEY].key));
-	sk_X509_EXTENSION_push(sk, non_trusted_key_ext);
-	if (!cert_new(&certs[TRUSTED_KEY_CERT], VAL_DAYS, 0, sk)) {
-		ERROR("Cannot create %s\n", certs[TRUSTED_KEY_CERT].cn);
-		exit(1);
-	}
-	sk_X509_EXTENSION_free(sk);
-
-	/* *********************************************************************
-	 * BL30 Key certificate (Trusted SCP Firmware Key certificate):
-	 *     - Self-signed with Trusted World key
-	 *     - Extensions:
-	 *         - TrustedFirmwareNVCounter (TODO)
-	 *         - SCPFirmwareContentCertPK
-	 **********************************************************************/
-	if (bl30_present) {
-		CHECK_NULL(sk, sk_X509_EXTENSION_new_null());
-		CHECK_NULL(nvctr_ext, ext_new_nvcounter(tz_nvctr_nid, EXT_CRIT,
-				tf_nvcounter));
-		sk_X509_EXTENSION_push(sk, nvctr_ext);
-		CHECK_OID(pk_nid, BL30_CONTENT_CERT_PK_OID);
-		CHECK_NULL(trusted_key_ext, ext_new_key(pk_nid, EXT_CRIT,
-				keys[BL30_KEY].key));
-		sk_X509_EXTENSION_push(sk, trusted_key_ext);
-		if (!cert_new(&certs[BL30_KEY_CERT], VAL_DAYS, 0, sk)) {
-			ERROR("Cannot create %s\n", certs[BL30_KEY_CERT].cn);
-			exit(1);
-		}
-		sk_X509_EXTENSION_free(sk);
-	}
-
-	/* *********************************************************************
-	 * BL30 certificate (SCP Firmware Content certificate):
-	 *     - Signed with Trusted World Key
-	 *     - Extensions:
-	 *         - TrustedFirmwareNVCounter (TODO)
-	 *         - SCPFirmwareHash
-	 **********************************************************************/
-	if (bl30_present) {
-		CHECK_NULL(sk, sk_X509_EXTENSION_new_null());
-		CHECK_NULL(nvctr_ext, ext_new_nvcounter(tz_nvctr_nid, EXT_CRIT,
-				tf_nvcounter));
-		sk_X509_EXTENSION_push(sk, nvctr_ext);
-
-		if (!sha_file(certs[BL30_CERT].bin, md)) {
-			ERROR("Cannot calculate the hash of %s\n",
-					certs[BL30_CERT].bin);
-			exit(1);
-		}
-		CHECK_OID(hash_nid, BL30_HASH_OID);
-		CHECK_NULL(hash_ext, ext_new_hash(hash_nid, EXT_CRIT, md,
-				SHA256_DIGEST_LENGTH));
-		sk_X509_EXTENSION_push(sk, hash_ext);
-
-		if (!cert_new(&certs[BL30_CERT], VAL_DAYS, 0, sk)) {
-			ERROR("Cannot create %s\n", certs[BL30_CERT].cn);
+		/* Create certificate. Signed with ROT key */
+		if (!cert_new(cert, VAL_DAYS, 0, sk)) {
+			ERROR("Cannot create %s\n", cert->cn);
 			exit(1);
 		}
 
 		sk_X509_EXTENSION_free(sk);
 	}
 
-	/* *********************************************************************
-	 * BL31 Key certificate (Trusted SoC Firmware Key certificate):
-	 *     - Self-signed with Trusted World key
-	 *     - Extensions:
-	 *         - TrustedFirmwareNVCounter (TODO)
-	 *         - SoCFirmwareContentCertPK
-	 **********************************************************************/
-	CHECK_NULL(sk, sk_X509_EXTENSION_new_null());
-	CHECK_NULL(nvctr_ext, ext_new_nvcounter(tz_nvctr_nid, EXT_CRIT,
-			tf_nvcounter));
-	sk_X509_EXTENSION_push(sk, nvctr_ext);
-	CHECK_OID(pk_nid, BL31_CONTENT_CERT_PK_OID);
-	CHECK_NULL(trusted_key_ext, ext_new_key(pk_nid, EXT_CRIT,
-			keys[BL31_KEY].key));
-	sk_X509_EXTENSION_push(sk, trusted_key_ext);
-	if (!cert_new(&certs[BL31_KEY_CERT], VAL_DAYS, 0, sk)) {
-		ERROR("Cannot create %s\n", certs[BL31_KEY_CERT].cn);
-		exit(1);
-	}
-	sk_X509_EXTENSION_free(sk);
-
-	/* *********************************************************************
-	 * BL31 certificate (SOC Firmware Content certificate):
-	 *     - Signed with Trusted World Key
-	 *     - Extensions:
-	 *         - TrustedFirmwareNVCounter (TODO)
-	 *         - BL31 hash
-	 **********************************************************************/
-	CHECK_NULL(sk, sk_X509_EXTENSION_new_null());
-	CHECK_NULL(nvctr_ext, ext_new_nvcounter(tz_nvctr_nid, EXT_CRIT,
-			tf_nvcounter));
-	sk_X509_EXTENSION_push(sk, nvctr_ext);
-
-	if (!sha_file(certs[BL31_CERT].bin, md)) {
-		ERROR("Cannot calculate the hash of %s\n", certs[BL31_CERT].bin);
-		exit(1);
-	}
-	CHECK_OID(hash_nid, BL31_HASH_OID);
-	CHECK_NULL(hash_ext, ext_new_hash(hash_nid, EXT_CRIT, md,
-			SHA256_DIGEST_LENGTH));
-	sk_X509_EXTENSION_push(sk, hash_ext);
-
-	if (!cert_new(&certs[BL31_CERT], VAL_DAYS, 0, sk)) {
-		ERROR("Cannot create %s\n", certs[BL31_CERT].cn);
-		exit(1);
-	}
-
-	sk_X509_EXTENSION_free(sk);
-
-	/* *********************************************************************
-	 * BL32 Key certificate (Trusted OS Firmware Key certificate):
-	 *     - Self-signed with Trusted World key
-	 *     - Extensions:
-	 *         - TrustedFirmwareNVCounter (TODO)
-	 *         - TrustedOSFirmwareContentCertPK
-	 **********************************************************************/
-	if (bl32_present) {
-		CHECK_NULL(sk, sk_X509_EXTENSION_new_null());
-		CHECK_NULL(nvctr_ext, ext_new_nvcounter(tz_nvctr_nid, EXT_CRIT,
-				tf_nvcounter));
-		sk_X509_EXTENSION_push(sk, nvctr_ext);
-		CHECK_OID(pk_nid, BL32_CONTENT_CERT_PK_OID);
-		CHECK_NULL(trusted_key_ext, ext_new_key(pk_nid, EXT_CRIT,
-				keys[BL32_KEY].key));
-		sk_X509_EXTENSION_push(sk, trusted_key_ext);
-		if (!cert_new(&certs[BL32_KEY_CERT], VAL_DAYS, 0, sk)) {
-			ERROR("Cannot create %s\n", certs[BL32_KEY_CERT].cn);
-			exit(1);
-		}
-		sk_X509_EXTENSION_free(sk);
-	}
-
-	/* *********************************************************************
-	 * BL32 certificate (TrustedOS Firmware Content certificate):
-	 *     - Signed with Trusted World Key
-	 *     - Extensions:
-	 *         - TrustedFirmwareNVCounter (TODO)
-	 *         - BL32 hash
-	 **********************************************************************/
-	if (bl32_present) {
-		CHECK_NULL(sk, sk_X509_EXTENSION_new_null());
-		CHECK_NULL(nvctr_ext, ext_new_nvcounter(tz_nvctr_nid, EXT_CRIT,
-				tf_nvcounter));
-		sk_X509_EXTENSION_push(sk, nvctr_ext);
-
-		if (!sha_file(certs[BL32_CERT].bin, md)) {
-			ERROR("Cannot calculate the hash of %s\n",
-					certs[BL32_CERT].bin);
-			exit(1);
-		}
-		CHECK_OID(hash_nid, BL32_HASH_OID);
-		CHECK_NULL(hash_ext, ext_new_hash(hash_nid, EXT_CRIT, md,
-				SHA256_DIGEST_LENGTH));
-		sk_X509_EXTENSION_push(sk, hash_ext);
-
-		if (!cert_new(&certs[BL32_CERT], VAL_DAYS, 0, sk)) {
-			ERROR("Cannot create %s\n", certs[BL32_CERT].cn);
-			exit(1);
-		}
-
-		sk_X509_EXTENSION_free(sk);
-	}
-
-	/* *********************************************************************
-	 * BL33 Key certificate (Non Trusted Firmware Key certificate):
-	 *     - Self-signed with Non Trusted World key
-	 *     - Extensions:
-	 *         - NonTrustedFirmwareNVCounter (TODO)
-	 *         - NonTrustedFirmwareContentCertPK
-	 **********************************************************************/
-	CHECK_NULL(sk, sk_X509_EXTENSION_new_null());
-	CHECK_NULL(nvctr_ext, ext_new_nvcounter(ntz_nvctr_nid, EXT_CRIT,
-			non_tf_nvcounter));
-	sk_X509_EXTENSION_push(sk, nvctr_ext);
-	CHECK_OID(pk_nid, BL33_CONTENT_CERT_PK_OID);
-	CHECK_NULL(non_trusted_key_ext, ext_new_key(pk_nid, EXT_CRIT,
-			keys[BL33_KEY].key));
-	sk_X509_EXTENSION_push(sk, non_trusted_key_ext);
-	if (!cert_new(&certs[BL33_KEY_CERT], VAL_DAYS, 0, sk)) {
-		ERROR("Cannot create %s\n", certs[BL33_KEY_CERT].cn);
-		exit(1);
-	}
-	sk_X509_EXTENSION_free(sk);
-
-	/* *********************************************************************
-	 * BL33 certificate (Non-Trusted World Content certificate):
-	 *     - Signed with Non-Trusted World Key
-	 *     - Extensions:
-	 *         - NonTrustedFirmwareNVCounter (TODO)
-	 *         - BL33 hash
-	 **********************************************************************/
-	CHECK_NULL(sk, sk_X509_EXTENSION_new_null());
-	CHECK_NULL(nvctr_ext, ext_new_nvcounter(ntz_nvctr_nid, EXT_CRIT,
-			non_tf_nvcounter));
-	sk_X509_EXTENSION_push(sk, nvctr_ext);
-
-	if (!sha_file(certs[BL33_CERT].bin, md)) {
-		ERROR("Cannot calculate the hash of %s\n", certs[BL33_CERT].bin);
-		exit(1);
-	}
-	CHECK_OID(hash_nid, BL33_HASH_OID);
-	CHECK_NULL(hash_ext, ext_new_hash(hash_nid, EXT_CRIT, md,
-			SHA256_DIGEST_LENGTH));
-	sk_X509_EXTENSION_push(sk, hash_ext);
-
-	if (!cert_new(&certs[BL33_CERT], VAL_DAYS, 0, sk)) {
-		ERROR("Cannot create %s\n", certs[BL33_CERT].cn);
-		exit(1);
-	}
-	sk_X509_EXTENSION_free(sk);
 
 	/* Print the certificates */
 	if (print_cert) {
-		for (i = 0 ; i < NUM_CERTIFICATES ; i++) {
+		for (i = 0 ; i < num_certs ; i++) {
 			if (!certs[i].x) {
 				continue;
 			}
@@ -684,7 +539,7 @@ int main(int argc, char *argv[])
 	}
 
 	/* Save created certificates to files */
-	for (i = 0 ; i < NUM_CERTIFICATES ; i++) {
+	for (i = 0 ; i < num_certs ; i++) {
 		if (certs[i].x && certs[i].fn) {
 			file = fopen(certs[i].fn, "w");
 			if (file != NULL) {
@@ -698,17 +553,12 @@ int main(int argc, char *argv[])
 
 	/* Save keys */
 	if (save_keys) {
-		for (i = 0 ; i < NUM_KEYS ; i++) {
+		for (i = 0 ; i < num_keys ; i++) {
 			if (!key_store(&keys[i])) {
 				ERROR("Cannot save %s\n", keys[i].desc);
 			}
 		}
 	}
-
-	X509_EXTENSION_free(hash_ext);
-	X509_EXTENSION_free(nvctr_ext);
-	X509_EXTENSION_free(trusted_key_ext);
-	X509_EXTENSION_free(non_trusted_key_ext);
 
 #ifndef OPENSSL_NO_ENGINE
 	ENGINE_cleanup();

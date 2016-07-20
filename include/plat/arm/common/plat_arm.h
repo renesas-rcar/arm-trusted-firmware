@@ -71,14 +71,11 @@ void arm_configure_mmu_el3(unsigned long total_base,
 );
 
 #if IMAGE_BL31
-#if USE_COHERENT_MEM
-
 /*
  * Use this macro to instantiate lock before it is used in below
  * arm_lock_xxx() macros
  */
-#define ARM_INSTANTIATE_LOCK	bakery_lock_t arm_lock	\
-	__attribute__ ((section("tzfw_coherent_mem")));
+#define ARM_INSTANTIATE_LOCK	DEFINE_BAKERY_LOCK(arm_lock);
 
 /*
  * These are wrapper macros to the Coherent Memory Bakery Lock API.
@@ -89,64 +86,44 @@ void arm_configure_mmu_el3(unsigned long total_base,
 
 #else
 
-/*******************************************************************************
- * Constants to specify how many bakery locks this platform implements. These
- * are used if the platform chooses not to use coherent memory for bakery lock
- * data structures.
- ******************************************************************************/
-#define ARM_MAX_BAKERIES	1
-#define ARM_PWRC_BAKERY_ID	0
-
-/* Empty definition */
-#define ARM_INSTANTIATE_LOCK
-
-/*******************************************************************************
- * Definition of structure which holds platform specific per-cpu data. Currently
- * it holds only the bakery lock information for each cpu.
- ******************************************************************************/
-typedef struct arm_cpu_data {
-	bakery_info_t pcpu_bakery_info[ARM_MAX_BAKERIES];
-} arm_cpu_data_t;
-
-/* Macro to define the offset of bakery_info_t in arm_cpu_data_t */
-#define ARM_CPU_DATA_LOCK_OFFSET	__builtin_offsetof\
-					    (arm_cpu_data_t, pcpu_bakery_info)
-
-
-/*******************************************************************************
- * Helper macros for bakery lock api when using the above arm_cpu_data_t for
- * bakery lock data structures. It assumes that the bakery_info is at the
- * beginning of the platform specific per-cpu data.
- ******************************************************************************/
-#define arm_lock_init()		/* No init required */
-#define arm_lock_get()		bakery_lock_get(ARM_PWRC_BAKERY_ID,	\
-					CPU_DATA_PLAT_PCPU_OFFSET +	\
-					ARM_CPU_DATA_LOCK_OFFSET)
-#define arm_lock_release()	bakery_lock_release(ARM_PWRC_BAKERY_ID,	\
-					CPU_DATA_PLAT_PCPU_OFFSET +	\
-					ARM_CPU_DATA_LOCK_OFFSET)
-
 /*
- * Ensure that the size of the platform specific per-cpu data structure and
- * the size of the memory allocated in generic per-cpu data for the platform
- * are the same.
+ * Empty macros for all other BL stages other than BL3-1
  */
-CASSERT(PLAT_PCPU_DATA_SIZE == sizeof(arm_cpu_data_t),
-	arm_pcpu_data_size_mismatch);
-
-#endif /* USE_COHERENT_MEM */
-
-#else
-
-/*
-* Dummy macros for all other BL stages other than BL3-1
-*/
 #define ARM_INSTANTIATE_LOCK
 #define arm_lock_init()
 #define arm_lock_get()
 #define arm_lock_release()
 
 #endif /* IMAGE_BL31 */
+
+#if ARM_RECOM_STATE_ID_ENC
+/*
+ * Macros used to parse state information from State-ID if it is using the
+ * recommended encoding for State-ID.
+ */
+#define ARM_LOCAL_PSTATE_WIDTH		4
+#define ARM_LOCAL_PSTATE_MASK		((1 << ARM_LOCAL_PSTATE_WIDTH) - 1)
+
+/* Macros to construct the composite power state */
+
+/* Make composite power state parameter till power level 0 */
+#if PSCI_EXTENDED_STATE_ID
+
+#define arm_make_pwrstate_lvl0(lvl0_state, pwr_lvl, type) \
+		(((lvl0_state) << PSTATE_ID_SHIFT) | ((type) << PSTATE_TYPE_SHIFT))
+#else
+#define arm_make_pwrstate_lvl0(lvl0_state, pwr_lvl, type) \
+		(((lvl0_state) << PSTATE_ID_SHIFT) | \
+		((pwr_lvl) << PSTATE_PWR_LVL_SHIFT) | \
+		((type) << PSTATE_TYPE_SHIFT))
+#endif /* __PSCI_EXTENDED_STATE_ID__ */
+
+/* Make composite power state parameter till power level 1 */
+#define arm_make_pwrstate_lvl1(lvl1_state, lvl0_state, pwr_lvl, type) \
+		(((lvl1_state) << ARM_LOCAL_PSTATE_WIDTH) | \
+		arm_make_pwrstate_lvl0(lvl0_state, pwr_lvl, type))
+
+#endif /* __ARM_RECOM_STATE_ID_ENC__ */
 
 
 /* CCI utility functions */
@@ -159,8 +136,12 @@ void arm_io_setup(void);
 void arm_tzc_setup(void);
 
 /* PM utility functions */
-int32_t arm_do_affinst_actions(unsigned int afflvl, unsigned int state);
-int arm_validate_power_state(unsigned int power_state);
+int arm_validate_power_state(unsigned int power_state,
+			    psci_power_state_t *req_state);
+int arm_validate_ns_entrypoint(uintptr_t entrypoint);
+
+/* Topology utility function */
+int arm_check_mpidr(u_register_t mpidr);
 
 /* BL1 utility functions */
 void arm_bl1_early_platform_setup(void);
@@ -196,9 +177,10 @@ void plat_arm_pwrc_setup(void);
  */
 void plat_arm_io_setup(void);
 int plat_arm_get_alt_image_source(
-	const uintptr_t image_spec,
-	uintptr_t *dev_handle);
-void plat_arm_topology_setup(void);
+	unsigned int image_id,
+	uintptr_t *dev_handle,
+	uintptr_t *image_spec);
+unsigned int plat_arm_calc_core_pos(u_register_t mpidr);
 
 
 #endif /* __PLAT_ARM_H__ */

@@ -63,16 +63,6 @@
 	assert(entry < BAKERY_LOCK_MAX_CPUS);		\
 } while (0)
 
-/* Initialize Bakery Lock to reset all ticket values */
-void bakery_lock_init(bakery_lock_t *bakery)
-{
-	assert(bakery);
-
-	/* All ticket values need to be 0 */
-	memset(bakery, 0, sizeof(*bakery));
-}
-
-
 /* Obtain a ticket for a given CPU */
 static unsigned int bakery_get_ticket(bakery_lock_t *bakery, unsigned int me)
 {
@@ -128,7 +118,7 @@ void bakery_lock_get(bakery_lock_t *bakery)
 	unsigned int my_ticket, my_prio, their_ticket;
 	unsigned int their_bakery_data;
 
-	me = platform_get_core_pos(read_mpidr_el1());
+	me = plat_my_core_pos();
 
 	assert_bakery_entry_valid(me, bakery);
 
@@ -174,7 +164,7 @@ void bakery_lock_get(bakery_lock_t *bakery)
 /* Release the lock and signal contenders */
 void bakery_lock_release(bakery_lock_t *bakery)
 {
-	unsigned int me = platform_get_core_pos(read_mpidr_el1());
+	unsigned int me = plat_my_core_pos();
 
 	assert_bakery_entry_valid(me, bakery);
 	assert(bakery_ticket_number(bakery->lock_data[me]));

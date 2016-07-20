@@ -28,13 +28,10 @@
 # POSSIBILITY OF SUCH DAMAGE.
 #
 
-
-PLAT_INCLUDES		:=	-Iinclude/plat/arm/board/common			\
-				-Iplat/arm/board/fvp/include
+PLAT_INCLUDES		:=	-Iplat/arm/board/fvp/include
 
 
-PLAT_BL_COMMON_SOURCES	:=	drivers/arm/pl011/pl011_console.S		\
-				plat/arm/board/fvp/aarch64/fvp_common.c
+PLAT_BL_COMMON_SOURCES	:=	plat/arm/board/fvp/aarch64/fvp_common.c
 
 BL1_SOURCES		+=	drivers/io/io_semihosting.c			\
 				lib/cpus/aarch64/aem_generic.S			\
@@ -46,7 +43,9 @@ BL1_SOURCES		+=	drivers/io/io_semihosting.c			\
 				plat/arm/board/fvp/fvp_bl1_setup.c		\
 				plat/arm/board/fvp/fvp_io_storage.c
 
-BL2_SOURCES		+=	drivers/io/io_semihosting.c			\
+BL2_SOURCES		+=	drivers/arm/sp804/sp804_delay_timer.c		\
+				drivers/io/io_semihosting.c			\
+				drivers/delay_timer/delay_timer.c		\
 				lib/semihosting/semihosting.c			\
 				lib/semihosting/aarch64/semihosting_call.S	\
 				plat/arm/board/fvp/fvp_bl2_setup.c		\
@@ -63,10 +62,8 @@ BL31_SOURCES		+=	lib/cpus/aarch64/aem_generic.S			\
 				plat/arm/board/fvp/aarch64/fvp_helpers.S	\
 				plat/arm/board/fvp/drivers/pwrc/fvp_pwrc.c
 
-ifneq (${TRUSTED_BOARD_BOOT},0)
-  BL1_SOURCES		+=	plat/arm/board/common/board_arm_trusted_boot.c
-  BL2_SOURCES		+=	plat/arm/board/common/board_arm_trusted_boot.c
-endif
+# Disable the PSCI platform compatibility layer
+ENABLE_PLAT_COMPAT	:= 	0
 
-
+include plat/arm/board/common/board_common.mk
 include plat/arm/common/arm_common.mk
