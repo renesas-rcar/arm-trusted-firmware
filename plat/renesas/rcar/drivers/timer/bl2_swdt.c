@@ -35,7 +35,7 @@
 #include <gic_v2.h>
 #include <debug.h>
 #include "bl2_swdt.h"
-#include "../../rcar_def.h"
+#include "rcar_def.h"
 
 #define RST_BASE		(0xE6160000U)
 #define RST_WDTRSTCR		(RST_BASE + 0x0054U)
@@ -173,8 +173,8 @@ void bl2_swdt_release(void)
 				+ (ARM_IRQ_SEC_WDT & (uint32_t)(~ITARGET_MASK)));
 	uint32_t i;
 
-        bl2_swdt_disable();
         disable_fiq();
+        bl2_swdt_disable();
         arm_gic_cpuif_deactivate();
 	for (i=0U; i<IGROUPR_NUM; i++) {
 		mmio_write_32((p_igroupr + (uint32_t)(i * 4U)), 0U);

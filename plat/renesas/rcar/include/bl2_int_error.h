@@ -34,8 +34,10 @@
 
 extern void bl2_swdt_release(void);
 
-void bl2_interrupt_error_id(uint32_t wrong_id);
+/* int_id : IAR.Interrupt ID */
+void bl2_interrupt_error_id(uint32_t int_id);
 
-void bl2_interrupt_error_type(uint32_t wrong_type);
+/* ex_type : vector index */
+void bl2_interrupt_error_type(uint32_t ex_type);
 
 #endif /* BL2_INT_ERROR_H__ */

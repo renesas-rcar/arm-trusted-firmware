@@ -35,33 +35,34 @@
 #define	DMACH	0	/* DMA CH setting (0/16/32) */
 
 #if (DMACH==0)		/* SYS-DMAC0 (CH0) */
-#define SYS_DMAC2_BIT	(0x00080000U)
+#define SYS_DMAC_BIT	(1U << 19U)
 #define DMA_BASE	(0xE6700000U)
 #elif (DMACH==16)	/* SYS-DMAC1 (CH16) */
-#define SYS_DMAC2_BIT	(0x00040000U)
+#define SYS_DMAC_BIT	(1U << 18U)
 #define DMA_BASE	(0xE7300000U)
 #elif (DMACH==32)	/* SYS-DMAC2 (CH32) */
-#define SYS_DMAC2_BIT	(0x00020000U)
+#define SYS_DMAC_BIT	(1U << 17U)
 #define DMA_BASE	(0xE7320000U)
 #else
-#define SYS_DMAC2_BIT	(0x00080000U)
+#define SYS_DMAC_BIT	(1U << 19U)
 #define DMA_BASE	(0xE6700000U)
 #endif
 
-/* DMA operation 0 */
-#define DMA_DMAOR2	(DMA_BASE + 0x0060U)
+/* DMA operation */
+#define DMA_DMAOR	(DMA_BASE + 0x0060U)
 /* DMA secure control */
-#define	DMA_DMASEC2	(DMA_BASE + 0x0030U)
+#define	DMA_DMASEC	(DMA_BASE + 0x0030U)
 /* DMA channel clear */
-#define DMA_DMACHCLR2	(DMA_BASE + 0x0080U)
+#define DMA_DMACHCLR	(DMA_BASE + 0x0080U)
 /* DMA source address */
-#define DMA_DMASAR32	(DMA_BASE + 0x8000U)
+#define DMA_DMASAR	(DMA_BASE + 0x8000U)
 /* DMA destination address */
-#define DMA_DMADAR32	(DMA_BASE + 0x8004U)
+#define DMA_DMADAR	(DMA_BASE + 0x8004U)
 /* DMA transfer count */
-#define DMA_DMATCR32	(DMA_BASE + 0x8008U)
+#define DMA_DMATCR	(DMA_BASE + 0x8008U)
 /* DMA channel control */
-#define DMA_DMACHCR32	(DMA_BASE + 0x800CU)
+#define DMA_DMACHCR	(DMA_BASE + 0x800CU)
+/* DMA fixed destination address */
+#define DMA_DMAFIXDAR	(DMA_BASE + 0x8014U)
 
 #endif	/* BL2_DMA_REGISTER_H__ */
-

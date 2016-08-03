@@ -33,6 +33,7 @@
 #include "bl2_axi_register.h"
 #include "bl2_secure_setting.h"
 #include "mmio.h"
+#include "micro_wait.h"
 
 static void lifec_security_setting(void);
 static void axi_security_setting(void);
@@ -63,7 +64,11 @@ static const struct {
 	/*        0: registers can be accessed from secure resource only. */
 	/* Bit 9: DBSC4 register access slave ports. */
 	/*        0: registers can be accessed from secure resource only. */
+#if (LIFEC_DBSC_PROTECT_ENABLE == 1)
 	{SEC_SEL3,		0xFFF7FDFFU},
+#else
+	{SEC_SEL3,		0xFFFFFFFFU},
+#endif
 
 	/** Security attribute setting for slave ports 4 */
 	/*	{SEC_SEL4,		0xFFFFFFFFU},*/
@@ -162,8 +167,13 @@ static const struct {
 	/*        SecurityGroup3 */
 	/* Bit 9: DBSC4 register access slave ports. */
 	/*        SecurityGroup3 */
+#if (LIFEC_DBSC_PROTECT_ENABLE == 1)
 	{SEC_GRP0COND3,		0x00080200U},
 	{SEC_GRP1COND3,		0x00080200U},
+#else
+	{SEC_GRP0COND3,		0x00000000U},
+	{SEC_GRP1COND3,		0x00000000U},
+#endif
 
 	/** Security group 0 attribute setting for slave ports 4 */
 	/** Security group 1 attribute setting for slave ports 4 */
@@ -409,6 +419,8 @@ void bl2_secure_setting(void)
 	lifec_security_setting();
 
 	axi_security_setting();
+
+	micro_wait(10U);		/* 10us wait */
 
 	return;
 }

@@ -36,7 +36,7 @@
 #ifndef __ASSEMBLY__
 #include <stdlib.h>
 #endif
-#include "../rcar_def.h"
+#include "rcar_def.h"
 
 
 /*******************************************************************************
@@ -73,29 +73,33 @@
 
 #define FIRMWARE_WELCOME_STR		"Booting Trusted Firmware\n"
 
-#define BL332_IMAGE_ID			(BL33_CERT_ID + 1U)
-#define BL333_IMAGE_ID			(BL33_CERT_ID + 2U)
-#define BL334_IMAGE_ID			(BL33_CERT_ID + 3U)
-#define BL335_IMAGE_ID			(BL33_CERT_ID + 4U)
-#define BL336_IMAGE_ID			(BL33_CERT_ID + 5U)
-#define BL337_IMAGE_ID			(BL33_CERT_ID + 6U)
-#define BL338_IMAGE_ID			(BL33_CERT_ID + 7U)
+#define BL332_IMAGE_ID			(BL33_CERT_ID + 1)
+#define BL333_IMAGE_ID			(BL33_CERT_ID + 2)
+#define BL334_IMAGE_ID			(BL33_CERT_ID + 3)
+#define BL335_IMAGE_ID			(BL33_CERT_ID + 4)
+#define BL336_IMAGE_ID			(BL33_CERT_ID + 5)
+#define BL337_IMAGE_ID			(BL33_CERT_ID + 6)
+#define BL338_IMAGE_ID			(BL33_CERT_ID + 7)
 
-#define BL332_KEY_CERT_ID		(BL33_CERT_ID + 8U)
-#define BL333_KEY_CERT_ID		(BL33_CERT_ID + 9U)
-#define BL334_KEY_CERT_ID		(BL33_CERT_ID + 10U)
-#define BL335_KEY_CERT_ID		(BL33_CERT_ID + 11U)
-#define BL336_KEY_CERT_ID		(BL33_CERT_ID + 12U)
-#define BL337_KEY_CERT_ID		(BL33_CERT_ID + 13U)
-#define BL338_KEY_CERT_ID		(BL33_CERT_ID + 14U)
+#define BL332_KEY_CERT_ID		(BL33_CERT_ID + 8)
+#define BL333_KEY_CERT_ID		(BL33_CERT_ID + 9)
+#define BL334_KEY_CERT_ID		(BL33_CERT_ID + 10)
+#define BL335_KEY_CERT_ID		(BL33_CERT_ID + 11)
+#define BL336_KEY_CERT_ID		(BL33_CERT_ID + 12)
+#define BL337_KEY_CERT_ID		(BL33_CERT_ID + 13)
+#define BL338_KEY_CERT_ID		(BL33_CERT_ID + 14)
 
-#define BL332_CERT_ID			(BL33_CERT_ID + 15U)
-#define BL333_CERT_ID			(BL33_CERT_ID + 16U)
-#define BL334_CERT_ID			(BL33_CERT_ID + 17U)
-#define BL335_CERT_ID			(BL33_CERT_ID + 18U)
-#define BL336_CERT_ID			(BL33_CERT_ID + 19U)
-#define BL337_CERT_ID			(BL33_CERT_ID + 20U)
-#define BL338_CERT_ID			(BL33_CERT_ID + 21U)
+#define BL332_CERT_ID			(BL33_CERT_ID + 15)
+#define BL333_CERT_ID			(BL33_CERT_ID + 16)
+#define BL334_CERT_ID			(BL33_CERT_ID + 17)
+#define BL335_CERT_ID			(BL33_CERT_ID + 18)
+#define BL336_CERT_ID			(BL33_CERT_ID + 19)
+#define BL337_CERT_ID			(BL33_CERT_ID + 20)
+#define BL338_CERT_ID			(BL33_CERT_ID + 21)
+
+/* io drivers id */
+#define FLASH_DEV_ID			(0U)
+#define EMMC_DEV_ID			(1U)
 
 /*
  * R-Car H3 Cortex-A57
@@ -111,8 +115,8 @@
 						PLATFORM_CLUSTER0_CORE_COUNT)
 #define PLATFORM_MAX_CPUS_PER_CLUSTER	4
 #define PLATFORM_NUM_AFFS		(PLATFORM_CLUSTER_COUNT + \
-					 PLATFORM_CORE_COUNT)
-#define PLATFORM_MAX_AFFLVL		MPIDR_AFFLVL1
+					 PLATFORM_CORE_COUNT + 1)
+#define PLATFORM_MAX_AFFLVL		MPIDR_AFFLVL2
 #define MAX_IO_DEVICES			3
 #define MAX_IO_HANDLES			4
 
@@ -163,6 +167,10 @@
 #define	RCAR_BL31_SDRAM_BTM		(RCAR_BL31_LOG_BASE + 0x14000)
 #define	RCAR_BL31_LOG_SIZE		(RCAR_BL31_SDRAM_BTM \
 					- RCAR_BL31_LOG_BASE)
+
+#define BL31_SRAM_BASE			(DEVICE_SRAM_BASE)
+#define BL31_SRAM_LIMIT			(DEVICE_SRAM_BASE + DEVICE_SRAM_SIZE)
+#define BL31_SRAM_CODE_MAX		(0x1000)
 
 /*******************************************************************************
  * BL32 specific defines.

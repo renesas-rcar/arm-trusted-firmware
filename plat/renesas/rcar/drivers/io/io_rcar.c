@@ -43,7 +43,7 @@
 #include <string.h>
 #include <uuid.h>
 #include "io_rcar.h"
-
+#include "io_common.h"
 
 typedef struct {
 	const int32_t	name;
@@ -58,17 +58,21 @@ typedef struct {
 	 */
 	uint32_t	file_pos;
 	uint32_t	is_noload;
-	uint32_t	offset_address;
+	uintptr_t	offset_address;
 	uint32_t	size;
-	uint32_t	dest_address;
+	uintptr_t	dest_address;
+	uintptr_t	partition;	/* for eMMC */
+					/* RCAR_EMMC_PARTITION_BOOT_0 */
+					/* RCAR_EMMC_PARTITION_BOOT_1 */
+					/* RCAR_EMMC_PARTITION_USER   */
 } file_state_t;
 
-#define RCAR_GET_FLASH_ADR(a,b)		(uint32_t)((0x40000U*(a)) + (b))
+#define RCAR_GET_FLASH_ADR(a,b)		((uint32_t)((0x40000U*(a)) + (b)))
 #define RCAR_ATTR_SET_CALCADDR(a)	((a) & 0xF)			/* lower 4bit use */
 #define RCAR_ATTR_SET_ISNOLOAD(a)	(((a) & 0x1) << 16U)		/* 16bit use */
 #define RCAR_ATTR_SET_CERTOFF(a)	(((a) & 0xF) << 8U)		/* 11-8bit use */
-#define RCAR_ATTR_SET_ALL(a,b,c)	(uint32_t)(RCAR_ATTR_SET_CALCADDR(a) |\
-					RCAR_ATTR_SET_ISNOLOAD(b) | RCAR_ATTR_SET_CERTOFF(c))
+#define RCAR_ATTR_SET_ALL(a,b,c)	((uint32_t)(RCAR_ATTR_SET_CALCADDR(a) |\
+					RCAR_ATTR_SET_ISNOLOAD(b) | RCAR_ATTR_SET_CERTOFF(c)))
 
 #define RCAR_ATTR_GET_CALCADDR(a)	((a) & 0xFU)			/* lower 4bit use */
 #define RCAR_ATTR_GET_ISNOLOAD(a)	(((a) >> 16) & 0x1U)		/* 16bit use */
@@ -77,24 +81,26 @@ typedef struct {
 #define RCAR_MAX_BL3X_IMAGE		(8U)
 #define RCAR_SECTOR6_CERT_OFFSET	(0x400U)
 #define RCAR_SDRAM_CERT_ADDRESS		(0x43F00000U)
-#define RCAR_CERT_SIZE			(0x400U)
+#define RCAR_CERT_SIZE			(0x800U)	/* cert field size*/
 #define RCAR_CERT_INFO_SIZE_OFFSET	(0x264U)	/* byte address set : must 4byte alignment */
 #define RCAR_CERT_INFO_DST_OFFSET	(0x154U)	/* byte address set : must 4byte alignment */
-
 #define RCAR_CERT_LOAD			(1U)
 
+#define RCAR_FLASH_CERT_HEADER	RCAR_GET_FLASH_ADR(6U, 0U)
+#define RCAR_EMMC_CERT_HEADER	(0x00030000U)
+
 static const plat_rcar_name_offset_t name_offset[] = {		/* calc addr, no load, cert offset */
-	{BL31_IMAGE_ID,		RCAR_GET_FLASH_ADR(7U,0x000U),	RCAR_ATTR_SET_ALL(0,0,0)},
+	{BL31_IMAGE_ID,		0U,				RCAR_ATTR_SET_ALL(0,0,0)},
 	/* BL3-2 is optional in the platform */
-	{BL32_IMAGE_ID,		RCAR_GET_FLASH_ADR(8U,0x000U),	RCAR_ATTR_SET_ALL(0,0,1)},
-	{BL33_IMAGE_ID,		0U,				RCAR_ATTR_SET_ALL(1,0,2)},
-	{BL332_IMAGE_ID,	0U,				RCAR_ATTR_SET_ALL(2,0,3)},
-	{BL333_IMAGE_ID,	0U,				RCAR_ATTR_SET_ALL(3,0,4)},
-	{BL334_IMAGE_ID,	0U,				RCAR_ATTR_SET_ALL(4,0,5)},
-	{BL335_IMAGE_ID,	0U,				RCAR_ATTR_SET_ALL(5,0,6)},
-	{BL336_IMAGE_ID,	0U,				RCAR_ATTR_SET_ALL(6,0,7)},
-	{BL337_IMAGE_ID,	0U,				RCAR_ATTR_SET_ALL(7,0,8)},
-	{BL338_IMAGE_ID,	0U,				RCAR_ATTR_SET_ALL(8,0,9)},
+	{BL32_IMAGE_ID,		0U,				RCAR_ATTR_SET_ALL(1,0,1)},
+	{BL33_IMAGE_ID,		0U,				RCAR_ATTR_SET_ALL(2,0,2)},
+	{BL332_IMAGE_ID,	0U,				RCAR_ATTR_SET_ALL(3,0,3)},
+	{BL333_IMAGE_ID,	0U,				RCAR_ATTR_SET_ALL(4,0,4)},
+	{BL334_IMAGE_ID,	0U,				RCAR_ATTR_SET_ALL(5,0,5)},
+	{BL335_IMAGE_ID,	0U,				RCAR_ATTR_SET_ALL(6,0,6)},
+	{BL336_IMAGE_ID,	0U,				RCAR_ATTR_SET_ALL(7,0,7)},
+	{BL337_IMAGE_ID,	0U,				RCAR_ATTR_SET_ALL(8,0,8)},
+	{BL338_IMAGE_ID,	0U,				RCAR_ATTR_SET_ALL(9,0,9)},
 };
 #if TRUSTED_BOARD_BOOT
 static const plat_rcar_name_offset_t cert_offset[] = {
@@ -120,7 +126,10 @@ static const plat_rcar_name_offset_t cert_offset[] = {
 static file_state_t current_file = {0};
 static uintptr_t backend_dev_handle;
 static uintptr_t backend_image_spec;
-static uint32_t rcar_image_header[RCAR_MAX_BL3X_IMAGE + 1U] = {0U};
+static uint64_t rcar_image_header_tmp[64] = {0U};
+static uint64_t rcar_image_header[RCAR_MAX_BL3X_IMAGE + 2U] = {0U};
+static uint64_t rcar_image_header_prttn[RCAR_MAX_BL3X_IMAGE + 2U] = {0U};
+static uint64_t rcar_image_number = {0U};
 static uint32_t	rcar_cert_load = {0U};
 
 
@@ -135,8 +144,9 @@ static int32_t rcar_file_read(io_entity_t *entity, uintptr_t buffer, size_t leng
 static int32_t rcar_file_close(io_entity_t *entity);
 static int32_t rcar_dev_init(io_dev_info_t *dev_info, const uintptr_t init_params);
 static int32_t rcar_dev_close(io_dev_info_t *dev_info);
-static int32_t file_to_offset(const int32_t file, uint32_t *offset, uint32_t *cert_addr, uint32_t *is_noload);
-static int32_t load_bl33x(uintptr_t handle);
+static int32_t file_to_offset(const int32_t file, uintptr_t *offset,
+	uint32_t *cert_addr, uint32_t *is_noload, uintptr_t *partition);
+static int32_t load_bl33x(void);
 
 
 /* Identify the device type as a virtual driver */
@@ -198,7 +208,8 @@ int32_t file_to_cert(const int32_t filename, uint32_t *cert_addr)
 	return status;
 }
 
-static int32_t file_to_offset(const int32_t file, uint32_t *offset, uint32_t *cert_addr, uint32_t *is_noload)
+static int32_t file_to_offset(const int32_t file, uintptr_t *offset,
+	uint32_t *cert_addr, uint32_t *is_noload, uintptr_t *partition)
 {
 	int32_t i;
 	int32_t status = -EINVAL;
@@ -207,22 +218,19 @@ static int32_t file_to_offset(const int32_t file, uint32_t *offset, uint32_t *ce
 	assert(offset != NULL);
 	assert(cert_addr != NULL);
 	assert(is_noload != NULL);
+	assert(partition != NULL);
 
 	for (i = 0; i < (int32_t)ARRAY_SIZE(name_offset); i++) {
 		if (file == name_offset[i].name) {
 			is_calc_addr = RCAR_ATTR_GET_CALCADDR(name_offset[i].attr);
-			if (rcar_image_header[0] >= is_calc_addr)
+			if ((rcar_image_number + 2U) >= is_calc_addr)
 			{
-				if (0U != is_calc_addr)
-				{
-					*offset = rcar_image_header[is_calc_addr];
-				} else {
-					*offset = name_offset[i].offset;
-				}
+				*offset = rcar_image_header[is_calc_addr];
 				*cert_addr = RCAR_CERT_SIZE;
 				*cert_addr *= RCAR_ATTR_GET_CERTOFF(name_offset[i].attr);
 				*cert_addr += RCAR_SDRAM_CERT_ADDRESS;
 				*is_noload = RCAR_ATTR_GET_ISNOLOAD(name_offset[i].attr);
+				*partition = rcar_image_header_prttn[is_calc_addr];
 				status = IO_SUCCESS;
 				break;
 			}
@@ -235,6 +243,7 @@ static int32_t file_to_offset(const int32_t file, uint32_t *offset, uint32_t *ce
 				*offset = 0U;
 				*cert_addr = 0U;
 				*is_noload = RCAR_ATTR_GET_ISNOLOAD(cert_offset[i].attr);
+				*partition = 0U;
 				status = IO_SUCCESS;
 				break;
 			}
@@ -243,27 +252,33 @@ static int32_t file_to_offset(const int32_t file, uint32_t *offset, uint32_t *ce
 	return status;
 }
 
-void get_info_from_cert(uint64_t cert_addr, uint32_t *size, uint32_t *dest_addr)
+void get_info_from_cert(uint64_t cert_addr, uint32_t *size, uintptr_t *dest_addr)
 {
 	assert(size != NULL);
 	assert(dest_addr != NULL);
-	
+
 	cert_addr &= 0xFFFFFFFFU;		/* need? */
 
 	*size = *((uint32_t *)(cert_addr + RCAR_CERT_INFO_SIZE_OFFSET)) * 4U;
-	*dest_addr = *((uint32_t *)(cert_addr + RCAR_CERT_INFO_DST_OFFSET));
+	*dest_addr = ((uintptr_t)
+		*((uint32_t *)(cert_addr + RCAR_CERT_INFO_DST_OFFSET + 4)))
+		<< 32;
+	*dest_addr += ((uintptr_t)
+		*((uint32_t *)(cert_addr + RCAR_CERT_INFO_DST_OFFSET)));
 }
 
-static int32_t load_bl33x(uintptr_t handle)
+static int32_t load_bl33x(void)
 {
 	int32_t result = IO_SUCCESS;
 	uint32_t loop = 1U;	/* start is BL332 */
-	uint32_t file_offset;
+	uintptr_t file_offset;
 	uint32_t noload;
 	uint32_t cert_addr;
 	uint32_t l_image_size;
-	uint32_t dest_addr;
+	uintptr_t dest_addr;
+	uintptr_t emmc_prttn;
 	size_t bytes_read;
+	uintptr_t backend_handle;
 	const int32_t load_names[] = {
 		BL33_IMAGE_ID,
 		BL332_IMAGE_ID,
@@ -275,14 +290,14 @@ static int32_t load_bl33x(uintptr_t handle)
 		BL338_IMAGE_ID
 	};
 
-	for (; loop < rcar_image_header[0]; loop++) {
+	for (; loop < rcar_image_number; loop++) {
 
 		if (IO_SUCCESS != result){
 			break;
 		}
 
 		result = file_to_offset(load_names[loop], &file_offset,
-			&cert_addr, &noload);
+			&cert_addr, &noload, &emmc_prttn);
 		if (IO_SUCCESS != result) {
 			WARN("load_bl33x: failed to get offset\n");
 			result = IO_FAIL;
@@ -291,7 +306,18 @@ static int32_t load_bl33x(uintptr_t handle)
 			get_info_from_cert((uint64_t) cert_addr, &l_image_size,
 				&dest_addr);
 
-				result = io_seek(handle, IO_SEEK_SET,
+			/* set eMMC partition */
+			((io_drv_spec_t *)backend_image_spec)->partition =
+				(uint32_t)emmc_prttn;	/* needs 32-bits only */
+
+			/* Open the backend, attempt to access the blob image */
+			result = io_open(backend_dev_handle, backend_image_spec,
+				&backend_handle);
+			if (result != IO_SUCCESS) {
+				WARN("Failed to open FIP (%i)\n", result);
+				result = IO_FAIL;
+			} else {
+				result = io_seek(backend_handle, IO_SEEK_SET,
 					(ssize_t) file_offset);
 				if (IO_SUCCESS != result) {
 					WARN("load_bl33x: failed to seek\n");
@@ -299,29 +325,35 @@ static int32_t load_bl33x(uintptr_t handle)
 				}
 			}
 
-		if (IO_SUCCESS == result) {
+			if (IO_SUCCESS == result) {
 
-			result = io_read(handle, (uintptr_t)dest_addr, (size_t)l_image_size,
-				(size_t *)&bytes_read);
-			if (IO_SUCCESS != result) {
-				WARN("load_bl33x: failed to read\n");
-				result = IO_FAIL;
-			}
-#if TRUSTED_BOARD_BOOT
-			else {
-				/* Authenticate it */
-				result = (int32_t)auth_mod_verify_img(
-					(unsigned int)load_names[loop],
-					(void *)((uintptr_t)dest_addr),
-					(unsigned int)l_image_size);
-				if (0 != result) {
-					memset((void *)((uintptr_t)dest_addr),
-						0x00,
-						(size_t)l_image_size);
+				result = io_read(backend_handle, 
+					dest_addr, 
+					(size_t)l_image_size,
+					(size_t *)&bytes_read);
+				if (IO_SUCCESS != result) {
+					WARN("load_bl33x: failed to read\n");
 					result = IO_FAIL;
 				}
-			}
+#if TRUSTED_BOARD_BOOT
+				else {
+					/* Authenticate it */
+					result = (int32_t)auth_mod_verify_img(
+						(unsigned int)load_names[loop],
+						(void *)dest_addr,
+						(unsigned int)l_image_size);
+					if (0 != result) {
+						(void)memset(
+						(void *)dest_addr,
+						0x00,
+						(size_t)l_image_size);
+						result = IO_FAIL;
+					}
+				}
 #endif /* TRUSTED_BOARD_BOOT */
+			}
+			/* Close the backend. */
+			(void) io_close(backend_handle);
 		}
 	}
 
@@ -332,14 +364,16 @@ static int32_t load_bl33x(uintptr_t handle)
 static int32_t rcar_dev_init(io_dev_info_t *dev_info, const uintptr_t init_params)
 {
 	int32_t result;
-	int32_t image_name = (int32_t)init_params;
+	uint32_t image_name = (uint32_t)init_params;
 	uintptr_t backend_handle;
 	size_t bytes_read;
+	ssize_t offset;
+	uint32_t loop;
 
 	/* Obtain a reference to the image by querying the platform layer */
 	/* get rcar flash memory address... (certain BL2, BL31, BL32, BL33... max 64MB:RPC LBSC address) */
 	/* sakata check image number */
-	result = plat_get_image_source(image_name, &backend_dev_handle,
+	result = plat_get_drv_source(image_name, &backend_dev_handle,
 				       &backend_image_spec);
 	if (result != IO_SUCCESS) {
 		WARN("Failed to obtain reference to image '%d' (%i)\n",
@@ -373,8 +407,15 @@ static int32_t rcar_dev_init(io_dev_info_t *dev_info, const uintptr_t init_param
 			/* [7] BL33-7 image address */
 			/* [8] BL33-8 image address */
 			if (IO_SUCCESS == result) {
-				result = io_seek(backend_handle, IO_SEEK_SET,
-					(ssize_t) RCAR_GET_FLASH_ADR(6U, 0U));
+				if ( image_name == EMMC_DEV_ID) {
+					offset =
+					(ssize_t)RCAR_EMMC_CERT_HEADER;
+				} else {
+					offset =
+					(ssize_t)RCAR_FLASH_CERT_HEADER;
+				}
+				result = io_seek(backend_handle,
+						IO_SEEK_SET, offset);
 				if (result != IO_SUCCESS) {
 					WARN("Firmware Image Package header "\
 						"failed to seek\n");
@@ -384,11 +425,26 @@ static int32_t rcar_dev_init(io_dev_info_t *dev_info, const uintptr_t init_param
 			}
 			if (IO_SUCCESS == result) {
 				result = io_read(backend_handle,
-					(uintptr_t) &rcar_image_header,
-					sizeof(rcar_image_header), &bytes_read);
+					(uintptr_t) &rcar_image_header_tmp,
+					sizeof(rcar_image_header_tmp),
+					&bytes_read);
 				if (result == IO_SUCCESS) {
-					if ((rcar_image_header[0] == 0U)
-						|| (rcar_image_header[0] > 8U)) {
+					/* 32 bits array to 64 bits array */
+					rcar_image_number =
+						rcar_image_header_tmp[0U];
+					for (loop = 0U; loop <
+						(rcar_image_number + 2U);
+								loop++) {
+						rcar_image_header[loop] = 
+						rcar_image_header_tmp
+							[loop * 2U + 1U];
+						rcar_image_header_prttn[loop] =
+						rcar_image_header_tmp
+							[loop * 2U + 2U];
+					}
+					result = IO_SUCCESS;
+					if ((rcar_image_number == 0U)
+						|| (rcar_image_number > 8U)) {
 						WARN("Firmware Image Package "\
 							"header check failed.\n");
 						result = IO_FAIL;
@@ -401,8 +457,9 @@ static int32_t rcar_dev_init(io_dev_info_t *dev_info, const uintptr_t init_param
 			/* load cert file */
 			if (IO_SUCCESS == result) {
 				result = io_seek(backend_handle, IO_SEEK_SET,
-					(ssize_t) (RCAR_GET_FLASH_ADR(6U, 0U)
-						+ RCAR_SECTOR6_CERT_OFFSET));
+						(offset
+						+ (ssize_t)
+						RCAR_SECTOR6_CERT_OFFSET));
 				if (result != IO_SUCCESS) {
 					WARN("Firmware Image Package "\
 						"header failed to seek\n");
@@ -412,9 +469,11 @@ static int32_t rcar_dev_init(io_dev_info_t *dev_info, const uintptr_t init_param
 			}
 			if (IO_SUCCESS == result) {
 				result = io_read(backend_handle,
-						(uintptr_t) RCAR_SDRAM_CERT_ADDRESS,
+						(uintptr_t)
+						RCAR_SDRAM_CERT_ADDRESS,
 						(size_t) (RCAR_CERT_SIZE *
-						 (2U + (size_t) rcar_image_header[0])),
+						(2U +
+						(size_t) rcar_image_number)),
 						&bytes_read);
 				if (result != IO_SUCCESS) {
 					WARN("cert file road error.\n");
@@ -449,12 +508,13 @@ static int32_t rcar_file_open(io_dev_info_t *dev_info, const uintptr_t spec,
 			 io_entity_t *entity)
 {
 	int32_t result;
-	uint32_t file_offset;
+	uintptr_t file_offset;
 	uint32_t noload;
 	uint32_t cert_addr;
 	uint32_t l_image_size;
-	uint32_t dest_addr;
-	const io_block_spec_t *file_spec = (io_block_spec_t *)spec;
+	uintptr_t dest_addr;
+	uintptr_t emmc_prttn;
+	const io_drv_spec_t *file_spec = (io_drv_spec_t *)spec;
 
 	assert(file_spec != NULL);
 	assert(entity != NULL);
@@ -472,7 +532,7 @@ static int32_t rcar_file_open(io_dev_info_t *dev_info, const uintptr_t spec,
 
 		/* get file offset(but BL33 image id not get) */
 		result = file_to_offset(file_spec->offset,
-			&file_offset, &cert_addr, &noload);
+			&file_offset, &cert_addr, &noload, &emmc_prttn);
 		if (result != IO_SUCCESS) {
 			WARN("Failed to open file name %ld (%i)\n",
 				file_spec->offset, result);
@@ -484,6 +544,7 @@ static int32_t rcar_file_open(io_dev_info_t *dev_info, const uintptr_t spec,
 				current_file.size = 1U;
 				current_file.file_pos = 0U;
 				current_file.is_noload = noload;
+				current_file.partition = 0U;
 				entity->info = (uintptr_t) &current_file;
 
 			} else {
@@ -497,6 +558,7 @@ static int32_t rcar_file_open(io_dev_info_t *dev_info, const uintptr_t spec,
 				current_file.size = l_image_size;
 				current_file.file_pos = 0U;
 				current_file.is_noload = noload;
+				current_file.partition = emmc_prttn;
 				entity->info = (uintptr_t) &current_file;
 			}
 		}
@@ -538,6 +600,11 @@ static int32_t rcar_file_read(io_entity_t *entity, uintptr_t buffer, size_t leng
 		result = IO_SUCCESS;
 		*length_read = length;
 	} else {
+		fp = (file_state_t *) entity->info;
+		/* set eMMC partition */
+		((io_drv_spec_t *)backend_image_spec)->partition =
+			(uint32_t)fp->partition;/* needs 32-bits only */
+			
 
 		/* Open the backend, attempt to access the blob image */
 		result = io_open(backend_dev_handle, backend_image_spec,
@@ -546,8 +613,6 @@ static int32_t rcar_file_read(io_entity_t *entity, uintptr_t buffer, size_t leng
 			WARN("Failed to open FIP (%i)\n", result);
 			result = IO_FAIL;
 		} else {
-
-			fp = (file_state_t *) entity->info;
 
 			/* Seek to the position in the FIP where the payload lives */
 			file_offset = (ssize_t) fp->offset_address
@@ -573,12 +638,12 @@ static int32_t rcar_file_read(io_entity_t *entity, uintptr_t buffer, size_t leng
 					fp->file_pos += (uint32_t) bytes_read;
 				}
 			}
-
-			if ((result == IO_SUCCESS) && (buffer == (uintptr_t)NS_IMAGE_OFFSET)) {
-				result = load_bl33x(backend_handle);
-			}
 			/* Close the backend. */
 			(void) io_close(backend_handle);
+
+			if ((result == IO_SUCCESS) && (buffer == (uintptr_t)NS_IMAGE_OFFSET)) {
+				result = load_bl33x();
+			}
 		}
 	}
 

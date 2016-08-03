@@ -33,7 +33,7 @@
 #include <mmio.h>
 #include "bl2_cpg_init.h"
 #include "pfc_init_m3.h"
-#include "../../rcar_def.h"
+#include "rcar_def.h"
 
 
 /* GPIO base address */

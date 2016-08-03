@@ -35,7 +35,7 @@
 #include <cortex_a57.h>
 #include <platform_def.h>
 #include <runtime_svc.h>
-#include "../rcar_def.h"
+#include "rcar_def.h"
 
 
 	.globl	platform_get_entrypoint
@@ -47,6 +47,7 @@
 	.globl	plat_crash_console_putc
 	.globl	plat_reset_handler
 	.globl	iciallu
+	.globl	bl31_secondly_reset
 
 	.extern	platform_set_stack
 	.extern	rcar_log_init
@@ -441,3 +442,24 @@ func iciallu
 
 	ret
 endfunc iciallu
+
+func bl31_secondly_reset
+	mrs	x0, sctlr_el3
+	bic	x0, x0, #SCTLR_EE_BIT
+	msr	sctlr_el3, x0
+	isb
+
+	mrs	x0, cptr_el3
+	bic	w0, w0, #TCPAC_BIT
+	bic	w0, w0, #TTA_BIT
+	bic	w0, w0, #TFP_BIT
+	msr	cptr_el3, x0
+
+	mov_imm	x0, PARAMS_BASE			/* pointer to bl31_ep_info */
+	mov_imm	x2, BL31_BASE
+	mov x1, #0x00000001			/* warm boot */
+	br	x2				/* jump to BL31 */
+	nop
+	nop
+	nop
+endfunc bl31_secondly_reset

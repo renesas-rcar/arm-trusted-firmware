@@ -36,8 +36,8 @@
 #include	<arch_helpers.h>
 #include	<platform_def.h>
 #include	<bakery_lock.h>
-#include	"../../rcar_def.h"
-#include	"../../rcar_private.h"
+#include	"rcar_def.h"
+#include	"rcar_private.h"
 #include	"rcar_printf.h"
 
 extern RCAR_INSTANTIATE_LOCK

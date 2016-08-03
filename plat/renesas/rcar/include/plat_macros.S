@@ -30,7 +30,7 @@
  */
 #include <cci.h>
 #include <gic_v2.h>
-#include "../rcar_def.h"
+#include "rcar_def.h"
 
 .section .rodata.gic_reg_name, "aS"
 gicc_regs:

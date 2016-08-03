@@ -226,4 +226,8 @@ void psci_do_pwrup_cache_maintenance(void);
 void __dead2 psci_system_off(void);
 void __dead2 psci_system_reset(void);
 
+#if PLAT_rcar
+extern void rcar_bl31_set_suspend_to_ram(void);
+#endif
+
 #endif /* __PSCI_PRIVATE_H__ */

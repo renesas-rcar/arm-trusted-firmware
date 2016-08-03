@@ -32,6 +32,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <mmio.h>
+#include "rcar_def.h"
 #include "bl2_cpg_register.h"
 #include "bl2_cpg_init.h"
 #include "bl2_dma_register.h"
@@ -42,7 +43,7 @@ static void regdump(void);
 
 static void enableDMA(void);
 static void setupDMA(void);
-static void startDMA(uint32_t dst, uint32_t src, uint32_t len);
+static void startDMA(uintptr_t dst, uint32_t src, uint32_t len);
 static void endDMA(void);
 #if DEBUG
 static void disableDMA(void);
@@ -62,16 +63,17 @@ static void regdump(void)
 		"%s(0x%x) : 0x%x\n"
 		"%s(0x%x) : 0x%x\n"
 		"%s(0x%x) : 0x%x\n",
-		"CPG_SMSTPCR2",CPG_SMSTPCR2,mmio_read_32(CPG_SMSTPCR2),
-		"CPG_SRCR2   ",CPG_SRCR2,mmio_read_32(CPG_SRCR2),
-		"CPG_MSTPSR2 ",CPG_MSTPSR2,mmio_read_32(CPG_MSTPSR2),
-		"DMAOR2      ",DMA_DMAOR2,mmio_read_16(DMA_DMAOR2),
-		"DMASEC2     ",DMA_DMASEC2,mmio_read_32(DMA_DMASEC2),
-		"DMACHCLR2   ",DMA_DMACHCLR2,mmio_read_32(DMA_DMACHCLR2),
-		"DMASAR32    ",DMA_DMASAR32,mmio_read_32(DMA_DMASAR32),
-		"DMADAR32    ",DMA_DMADAR32,mmio_read_32(DMA_DMADAR32),
-		"DMATCR32    ",DMA_DMATCR32,mmio_read_32(DMA_DMATCR32),
-		"DMACHCR32   ",DMA_DMACHCR32,mmio_read_32(DMA_DMACHCR32)
+		"SMSTPCR2  ",SMSTPCR2,mmio_read_32(CPG_SMSTPCR2),
+		"SRCR2     ",SRCR2,mmio_read_32(CPG_SRCR2),
+		"MSTPSR2   ",MSTPSR2,mmio_read_32(CPG_MSTPSR2),
+		"DMAOR     ",DMA_DMAOR,mmio_read_16(DMA_DMAOR),
+		"DMASEC    ",DMA_DMASEC,mmio_read_32(DMA_DMASEC),
+		"DMACHCLR  ",DMA_DMACHCLR,mmio_read_32(DMA_DMACHCLR),
+		"DMAFIXSAR ",DMA_DMAFIXSAR,mmio_read_32(DMA_DMAFIXSAR),
+		"DMASAR    ",DMA_DMASAR,mmio_read_32(DMA_DMASAR),
+		"DMADAR    ",DMA_DMADAR,mmio_read_32(DMA_DMADAR),
+		"DMATCR    ",DMA_DMATCR,mmio_read_32(DMA_DMATCR),
+		"DMACHCR   ",DMA_DMACHCR,mmio_read_32(DMA_DMACHCR)
 	);
 #endif
 }
@@ -79,56 +81,61 @@ static void regdump(void)
 static void enableDMA(void)
 {
 	/* Is the clock supply to the CPG disabled ? */
-	while((mmio_read_32(CPG_MSTPSR2) & SYS_DMAC2_BIT) != 0U) {
+	while((mmio_read_32(CPG_MSTPSR2) & SYS_DMAC_BIT) != 0U) {
 		/* Enables the clock supply to the CPG. */
 		cpg_write(CPG_SMSTPCR2,
-			mmio_read_32(CPG_SMSTPCR2) & (~SYS_DMAC2_BIT));
+			mmio_read_32(CPG_SMSTPCR2) & (~SYS_DMAC_BIT));
 	}
 }
 
 static void setupDMA(void)
 {
-	/* DMA operation 2 */
-	mmio_write_16(DMA_DMAOR2,0x0000U);
-	/* DMA channel clear 2 */
-	mmio_write_32(DMA_DMACHCLR2,0x0000FFFFU);
-	mmio_write_32(DMA_DMACHCLR2,0x00000000U);
+	/* DMA operation */
+	mmio_write_16(DMA_DMAOR,0x0000U);
+	/* DMA channel clear */
+	mmio_write_32(DMA_DMACHCLR,0x0000FFFFU);
+	mmio_write_32(DMA_DMACHCLR,0x00000000U);
 }
 
-static void startDMA(uint32_t dst, uint32_t src, uint32_t len)
+static void startDMA(uintptr_t dst, uint32_t src, uint32_t len)
 {
-	/* DMA operation 2 */
-	mmio_write_16(DMA_DMAOR2,0x0301U);
-	/* DMA destination address 32 */
-	mmio_write_32(DMA_DMADAR32,dst);
-	/* DMA source address 32 */
-	mmio_write_32(DMA_DMASAR32,src);
-	/* DMA 64bytes-unit transfer  count 32 */
-	mmio_write_32(DMA_DMATCR32,len >> 6);
-	/* DMA DMA Secure Control Register 32 to 47 */
-	mmio_write_32(DMA_DMASEC2,0x00000001U);
-	/* DMA channel control 32 */
-	mmio_write_32(DMA_DMACHCR32,0x00105409U);
+	/* DMA operation */
+	mmio_write_16(DMA_DMAOR,0x0301U);
+	/* DMA fixed destination address */
+	mmio_write_32(DMA_DMAFIXDAR,
+		(uint32_t)((dst >> 32ULL) & 0x000000FFULL));
+	/* DMA destination address */
+	mmio_write_32(DMA_DMADAR,
+		(uint32_t)(dst & 0x0FFFFFFFFULL));
+	/* DMA source address */
+	mmio_write_32(DMA_DMASAR,src);
+	/* DMA 64bytes-unit transfer count */
+	mmio_write_32(DMA_DMATCR,len >> 6);
+	/* DMA DMA Secure Control Register */
+	mmio_write_32(DMA_DMASEC,0x00000001U);
+	/* DMA channel control */
+	mmio_write_32(DMA_DMACHCR,0x00105409U);
 }
 
 static void endDMA(void)
 {
-	/* DMA channel control 32 */
-	while((mmio_read_32(DMA_DMACHCR32) & 0x00000002U) == 0x00000000U) {
-		/* DMA channel control 32 */
-		if ((mmio_read_32(DMA_DMACHCR32) & 0x80000000U) != 0U) {
+	/* DMA channel control */
+	while((mmio_read_32(DMA_DMACHCR) & 0x00000002U) == 0x00000000U) {
+		/* DMA channel control */
+		if ((mmio_read_32(DMA_DMACHCR) & 0x80000000U) != 0U) {
 			ERROR("BL2: DMA - Channel Address Error\n");
 			regdump();
+			panic();
 			break;
 		}
 	}
-	/* DMA DMA Secure Control Register 32 to 47 */
-	mmio_write_32(DMA_DMASEC2,0x00000000U);
-	/* DMA operation 2 */
-	mmio_write_16(DMA_DMAOR2,0x0000U);
-	/* DMA channel clear 2 */
-	mmio_write_32(DMA_DMACHCLR2,0x00000001U);
-	mmio_write_32(DMA_DMACHCLR2,0x00000000U);
+	/* DMA DMA Secure Control Register */
+	mmio_write_32(DMA_DMASEC,0x00000000U);
+	/* DMA operation */
+	mmio_write_16(DMA_DMAOR,0x0000U);
+	/* DMA channel clear */
+	mmio_write_32(DMA_DMACHCLR,0x00000001U);
+	mmio_write_32(DMA_DMACHCLR,0x00000000U);
 }
 
 #if DEBUG
@@ -136,7 +143,7 @@ static void disableDMA(void)
 {
 	/* Disable the clock supply to the CPG. */
 	cpg_write(CPG_SMSTPCR2,
-		mmio_read_32(CPG_SMSTPCR2) | SYS_DMAC2_BIT);
+		mmio_read_32(CPG_SMSTPCR2) | SYS_DMAC_BIT);
 }
 #endif
 
@@ -146,11 +153,43 @@ void initDMA(void)
 	setupDMA();
 }
 
-void execDMA(uint32_t dst, uint32_t src, uint32_t len)
+/* execDMA */
+/* note) Parameter len is interpret 0x40000000, If len is 0. */
+void execDMA(uintptr_t dst, uint32_t src, uint32_t len)
 {
-	uint32_t dmalen;
-	uint32_t memlen;
+	uint32_t	dmalen = 0U;
+	uint32_t	memlen = 0U;
+	uintptr_t	dst_l = 0U;
+	uint32_t	divlen = 0U;
 
+	/* fail safe */
+	if (((src + len) < src) ||
+	    ((len == 0) && ((src + 0x40000000U) < src))) {
+		/* source address invalid */
+		if (len == 0U) {
+			len = 0x40000000U;
+		}
+		ERROR("BL2: DMA - Source address invalid\n" \
+		      "           source address  = 0x%x\n," \
+		      "           transfer length = 0x%x\n",
+			src, len);
+		panic();
+	}
+	/* fail safe */
+	if ((dst >= DRAM_LIMIT) ||
+	    ((dst + (uintptr_t)len) >= DRAM_LIMIT) ||
+	    ((len == 0U) &&
+	     ((dst + 0x40000000ULL) >= DRAM_LIMIT))) {
+		/* destination address invalid */
+		if (len == 0U) {
+			len = 0x40000000U;
+		}
+		ERROR("BL2: DMA - Destination address invalid\n" \
+		      "           destination address = 0x%lx\n," \
+		      "           transfer length     = 0x%x\n",
+			dst, len);
+		panic();
+	}
 	if (((dst & 0x3FU) != 0U) || ((src & 0x3FU) != 0U) ||
 		((len & 0xC0000000U) != 0U)) {
 		/* dst or src are not 64-bit alignment. */
@@ -162,21 +201,43 @@ void execDMA(uint32_t dst, uint32_t src, uint32_t len)
 		memlen = len & 0x3FU;
 	}
 	if (dmalen != 0U) {
+		dst_l = dst & 0x0FFFFFFFFULL;
+		if ((dst_l + (uintptr_t)dmalen) >= 0x100000000ULL) {
+			/* transfer will over than the DMADAR range. */
+			/* divide dma transfer */
+			divlen = (uint32_t)(0x100000000ULL - dst_l);
+			startDMA(dst, src, divlen);
+			endDMA();
+			dst += (uintptr_t)divlen;
+			src += divlen;
+			dmalen -= divlen;
+		}
 		startDMA(dst, src, dmalen);
 		endDMA();
 		dst += dmalen;
 		src += dmalen;
 	} else {
 		if (memlen == 0U) {
-			startDMA(dst, src, 0U);
+			dmalen = 0x40000000U;
+			dst_l = dst & 0x0FFFFFFFFULL;
+			if ((dst_l + (uintptr_t)dmalen) >= 0x100000000ULL) {
+				/* transfer will over than the DMADAR range. */
+				/* divide dma transfer */
+				divlen = (uint32_t)(0x100000000ULL - dst_l);
+				startDMA(dst, src, divlen);
+				endDMA();
+				dst += (uintptr_t)divlen;
+				src += divlen;
+				dmalen -= divlen;
+			}
+			startDMA(dst, src, dmalen & 0x3FFFFFFFU);
 			endDMA();
-			dmalen = 0x01000000U << 6;
 			dst += dmalen;
 			src += dmalen;
 		}
 	}
 	if (memlen != 0U) {
-		(void)memcpy((void*)(uint64_t)dst,
+		(void)memcpy((void*)dst,
 			(const void*)(uint64_t)src,
 				(size_t)memlen);
 	}

@@ -38,7 +38,7 @@
 //#define	BOARD_SALVATOR_M
 //#define	BOARD_KRIEK
 #define	DDR_ES1px	1	// 1:ES1.1 / 0:ES1.0
-//#define	DDR_BACKUPMODE
+#define	DDR_BACKUPMODE
 #define	DDR_QOSSETTING
 ///////////////////////////////////////////////////////////
 #include "init_dram_tbl_h3_ws11.h"
@@ -375,6 +375,25 @@
 #define DDR1600_PI_CASLAT_LIN	0x50	//PI_CASLAT_LIN_F2:RW:0:7:=0x1c
 #define DDR1600_PI_WRLAT		0x0c	//PI_WRLAT_F2:RW:16:5:=0x08
 #define DDR1600_PI_WRLAT_ADJ	0x0a
+
+#if 1	/* example */
+/* PMIC for BD9571MWV-M*/
+#include "iic_dvfs.h"	/* use i2c for dvfs driver */
+#define	PMIC_SLAVE_ADDR		(0x30U)
+#define	PMIC_BKUP_MODE_CNT	(0x20U)
+#define	BIT_BKUP_CTRL_OUT	((uint8_t)(1U << 4))
+#endif	/* example */
+
+#define GPIO_BASE		(0xE6050000U)
+#define GPIO_INDT1		(GPIO_BASE + 0x100CU)
+#if 0	/* example */
+#define GPIO_OUTDT1		(GPIO_BASE + 0x1008U)
+#endif	/* example */
+#define BIT8			(1U<<8)
+#define BIT9			(1U<<9)
+#define COLD_BOOT		(0U)
+#define WARM_BOOT		(1U)
+#define WARM_BOOT_TIMEOUT	(0xFFFFFFFFU)
 //////////////////////////////////////////////////////////////////
 void InitDram_h3_ws11(void);
 static void pvt_dbsc_regset(uint32_t freq);
@@ -1969,6 +1988,12 @@ static uint32_t InitDDR_0917(uint32_t freq)
 	uint32_t phytrainingok=0x0;
 	uint32_t retry;
 	uint32_t ch,slice;
+#if 1	/* example */
+	uint8_t bkup_mode_cnt;
+	int32_t i2c_dvfs_ret = -1;
+#endif	/* example */
+
+
 #ifdef DDR_BACKUPMODE
 	dataL = *((volatile uint32_t*)GPIO_INDT1);
 	if(dataL & BIT8){
@@ -2436,8 +2461,36 @@ static uint32_t InitDDR_0917(uint32_t freq)
 			*((volatile uint32_t*)DBSC_DBCMD) = 0x01040001|(0x00100000 * phychno);	//RSX chA rkA
 			WaitDBCMD();
 		}
+#if 0	/* example */
 		//Set GP1_9(BKUP_REQB)=High
 		*((volatile uint32_t*)GPIO_OUTDT1) |= BIT9;
+#endif	/* example */
+#if 1	/* example */
+		/* Set BKUP_CRTL_OUT=High (BKUP mode cnt register) */
+		bkup_mode_cnt = 0U;
+		i2c_dvfs_ret = rcar_iic_dvfs_recieve(PMIC_SLAVE_ADDR,
+			PMIC_BKUP_MODE_CNT, &bkup_mode_cnt);
+		if (0 != i2c_dvfs_ret){
+			ERROR("BKUP mode cnt READ ERROR.\n");
+		} else {
+			INFO("     BKUP mode cnt READ value = %d\n",
+				bkup_mode_cnt);
+			bkup_mode_cnt &= ~BIT_BKUP_CTRL_OUT;
+			i2c_dvfs_ret = rcar_iic_dvfs_send(PMIC_SLAVE_ADDR,
+					PMIC_BKUP_MODE_CNT, bkup_mode_cnt);
+			if (0 != i2c_dvfs_ret){
+				ERROR("BKUP mode cnt WRITE ERROR. "
+				      "value = %d\n", bkup_mode_cnt);
+			} else {
+				INFO("BKUP_TRG = %s, BKUP_REQB = %s\n",
+					*((volatile uint32_t*)GPIO_INDT1) &
+					BIT8 ? "1" : "0",
+					*((volatile uint32_t*)GPIO_INDT1) &
+					BIT9 ? "1" : "0");
+			}
+		}
+#endif	/* example */
+
 		//Wait GP1_8(BKUP_TRG)=Low
 		i=1;
 		while(i){

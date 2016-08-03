@@ -32,6 +32,7 @@
 #include <arch_helpers.h>
 #include <arm_gic.h>
 #include <assert.h>
+#include <bl_common.h>
 #include <bakery_lock.h>
 #include <cci.h>
 #include <debug.h>
@@ -52,6 +53,22 @@ static void rcar_cluster_pwrdwn_common(void);
 static void __dead2 rcar_system_off(void);
 static void __dead2 rcar_system_reset(void);
 
+extern void rcar_bl31_save_generic_timer(uint64_t *stack);
+extern void rcar_bl31_restore_generic_timer(uint64_t *stack);
+extern uintptr_t platform_get_stack(uint64_t mpidr);
+extern void rcar_bl31_code_copy_to_system_ram(void);
+
+#define	RCAR_GENERIC_TIMER_STACK	(0x300)
+#define	IRQ_SEC_ARRAY_SIZE		(16U)
+#define	RCAR_BOOT_MODE			(0x01U)
+#define	RCAR_BOOT_COLD			(0x00U)
+
+#define	RCAR_MPIDR_CA57_CPU0		((uint64_t)0x0000U)
+#define	RCAR_MPIDR_CA53_CPU0		((uint64_t)0x0100U)
+
+extern const unsigned int irq_sec_array[IRQ_SEC_ARRAY_SIZE];
+
+static uint64_t rcar_stack_generic_timer[10] __attribute__((section("data")));
 /*******************************************************************************
  * Private RCAR function to program the mailbox for a cpu before it is released
  * from reset.
@@ -134,8 +151,13 @@ void rcar_affinst_standby(unsigned int power_state)
 	 * Enter standby state
 	 * dsb is good practice before using wfi to enter low power states
 	 */
+	uint32_t scr_el3;
+
+	scr_el3 = read_scr_el3();
+	write_scr_el3(scr_el3 | SCR_IRQ_BIT);
 	dsb();
 	wfi();
+	write_scr_el3(scr_el3);
 }
 
 /*******************************************************************************
@@ -237,6 +259,9 @@ void rcar_affinst_suspend(unsigned long sec_entrypoint, unsigned int afflvl,
 	/* Program the power controller to enable wakeup interrupts. */
 	rcar_pwrc_enable_interrupt_wakeup(mpidr);
 
+	/* save generic timer register */
+	rcar_bl31_save_generic_timer(rcar_stack_generic_timer);
+
 	/* Perform the common cpu specific operations */
 	rcar_cpu_pwrdwn_common();
 
@@ -295,7 +320,23 @@ void rcar_affinst_on_finish(unsigned int afflvl, unsigned int state)
  ******************************************************************************/
 void rcar_affinst_suspend_finish(unsigned int afflvl, unsigned int state)
 {
+	if ((uint32_t)afflvl >= (uint32_t)PLATFORM_MAX_AFFLVL) {
+		arm_gic_init(RCAR_GICC_BASE, RCAR_GICD_BASE, RCAR_GICR_BASE,
+			irq_sec_array, IRQ_SEC_ARRAY_SIZE);
+		arm_gic_setup();
+		rcar_cci_init();
+		/* restore generic timer register */
+		rcar_bl31_restore_generic_timer(rcar_stack_generic_timer);
+		/* start generic timer */
+		write_cntfrq_el0(plat_get_syscnt_freq());
+		mmio_write_32((uintptr_t)(RCAR_CNTC_BASE+(uint32_t)CNTCR_OFF),
+					(uint32_t)(CNTCR_FCREQ(0)|CNTCR_EN));
+		rcar_pwrc_setup();
+		rcar_bl31_init_suspend_to_ram();
+	}
+
 	rcar_affinst_on_finish(afflvl, state);
+
 }
 
 /*******************************************************************************
@@ -304,6 +345,9 @@ void rcar_affinst_suspend_finish(unsigned int afflvl, unsigned int state)
 static void __dead2 rcar_system_off(void)
 {
 	int32_t error;
+
+	/* The code of iic for DVFS driver is copied to system ram */
+	rcar_bl31_code_copy_to_system_ram();
 
 	error = rcar_iic_dvfs_send(SLAVE_ADDR_PMIC
 					,REG_ADDR_DVFS_SetVID
@@ -319,6 +363,9 @@ static void __dead2 rcar_system_off(void)
 static void __dead2 rcar_system_reset(void)
 {
 	int32_t error;
+
+	/* The code of iic for DVFS driver is copied to system ram */
+	rcar_bl31_code_copy_to_system_ram();
 
 	error = rcar_iic_dvfs_send(SLAVE_ADDR_PMIC
 					,REG_ADDR_BKUP_Mode_Cnt
@@ -384,5 +431,8 @@ static const plat_pm_ops_t rcar_plat_pm_ops = {
 int platform_setup_pm(const plat_pm_ops_t **plat_ops)
 {
 	*plat_ops = &rcar_plat_pm_ops;
+
+	rcar_bl31_init_suspend_to_ram();
+
 	return 0;
 }

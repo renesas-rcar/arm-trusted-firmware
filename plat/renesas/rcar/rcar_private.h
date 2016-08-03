@@ -125,20 +125,20 @@ CASSERT(PLAT_PCPU_DATA_SIZE == sizeof(rcar_cpu_data_t),	\
  ******************************************************************************/
 void rcar_configure_mmu_el1(unsigned long total_base,
 			   unsigned long total_size,
-			   unsigned long,
-			   unsigned long
+			   unsigned long ro_start,
+			   unsigned long ro_limit
 #if USE_COHERENT_MEM
-			   , unsigned long,
-			   unsigned long
+			   , unsigned long coh_start,
+			   unsigned long coh_limit
 #endif
 			   );
 void rcar_configure_mmu_el3(unsigned long total_base,
 			   unsigned long total_size,
-			   unsigned long,
-			   unsigned long
+			   unsigned long ro_start,
+			   unsigned long ro_limit
 #if USE_COHERENT_MEM
-			   , unsigned long,
-			   unsigned long
+			   , unsigned long coh_start,
+			   unsigned long coh_limit
 #endif
 			   );
 

@@ -49,9 +49,31 @@ MEMORY_DEF_SA0 = sa0.ld.S
 MEMORY_DEF_SA6 = sa6.ld.S
 
 ###################################################
+# Convenience function for adding build definitions
+# $(eval $(call add_define,FOO)) will have:
+# -DFOO if $(FOO) is empty; -DFOO=$(FOO) otherwise
+define add_define
+DEFINES			+=	-D$(1)$(if $(value $(1)),=$(value $(1)),)
+endef
+
+# Process RCAR_SA6_TYPE flag
+ifndef RCAR_SA6_TYPE
+RCAR_SA6_TYPE := 0
+else
+ifeq (${RCAR_SA6_TYPE},0)
+RCAR_SA6_TYPE := 0
+else
+RCAR_SA6_TYPE := 1
+endif
+endif
+$(eval $(call add_define,RCAR_SA6_TYPE))
+
+###################################################
 
 #c compiler
 CC = $(CROSS_COMPILE)gcc
+CFLAGS += ${DEFINES}
+CFLAGS += -I../../include/stdlib
 
 #Linker
 LD = $(CROSS_COMPILE)ld

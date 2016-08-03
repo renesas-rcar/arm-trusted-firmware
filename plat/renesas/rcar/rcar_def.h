@@ -74,7 +74,21 @@
 
 /* Aggregate of all devices in the first GB */
 #define DEVICE_RCAR_BASE	0xE6000000U
-#define DEVICE_RCAR_SIZE	0x1A000000U
+#define DEVICE_RCAR_SIZE	0x00300000U
+
+#define DEVICE_RCAR_BASE2	0xE6360000U
+#define DEVICE_RCAR_SIZE2	0x19CA0000U
+
+#define DEVICE_SRAM_BASE	0xE6310000
+#define DEVICE_SRAM_SIZE	0x00001000
+#define DEVICE_SRAM_BASE_U	0xE6310000U	/* for QAC */
+#define DEVICE_SRAM_SIZE_U	0x00001000U	/* for QAC */
+#define DEVICE_SRAM_SHADOW_BASE	(DEVICE_SRAM_BASE_U + DEVICE_SRAM_SIZE_U)
+
+#define DEVICE_SRAM_STACK_BASE	(DEVICE_SRAM_SHADOW_BASE + DEVICE_SRAM_SIZE_U)
+#define DEVICE_SRAM_STACK_SIZE	0x00001000
+#define DEVICE_SRAM_STACK_SIZE_U	0x00001000U	/* for QAC */
+
 
 #define DRAM1_BASE		MAKE_ULL(0x40000000)
 #define DRAM1_SIZE		MAKE_ULL(0x80000000)
@@ -83,6 +97,7 @@
 #define DRAM1_NS_SIZE		(DRAM1_SIZE - DRAM1_NS_BASE)
 #define DRAM1_NS_END		(DRAM1_NS_BASE + DRAM1_NS_SIZE - 1)
 
+#define DRAM_LIMIT		MAKE_ULL(0x0000010000000000)	/* AArch64 */
 
 #define SYS_CNTCTL_BASE		0xE6080000U
 
@@ -106,7 +121,7 @@
 #define RCAR_MMAP_ENTRIES		7
 #endif
 #if IMAGE_BL31
-#define RCAR_MMAP_ENTRIES		5
+#define RCAR_MMAP_ENTRIES		8
 #endif
 
 /* Load address of BL33 in the RCAR port */
@@ -185,6 +200,7 @@
 /****************************************************************************************************************************************************************/
 /* Timer	*/
 #define	RCAR_CNTC_BASE			(0xE6080000U)					/* The base addess of generic timer control register			*/
+#define	RCAR_CNTC_BASE_A		(0xE6080000)					/* The base addess of generic timer control register for Assenbly	*/
 /* Reset	*/
 #define	RCAR_CPGWPR			(0xE6150900U)					/* CPG write protect register						*/
 #define	RCAR_MODEMR			(0xE6160060U)					/* Mode pin register							*/
@@ -245,6 +261,13 @@
 #define MODEMR_BOOT_CPU_CR7		(0x000000C0U)
 #define MODEMR_BOOT_CPU_CA57		(0x00000000U)
 #define MODEMR_BOOT_CPU_CA53		(0x00000040U)
+#define MODEMR_BOOT_DEV_MASK		(0x0000001EU)
+#define MODEMR_BOOT_DEV_HYPERFLASH160	(0x00000004U)
+#define MODEMR_BOOT_DEV_HYPERFLASH80	(0x00000006U)
+#define MODEMR_BOOT_DEV_QSPI_FLASH40	(0x00000008U)
+#define MODEMR_BOOT_DEV_QSPI_FLASH80	(0x0000000CU)
+#define MODEMR_BOOT_DEV_EMMC_25X1	(0x0000000AU)
+#define MODEMR_BOOT_DEV_EMMC_50X8	(0x0000001AU)
 
 /****************************************************************************************************************************************************************/
 /* Memory mapped Generic timer interfaces  */

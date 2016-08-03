@@ -29,13 +29,16 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <string.h>
 #include <bakery_lock.h>
 #include <mmio.h>
 #include <debug.h>
 #include <arch.h>
-#include "../../rcar_def.h"
-#include "../../rcar_private.h"
+#include <arch_helpers.h>
+#include "rcar_def.h"
+#include "rcar_private.h"
 #include "rcar_pwrc.h"
+#include "iic_dvfs.h"
 
 /*
  * TODO: Someday there will be a generic power controller api. At the moment
@@ -65,6 +68,36 @@ RCAR_INSTANTIATE_LOCK
 #define	RCAR_PSTR_MASK	(0x00000003U)
 #define	ST_ALL_STANDBY	(0x00003333U)
 
+/* for suspend to ram	*/
+/* DBSC Defines */
+#define	DBSC4_REG_BASE			(0xE6790000U)
+#define	DBSC4_REG_DBACEN		(DBSC4_REG_BASE + 0x0200U)
+#define	DBSC4_REG_DBCMD			(DBSC4_REG_BASE + 0x0208U)
+#define	DBSC4_REG_DBRFEN		(DBSC4_REG_BASE + 0x0204U)
+#define	DBSC4_REG_DBWAIT		(DBSC4_REG_BASE + 0x0210U)
+
+#define	DBSC4_BIT_DBACEN_ACCEN		((uint32_t)(1U << 0))
+#define	DBSC4_BIT_DBRFEN_ARFEN		((uint32_t)(1U << 0))
+#define	DBSC4_SET_DBCMD_OPC_PRE		(0x04000000U)
+#define	DBSC4_SET_DBCMD_OPC_SR		(0x0A000000U)
+#define	DBSC4_SET_DBCMD_OPC_PD		(0x08000000U)
+#define	DBSC4_SET_DBCMD_CH_ALL		(0x00800000U)
+#define	DBSC4_SET_DBCMD_RANK_ALL	(0x00040000U)
+#define	DBSC4_SET_DBCMD_ARG_ALL		(0x00000010U)
+#define	DBSC4_SET_DBCMD_ARG_ENTER	(0x00000000U)
+
+/* PMIC for BD9571MWV-M*/
+#define	PMIC_SLAVE_ADDR			(0x30U)
+#define	PMIC_BKUP_MODE_CNT		(0x20U)
+#define	BIT_BKUP_CTRL_OUT		((uint8_t)(1U << 4))
+
+#define	PMIC_RETRY_MAX			(100U)
+
+/* sctlr_el3 M bit (for QAC) */
+#define	SCTLR_EL3_M_BIT			((uint32_t)1U << 0)
+
+/* prototype */
+static void rcar_bl31_set_self_refresh(void);
 static void SCU_power_up(uint64_t mpidr);
 
 uint32_t rcar_pwrc_status(uint64_t mpidr)
@@ -279,8 +312,144 @@ void rcar_pwrc_clusteroff(uint64_t mpidr)
 	rcar_lock_release();
 }
 
+#define	RST_CA53CPU0BARH		(0xE6160080U)
+#define	RST_CA53CPU0BARL		(0xE6160084U)
+
 /* Nothing else to do here apart from initializing the lock */
 void rcar_pwrc_setup(void)
 {
+	uint32_t product = mmio_read_32((uintptr_t)RCAR_PRR)
+			& RCAR_PRODUCT_MASK;
+	uintptr_t rst_CA5xCPUxBARH = RST_CA53CPU0BARH;
+	uintptr_t rst_CA5xCPUxBARL = RST_CA53CPU0BARL;
+	uint32_t loop;
+	uint32_t loop_max = 6U;
+
+	if (RCAR_PRODUCT_H3 == product) {
+		loop_max = 8U;
+	}
+
+	for (loop = 0U; loop < loop_max; loop ++) {
+		mmio_write_32(rst_CA5xCPUxBARH, 0U);
+		mmio_write_32(rst_CA5xCPUxBARL,
+				(uint32_t)((uint64_t)&bl31_secondly_reset
+					& 0xFFFFFFFFU));
+		rst_CA5xCPUxBARH += 0x10U;
+		rst_CA5xCPUxBARL += 0x10U;
+	}
+
 	rcar_lock_init();
+}
+
+void __attribute__ ((section (".system_ram"))) __attribute__ ((noinline)) rcar_bl31_go_suspend_to_ram(void)
+{
+	uint8_t		mode;
+	int32_t		ret = -1;
+	uint32_t	loop;
+
+	rcar_bl31_set_self_refresh();	/* Self-Refresh	*/
+
+	/* Set trigger of power down to PMIV		*/
+	for(loop = 0U; (loop < PMIC_RETRY_MAX) && (0 != ret); loop++){
+		ret = rcar_iic_dvfs_recieve(PMIC_SLAVE_ADDR,
+				PMIC_BKUP_MODE_CNT, &mode);
+		if (0 == ret){
+			mode |= BIT_BKUP_CTRL_OUT;
+			ret = rcar_iic_dvfs_send(PMIC_SLAVE_ADDR,
+					PMIC_BKUP_MODE_CNT, mode);
+		}
+	}
+
+	wfi();
+
+	/* no return */
+	while(1){}
+}
+
+static void __attribute__ ((section (".system_ram")))  rcar_bl31_set_self_refresh(void)
+{
+	uint32_t reg;
+	uint32_t i;
+
+	/* Set the Self-Refresh mode	*/
+	mmio_write_32(DBSC4_REG_DBACEN, 0U);		/* Set the ACCEN bit to 0 in the DBACEN	*/
+		/* Wait until the processing in response to the SDRAM access request in the DBSC4 is completed.	*/
+	for ( i=0U; i<10000U ;i++ ){
+	}
+
+	reg = DBSC4_SET_DBCMD_OPC_PRE |
+		DBSC4_SET_DBCMD_CH_ALL |
+		DBSC4_SET_DBCMD_RANK_ALL |
+		DBSC4_SET_DBCMD_ARG_ALL;
+	mmio_write_32(DBSC4_REG_DBCMD, reg);		/* PREA command	*/
+		/* Poll the operation completion waiting register (DBWAIT) to check when the issuing of manual commands is complete. */
+	while (mmio_read_32(DBSC4_REG_DBWAIT) != 0U){
+	}
+
+	reg = DBSC4_SET_DBCMD_OPC_SR |
+		DBSC4_SET_DBCMD_CH_ALL |
+		DBSC4_SET_DBCMD_RANK_ALL |
+		DBSC4_SET_DBCMD_ARG_ENTER;
+	mmio_write_32(DBSC4_REG_DBCMD, reg);		/* Self-Refresh entry command	*/
+		/* Poll the operation completion waiting register (DBWAIT) to check when the issuing of manual commands is complete. */
+	while (mmio_read_32(DBSC4_REG_DBWAIT) != 0U){
+	}
+
+	reg = DBSC4_SET_DBCMD_OPC_PD |
+		DBSC4_SET_DBCMD_CH_ALL |
+		DBSC4_SET_DBCMD_RANK_ALL |
+		DBSC4_SET_DBCMD_ARG_ENTER;
+	mmio_write_32(DBSC4_REG_DBCMD, reg);		/* Power Down entry command	*/
+		/* Poll the operation completion waiting register (DBWAIT) to check when the issuing of manual commands is complete. */
+	while (mmio_read_32(DBSC4_REG_DBWAIT) != 0U){
+	}
+
+	mmio_write_32(DBSC4_REG_DBRFEN, 0U);		/* Set the ARFEN bit to 0 in the DBRFEN	*/
+
+		/* Wait for the tCKELPD period. */
+	for ( i=0U; i<10000U; i++ ){
+	}
+		/* DDR PHY must be entered "deep sleep" mode (details are T.B.D.). */
+		/* MxBKUP is set High Level. */
+		/* The power except the DDR IO are removed. */
+}
+
+void rcar_bl31_code_copy_to_system_ram(void)
+{
+	(void)memcpy((void *)DEVICE_SRAM_SHADOW_BASE, &__SRAM_COPY_START__,
+			(size_t)((uint64_t)__system_ram_end__ - (uint64_t)__system_ram_start__));
+
+	flush_dcache_range((uint64_t)DEVICE_SRAM_SHADOW_BASE,
+			((uint64_t)__system_ram_end__ - (uint64_t)__system_ram_start__));
+}
+
+void rcar_bl31_set_suspend_to_ram(void)
+{
+	uint32_t sctlr;
+
+	rcar_bl31_code_copy_to_system_ram();
+
+	/* disable MMU */
+	sctlr = (uint32_t)read_sctlr_el3();
+	sctlr &= (uint32_t)~SCTLR_EL3_M_BIT;
+	write_sctlr_el3((uint64_t)sctlr);
+
+	(void)rcar_bl31_asm_switch_stack_pointer((uintptr_t)&rcar_bl31_go_suspend_to_ram,
+			(uintptr_t)(DEVICE_SRAM_STACK_BASE\
+			+ DEVICE_SRAM_STACK_SIZE_U), NULL);
+}
+
+void rcar_bl31_init_suspend_to_ram(void)
+{
+	uint8_t		mode;
+
+	rcar_bl31_code_copy_to_system_ram();
+
+	if (rcar_iic_dvfs_recieve(PMIC_SLAVE_ADDR, PMIC_BKUP_MODE_CNT, &mode) != 0){
+		panic();
+	}
+	mode &= (uint8_t)(~BIT_BKUP_CTRL_OUT);
+	if (rcar_iic_dvfs_send(PMIC_SLAVE_ADDR, PMIC_BKUP_MODE_CNT, mode) != 0){
+		panic();
+	}
 }

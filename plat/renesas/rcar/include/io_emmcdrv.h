@@ -1,20 +1,20 @@
 /*
- * Copyright (c) 2015-2016, Renesas Electronics Corporation
- * All rights reserved.
+ * Copyright (c) 2014, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2015-2016, Renesas Electronics Corporation. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
  *
- *   - Redistributions of source code must retain the above copyright notice,
- *     this list of conditions and the following disclaimer.
+ * Redistributions of source code must retain the above copyright notice, this
+ * list of conditions and the following disclaimer.
  *
- *   - Redistributions in binary form must reproduce the above copyright
- *     notice, this list of conditions and the following disclaimer in the
- *     documentation and/or other materials provided with the distribution.
+ * Redistributions in binary form must reproduce the above copyright notice,
+ * this list of conditions and the following disclaimer in the documentation
+ * and/or other materials provided with the distribution.
  *
- *   - Neither the name of Renesas nor the names of its contributors may be
- *     used to endorse or promote products derived from this software without
- *     specific prior written permission.
+ * Neither the name of ARM nor the names of its contributors may be used
+ * to endorse or promote products derived from this software without specific
+ * prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -29,21 +29,11 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DMA_DRIVER_H__
-#define DMA_DRIVER_H__
+#ifndef IO_EMMCDRV_H__
+#define IO_EMMCDRV_H__
 
-#include <stdint.h>
+struct io_dev_connector;
 
-#if 0	/* for QAC */
-#ifndef DEBUG
-#define DEBUG 0
-#endif
-#endif	/* for QAC */
+int32_t register_io_dev_emmcdrv(const io_dev_connector_t **dev_con);
 
-void initDMA(void);
-void execDMA(uintptr_t dst, uint32_t src, uint32_t len);
-#if DEBUG
-void termDMA(void);
-#endif
-
-#endif	/* DMA_DRIVER_H__ */
+#endif /* IO_EMMCDRV_H__ */

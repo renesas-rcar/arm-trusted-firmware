@@ -157,8 +157,6 @@ func bl2_reset
 	mov	x0, #(SCR_RES1_BITS | SCR_RW_BIT)
 	msr	scr_el3, x0
 
-	bl	bl2_init_secondly_reset
-
 	ldr	x0, =bl2_entrypoint
 	msr	elr_el3, x0
 	mov	x1, #(DISABLE_ALL_EXCEPTIONS << SPSR_DAIF_SHIFT) | (MODE_RW_64 << MODE_RW_SHIFT) | (MODE_EL1 << MODE_EL_SHIFT) | (MODE_SP_ELX << MODE_SP_SHIFT)
@@ -177,75 +175,6 @@ BL2_MEM_INFO:					/* meminfo_t */
 	.quad	(BL31_LIMIT - BL31_BASE)	/* total_size */
 	.quad	BL31_BASE			/* free_base */
 	.quad	(BL31_LIMIT - BL31_BASE)	/* free_size */
-
-
-	/* ---------------------------------------------
-	 * initialize secondly boot
-	 * ---------------------------------------------
-	 */
-func bl2_init_secondly_reset
-	adr	x0, bl2_secondly_reset
-	ldr	x1, =RCAR_SECRAM_BASE
-	mov	x2, #0				/* Number of copied bytes */
-	mov	x4, #(BL2_SECONDLY_RESET - bl2_secondly_reset)
-1:
-	ldr	w3, [x0, x2]
-	str	w3, [x1, x2]			/* copy secondly boot code */
-	add	x2, x2, #4
-	cmp	x4, x2
-	b.gt	1b
-
-	/* initialize Boot Address Registers */
-	ldr	x0, =RST_BASE
-
-	ldr	w1, =(RCAR_SECRAM_BASE & RST_CPUnBARL_MASK)
-	str	w1, [x0, #RST_CA53CPU0BARL]
-	str	wzr, [x0, #RST_CA53CPU0BARH]
-	str	w1, [x0, #RST_CA53CPU1BARL]
-	str	wzr, [x0, #RST_CA53CPU1BARH]
-	str	w1, [x0, #RST_CA53CPU2BARL]
-	str	wzr, [x0, #RST_CA53CPU2BARH]
-	str	w1, [x0, #RST_CA53CPU3BARL]
-	str	wzr, [x0, #RST_CA53CPU3BARH]
-	str	w1, [x0, #RST_CA57CPU0BARL]
-	str	wzr, [x0, #RST_CA57CPU0BARH]
-	str	w1, [x0, #RST_CA57CPU1BARL]
-	str	wzr, [x0, #RST_CA57CPU1BARH]
-	str	w1, [x0, #RST_CA57CPU2BARL]
-	str	wzr, [x0, #RST_CA57CPU2BARH]
-	str	w1, [x0, #RST_CA57CPU3BARL]
-	str	wzr, [x0, #RST_CA57CPU3BARH]
-
-	ret
-endfunc bl2_init_secondly_reset
-
-
-	/* ---------------------------------------------
-	 * secondly boot
-	 * ---------------------------------------------
-	 */
-func bl2_secondly_reset
-	mrs	x0, sctlr_el3
-	bic	x0, x0, #SCTLR_EE_BIT
-	msr	sctlr_el3, x0
-	isb
-
-	mrs	x0, cptr_el3
-	bic	w0, w0, #TCPAC_BIT
-	bic	w0, w0, #TTA_BIT
-	bic	w0, w0, #TFP_BIT
-	msr	cptr_el3, x0
-
-	mov_imm	x0, PARAMS_BASE			/* pointer to bl31_ep_info */
-	mov_imm	x2, BL31_BASE
-	mov x1, #0x00000001			/* warm boot */
-	br	x2				/* jump to BL31 */
-	nop
-	nop
-	nop
-BL2_SECONDLY_RESET:
-endfunc bl2_secondly_reset
-
 
 
 	.section	.vectors, "ax"; .align 11

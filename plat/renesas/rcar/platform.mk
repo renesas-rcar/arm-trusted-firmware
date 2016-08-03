@@ -33,7 +33,9 @@
 # Process flags
 
 PLAT_INCLUDES		:=	-Iinclude/common/tbbr				\
-				-Iplat/renesas/rcar/include/
+				-Iplat/renesas/rcar/drivers/iic_dvfs/		\
+				-Iplat/renesas/rcar/include			\
+				-Iplat/renesas/rcar
 
 PLAT_BL_COMMON_SOURCES	:=	lib/aarch64/xlat_tables.c			\
 				plat/common/aarch64/plat_common.c
@@ -50,6 +52,7 @@ BL2_SOURCES		+=	plat/common/aarch64/platform_up_stack.S		\
 				plat/renesas/rcar/aarch64/rcar_common.c		\
 				plat/renesas/rcar/drivers/io/io_rcar.c		\
 				plat/renesas/rcar/drivers/io/io_memdrv.c	\
+				plat/renesas/rcar/drivers/io/io_emmcdrv.c	\
 				plat/renesas/rcar/drivers/scif/scif.S		\
 				plat/renesas/rcar/drivers/auth/rcarboot.c	\
 				plat/renesas/rcar/rcar_io_storage.c		\
@@ -57,6 +60,14 @@ BL2_SOURCES		+=	plat/common/aarch64/platform_up_stack.S		\
 				plat/renesas/rcar/drivers/rpc/rpc_driver.c	\
 				plat/renesas/rcar/drivers/dma/dma_driver.c	\
 				plat/renesas/rcar/drivers/avs/avs_driver.c	\
+				plat/renesas/rcar/drivers/iic_dvfs/iic_dvfs.c	\
+				plat/renesas/rcar/drivers/wait/micro_wait.S	\
+				plat/renesas/rcar/drivers/emmc/emmc_utility.c		\
+				plat/renesas/rcar/drivers/emmc/emmc_interrupt.c		\
+				plat/renesas/rcar/drivers/emmc/emmc_cmd.c			\
+				plat/renesas/rcar/drivers/emmc/emmc_init.c			\
+				plat/renesas/rcar/drivers/emmc/emmc_mount.c			\
+				plat/renesas/rcar/drivers/emmc/emmc_read.c			\
 				plat/renesas/rcar/bl2_secure_setting.c		\
 				plat/renesas/rcar/bl2_cpg_init.c		\
 				plat/renesas/rcar/aarch64/bl2_reset.S
@@ -78,6 +89,7 @@ BL31_SOURCES		+=	drivers/arm/cci/cci.c				\
 				plat/renesas/rcar/rcar_topology.c		\
 				plat/renesas/rcar/aarch64/rcar_helpers.S	\
 				plat/renesas/rcar/aarch64/rcar_common.c		\
+				plat/renesas/rcar/drivers/pwrc/rcar_call_sram.S	\
 				plat/renesas/rcar/drivers/pwrc/rcar_pwrc.c
 
 # compile option setting
@@ -165,6 +177,12 @@ ifndef RCAR_LOSSY_ENABLE
 RCAR_LOSSY_ENABLE := 0
 endif
 $(eval $(call add_define,RCAR_LOSSY_ENABLE))
+
+# Process LIFEC_DBSC_PROTECT_ENABLE flag
+ifndef LIFEC_DBSC_PROTECT_ENABLE
+LIFEC_DBSC_PROTECT_ENABLE := 1
+endif
+$(eval $(call add_define,LIFEC_DBSC_PROTECT_ENABLE))
 
 include plat/renesas/rcar/ddr/ddr.mk
 include plat/renesas/rcar/qos/qos.mk

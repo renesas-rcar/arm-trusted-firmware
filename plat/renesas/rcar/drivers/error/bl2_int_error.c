@@ -29,38 +29,47 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <arch_helpers.h>
+#include <runtime_svc.h>
 #include <bl_common.h>
 #include <arm_gic.h>
 #include <mmio.h>
 #include <debug.h>
 #include "bl2_int_error.h"
-#include "../../rcar_def.h"
+#include "rcar_def.h"
 
-#define INT_ID_MASK	(0x000003FFU)
 #define SWDT_ERROR_ID	(1024U)
 #define SWDT_ERROR_TYPE	(16U)
 #define SWDT_CHAR_MAX	(13U)
 
-void bl2_interrupt_error_id(uint32_t wrong_id)
+void bl2_interrupt_error_id(uint32_t int_id)
 {
-	if (wrong_id >= SWDT_ERROR_ID) {
-		ERROR("\n");
-		ERROR("BL2: bl2_interrupt_error_id error, invalid ID = %d\n"
-			 ,wrong_id);
+	ERROR("\n");
+	if (int_id >= SWDT_ERROR_ID) {
+		ERROR("BL2: Unhandled exception occurred.\n");
+		ERROR("     Exception type = FIQ_SP_ELX\n");
 		/* Endless loop		*/
 		panic();
 	}
 	/* Clear the interrupt request	*/
-	arm_gic_end_of_interrupt((uint32_t)wrong_id);
+	arm_gic_end_of_interrupt((uint32_t)int_id);
 	bl2_swdt_release();
+	ERROR("BL2: Unhandled exception occurred.\n");
+	ERROR("     Exception type = FIQ_SP_ELX\n");
+	ERROR("     SPSR_EL1 = 0x%x\n",
+		(uint32_t)(read_spsr_el1() & 0x0FFFFFFFFU));
+	ERROR("     ELR_EL1  = 0x%x\n",
+		(uint32_t)(read_elr_el1()  & 0x0FFFFFFFFU));
+	ERROR("     ESR_EL1  = 0x%x\n",
+		(uint32_t)(read_esr_el1()  & 0x0FFFFFFFFU));
+	ERROR("     FAR_EL1  = 0x%x\n",
+		(uint32_t)(read_far_el1()  & 0x0FFFFFFFFU));
 	ERROR("\n");
-	ERROR("BL2: This interrupt is Invalid, receive interrupt ID = %d\n"
-		 ,wrong_id);
 	/* Endless loop		*/
 	panic();
 }
 
-void bl2_interrupt_error_type(uint32_t wrong_type)
+void bl2_interrupt_error_type(uint32_t ex_type)
 {
 	const uint8_t interrupt_ex[SWDT_ERROR_TYPE][SWDT_CHAR_MAX] = {
 		"SYNC SP EL0",
@@ -80,29 +89,63 @@ void bl2_interrupt_error_type(uint32_t wrong_type)
 		"FIQ AARCH32",
 		"SERR AARCH32"
 	};
-	uint32_t interrupt_id;
 	char msg[128];
 
-	if (wrong_type >= SWDT_ERROR_TYPE) {
-		/* Clear the interrupt request	*/
-		(void)arm_gic_acknowledge_interrupt();
+	/* Clear the interrupt request	*/
+	if (ex_type >= SWDT_ERROR_TYPE) {
 		ERROR("\n");
-		(void)sprintf(msg,
-			"BL2: bl2_interrupt_error_type error, invalid type = %d\n"
-			,wrong_type);
-		ERROR("%s", msg);
-		/* endless loop		*/
-		panic();
+		ERROR("BL2: Unhandled exception occurred.\n");
+		ERROR("     Exception type = Unknown (%d)\n", ex_type);
 	} else {
-		interrupt_id = arm_gic_acknowledge_interrupt() & INT_ID_MASK;
 		bl2_swdt_release();
-
 		ERROR("\n");
-		(void)sprintf(msg,
-			"BL2: This interrupt is not FIQ, interrupt type = %s, ID = %d\n"
-			,&interrupt_ex[wrong_type][0], interrupt_id);
+		ERROR("BL2: Unhandled exception occurred.\n");
+		(void)sprintf(msg, "     Exception type = %s\n",
+				&interrupt_ex[ex_type][0]);
 		ERROR("%s", msg);
-		/* Endless loop		*/
-		panic();
+		switch(ex_type)
+		{
+		case SYNC_EXCEPTION_SP_ELX:
+			ERROR("     SPSR_EL1 = 0x%x\n",
+				(uint32_t)(read_spsr_el1() & 0x0FFFFFFFFU));
+			ERROR("     ELR_EL1  = 0x%x\n",
+				(uint32_t)(read_elr_el1()  & 0x0FFFFFFFFU));
+			ERROR("     ESR_EL1  = 0x%x\n",
+				(uint32_t)(read_esr_el1()  & 0x0FFFFFFFFU));
+			ERROR("     FAR_EL1  = 0x%x\n",
+				(uint32_t)(read_far_el1()  & 0x0FFFFFFFFU));
+			break;
+		case IRQ_SP_ELX:
+			ERROR("     SPSR_EL1 = 0x%x\n",
+				(uint32_t)(read_spsr_el1() & 0x0FFFFFFFFU));
+			ERROR("     ELR_EL1  = 0x%x\n",
+				(uint32_t)(read_elr_el1()  & 0x0FFFFFFFFU));
+			ERROR("     IAR_EL1  = 0x%x\n",
+				arm_gic_acknowledge_interrupt());
+			break;
+		case FIQ_SP_ELX:
+			ERROR("     SPSR_EL1 = 0x%x\n",
+				(uint32_t)(read_spsr_el1() & 0x0FFFFFFFFU));
+			ERROR("     ELR_EL1  = 0x%x\n",
+				(uint32_t)(read_elr_el1()  & 0x0FFFFFFFFU));
+			ERROR("     IAR_EL1  = 0x%x\n",
+				arm_gic_acknowledge_interrupt());
+			break;
+		case SERROR_SP_ELX:
+			ERROR("     SPSR_EL1 = 0x%x\n",
+				(uint32_t)(read_spsr_el1() & 0x0FFFFFFFFU));
+			ERROR("     ELR_EL1  = 0x%x\n",
+				(uint32_t)(read_elr_el1()  & 0x0FFFFFFFFU));
+			ERROR("     ESR_EL1  = 0x%x\n",
+				(uint32_t)(read_esr_el1()  & 0x0FFFFFFFFU));
+			ERROR("     FAR_EL1  = 0x%x\n",
+				(uint32_t)(read_far_el1()  & 0x0FFFFFFFFU));
+			break;
+		default:
+			break;
+		}
 	}
+	ERROR("\n");
+	/* Endless loop		*/
+	panic();
 }

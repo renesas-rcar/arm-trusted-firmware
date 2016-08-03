@@ -28,6 +28,14 @@
 #undef BOARD_KRIEK
 #undef BOARD_SALVATOR_X
 
+
+
+
+#define	DDR_BACKUPMODE
+#include "boot_init_dram_m3_es10.h"
+//#include "bit.h"
+//#include "reg_rcarh3.h"
+
 ///////////////////////////////////////////////////////////
 //BOARD CONFIGRATION
 //PLEASE DEFINE THE FOLLOWING ARRAY
@@ -176,6 +184,25 @@ static const uint8_t BOARDCNF_DM_SWAP[BOARDNUM][DRAM_CH_CNT][4]=
 
 #define	DBSC_REFINTS			0x1		// 0: Average interval is REFINT. / 1: Average interval is 1/2 REFINT.
 
+#if 1	/* example */
+/* PMIC for BD9571MWV-M*/
+#include "iic_dvfs.h"	/* use i2c for dvfs driver */
+#define	PMIC_SLAVE_ADDR		(0x30U)
+#define	PMIC_BKUP_MODE_CNT	(0x20U)
+#define	BIT_BKUP_CTRL_OUT	((uint8_t)(1U << 4))
+#endif	/* example */
+
+#if 1
+#if 0	/* example */
+#define	GPIO_OUTDT1		0xE6051008
+#endif	/* example */
+#define	GPIO_INDT1		0xE605100C
+#define	BIT8			0x00000100
+#define	BIT9			0x00000200
+#define COLD_BOOT		0
+#define WARM_BOOT		1
+#define WARM_BOOT_TIMEOUT	2
+
 ///////////////////////////////////////////////////////////
 /* add start */
 #define	RST_BASE				(0xE6160000U)
@@ -187,6 +214,8 @@ static const uint8_t BOARDCNF_DM_SWAP[BOARDNUM][DRAM_CH_CNT][4]=
 #define	CPG_SRCR4				(CPG_BASE + 0x0BCU)
 #define	CPG_SRSTCLR4				(CPG_BASE + 0x950U)
 ///////////////////////////////////////////////////////////
+#endif
+
 #define DBSC_DBSYSCONF1			0xE6790004
 #define DBSC_DBPHYCONF0			0xE6790010
 #define DBSC_DBKIND			0xE6790020
@@ -209,7 +238,7 @@ static const uint8_t BOARDCNF_DM_SWAP[BOARDNUM][DRAM_CH_CNT][4]=
 #define DBSC_DBMEMCONF_3_2		0xE6790068
 #define DBSC_DBMEMCONF_3_3		0xE679006C
 
-#define DBSC_DBMEMCONF(ch,cs)		(0xE6790030ULL+0x10*ch+0x4*cs)
+#define DBSC_DBMEMCONF(ch,cs)		(0xE6790030UL+0x10*ch+0x4*cs)
 
 #define DBSC_DBSTATE0			0xE6790108
 
@@ -297,14 +326,14 @@ static const uint8_t BOARDCNF_DM_SWAP[BOARDNUM][DRAM_CH_CNT][4]=
 #define DBSC_DBPDRGD_2			0xE67906A8
 #define DBSC_DBPDRGA_3			0xE67906E4
 #define DBSC_DBPDRGD_3			0xE67906E8
-#define DBSC_DBPDRGA(ch)		(0xE6790624ULL+0x40*(ch))
-#define DBSC_DBPDRGD(ch)		(0xE6790628ULL+0x40*(ch))
+#define DBSC_DBPDRGA(ch)		(0xE6790624UL+0x40*(ch))
+#define DBSC_DBPDRGD(ch)		(0xE6790628UL+0x40*(ch))
 
 #define DBSC_DBPDSTAT_0			0xE6790630
 #define DBSC_DBPDSTAT_1			0xE6790670
 #define DBSC_DBPDSTAT_2			0xE67906B0
 #define DBSC_DBPDSTAT_3			0xE67906F0
-#define DBSC_DBPDSTAT(ch)		(0xE6790630ULL+0x40*(ch))
+#define DBSC_DBPDSTAT(ch)		(0xE6790630UL+0x40*(ch))
 
 #define DBSC_DBBUS0CNF0			0xE6790800
 #define DBSC_DBBUS0CNF1			0xE6790804
@@ -353,7 +382,7 @@ static const uint8_t BOARDCNF_DM_SWAP[BOARDNUM][DRAM_CH_CNT][4]=
 #define DBSC_SCFCTST1			0xE6791708	//Schedule timing setting register 1
 #define DBSC_SCFCTST2			0xE679170C	//Schedule timing setting register 2
 
-#define DBSC_DBMRRDR(ch)		(0xE6791800ULL+0x4*(ch))
+#define DBSC_DBMRRDR(ch)		(0xE6791800UL+0x4*(ch))
 #define DBSC_DBMRRDR_0			0xE6791800
 #define DBSC_DBMRRDR_1			0xE6791804
 #define DBSC_DBMRRDR_2			0xE6791808
@@ -363,7 +392,7 @@ static const uint8_t BOARDCNF_DM_SWAP[BOARDNUM][DRAM_CH_CNT][4]=
 
 #define DBSC_DBMONCONF4			0xE6793010
 
-#define DBSC_PLL_LOCK(ch)		(0xE6794054ULL+0x100*(ch))
+#define DBSC_PLL_LOCK(ch)		(0xE6794054UL+0x100*(ch))
 #define DBSC_PLL_LOCK_0			0xE6794054
 #define DBSC_PLL_LOCK_1			0xE6794154
 #define DBSC_PLL_LOCK_2			0xE6794254
@@ -411,6 +440,17 @@ static uint32_t REG_DDRPHY_READ ( uintptr_t phyno, uint32_t regadd);
 static void change_lpddr4_en(uintptr_t phychno, uint32_t mode);
 static void pvt_dbsc_regset(uint32_t freq);
 static void mode_register_set(uint32_t freq,uintptr_t phychno,uint32_t mr13_val,uint32_t postflag);
+
+
+#ifdef DDR_BACKUPMODE
+#if 0	/* example */
+extern uint32_t ddrBackup;		//0:ColdBoot, 1:WarmBoot(DDR-BackUp), 2:WarmBoot Timeout Error
+#else	/* example */
+uint32_t ddrBackup;		//0:ColdBoot, 1:WarmBoot(DDR-BackUp), 2:WarmBoot Timeout Error
+#endif	/* example */
+#endif
+
+
 static inline void ResetDram()
 {
  *((volatile uint32_t*)CPG_CPGWPR) = ~0x40000000;
@@ -1109,6 +1149,26 @@ static uint32_t InitDDR_start(uint32_t freq)
  uintptr_t ch,slice;
  uint32_t ddr_csn;
  uint32_t cs;
+#if 1	/* example */
+ uint8_t bkup_mode_cnt;
+ int32_t i2c_dvfs_ret = -1;
+#endif	/* example */
+
+
+#ifdef DDR_BACKUPMODE
+///// Modify for BackUp (begin) /////////////////////////////////////////////////////////////////////
+	//Check GP1_8 (BKUP_TRG)
+	dataL = *((volatile uint32_t*)GPIO_INDT1);
+	if(dataL & BIT8){
+		ddrBackup = WARM_BOOT;
+	}
+	else{
+		ddrBackup = COLD_BOOT;
+	}
+///// Modify for BackUp (end) ///////////////////////////////////////////////////////////////////////
+#endif
+
+
  *((volatile uint32_t*)DBSC_DBPDCNT0_0) = 0x01;
  *((volatile uint32_t*)DBSC_DBPDCNT0_1) = 0x01;
  dsb_sev();
@@ -1220,6 +1280,66 @@ static uint32_t InitDDR_start(uint32_t freq)
  *((volatile uint32_t*)DBSC_DBPDCNT_0) = 0x0000CF01;
  *((volatile uint32_t*)DBSC_DBPDCNT_1) = 0x0000CF01;
  dsb_sev();
+
+
+#ifdef DDR_BACKUPMODExxxxxxxxx
+///// Modify for BackUp (begin) /////////////////////////////////////////////////////////////////////
+
+	if(ddrBackup==WARM_BOOT){
+		for(ch=0;ch<DRAM_CH_CNT;ch++)
+		{
+			*((volatile uint32_t*)DBSC_DBCMD) = 0x01040001|(0x00100000 * ch);	//RSX chA rkA
+			WaitDBCMD();
+		}
+
+#if 0	/* example */
+		//Set GP1_9(BKUP_REQB)=High
+		*((volatile uint32_t*)GPIO_OUTDT1) |= BIT9;
+#endif	/* example */
+#if 1	/* example */
+		/* Set BKUP_CRTL_OUT=High (BKUP mode cnt register) */
+		bkup_mode_cnt = 0U;
+		i2c_dvfs_ret = rcar_iic_dvfs_recieve(PMIC_SLAVE_ADDR,
+			PMIC_BKUP_MODE_CNT, &bkup_mode_cnt);
+		if (0 != i2c_dvfs_ret){
+			ERROR("BKUP mode cnt READ ERROR.\n");
+		} else {
+			INFO("     BKUP mode cnt READ value = %d\n",
+				bkup_mode_cnt);
+			bkup_mode_cnt &= ~BIT_BKUP_CTRL_OUT;
+			i2c_dvfs_ret = rcar_iic_dvfs_send(PMIC_SLAVE_ADDR,
+					PMIC_BKUP_MODE_CNT, bkup_mode_cnt);
+			if (0 != i2c_dvfs_ret){
+				ERROR("BKUP mode cnt WRITE ERROR. "
+				      "value = %d\n", bkup_mode_cnt);
+			} else {
+				INFO("BKUP_TRG = %s, BKUP_REQB = %s\n",
+					*((volatile uint32_t*)GPIO_INDT1) &
+					BIT8 ? "1" : "0",
+					*((volatile uint32_t*)GPIO_INDT1) &
+					BIT9 ? "1" : "0");
+			}
+		}
+#endif	/* example */
+
+		//Wait GP1_8(BKUP_TRG)=Low
+		i=1;
+		while(i){
+			dataL = *((volatile uint32_t*)GPIO_INDT1);
+			if( (dataL & BIT8)==0 ){ i=0; }
+			else{                    i++; }
+
+			// Warm Boot Time Out Error Check
+			if(i==1000){
+				ddrBackup = WARM_BOOT_TIMEOUT;
+				i=0;
+			}
+		}
+	}
+///// Modify for BackUp (end) ///////////////////////////////////////////////////////////////////////
+#endif
+
+
  for(phytrainingok=0,k=0,ch=0;ch<DRAM_CH_CNT;ch++)
  {
   if(!(DDR_PHYVALID&(1<<ch)))continue;
@@ -1266,6 +1386,63 @@ if((0) || !(0)){
  *((volatile uint32_t*)(DBSC_DBPDRGA_0 + 0x040*0)) = 0x02A9;
  *((volatile uint32_t*)(DBSC_DBPDRGA_0 + 0x040*1)) = 0x02A9;
 }
+#ifdef DDR_BACKUPMODE
+///// Modify for BackUp (begin) /////////////////////////////////////////////////////////////////////
+
+	if(ddrBackup==WARM_BOOT){
+//		for(ch=0;ch<DRAM_CH_CNT;ch++)
+//		{
+//			*((volatile uint32_t*)DBSC_DBCMD) = 0x01040001|(0x00100000 * ch);	//RSX chA rkA
+//			WaitDBCMD();
+//		}
+
+#if 0	/* example */
+		//Set GP1_9(BKUP_REQB)=High
+		*((volatile uint32_t*)GPIO_OUTDT1) |= BIT9;
+#endif	/* example */
+#if 1	/* example */
+		/* Set BKUP_CRTL_OUT=High (BKUP mode cnt register) */
+		bkup_mode_cnt = 0U;
+		i2c_dvfs_ret = rcar_iic_dvfs_recieve(PMIC_SLAVE_ADDR,
+			PMIC_BKUP_MODE_CNT, &bkup_mode_cnt);
+		if (0 != i2c_dvfs_ret){
+			ERROR("BKUP mode cnt READ ERROR.\n");
+		} else {
+			INFO("     BKUP mode cnt READ value = %d\n",
+				bkup_mode_cnt);
+			bkup_mode_cnt &= ~BIT_BKUP_CTRL_OUT;
+			i2c_dvfs_ret = rcar_iic_dvfs_send(PMIC_SLAVE_ADDR,
+					PMIC_BKUP_MODE_CNT, bkup_mode_cnt);
+			if (0 != i2c_dvfs_ret){
+				ERROR("BKUP mode cnt WRITE ERROR. "
+				      "value = %d\n", bkup_mode_cnt);
+			} else {
+				INFO("BKUP_TRG = %s, BKUP_REQB = %s\n",
+					*((volatile uint32_t*)GPIO_INDT1) &
+					BIT8 ? "1" : "0",
+					*((volatile uint32_t*)GPIO_INDT1) &
+					BIT9 ? "1" : "0");
+			}
+		}
+#endif	/* example */
+
+		//Wait GP1_8(BKUP_TRG)=Low
+		i=1;
+		while(i){
+			dataL = *((volatile uint32_t*)GPIO_INDT1);
+			if( (dataL & BIT8)==0 ){ i=0; }
+			else{                    i++; }
+
+			// Warm Boot Time Out Error Check
+			if(i==1000){
+				ddrBackup = WARM_BOOT_TIMEOUT;
+				i=0;
+			}
+		}
+	}
+///// Modify for BackUp (end) ///////////////////////////////////////////////////////////////////////
+#endif
+
 if((1)){
  for(slice=0;slice<4;slice+=1){
   REG_DDRPHY_WRITE_A(0x0838 +slice*0x80 ,0);
@@ -1314,7 +1491,25 @@ if((1)){
  }
  change_lpddr4_en(0xf,0);
  ch=0x0f;
+
+
+
+
+#ifdef DDR_BACKUPMODE
+///// Modify for BackUp (begin) /////////////////////////////////////////////////////////////////////
+  if(ddrBackup==COLD_BOOT){
+  //(SDRAM Initalize)
+//    *((volatile uint32_t*)DBSC_DBCMD) = 0x01040001|(0x00100000 * ch);	//RSX chA rkA
+//  WaitDBCMD();
+    SendDBCMD(0x01040001|(0x00100000 * ch));
+  }
+///// Modify for BackUp (end) ///////////////////////////////////////////////////////////////////////
+#else
+
  SendDBCMD(0x01040001|(0x00100000 * ch));
+
+#endif
+
  SendDBCMD(0x08040000|(0x00100000 * ch));
  SendDBCMD(0x08040001|(0x00100000 * ch));
  SendDBCMD(0x0e041600|(0x00100000 * ch)|0x16);
@@ -1469,6 +1664,50 @@ if((4)==4){
  }
  *((volatile uint32_t*)DBSC_DBRFCNF2) = 0x00010000|DBSC_REFINTS;
  *((volatile uint32_t*)DBSC_DBRFEN) = 0x00000001;
+
+
+#ifdef DDR_BACKUPMODE
+///// Modify for BackUp (begin) /////////////////////////////////////////////////////////////////////
+	if(ddrBackup==WARM_BOOT){
+		//(2)LPDDR4-SDRAM
+		//(b)	Self-Refreshing (When the Clock is Stopped)
+		//Use the following procedure to release self-refresh mode.
+		//1.Restart the supply of the clock signal to the DBSC4 and wait until they settle.
+
+		//2.Reconfigure the PHY unit to suit the PHY specification.
+
+		//3.Set the ARFEN bit to 1 in the auto-refresh enable register (DBRFEN).
+//		*((volatile uint32_t*)DBSC_DBRFEN)	= 0x00000001;
+
+		//4.Use the manual command-issuing register (DBCMD) to issue the Power Down Exit command.
+		//  The value written to this register should be OPC = B'1000 (PD), CH = B'1000 (all channels), RANK = B'100 (all ranks), ARG = H'0001 (exit).
+		*((volatile uint32_t*)DBSC_DBCMD)	= 0x08840001;
+
+		//5.Poll the operation completion waiting register (DBWAIT) to check when the issuing of manual commands is complete.
+		while( *((volatile uint32_t*)DBSC_DBWAIT) );
+
+		//6.Use the manual command-issuing register (DBCMD) to issue the Self-Refresh Exit command.
+		//  The value written to this register should be OPC = B'1010 (SR), CH = B'1000 (all channels), RANK = B'100 (all ranks), ARG = H'0001 (exit).
+		*((volatile uint32_t*)DBSC_DBCMD)	= 0x0A840001;
+
+		//7.Poll the operation completion waiting register (DBWAIT) to check when the issuing of manual commands is complete.
+		while( *((volatile uint32_t*)DBSC_DBWAIT) );
+
+		//8.Use the manual command-issuing register (DBCMD) to issue the PREA (precharge all) command.
+		//  The value written to this register should be OPC = B'0100 (PRE), CH = B'1000 (all channels), RANK = B'100 (all ranks), ARG = H'0010 (all banks).
+		*((volatile uint32_t*)DBSC_DBCMD)	= 0x04840010;
+
+		//9.Poll the operation completion waiting register (DBWAIT) to check when the issuing of manual commands is complete.
+		while( *((volatile uint32_t*)DBSC_DBWAIT) );
+
+		//10.Set the ACCEN bit to 1 (enabling access) in the SDRAM access enable register (DBACEN).
+//		*((volatile uint32_t*)DBSC_DBACEN)	= 0x00000001;
+	}
+
+///// Modify for BackUp (end) ///////////////////////////////////////////////////////////////////////
+#endif
+
+
  *((volatile uint32_t*)DBSC_DBACEN) = 0x00000001;
  return phytrainingok;
 }

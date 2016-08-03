@@ -41,5 +41,6 @@
 #define	REG_DATA_P_ALL_OFF	(0x80U)
 
 int32_t rcar_iic_dvfs_send(uint8_t slave_addr, uint8_t reg_addr, uint8_t reg_data);
+int32_t rcar_iic_dvfs_recieve(uint8_t slave_addr, uint8_t reg_addr, uint8_t *reg_data);
 
 #endif  /* IIC_DVFS_H__ */

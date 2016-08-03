@@ -29,21 +29,22 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DMA_DRIVER_H__
-#define DMA_DRIVER_H__
+#ifndef MICRO_WAIT_H__
+#define MICRO_WAIT_H__
 
-#include <stdint.h>
+#define TMU3_MEASUREMENT	(0)	/* for time measurement */
 
-#if 0	/* for QAC */
-#ifndef DEBUG
-#define DEBUG 0
-#endif
-#endif	/* for QAC */
+#ifndef __ASSEMBLY__
+void micro_wait(uint32_t count_us);
 
-void initDMA(void);
-void execDMA(uintptr_t dst, uint32_t src, uint32_t len);
-#if DEBUG
-void termDMA(void);
-#endif
+/* Time measurement function using the TMU3. */
+#if (TMU3_MEASUREMENT == 1)
+void init_TMU3(void);
+void start_TMU3(void);
+uint32_t snapshot_TCNT3(void);
+void stop_TMU3(void);
+#endif /* TMU3_MEASUREMENT */
 
-#endif	/* DMA_DRIVER_H__ */
+#endif /* __ASSEMBLY__ */
+
+#endif /* MICRO_TWAIT_H__ */

@@ -38,6 +38,9 @@ ENTRY(bl31_entrypoint)
 
 MEMORY {
     RAM (rwx): ORIGIN = BL31_BASE, LENGTH = BL31_LIMIT - BL31_BASE
+#if PLAT_rcar
+    SRAM (rwx): ORIGIN = BL31_SRAM_BASE, LENGTH = BL31_SRAM_LIMIT - BL31_SRAM_BASE
+#endif
 }
 
 
@@ -53,6 +56,19 @@ SECTIONS
 #if PLAT_rcar
         . = NEXT(ALIGN_VERSION);
         *rcar_common.o(.version*)
+
+        __SRAM_COPY_START__ = .;
+    } >RAM
+
+    .system_ram : {
+        __system_ram_start__ = .;
+        *(.system_ram*)
+        *(.rodata)
+        __system_ram_end__ = .;
+    } >SRAM AT> RAM
+
+    . = BL31_BASE;
+    . : {
 #endif
         *(.text*)
         *(.rodata*)

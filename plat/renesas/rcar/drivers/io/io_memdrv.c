@@ -34,6 +34,7 @@
 #include <io_driver.h>
 #include <io_storage.h>
 #include <string.h>
+#include "io_common.h"
 #include "io_memdrv.h"
 #include "dma_driver.h"
 
@@ -125,7 +126,7 @@ static int32_t memdrv_block_open(io_dev_info_t *dev_info, const uintptr_t spec,
 			     io_entity_t *entity)
 {
 	int32_t result;
-	const io_block_spec_t *block_spec = (io_block_spec_t *)spec;
+	const io_drv_spec_t *block_spec = (io_drv_spec_t *)spec;
 
 	/* Since we need to track open state for seek() we only allow one open
 	 * spec at a time. When we have dynamic memory we can malloc and set
@@ -184,13 +185,13 @@ static int32_t memdrv_block_read(io_entity_t *entity, uintptr_t buffer,
 
 	fp = (file_state_t *)entity->info;
 
-	NOTICE("BL2: dst=0x%x src=0x%x len=%d(0x%x)\n",
-		(uint32_t)buffer,
-		(uint32_t)(fp->base + fp->file_pos),
-		(uint32_t)length, (uint32_t)length);
+	NOTICE("BL2: dst=0x%lx src=0x%lx len=%ld(0x%lx)\n",
+		buffer,
+		fp->base + fp->file_pos,
+		length, length);
 
 #if 1	/* DMA driver */
-	execDMA((uint32_t)buffer, (uint32_t)(fp->base + fp->file_pos),
+	execDMA(buffer, (uint32_t)(fp->base + fp->file_pos),
 		(uint32_t)length);
 #else
 	(void)memcpy((void *)buffer, (void *)(fp->base + fp->file_pos),

@@ -29,21 +29,39 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DMA_DRIVER_H__
-#define DMA_DRIVER_H__
+/**
+ * @file  emmc_config.h
+ * @brief Configuration file
+ *
+ */
 
-#include <stdint.h>
+#ifndef __EMMC_CONFIG_H__
+#define __EMMC_CONFIG_H__
 
-#if 0	/* for QAC */
-#ifndef DEBUG
-#define DEBUG 0
-#endif
-#endif	/* for QAC */
+/* ************************ HEADER (INCLUDE) SECTION *********************** */
 
-void initDMA(void);
-void execDMA(uintptr_t dst, uint32_t src, uint32_t len);
-#if DEBUG
-void termDMA(void);
-#endif
+/* ***************** MACROS, CONSTANTS, COMPILATION FLAGS ****************** */
 
-#endif	/* DMA_DRIVER_H__ */
+/** @brief MMC driver config
+ */
+#define EMMC_RCA                1UL                       /* RCA  */
+#define EMMC_RW_DATA_TIMEOUT    0x40UL                    /* 314ms (freq = 400KHz, timeout Counter = 0x04(SDCLK * 2^17)  */
+#define EMMC_RETRY_COUNT        0                         /* how many times to try after fail. Don't change. */
+#define EMMC_CMD_MAX            60UL                      /* Don't change. */
+
+/** @brief etc
+ */
+#define LOADIMAGE_FLAGS_DMA_ENABLE              0x00000001UL
+
+
+/* ********************** STRUCTURES, TYPE DEFINITIONS ********************* */
+
+/* ********************** DECLARATION OF EXTERNAL DATA ********************* */
+
+/* ************************** FUNCTION PROTOTYPES ************************** */
+
+/* ********************************* CODE ********************************** */
+
+#endif  /* #ifndef __EMMC_CONFIG_H__ */
+/* ******************************** END ************************************ */
+

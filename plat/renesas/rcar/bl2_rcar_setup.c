@@ -54,6 +54,9 @@
 #include "bl2_swdt.h"
 #include "avs_driver.h"
 #include "scif.h"
+#include "emmc_hal.h"
+#include "emmc_std.h"
+#include "emmc_def.h"
 
 
 /* CPG write protect registers */
@@ -107,6 +110,11 @@ typedef uint32_t(*ROM_GETLCS_API)(uint32_t *pLcs);
 #define TARGET_NAME		"R-Car M3"
 #endif
 
+/* for SuspendToRAM */
+#define	GPIO_BASE	(0xE6050000U)
+#define	GPIO_INDT1	(GPIO_BASE + 0x100CU)
+#define	BIT8		((uint32_t)1U<<8)
+static uint32_t isDdrBackupMode(void);
 
 /*******************************************************************************
  * Declarations of linker defined symbols which will help us find the layout
@@ -228,7 +236,31 @@ struct entry_point_info *bl2_plat_get_bl31_ep_info(void)
 	bl31_ep_info->args.arg1 = RCAR_BL31_PLAT_PARAM_VAL;
 #endif
 #else
-	bl31_ep_info->args.arg1 = 0x00000000;	/* nomal boot/cold boot */
+	if (isDdrBackupMode() != 0U) {
+
+		NOTICE("BL2: Skip loading images. (SuspendToRAM)\n");
+
+		bl31_ep_info->args.arg0 = (unsigned long)bl2_plat_get_bl31_params();
+		bl31_ep_info->args.arg1 = 0x00000001UL;	/* warm boot */
+		bl31_ep_info->pc = (uintptr_t)BL31_BASE;
+		SET_SECURITY_STATE(bl31_ep_info->h.attr, SECURE);
+		bl31_ep_info->spsr = (uint32_t)SPSR_64(MODE_EL3, MODE_SP_ELX,
+						DISABLE_ALL_EXCEPTIONS);
+
+		/* Flush the params to be passed to memory */
+		bl2_plat_flush_bl31_params();
+
+		/*
+		 * Run BL3-1 via an SMC to BL1.
+		 * Need to jumps entrypoint of Suspend to RAM at SMC handler.
+		 */
+		smc((unsigned long)RUN_IMAGE, (unsigned long)bl31_ep_info,
+			0UL, 0UL, 0UL, 0UL, 0UL, 0UL);
+
+		/* Jump to BL31 (Not come back here) */
+	}
+
+	bl31_ep_info->args.arg1 = 0x00000000UL;	/* cold boot */
 #endif
 	return bl31_ep_info;
 }
@@ -314,6 +346,7 @@ void bl2_early_platform_setup(meminfo_t *mem_layout)
 	uint32_t reg;
 	uint32_t lcs;
 	uint32_t modemr;
+	uint32_t modemr_boot_dev;
 	char msg[128];
 	const char *str;
 	const char *cpu_ca57        = "CA57";
@@ -325,9 +358,16 @@ void bl2_early_platform_setup(meminfo_t *mem_layout)
 	const char *lcs_sd          = "SD";
 	const char *lcs_secure      = "SE";
 	const char *lcs_fa          = "FA";
+	const char *boot_hyper160   = "HyperFlash(160MHz)";
+	const char *boot_hyper80    = "HyperFlash(80MHz)";
+	const char *boot_qspi40     = "QSPI Flash(40MHz)";
+	const char *boot_qspi80     = "QSPI Flash(80MHz)";
+	const char *boot_emmc25x1   = "eMMC(25MHz x1)";
+	const char *boot_emmc50x8   = "eMMC(50MHz x8)";
 	const char *unknown         = "unknown";
 
 	modemr = mmio_read_32(RCAR_MODEMR);
+	modemr_boot_dev = modemr & MODEMR_BOOT_DEV_MASK;
 	modemr &= MODEMR_BOOT_CPU_MASK;
 
 	if((modemr == MODEMR_BOOT_CPU_CA57) ||
@@ -348,16 +388,18 @@ void bl2_early_platform_setup(meminfo_t *mem_layout)
 	/* GIC setup			*/
 	arm_gic_setup();
 
-	/* Enable FIQ interrupt		*/
-	enable_fiq();
-
 	/* System WDT initialize	*/
 	bl2_swdt_init();
 
-	bl2_avs_init();		/*  Initialize AVS Settings */
-	
-	bl2_avs_setting();	/*  Proceed with separated AVS processing */
-	
+	/* Enable FIQ interrupt		*/
+	enable_fiq();
+
+	/* Initialize AVS Settings */
+	bl2_avs_init();
+
+	/* Proceed with separated AVS processing */
+	bl2_avs_setting();
+
 	/* boot message */
 	reg = (uint32_t)read_midr();
 	switch (reg & (uint32_t)(MIDR_PN_MASK << MIDR_PN_SHIFT)) { 
@@ -375,8 +417,9 @@ void bl2_early_platform_setup(meminfo_t *mem_layout)
 						, str, version_of_renesas);
 	NOTICE("%s", msg);
 
-	bl2_avs_setting();	/*  Proceed with separated AVS processing */
-	
+	/* Proceed with separated AVS processing */
+	bl2_avs_setting();
+
 	/* R-Car Gen3 product display & check */
 	reg = mmio_read_32(RCAR_PRR);
 	switch (reg & RCAR_PRODUCT_MASK) {
@@ -401,7 +444,37 @@ void bl2_early_platform_setup(meminfo_t *mem_layout)
 		panic();
 	}
 
-	bl2_avs_setting();	/*  Proceed with separated AVS processing */
+	/* Proceed with separated AVS processing */
+	bl2_avs_setting();
+
+	switch (modemr_boot_dev) {
+	case MODEMR_BOOT_DEV_HYPERFLASH160:
+		str = boot_hyper160;
+		break;
+	case MODEMR_BOOT_DEV_HYPERFLASH80:
+		str = boot_hyper80;
+		break;
+	case MODEMR_BOOT_DEV_QSPI_FLASH40:
+		str = boot_qspi40;
+		break;
+	case MODEMR_BOOT_DEV_QSPI_FLASH80:
+		str = boot_qspi80;
+		break;
+	case MODEMR_BOOT_DEV_EMMC_25X1:
+		str = boot_emmc25x1;
+		break;
+	case MODEMR_BOOT_DEV_EMMC_50X8:
+		str = boot_emmc50x8;
+		break;
+	default:
+		str = unknown;
+		break;
+	}
+	(void)sprintf(msg, "BL2: Boot device is %s\n", str);
+	NOTICE("%s", msg);
+
+	/* Proceed with separated AVS processing */
+	bl2_avs_setting();
 
 	reg = ROM_GetLcs(&lcs);
 	if (reg == 0U) {
@@ -431,8 +504,15 @@ void bl2_early_platform_setup(meminfo_t *mem_layout)
 	(void)sprintf(msg, "BL2: LCM state is %s\n", str);
 	NOTICE("%s", msg);
 
-	bl2_avs_setting();	/*  Proceed with separated AVS processing */
-	
+	/* Proceed with separated AVS processing */
+	bl2_avs_setting();
+
+	/* End of AVS Settings */
+	bl2_avs_end();
+
+	/* Save BKUP_TRG for SuspendToRAM */
+	(void)isDdrBackupMode();
+
 	/* Setup the BL2 memory layout */
 	bl2_tzram_layout = *mem_layout;
 
@@ -441,28 +521,35 @@ void bl2_early_platform_setup(meminfo_t *mem_layout)
 		/* Initialize SDRAM */
 		InitDram();
 
-		bl2_avs_setting();/*  Proceed with separated AVS processing */
-
 		/* initialize QoS configration */
 		qos_init();
-
-		bl2_avs_setting();	/*  Proceed with separated AVS processing */
 	}
 
-	/* Initialize RPC */
-	initRPC();
+	if ((modemr_boot_dev == MODEMR_BOOT_DEV_EMMC_25X1) ||
+	    (modemr_boot_dev == MODEMR_BOOT_DEV_EMMC_50X8)) {
+		/* Initialize eMMC */
+		if (emmc_init() != EMMC_SUCCESS) {
+			NOTICE("BL2: Failed to eMMC driver initialize.\n");
+			/* Infinite loop */
+			panic();
+		}
 
-	bl2_avs_setting();	/*  Proceed with separated AVS processing */
+		/* Card power on */
+		(void)emmc_memcard_power(EMMC_POWER_ON);
 
-	/* Initialize DMA */
-	initDMA();
+		/* Card mount */
+		if (emmc_mount() != EMMC_SUCCESS) {
+			NOTICE("BL2: Failed to eMMC mount operation.\n");
+			/* Infinite loop */
+			panic();
+		}
+	} else {
+		/* Initialize RPC */
+		initRPC();
 
-	bl2_avs_setting();	/*  Proceed with separated AVS processing */
-
-	/* Initialize secure configuration */
-	bl2_secure_setting();
-
-	bl2_avs_end();		/* End of AVS Settings */
+		/* Initialize DMA */
+		initDMA();
+	}
 
 	/* unmask the detection of RWDT overflow */
 	reg = mmio_read_32(RST_WDTRSTCR);
@@ -513,7 +600,33 @@ void bl2_early_platform_setup(meminfo_t *mem_layout)
 #endif /* #if (RCAR_LOSSY_ENABLE == 1) */
 
 	/* Initialise the IO layer and register platform IO devices */
-	rcar_io_setup();
+	if((modemr_boot_dev == MODEMR_BOOT_DEV_EMMC_25X1) ||
+	   (modemr_boot_dev == MODEMR_BOOT_DEV_EMMC_50X8)) {
+		rcar_io_emmc_setup();
+	} else {
+		rcar_io_setup();
+	}
+}
+
+/*******************************************************************************
+ * Get DDR Backup Mode from GPIO
+ *  BKUP_TRG(IO port A8, GPIO GP-0-8): LOW=Cold boot, HIGH=Warm boot
+ * return: uint8_t
+ *  0: DDR is not backup mode.
+ *  1: DDR is backup mode.
+ ******************************************************************************/
+static uint32_t isDdrBackupMode(void)
+{
+	static uint32_t backupTriggerOnce = 1U;
+	static uint32_t backupTrigger = 0U;
+	if (backupTriggerOnce == 1U) {
+		backupTriggerOnce = 0U;
+		/* Read and return BKUP_TRG(IO port B8, GPIO GP-1-8) */
+		if ((mmio_read_32((uintptr_t)GPIO_INDT1) & BIT8) != 0U) {
+			backupTrigger = 1U;
+		}
+	}
+	return backupTrigger;
 }
 
 /*******************************************************************************
@@ -538,6 +651,16 @@ void bl2_platform_setup(void)
 void bl2_plat_flush_bl31_params(void)
 {
 	uint32_t val;
+	uint32_t modemr_boot_dev;
+
+	modemr_boot_dev = mmio_read_32(RCAR_MODEMR) & MODEMR_BOOT_DEV_MASK;
+	if((modemr_boot_dev == MODEMR_BOOT_DEV_EMMC_25X1) ||
+	   (modemr_boot_dev == MODEMR_BOOT_DEV_EMMC_50X8)) {
+		(void)emmc_terminate();
+	}
+
+	/* Initialize secure configuration */
+	bl2_secure_setting();
 
 	/* disable the System WDT, FIQ and GIC	*/
 	bl2_swdt_release();
@@ -639,8 +762,9 @@ void bl2_plat_get_bl32_meminfo(meminfo_t *bl32_meminfo)
  ******************************************************************************/
 void bl2_plat_get_bl33_meminfo(meminfo_t *bl33_meminfo)
 {
+	/* Non-secure target programs loading area limit is 40-bits address. */
 	bl33_meminfo->total_base = DRAM1_NS_BASE;
-	bl33_meminfo->total_size = DRAM1_NS_SIZE;
+	bl33_meminfo->total_size = DRAM_LIMIT - DRAM1_NS_BASE;
 	bl33_meminfo->free_base = DRAM1_NS_BASE;
-	bl33_meminfo->free_size = DRAM1_NS_SIZE;
+	bl33_meminfo->free_size = DRAM_LIMIT;
 }

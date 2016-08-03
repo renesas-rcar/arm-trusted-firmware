@@ -39,9 +39,9 @@
 #include <platform.h>
 #include <platform_def.h>
 #include <xlat_tables.h>
-#include "../rcar_def.h"
-#include "../rcar_private.h"
-#include "../rcar_version.h"
+#include "rcar_def.h"
+#include "rcar_private.h"
+#include "rcar_version.h"
 
 const uint8_t version_of_renesas[VERSION_OF_RENESAS_MAXLEN]
 	__attribute__((__section__(".version"))) = VERSION_OF_RENESAS;
@@ -65,6 +65,23 @@ const uint8_t version_of_renesas[VERSION_OF_RENESAS_MAXLEN]
 #define MAP_DEVICE_RCAR	MAP_REGION_FLAT(DEVICE_RCAR_BASE,		\
 					DEVICE_RCAR_SIZE,		\
 					MT_DEVICE | MT_RW | MT_SECURE)
+
+#define MAP_DEVICE_RCAR2	MAP_REGION_FLAT(DEVICE_RCAR_BASE2,	\
+					DEVICE_RCAR_SIZE2,		\
+					MT_DEVICE | MT_RW | MT_SECURE)
+
+#define MAP_SRAM	MAP_REGION_FLAT(DEVICE_SRAM_BASE,		\
+					DEVICE_SRAM_SIZE,		\
+					MT_MEMORY | MT_RO | MT_SECURE)
+
+#define MAP_SRAM_SHADOW	MAP_REGION(DEVICE_SRAM_BASE,			\
+					DEVICE_SRAM_SHADOW_BASE,	\
+					DEVICE_SRAM_SIZE,		\
+					MT_MEMORY | MT_RW | MT_SECURE)
+
+#define MAP_SRAM_STACK	MAP_REGION_FLAT(DEVICE_SRAM_STACK_BASE,		\
+					DEVICE_SRAM_STACK_SIZE,		\
+					MT_MEMORY | MT_RW | MT_SECURE)
 
 #define MAP_ATFW_LOG	MAP_REGION_FLAT(RCAR_BL31_LOG_BASE,		\
 					RCAR_BL31_LOG_SIZE,		\
@@ -99,6 +116,10 @@ const mmap_region_t rcar_mmap[] = {
 	MAP_SHARED_RAM,
 	MAP_ATFW_LOG,
 	MAP_DEVICE_RCAR,
+	MAP_DEVICE_RCAR2,
+	MAP_SRAM,
+	MAP_SRAM_SHADOW,
+	MAP_SRAM_STACK,
 	{	0}
 };
 #endif
@@ -166,7 +187,7 @@ DEFINE_CONFIGURE_MMU_EL(3)
 
 #if (IMAGE_BL2)
 extern int32_t file_to_cert(const int32_t filename, uint32_t *cert_addr);
-extern void get_info_from_cert(uint64_t cert_addr, uint32_t *size, uint32_t *dest_addr);
+extern void get_info_from_cert(uint64_t cert_addr, uint32_t *size, uintptr_t *dest_addr);
 #endif
 
 unsigned long plat_get_ns_image_entrypoint(void)
@@ -175,7 +196,7 @@ unsigned long plat_get_ns_image_entrypoint(void)
 	int32_t ret;
 	uint32_t cert_addr;
 	uint32_t l_image_size;
-	uint32_t dest_addr;
+	uintptr_t dest_addr;
 	ret = file_to_cert(BL33_CERT_ID, &cert_addr);
 	if (0 == ret) {
 		get_info_from_cert((uint64_t) cert_addr, &l_image_size, &dest_addr);

@@ -40,10 +40,14 @@
 #include "io_common.h"
 #include "io_rcar.h"
 #include "io_memdrv.h"
+#include "io_emmcdrv.h"
 
 /* IO devices */
 static uintptr_t rcar_dev_handle;
 static uintptr_t memdrv_dev_handle;
+static uintptr_t emmcdrv_dev_handle;
+static uintptr_t boot_io_drv_id;
+
 
 static const io_block_spec_t rcar_block_spec = {
 	.offset = FLASH0_BASE,
@@ -183,6 +187,7 @@ static const io_block_spec_t bl338_cert_file_spec = {
 
 static int32_t open_rcar(const uintptr_t spec);
 static int32_t open_memmap(const uintptr_t spec);
+static int32_t open_emmcdrv(const uintptr_t spec);
 
 /* sakata check table info */
 struct plat_io_policy {
@@ -363,13 +368,39 @@ static const struct plat_io_policy policies[] = {
 	}
 };
 
+static const io_drv_spec_t io_drv_spec_memdrv = {
+	FLASH0_BASE,
+	FLASH0_SIZE,
+	0U
+};
+
+static const io_drv_spec_t io_drv_spec_emmcdrv = {
+	0U,
+	0U,
+	0U
+};
+
+static const struct plat_io_policy drv_policies[] = {
+	/* FLASH_DEV_ID */
+	{
+		&memdrv_dev_handle,
+		(uintptr_t)&io_drv_spec_memdrv,
+		&open_memmap
+	},
+	/* EMMC_DEV_ID */
+	{
+		&emmcdrv_dev_handle,
+		(uintptr_t)&io_drv_spec_emmcdrv,
+		&open_emmcdrv
+	}
+};
 
 static int32_t open_rcar(const uintptr_t spec)
 {
 	int32_t result;
 
 	/* See if a Firmware Image Package is available */
-	result = io_dev_init(rcar_dev_handle, (uintptr_t)FIP_IMAGE_ID);
+	result = io_dev_init(rcar_dev_handle, (uintptr_t)boot_io_drv_id);
 	if (result == IO_SUCCESS) {
 		VERBOSE("Using RCar File Manager\n");
 	}
@@ -393,6 +424,16 @@ static int32_t open_memmap(const uintptr_t spec)
 	return result;
 }
 
+static int32_t open_emmcdrv(const uintptr_t spec)
+{
+	int32_t result;
+
+	result = io_dev_init(emmcdrv_dev_handle, 0U);
+	if (result == IO_SUCCESS) {
+		VERBOSE("Using eMMCdrv IO\n");
+		}
+	return result;
+}
 
 
 void rcar_io_setup (void)
@@ -400,6 +441,8 @@ void rcar_io_setup (void)
 	int32_t io_result;
 	const io_dev_connector_t *rcar_dev_con;
 	const io_dev_connector_t *memmap_dev_con;
+
+	boot_io_drv_id = FLASH_DEV_ID;
 
 	/* Register the IO devices on this platform */
 	io_result = register_io_dev_rcar(&rcar_dev_con);
@@ -420,6 +463,33 @@ void rcar_io_setup (void)
 	(void)io_result;
 }
 
+void rcar_io_emmc_setup (void)
+{
+	int32_t io_result;
+	const io_dev_connector_t *rcar_dev_con;
+	const io_dev_connector_t *emmc_dev_con;
+
+	boot_io_drv_id = EMMC_DEV_ID;
+
+	/* Register the IO devices on this platform */
+	io_result = register_io_dev_rcar(&rcar_dev_con);
+	assert(io_result == IO_SUCCESS);
+
+	io_result = register_io_dev_emmcdrv(&emmc_dev_con);
+	assert(io_result == IO_SUCCESS);
+
+	/* Open connections to devices and cache the handles */
+	io_result = io_dev_open(rcar_dev_con, 0U, &rcar_dev_handle);
+	assert(io_result == IO_SUCCESS);
+
+	io_result = io_dev_open(emmc_dev_con, 0U,
+				&emmcdrv_dev_handle);
+
+	assert(io_result == IO_SUCCESS);
+
+	/* Ignore improbable errors in release builds */
+	(void)io_result;
+}
 
 /* Return an IO device handle and specification which can be used to access
  * an image. Use this to enforce platform load policy */
@@ -432,6 +502,24 @@ int plat_get_image_source(unsigned int image_id, uintptr_t *dev_handle,
 	assert(image_id < ARRAY_SIZE(policies));
 
 	policy = &policies[image_id];
+	result = policy->check(policy->image_spec);
+	if (result == IO_SUCCESS) {
+		*image_spec = policy->image_spec;
+		*dev_handle = *(policy->dev_handle);
+	}
+
+	return result;
+}
+
+int32_t plat_get_drv_source(uint32_t io_drv_id, uintptr_t *dev_handle,
+			  uintptr_t *image_spec)
+{
+	int32_t result;
+	const struct plat_io_policy *policy;
+
+	assert(io_drv_id < ARRAY_SIZE(drv_policies));
+
+	policy = &drv_policies[io_drv_id];
 	result = policy->check(policy->image_spec);
 	if (result == IO_SUCCESS) {
 		*image_spec = policy->image_spec;
