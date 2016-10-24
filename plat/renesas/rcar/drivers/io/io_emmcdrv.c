@@ -220,7 +220,7 @@ static int32_t emmcdrv_block_read(io_entity_t *entity, uintptr_t buffer,
 	assert(entity != NULL);
 	assert(buffer != (uintptr_t)NULL);
 	assert(length_read != NULL);
-	assert(entity->info != NULL);
+	assert(entity->info != (uintptr_t)NULL);
 
 	fp = (file_state_t *)entity->info;
 
