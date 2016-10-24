@@ -62,18 +62,19 @@ static void regdump(void)
 		"%s(0x%x) : 0x%x\n"
 		"%s(0x%x) : 0x%x\n"
 		"%s(0x%x) : 0x%x\n"
+		"%s(0x%x) : 0x%x\n"
 		"%s(0x%x) : 0x%x\n",
-		"SMSTPCR2  ",SMSTPCR2,mmio_read_32(CPG_SMSTPCR2),
-		"SRCR2     ",SRCR2,mmio_read_32(CPG_SRCR2),
-		"MSTPSR2   ",MSTPSR2,mmio_read_32(CPG_MSTPSR2),
+		"SMSTPCR2  ",CPG_SMSTPCR2,mmio_read_32(CPG_SMSTPCR2),
+		"SRCR2     ",CPG_SRCR2,mmio_read_32(CPG_SRCR2),
+		"MSTPSR2   ",CPG_MSTPSR2,mmio_read_32(CPG_MSTPSR2),
 		"DMAOR     ",DMA_DMAOR,mmio_read_16(DMA_DMAOR),
 		"DMASEC    ",DMA_DMASEC,mmio_read_32(DMA_DMASEC),
 		"DMACHCLR  ",DMA_DMACHCLR,mmio_read_32(DMA_DMACHCLR),
-		"DMAFIXSAR ",DMA_DMAFIXSAR,mmio_read_32(DMA_DMAFIXSAR),
 		"DMASAR    ",DMA_DMASAR,mmio_read_32(DMA_DMASAR),
 		"DMADAR    ",DMA_DMADAR,mmio_read_32(DMA_DMADAR),
 		"DMATCR    ",DMA_DMATCR,mmio_read_32(DMA_DMATCR),
-		"DMACHCR   ",DMA_DMACHCR,mmio_read_32(DMA_DMACHCR)
+		"DMACHCR   ",DMA_DMACHCR,mmio_read_32(DMA_DMACHCR),
+		"DMAFIXDAR ",DMA_DMAFIXDAR,mmio_read_32(DMA_DMAFIXDAR)
 	);
 #endif
 }
