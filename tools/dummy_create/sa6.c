@@ -83,7 +83,7 @@
 /* Destination size for BL32 */
 #define RCAR_BL32DST_SIZE		(0x00020000U)
 /* Destination address for BL33 */
-#define RCAR_BL33DST_ADDRESS		(0x49000000U)
+#define RCAR_BL33DST_ADDRESS		(0x50000000U)
 #define RCAR_BL33DST_ADDRESSH		(0x00000000U)
 /* Destination size for BL33 */
 #define RCAR_BL33DST_SIZE		(0x00040000U)
