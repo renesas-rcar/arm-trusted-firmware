@@ -347,6 +347,7 @@ void bl2_early_platform_setup(meminfo_t *mem_layout)
 	uint32_t lcs;
 	uint32_t modemr;
 	uint32_t modemr_boot_dev;
+	int32_t ret;
 	char msg[128];
 	const char *str;
 	const char *cpu_ca57        = "CA57";
@@ -519,7 +520,12 @@ void bl2_early_platform_setup(meminfo_t *mem_layout)
 	if((modemr == MODEMR_BOOT_CPU_CA57) ||
 	   (modemr == MODEMR_BOOT_CPU_CA53)) {
 		/* Initialize SDRAM */
-		InitDram();
+		ret = InitDram();
+		if (ret != 0) {
+			NOTICE("BL2: Failed to DRAM initialize (%d).\n", ret);
+			/* Infinite loop */
+			panic();
+		}
 
 		/* initialize QoS configration */
 		qos_init();
