@@ -16,7 +16,7 @@
 #     used to endorse or promote products derived from this software without
 #     specific prior written permission.
 #
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" 
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 # AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 # IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
 # ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
@@ -29,27 +29,5 @@
 # POSSIBILITY OF SUCH DAMAGE.
 #
 
-ifdef RCAR_LSI_CUT_COMPAT
-  ifeq (${RCAR_LSI},${RCAR_H3})
-    BL2_SOURCES += plat/renesas/rcar/ddr/H3/ES10/boot_init_dram_h3_es10.c
-    BL2_SOURCES += plat/renesas/rcar/ddr/H3/WS11/boot_init_dram_h3_ws11.c
-  endif
-  ifeq (${RCAR_LSI},${RCAR_M3})
-    $(error "Error: ${LSI} is not supported.")
-  endif
-else
-  ifeq (${RCAR_LSI},${RCAR_H3})
-    ifeq (${LSI_CUT},10)
-      BL2_SOURCES += plat/renesas/rcar/ddr/H3/ES10/boot_init_dram_h3_es10.c
-    endif
-    ifeq (${LSI_CUT},11)
-      BL2_SOURCES += plat/renesas/rcar/ddr/H3/WS11/boot_init_dram_h3_ws11.c
-    endif
-  endif
-  ifeq (${RCAR_LSI},${RCAR_M3})
-    BL2_SOURCES += plat/renesas/rcar/ddr/M3/boot_init_dram_m3_es10.c
-  endif
-endif
-
-
 BL2_SOURCES += plat/renesas/rcar/ddr/boot_init_dram.c
+BL2_SOURCES += plat/renesas/rcar/ddr/dram_sub_func.c

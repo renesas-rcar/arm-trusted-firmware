@@ -29,9 +29,15 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef	__BOOT_INIT_DRAM_M3_ES10_
-#define	__BOOT_INIT_DRAM_M3_ES10_
+#ifndef __DRAM_SUB_FUNC_H_
+#define __DRAM_SUB_FUNC_H_
 
-extern void InitDram_m3_es10(void);
+#define DRAM_BOOT_STATUS_COLD	(0U)
+#define DRAM_BOOT_STATUS_WARM	(1U)
 
-#endif /* __BOOT_INIT_DRAM_M3_ES10_*/
+#define DRAM_UPDATE_STATUS_ERR	(-1)
+
+void dram_get_boot_status(uint32_t *status);
+int32_t dram_update_boot_status(uint32_t status);
+
+#endif /* __DRAM_SUB_FUNC_H_ */
