@@ -82,6 +82,8 @@ void rcar_set_log_time(void)
 		second = second / 10U;
 		i--;
 	} while (second != 0U);
+	for (; i >= 10; i--)
+		t_log[0][i] = (int)' ';
 	start_counter = i + 1;
 	t_log[1][0] = micro_sec / 100000U;
 	micro_sec %= 100000U;
@@ -96,13 +98,17 @@ void rcar_set_log_time(void)
 
 	(void)putchar((int)'[');
 	for (i = start_counter; i < 15; i++) {
-		(void)putchar((int)((int)t_log[0][i] + (int)0x30));
+		if (t_log[0][i] <= 9)
+			(void)putchar((int)((int)t_log[0][i] + 0x30));
+		else
+			(void)putchar((int)' ');
 	}
 	(void)putchar((int)'.');
 	for (i = 0; i < 6; i++) {
 		(void)putchar((int)((int)t_log[1][i] + (int)0x30));
 	}
 	(void)putchar((int)']');
+	(void)putchar((int)' ');
 }
 
 int32_t rcar_set_log_data(int32_t c)
