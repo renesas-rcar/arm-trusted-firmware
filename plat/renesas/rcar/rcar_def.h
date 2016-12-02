@@ -234,15 +234,20 @@
 #define	RCAR_SYSCISCR			(0xE6180008U)					/* Interrupt status clear register					*/
 /* Product register	*/
 #define	RCAR_PRR			(0xFFF00044U)					/* Product register							*/
+#define	RCAR_PRR_A			(0xFFF00044)					/* Product register, assembly version					*/
 
 /*******************************************************************************
  *  RCAR product and cut information
  ******************************************************************************/
 #define RCAR_PRODUCT_MASK		(0x00007F00U)
+#define RCAR_PRODUCT_MASK_A		(0x00007F00)
 #define RCAR_CUT_MASK			(0x000000FFU)
+#define RCAR_CUT_MASK_A			(0x000000FF)
 #define RCAR_PRODUCT_H3			(0x00004F00U)
+#define RCAR_PRODUCT_H3_A		(0x00004F00)
 #define RCAR_PRODUCT_M3			(0x00005200U)
 #define RCAR_CUT_ES10			(0x00000000U)
+#define RCAR_CUT_ES10_A			(0x00000000)
 #define RCAR_CUT_ES11			(0x00000001U)
 #define RCAR_CUT_ES20			(0x00000010U)
 #define RCAR_MAJOR_MASK			(0x000000F0U)
