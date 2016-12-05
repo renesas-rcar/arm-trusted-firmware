@@ -36,7 +36,7 @@
 #include <stdarg.h>
 #include <stdint.h>
 
-#if (IMAGE_BL31 && PLAT_rcar)
+#if (IMAGE_BL31 || IMAGE_BL2 && PLAT_rcar)
 extern void	rcar_set_log_time(void);
 #endif
 /***********************************************************
@@ -180,7 +180,7 @@ void tf_printf(const char *fmt, ...)
 	unsigned long long int unum;
 	char *str;
 
-#if (IMAGE_BL31 && PLAT_rcar)
+#if (IMAGE_BL31 || IMAGE_BL2 && PLAT_rcar)
 	rcar_set_log_time();
 #endif
 

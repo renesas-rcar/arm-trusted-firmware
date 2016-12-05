@@ -58,6 +58,7 @@ BL2_SOURCES		+=	${RCAR_GIC_SOURCES}				\
 				plat/renesas/rcar/drivers/io/io_memdrv.c	\
 				plat/renesas/rcar/drivers/io/io_emmcdrv.c	\
 				plat/renesas/rcar/drivers/scif/scif.S		\
+				plat/renesas/rcar/drivers/memdrv/rcar_printf.c	\
 				plat/renesas/rcar/drivers/auth/rcarboot.c	\
 				plat/renesas/rcar/rcar_io_storage.c		\
 				drivers/io/io_storage.c				\
