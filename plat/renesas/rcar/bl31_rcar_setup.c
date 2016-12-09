@@ -124,13 +124,14 @@ entry_point_info_t *bl31_plat_get_next_image_ep_info(uint32_t type)
 void bl31_early_platform_setup(bl31_params_t *from_bl2,
 		void *plat_params_from_bl2)
 {
+#if DEBUG
 	uint32_t chk_data;
 	uint32_t freq_data;
 	uint32_t product_cut = mmio_read_32((uintptr_t)RCAR_PRR)
 				& (RCAR_PRODUCT_MASK | RCAR_CUT_MASK);
 
 	/*
-	 * Set frequency data to CNTFID0
+	 * Check frequency data in CNTFID0
 	 */
 	chk_data = mmio_read_32((uintptr_t)RCAR_MODEMR) & CHECK_MD13_MD14;
 	switch (chk_data) {
@@ -153,7 +154,7 @@ void bl31_early_platform_setup(bl31_params_t *from_bl2,
 		freq_data = 0U;
 		break;
 	}
-	mmio_write_32(RCAR_CNTC_BASE + CNTFID_OFF, freq_data);
+#endif
 
 	/* Initialize the log area to provide early debug support */
 	console_init(1U, 0U, 0U);
@@ -166,6 +167,9 @@ void bl31_early_platform_setup(bl31_params_t *from_bl2,
 	    ((uint8_t)VERSION_1 > from_bl2->h.version)) {
 		panic();
 	}
+	assert(plat_get_syscnt_freq() == freq_data);
+	assert(read_cntfrq_el0() == plat_get_syscnt_freq());
+	assert(read_cntfrq_el0() != 0);
 
 	bl2_to_bl31_params = from_bl2;
 
