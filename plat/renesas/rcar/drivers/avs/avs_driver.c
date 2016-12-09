@@ -34,6 +34,7 @@
 #include "bl2_cpg_init.h"
 #include "bl2_cpg_register.h"
 #include "avs_driver.h"
+#include "rcar_def.h"
 
 #if AVS_SETTING_ENABLE == 1
 /* Read PMIC register for debug. 1:enable / 0:disable */
@@ -53,13 +54,6 @@
 
 /* Mode Monitor Register */
 #define	RCAR_MODEMR			(0xE6160060U)	/* Mode pin register */
-#define MODEMR_MD13			(0x2000U)	/* MD13 bit mask */
-#define MODEMR_MD14			(0x4000U)	/* MD14 bit mask */
-/* CP Phy input frequency */
-#define	CP_PHY_FREQ_8p33M		(0x0000U)	/* 8.3333MHz */
-#define	CP_PHY_FREQ_10M			(0x2000U)	/* 10MHz */
-#define	CP_PHY_FREQ_12p5M		(0x4000U)	/* 12.5MHz */
-#define	CP_PHY_FREQ_16p66M		(0x6000U)	/* 16.6666MHz */
 
 /* I2C for DVFS bit in CPG registers for module standby and software reset*/
 #define CPG_SYS_DVFS_BIT		(0x04000000U)
@@ -513,21 +507,21 @@ static void avs_set_iic_clock(void)
 	uint32_t md_pin;
 
 	/* Read Mode pin register. */
-	md_pin = mmio_read_32(RCAR_MODEMR) & (MODEMR_MD13 | MODEMR_MD14);
+	md_pin = mmio_read_32(RCAR_MODEMR) & CHECK_MD13_MD14;
 	switch (md_pin) {
-	case CP_PHY_FREQ_8p33M:		/* 8.3333MHz */
+	case FREQ_8_33M:		/* 8.3333MHz */
 		mmio_write_8(IIC_ICCL, ICCL_FREQ_8p33M);
 		mmio_write_8(IIC_ICCH, ICCH_FREQ_8p33M);
 		break;
-	case CP_PHY_FREQ_10M:		/* 10MHz */
+	case FREQ_10M:		/* 10MHz */
 		mmio_write_8(IIC_ICCL, ICCL_FREQ_10M);
 		mmio_write_8(IIC_ICCH, ICCH_FREQ_10M);
 		break;
-	case CP_PHY_FREQ_12p5M:		/* 12.5MHz */
+	case FREQ_12_5M:		/* 12.5MHz */
 		mmio_write_8(IIC_ICCL, ICCL_FREQ_12p5M);
 		mmio_write_8(IIC_ICCH, ICCH_FREQ_12p5M);
 		break;
-	case CP_PHY_FREQ_16p66M:	/* 16.6666MHz */
+	case FREQ_16_66M:	/* 16.6666MHz */
 		mmio_write_8(IIC_ICCL, ICCL_FREQ_16p66M);
 		mmio_write_8(IIC_ICCH, ICCH_FREQ_16p66M);
 		break;

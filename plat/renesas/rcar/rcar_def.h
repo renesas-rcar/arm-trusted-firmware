@@ -296,4 +296,14 @@
 /* Base address where parameters to BL31 are stored */
 #define PARAMS_BASE		(MBOX_BASE + MBOX_SIZE)
 
+/*******************************************************************************
+ *  MODEMR PLL masks and bitfield values
+ ******************************************************************************/
+#define	CHECK_MD13_MD14		(0x6000U)
+#define	CHECK_MD13_MD14_A	(0x6000)
+#define	FREQ_8_33M		(0x0000U)
+#define	FREQ_10M		(0x2000U)
+#define	FREQ_12_5M		(0x4000U)
+#define	FREQ_16_66M		(0x6000U)
+
 #endif /* RCAR_DEF_H__ */

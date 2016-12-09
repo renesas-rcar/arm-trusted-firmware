@@ -77,12 +77,6 @@
 #define WTCNT_COUNT_8p22k		(0x10000U - 41115U)
 #define WTCSRA_CKS_DIV16		(0x00000002U)
 
-#define CHECK_MD13_MD14			(0x6000U)
-#define FREQ_10p0M			(0x2000U)
-#define FREQ_12p5M			(0x4000U)
-#define FREQ_8p33M			(0x0000U)
-#define FREQ_16p66M			(0x6000U)
-
 static void bl2_swdt_disable(void);
 
 void bl2_swdt_init(void)
@@ -105,16 +99,16 @@ void bl2_swdt_init(void)
 
 	/* Set the overflow counter				*/
 	switch (chk_data) {
-	case FREQ_8p33M:	/* MD13=0 and MD14=0		*/
-	case FREQ_12p5M:	/* MD13=0 and MD14=1		*/
+	case FREQ_8_33M:	/* MD13=0 and MD14=0		*/
+	case FREQ_12_5M:	/* MD13=0 and MD14=1		*/
 		/* OSCCLK=130.2kHz count=40687, set 0x5A5A6111	*/
 		mmio_write_32(SWDT_WTCNT,(WTCNT_UPPER_BYTE | WTCNT_COUNT_8p13k));
 		break;
-	case FREQ_10p0M:	/* MD13=1 and MD14=0		*/
+	case FREQ_10M:	/* MD13=1 and MD14=0		*/
 		/* OSCCLK=131.57kHz count=41115, set 0x5A5A5F65	*/
 		mmio_write_32(SWDT_WTCNT,(WTCNT_UPPER_BYTE | WTCNT_COUNT_8p22k));
 		break;
-	case FREQ_16p66M:	/* MD13=1 and MD14=1		*/
+	case FREQ_16_66M:	/* MD13=1 and MD14=1		*/
 		/* OSCCLK=130.2kHz				*/
 		if (product_cut==(RCAR_PRODUCT_H3 | RCAR_CUT_ES10)) {
 			/* R-car H3 ES1.0			*/

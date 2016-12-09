@@ -44,12 +44,6 @@
 #include "rcar_private.h"
 #include "rcar_version.h"
 
-#define	CHECK_MD13_MD14		(0x6000U)
-#define	FREQ_10M		(0x2000U)
-#define	FREQ_12_5M		(0x4000U)
-#define	FREQ_8_33M		(0x0000U)
-#define	FREQ_16_66M		(0x6000U)
-
 /*******************************************************************************
  * Declarations of linker defined symbols which will help us find the layout
  * of trusted SRAM

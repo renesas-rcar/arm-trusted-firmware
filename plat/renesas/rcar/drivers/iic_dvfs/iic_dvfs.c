@@ -36,12 +36,6 @@
 
 #define DVFS_RETRY_MAX			(2U)
 
-#define MODEMR_SET_MASK_13_14		(0x6000U)
-#define MODEMR_SET_10p00M		(0x2000U)
-#define MODEMR_SET_12p50M		(0x4000U)
-#define MODEMR_SET_08p33M		(0x0000U)
-#define MODEMR_SET_16p66M		(0x6000U)
-
 #define IIC_DVFS_SET_ICCL_08p33M	(0x07U)
 #define IIC_DVFS_SET_ICCL_10p00M	(0x09U)
 #define IIC_DVFS_SET_ICCL_12p50M	(0x0BU)
@@ -346,21 +340,21 @@ static int32_t
 				| ((uint8_t)(IIC_DVFS_BIT_ICCR_ENABLE));
 	mmio_write_8(IIC_DVFS_REG_ICCR, mode);
 	/* Set clock */
-	reg = mmio_read_32(RCAR_MODEMR) & MODEMR_SET_MASK_13_14;
+	reg = mmio_read_32(RCAR_MODEMR) & CHECK_MD13_MD14;
 	switch (reg) {
-	case MODEMR_SET_08p33M:
+	case FREQ_8_33M:
 		mmio_write_8(IIC_DVFS_REG_ICCL, IIC_DVFS_SET_ICCL_08p33M);
 		mmio_write_8(IIC_DVFS_REG_ICCH, IIC_DVFS_SET_ICCH_08p33M);
 		break;
-	case MODEMR_SET_10p00M:
+	case FREQ_10M:
 		mmio_write_8(IIC_DVFS_REG_ICCL, IIC_DVFS_SET_ICCL_10p00M);
 		mmio_write_8(IIC_DVFS_REG_ICCH, IIC_DVFS_SET_ICCH_10p00M);
 		break;
-	case MODEMR_SET_12p50M:
+	case FREQ_12_5M:
 		mmio_write_8(IIC_DVFS_REG_ICCL, IIC_DVFS_SET_ICCL_12p50M);
 		mmio_write_8(IIC_DVFS_REG_ICCH, IIC_DVFS_SET_ICCH_12p50M);
 		break;
-	case MODEMR_SET_16p66M:
+	case FREQ_16_66M:
 		mmio_write_8(IIC_DVFS_REG_ICCL, IIC_DVFS_SET_ICCL_16p66M);
 		mmio_write_8(IIC_DVFS_REG_ICCH, IIC_DVFS_SET_ICCH_16p66M);
 		break;
