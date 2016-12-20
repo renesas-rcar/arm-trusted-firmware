@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2015-2016, ARM Limited and Contributors. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -38,6 +38,9 @@
 #define V2M_SYS_ID			0x0
 #define V2M_SYS_SWITCH			0x4
 #define V2M_SYS_LED			0x8
+#define V2M_SYS_NVFLAGS			0x38
+#define V2M_SYS_NVFLAGSSET		0x38
+#define V2M_SYS_NVFLAGSCLR		0x3c
 #define V2M_SYS_CFGDATA			0xa0
 #define V2M_SYS_CFGCTRL			0xa4
 #define V2M_SYS_CFGSTATUS		0xa8
@@ -109,9 +112,33 @@
 #define V2M_SP804_TIMER0_BASE		0x1C110000
 #define V2M_SP804_TIMER1_BASE		0x1C120000
 
-#define V2M_MAP_FLASH0			MAP_REGION_FLAT(V2M_FLASH0_BASE,\
+/* SP810 controller */
+#define V2M_SP810_BASE			0x1c020000
+#define V2M_SP810_CTRL_TIM0_SEL		(1 << 15)
+#define V2M_SP810_CTRL_TIM1_SEL		(1 << 17)
+#define V2M_SP810_CTRL_TIM2_SEL		(1 << 19)
+#define V2M_SP810_CTRL_TIM3_SEL		(1 << 21)
+
+/*
+ * The flash can be mapped either as read-only or read-write.
+ *
+ * If it is read-write then it should also be mapped as device memory because
+ * NOR flash programming involves sending a fixed, ordered sequence of commands.
+ *
+ * If it is read-only then it should also be mapped as:
+ * - Normal memory, because reading from NOR flash is transparent, it is like
+ *   reading from RAM.
+ * - Non-executable by default. If some parts of the flash need to be executable
+ *   then platform code is responsible for re-mapping the appropriate portion
+ *   of it as executable.
+ */
+#define V2M_MAP_FLASH0_RW		MAP_REGION_FLAT(V2M_FLASH0_BASE,\
 						V2M_FLASH0_SIZE,	\
-						MT_MEMORY | MT_RO | MT_SECURE)
+						MT_DEVICE | MT_RW | MT_SECURE)
+
+#define V2M_MAP_FLASH0_RO		MAP_REGION_FLAT(V2M_FLASH0_BASE,\
+						V2M_FLASH0_SIZE,	\
+						MT_RO_DATA | MT_SECURE)
 
 #define V2M_MAP_IOFPGA			MAP_REGION_FLAT(V2M_IOFPGA_BASE,\
 						V2M_IOFPGA_SIZE,		\

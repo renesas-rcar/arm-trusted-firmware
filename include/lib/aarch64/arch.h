@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2015, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2013-2016, ARM Limited and Contributors. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -88,6 +88,14 @@
 #define ICC_CTLR_EL1    S3_0_C12_C12_4
 #define ICC_CTLR_EL3    S3_6_C12_C12_4
 #define ICC_PMR_EL1     S3_0_C4_C6_0
+#define ICC_IGRPEN1_EL3 S3_6_c12_c12_7
+#define ICC_IGRPEN0_EL1 S3_0_c12_c12_6
+#define ICC_HPPIR0_EL1  S3_0_c12_c8_2
+#define ICC_HPPIR1_EL1  S3_0_c12_c12_2
+#define ICC_IAR0_EL1    S3_0_c12_c8_0
+#define ICC_IAR1_EL1    S3_0_c12_c12_0
+#define ICC_EOIR0_EL1   S3_0_c12_c8_1
+#define ICC_EOIR1_EL1   S3_0_c12_c12_1
 
 /*******************************************************************************
  * Generic timer memory mapped registers & offsets
@@ -122,6 +130,10 @@
 #define ID_AA64PFR0_EL3_SHIFT	12
 #define ID_AA64PFR0_ELX_MASK	0xf
 
+#define ID_AA64PFR0_GIC_SHIFT	24
+#define ID_AA64PFR0_GIC_WIDTH	4
+#define ID_AA64PFR0_GIC_MASK	((1 << ID_AA64PFR0_GIC_WIDTH) - 1)
+
 /* ID_PFR1_EL1 definitions */
 #define ID_PFR1_VIRTEXT_SHIFT	12
 #define ID_PFR1_VIRTEXT_MASK	0xf
@@ -134,7 +146,7 @@
 			(1 << 4))
 
 #define SCTLR_EL1_RES1  ((1 << 29) | (1 << 28) | (1 << 23) | (1 << 22) | \
-			(1 << 11))
+			(1 << 20) | (1 << 11))
 #define SCTLR_AARCH32_EL1_RES1 \
 			((1 << 23) | (1 << 22) | (1 << 11) | (1 << 4) | \
 			(1 << 3))
@@ -173,6 +185,11 @@
 #define HCR_AMO_BIT		(1 << 5)
 #define HCR_IMO_BIT		(1 << 4)
 #define HCR_FMO_BIT		(1 << 3)
+
+/* ISR definitions */
+#define ISR_A_SHIFT		8
+#define ISR_I_SHIFT		7
+#define ISR_F_SHIFT		6
 
 /* CNTHCTL_EL2 definitions */
 #define EVNTEN_BIT		(1 << 2)
@@ -225,6 +242,9 @@
 #define TCR_EL3_RES1		((1UL << 31) | (1UL << 23))
 #define TCR_EL1_IPS_SHIFT	32
 #define TCR_EL3_PS_SHIFT	16
+
+#define TCR_TxSZ_MIN		16
+#define TCR_TxSZ_MAX		39
 
 /* (internal) physical address size bits in EL3/EL1 */
 #define TCR_PS_BITS_4GB		(0x0)
@@ -317,8 +337,6 @@
 #define CTR_IMINLINE_MASK	0xf
 
 #define MAX_CACHE_LINE_SIZE	0x800 /* 2KB */
-#define SIZE_FROM_LOG2_WORDS(n)	(4 << (n))
-
 
 /* Physical timer control register bit fields shifts and masks */
 #define CNTP_CTL_ENABLE_SHIFT   0
@@ -341,80 +359,6 @@
 
 #define clr_cntp_ctl_enable(x)  (x &= ~(1 << CNTP_CTL_ENABLE_SHIFT))
 #define clr_cntp_ctl_imask(x)   (x &= ~(1 << CNTP_CTL_IMASK_SHIFT))
-
-/* Miscellaneous MMU related constants */
-#define NUM_2MB_IN_GB		(1 << 9)
-#define NUM_4K_IN_2MB		(1 << 9)
-#define NUM_GB_IN_4GB		(1 << 2)
-
-#define TWO_MB_SHIFT		21
-#define ONE_GB_SHIFT		30
-#define FOUR_KB_SHIFT		12
-
-#define ONE_GB_INDEX(x)		((x) >> ONE_GB_SHIFT)
-#define TWO_MB_INDEX(x)		((x) >> TWO_MB_SHIFT)
-#define FOUR_KB_INDEX(x)	((x) >> FOUR_KB_SHIFT)
-
-#define INVALID_DESC		0x0
-#define BLOCK_DESC		0x1
-#define TABLE_DESC		0x3
-
-#define FIRST_LEVEL_DESC_N	ONE_GB_SHIFT
-#define SECOND_LEVEL_DESC_N	TWO_MB_SHIFT
-#define THIRD_LEVEL_DESC_N	FOUR_KB_SHIFT
-
-#define LEVEL1			1
-#define LEVEL2			2
-#define LEVEL3			3
-
-#define XN			(1ull << 2)
-#define PXN			(1ull << 1)
-#define CONT_HINT		(1ull << 0)
-
-#define UPPER_ATTRS(x)		(x & 0x7) << 52
-#define NON_GLOBAL		(1 << 9)
-#define ACCESS_FLAG		(1 << 8)
-#define NSH			(0x0 << 6)
-#define OSH			(0x2 << 6)
-#define ISH			(0x3 << 6)
-
-#define PAGE_SIZE_SHIFT		FOUR_KB_SHIFT
-#define PAGE_SIZE		(1 << PAGE_SIZE_SHIFT)
-#define PAGE_SIZE_MASK		(PAGE_SIZE - 1)
-#define IS_PAGE_ALIGNED(addr)	(((addr) & PAGE_SIZE_MASK) == 0)
-
-#define XLAT_ENTRY_SIZE_SHIFT	3 /* Each MMU table entry is 8 bytes (1 << 3) */
-#define XLAT_ENTRY_SIZE		(1 << XLAT_ENTRY_SIZE_SHIFT)
-
-#define XLAT_TABLE_SIZE_SHIFT	PAGE_SIZE_SHIFT
-#define XLAT_TABLE_SIZE		(1 << XLAT_TABLE_SIZE_SHIFT)
-
-/* Values for number of entries in each MMU translation table */
-#define XLAT_TABLE_ENTRIES_SHIFT (XLAT_TABLE_SIZE_SHIFT - XLAT_ENTRY_SIZE_SHIFT)
-#define XLAT_TABLE_ENTRIES	(1 << XLAT_TABLE_ENTRIES_SHIFT)
-#define XLAT_TABLE_ENTRIES_MASK	(XLAT_TABLE_ENTRIES - 1)
-
-/* Values to convert a memory address to an index into a translation table */
-#define L3_XLAT_ADDRESS_SHIFT	PAGE_SIZE_SHIFT
-#define L2_XLAT_ADDRESS_SHIFT	(L3_XLAT_ADDRESS_SHIFT + XLAT_TABLE_ENTRIES_SHIFT)
-#define L1_XLAT_ADDRESS_SHIFT	(L2_XLAT_ADDRESS_SHIFT + XLAT_TABLE_ENTRIES_SHIFT)
-
-/*
- * AP[1] bit is ignored by hardware and is
- * treated as if it is One in EL2/EL3
- */
-#define AP_RO			(0x1 << 5)
-#define AP_RW			(0x0 << 5)
-
-#define NS				(0x1 << 3)
-#define ATTR_SO_INDEX			0x2
-#define ATTR_DEVICE_INDEX		0x1
-#define ATTR_IWBWA_OWBWA_NTR_INDEX	0x0
-#define LOWER_ATTRS(x)			(((x) & 0xfff) << 2)
-#define ATTR_SO				(0x0)
-#define ATTR_DEVICE			(0x4)
-#define ATTR_IWBWA_OWBWA_NTR		(0xff)
-#define MAIR_ATTR_SET(attr, index)	(attr << (index << 3))
 
 /* Exception Syndrome register bits and bobs */
 #define ESR_EC_SHIFT			26

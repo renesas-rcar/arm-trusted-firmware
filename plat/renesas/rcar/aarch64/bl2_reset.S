@@ -31,7 +31,7 @@
 
 #include <arch.h>
 #include <asm_macros.S>
-#include <bl_common.h>
+#include <bl1.h>
 #include <runtime_svc.h>
 #include "platform_def.h"
 
@@ -151,8 +151,7 @@ func bl2_reset
 	 * primary cpu is running at the moment.
 	 * --------------------------------------------
 	 */
-	mrs	x0, mpidr_el1
-	bl	platform_set_stack
+	bl	plat_set_my_stack
 
 	mov	x0, #(SCR_RES1_BITS | SCR_RW_BIT)
 	msr	scr_el3, x0
@@ -163,7 +162,6 @@ func bl2_reset
 	msr	spsr_el3, x1
 
 	adr	x1, BL2_MEM_INFO
-	mov	x0, #RUN_IMAGE
 
 	eret
 endfunc bl2_reset
@@ -274,7 +272,7 @@ SynchronousExceptionA64:
 	cmp	x1, #EC_AARCH64_SMC
 	b.ne	panic
 
-	mov	x0, #RUN_IMAGE
+	mov	x0, #BL1_SMC_RUN_IMAGE
 	cmp	x19, x0
 	b.ne	panic
 

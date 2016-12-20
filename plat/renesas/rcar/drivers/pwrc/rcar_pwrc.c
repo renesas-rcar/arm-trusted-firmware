@@ -55,7 +55,7 @@ RCAR_INSTANTIATE_LOCK
 #define	BIT_CA57_SCU	((uint32_t)1U<<12)
 #define	REQ_RESUME	((uint32_t)1U<<1)
 #define	REQ_OFF		((uint32_t)1U<<0)
-#define	STATUS_PWRUP	((uint32_t)1U<<1)
+#define	STATUS_PWRUP	((uint32_t)1U<<4)
 #define	STATUS_PWRDOWN	((uint32_t)1U<<0)
 
 #define	STATE_CA57_CPU	(27U)
@@ -156,14 +156,10 @@ void rcar_pwrc_cpuon(uint64_t mpidr)
 		upper_value = 0xA5A50000U;
 	}
 	res_data = mmio_read_32(res_reg) | upper_value;
-	/* Assert to CPU reset	*/
-	mmio_write_32(res_reg, (res_data | ((uint32_t)1U << (3U - cpu_no))));
 	SCU_power_up(mpidr);
 	wup_data = (uint32_t)((uint32_t)1U << cpu_no);
-	do {
-		mmio_write_32(RCAR_CPGWPR, ~wup_data);
-		mmio_write_32(on_reg, wup_data);
-	} while ((mmio_read_32(on_reg) & wup_data) == 0U);
+	mmio_write_32(RCAR_CPGWPR, ~wup_data);
+	mmio_write_32(on_reg, wup_data);
 	/* Dessert to CPU reset	*/
 	mmio_write_32(res_reg, (res_data & (~((uint32_t)1U << (3U - cpu_no)))));
 	rcar_lock_release();
@@ -222,6 +218,11 @@ static void SCU_power_up(uint64_t mpidr)
 		}
 		/* clear bit in SYSCISR				*/
 		mmio_write_32(reg_SYSCISCR, reg_SYSC_bit);
+
+		/* Check the SCU power-up			*/
+		while ((mmio_read_32(reg_PWRSR) & (uint32_t)STATUS_PWRUP) == 0x0000U) {
+			;
+		}
 	}
 }
 
@@ -428,6 +429,8 @@ void rcar_bl31_set_suspend_to_ram(void)
 	uint32_t sctlr;
 
 	rcar_bl31_code_copy_to_system_ram();
+
+	rcar_bl31_save_generic_timer(rcar_stack_generic_timer);
 
 	/* disable MMU */
 	sctlr = (uint32_t)read_sctlr_el3();

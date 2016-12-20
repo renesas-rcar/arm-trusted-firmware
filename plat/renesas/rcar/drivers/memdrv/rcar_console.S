@@ -31,12 +31,9 @@
 #include <arch.h>
 #include <asm_macros.S>
 
-/*
- * Pull in generic functions to provide backwards compatibility for
- * platform makefiles
- */
-#include "../../../drivers/console/console.S"
-
+	.globl	console_init
+	.globl	console_putc
+	.globl	console_uninit
 	.globl	console_core_init
 	.globl	console_core_putc
 	.globl	console_core_getc
@@ -60,6 +57,9 @@
 func console_core_init
 	b	rcar_log_init
 endfunc console_core_init
+func  console_init
+	b	console_core_init
+endfunc console_init
 
 	/* --------------------------------------------------------
 	 * int console_core_putc(int c, unsigned long base_addr)
@@ -72,6 +72,9 @@ endfunc console_core_init
 func console_core_putc
 	b	rcar_set_log_data
 endfunc console_core_putc
+func console_putc
+	b	console_core_putc
+endfunc console_putc
 
 	/* ---------------------------------------------
 	 * int console_core_getc(unsigned long base_addr)
@@ -86,6 +89,14 @@ func console_core_getc
 	ret
 endfunc console_core_getc
 
+	/* -----------------------------------------------
+	 * void console_uninit(void)
+	 * Function to finish the use of console driver.
+	 * -----------------------------------------------
+	 */
+func console_uninit
+	ret
+endfunc console_uninit
 
 	/* --------------------------------------------
 	 * uint64_t readreg_cntpct_el0(void)

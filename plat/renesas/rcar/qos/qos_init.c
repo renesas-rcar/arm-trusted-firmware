@@ -33,6 +33,11 @@
 #include <debug.h>
 #include <mmio.h>
 #include "qos_init.h"
+#if RCAR_LSI == RCAR_AUTO
+  #include "H3/ES10/qos_init_h3_es10.h"
+  #include "H3/WS11/qos_init_h3_ws11.h"
+  #include "M3/qos_init_m3_es10.h"
+#endif
 #if RCAR_LSI == RCAR_H3	/* H3 */
   #include "H3/ES10/qos_init_h3_es10.h"
   #include "H3/WS11/qos_init_h3_ws11.h"
@@ -66,7 +71,30 @@ void qos_init(void)
 	uint32_t reg;
 
 	reg = mmio_read_32(PRR);
-#if RCAR_LSI_CUT_COMPAT
+#if RCAR_LSI == RCAR_AUTO
+	switch (reg & PRR_PRODUCT_MASK) {
+	case PRR_PRODUCT_H3:
+		switch (reg & PRR_CUT_MASK) {
+		case PRR_PRODUCT_10:
+			qos_init_h3_es10();
+			break;
+		case PRR_PRODUCT_11:
+			qos_init_h3_ws11();
+			break;
+		default:
+			PRR_CUT_ERR(reg);
+			break;
+		}
+		break;
+	case PRR_PRODUCT_M3:
+		qos_init_m3_es10();
+		break;
+	default:
+		PRR_PRODUCT_ERR(reg);
+		break;
+	}
+
+#elif RCAR_LSI_CUT_COMPAT
 	switch (reg & PRR_PRODUCT_MASK) {
 	case PRR_PRODUCT_H3:
 #if RCAR_LSI != RCAR_H3

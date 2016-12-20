@@ -51,7 +51,7 @@ func bl1_entrypoint
 	el3_entrypoint_common					\
 		_set_endian=1					\
 		_warm_boot_mailbox=!PROGRAMMABLE_RESET_ADDRESS	\
-		_secondary_cold_boot=1				\
+		_secondary_cold_boot=!COLD_BOOT_SINGLE_CPU	\
 		_init_memory=1					\
 		_init_c_runtime=1				\
 		_exception_vectors=bl1_exceptions
@@ -69,10 +69,14 @@ func bl1_entrypoint
 
 	/* --------------------------------------------------
 	 * Initialize platform and jump to our c-entry point
-	 * for this type of reset. Panic if it returns
+	 * for this type of reset.
 	 * --------------------------------------------------
 	 */
 	bl	bl1_main
-panic:
-	b	panic
+
+	/* --------------------------------------------------
+	 * Do the transition to next boot image.
+	 * --------------------------------------------------
+	 */
+	b	el3_exit
 endfunc bl1_entrypoint

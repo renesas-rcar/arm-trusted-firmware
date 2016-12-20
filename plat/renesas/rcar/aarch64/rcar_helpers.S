@@ -54,7 +54,7 @@
 	.extern	tf_printf
 #if IMAGE_BL2
 	.extern bl2_swdt_exec
-	.extern arm_gic_acknowledge_interrupt
+	.extern gicv2_acknowledge_interrupt
 	.extern bl2_interrupt_error_type
 	.extern bl2_interrupt_error_id
 
@@ -220,7 +220,7 @@ func plat_report_exception
 */
 	b	rep_exec_panic_type
 rep_exec_fiq_elx:
-	bl	arm_gic_acknowledge_interrupt
+	bl	gicv2_acknowledge_interrupt
 	mov	x2, #INT_ID_MASK
 	and	x0, x0, x2
 	mov	x1, #ARM_IRQ_SEC_WDT_A

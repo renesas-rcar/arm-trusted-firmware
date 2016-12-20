@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2014-2016, ARM Limited and Contributors. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -70,7 +70,8 @@ non_el3_sys_regs:
 		"tpidrro_el0", "dacr32_el2", "ifsr32_el2", "par_el1",\
 		"mpidr_el1", "afsr0_el1", "afsr1_el1", "contextidr_el1",\
 		"vbar_el1", "cntp_ctl_el0", "cntp_cval_el0", "cntv_ctl_el0",\
-		"cntv_cval_el0", "cntkctl_el1", "fpexc32_el2", "sp_el0", ""
+		"cntv_cval_el0", "cntkctl_el1", "fpexc32_el2", "sp_el0",\
+		"isr_el1", ""
 
 panic_msg:
 	.asciz "PANIC in EL3 at x30 = 0x"
@@ -338,30 +339,28 @@ func do_crash_reporting
 	mrs	x8, cntkctl_el1
 	mrs	x9, fpexc32_el2
 	mrs	x10, sp_el0
+	mrs	x11, isr_el1
 	bl	str_in_crash_buf_print
 
 	/* Get the cpu specific registers to report */
 	bl	do_cpu_reg_dump
 	bl	str_in_crash_buf_print
 
-	/* Print the gic registers */
-	plat_print_gic_regs
-
-	/* Print the interconnect registers */
-	plat_print_interconnect_regs
+	/* Print some platform registers */
+	plat_crash_print_regs
 
 	/* Done reporting */
-	b	crash_panic
+	bl	plat_panic_handler
 endfunc do_crash_reporting
 
 #else	/* CRASH_REPORTING */
 func report_unhandled_exception
 report_unhandled_interrupt:
-	b	crash_panic
+	bl	plat_panic_handler
 endfunc report_unhandled_exception
-#endif	/* CRASH_REPORING */
+#endif	/* CRASH_REPORTING */
 
 
 func crash_panic
-	b	crash_panic
+	bl	plat_panic_handler
 endfunc crash_panic

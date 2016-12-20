@@ -352,7 +352,7 @@ static const struct {
 	/* SRAM ptotection */
 
 	/* AXI sram protected area division */
-	{AXI_SPTDIVCR0,		0x0E0E6320U},
+	{AXI_SPTDIVCR0,		0x0E0E6302U},
 	{AXI_SPTDIVCR1,		0x0E0E6360U},
 	{AXI_SPTDIVCR2,		0x0E0E6360U},
 	{AXI_SPTDIVCR3,		0x0E0E6360U},

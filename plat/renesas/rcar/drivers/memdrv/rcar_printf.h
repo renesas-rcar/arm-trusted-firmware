@@ -40,4 +40,6 @@ int32_t		rcar_log_init(void);
 
 extern uint64_t	readreg_cntpct_el0(void);
 
+extern uint64_t rcar_stack_generic_timer[5];
+
 #endif	/* RCAR_PRINTF_H__	*/

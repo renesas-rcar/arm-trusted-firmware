@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2013-2016, ARM Limited and Contributors. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -31,8 +31,17 @@
 #ifndef __GIC_V3_H__
 #define __GIC_V3_H__
 
+/******************************************************************************
+ * THIS DRIVER IS DEPRECATED. For GICv2 systems, use the driver in gicv2.h
+ * and for GICv3 systems, use the driver in gicv3.h.
+ *****************************************************************************/
+#if ERROR_DEPRECATED
+#error " The legacy ARM GIC driver is deprecated."
+#endif
+
 #include <mmio.h>
 #include <stdint.h>
+#include <types.h>
 
 
 /* GICv3 Re-distributor interface registers & shifts */
@@ -66,7 +75,7 @@
 /*******************************************************************************
  * Function prototypes
  ******************************************************************************/
-uintptr_t gicv3_get_rdist(uintptr_t gicr_base, uint64_t mpidr);
+uintptr_t gicv3_get_rdist(uintptr_t gicr_base, u_register_t mpidr);
 
 /*******************************************************************************
  * GIC Redistributor interface accessors

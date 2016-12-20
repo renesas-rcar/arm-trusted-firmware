@@ -35,6 +35,7 @@
 #include <io_storage.h>
 #include <string.h>
 #include "io_common.h"
+#include "io_private.h"
 #include "io_emmcdrv.h"
 #include "emmc_config.h"
 #include "emmc_hal.h"

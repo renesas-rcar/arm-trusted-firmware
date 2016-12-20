@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2015, ARM Limited and Contributors. All rights reserved.
+# Copyright (c) 2015-2016, ARM Limited and Contributors. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
@@ -28,23 +28,30 @@
 # POSSIBILITY OF SUCH DAMAGE.
 #
 
-# On ARM standard platorms, the TSP can execute from Trusted SRAM, Trusted
-# DRAM (if available) or the TZC secured area of DRAM.
-# Trusted SRAM is the default.
+ifeq (${ARCH}, aarch64)
+  # On ARM standard platorms, the TSP can execute from Trusted SRAM, Trusted
+  # DRAM (if available) or the TZC secured area of DRAM.
+  # Trusted SRAM is the default.
 
-ARM_TSP_RAM_LOCATION	:=	tsram
-ifeq (${ARM_TSP_RAM_LOCATION}, tsram)
-  ARM_TSP_RAM_LOCATION_ID = ARM_TRUSTED_SRAM_ID
-else ifeq (${ARM_TSP_RAM_LOCATION}, tdram)
-  ARM_TSP_RAM_LOCATION_ID = ARM_TRUSTED_DRAM_ID
-else ifeq (${ARM_TSP_RAM_LOCATION}, dram)
-  ARM_TSP_RAM_LOCATION_ID = ARM_DRAM_ID
-else
-  $(error "Unsupported ARM_TSP_RAM_LOCATION value")
+  ARM_TSP_RAM_LOCATION	:=	tsram
+  ifeq (${ARM_TSP_RAM_LOCATION}, tsram)
+    ARM_TSP_RAM_LOCATION_ID = ARM_TRUSTED_SRAM_ID
+  else ifeq (${ARM_TSP_RAM_LOCATION}, tdram)
+    ARM_TSP_RAM_LOCATION_ID = ARM_TRUSTED_DRAM_ID
+  else ifeq (${ARM_TSP_RAM_LOCATION}, dram)
+    ARM_TSP_RAM_LOCATION_ID = ARM_DRAM_ID
+  else
+    $(error "Unsupported ARM_TSP_RAM_LOCATION value")
+  endif
+
+  # Process flags
+  $(eval $(call add_define,ARM_TSP_RAM_LOCATION_ID))
+
+  # Process ARM_BL31_IN_DRAM flag
+  ARM_BL31_IN_DRAM		:=	0
+  $(eval $(call assert_boolean,ARM_BL31_IN_DRAM))
+  $(eval $(call add_define,ARM_BL31_IN_DRAM))
 endif
-
-# Process flags
-$(eval $(call add_define,ARM_TSP_RAM_LOCATION_ID))
 
 # For the original power-state parameter format, the State-ID can be encoded
 # according to the recommended encoding or zero. This flag determines which
@@ -63,47 +70,79 @@ endif
 $(eval $(call assert_boolean,ARM_RECOM_STATE_ID_ENC))
 $(eval $(call add_define,ARM_RECOM_STATE_ID_ENC))
 
+# Process ARM_DISABLE_TRUSTED_WDOG flag
+# By default, Trusted Watchdog is always enabled unless SPIN_ON_BL1_EXIT is set
+ARM_DISABLE_TRUSTED_WDOG	:=	0
+ifeq (${SPIN_ON_BL1_EXIT}, 1)
+ARM_DISABLE_TRUSTED_WDOG	:=	1
+endif
+$(eval $(call assert_boolean,ARM_DISABLE_TRUSTED_WDOG))
+$(eval $(call add_define,ARM_DISABLE_TRUSTED_WDOG))
+
+# Process ARM_CONFIG_CNTACR
+ARM_CONFIG_CNTACR		:=	1
+$(eval $(call assert_boolean,ARM_CONFIG_CNTACR))
+$(eval $(call add_define,ARM_CONFIG_CNTACR))
+
+# Process ARM_BL31_IN_DRAM flag
+ARM_BL31_IN_DRAM		:=	0
+$(eval $(call assert_boolean,ARM_BL31_IN_DRAM))
+$(eval $(call add_define,ARM_BL31_IN_DRAM))
+
+# Enable PSCI_STAT_COUNT/RESIDENCY APIs on ARM platforms
+ENABLE_PSCI_STAT		:=	1
+
+# On ARM platforms, separate the code and read-only data sections to allow
+# mapping the former as executable and the latter as execute-never.
+SEPARATE_CODE_AND_RODATA	:=	1
+
+
 PLAT_INCLUDES		+=	-Iinclude/common/tbbr				\
-				-Iinclude/plat/arm/common			\
-				-Iinclude/plat/arm/common/aarch64
+				-Iinclude/plat/arm/common
 
+ifeq (${ARCH}, aarch64)
+PLAT_INCLUDES		+=	-Iinclude/plat/arm/common/aarch64
+endif
 
-PLAT_BL_COMMON_SOURCES	+=	lib/aarch64/xlat_tables.c			\
-				plat/arm/common/aarch64/arm_common.c		\
-				plat/arm/common/aarch64/arm_helpers.S		\
-				plat/common/aarch64/plat_common.c
+PLAT_BL_COMMON_SOURCES	+=	lib/xlat_tables/xlat_tables_common.c		\
+				lib/xlat_tables/${ARCH}/xlat_tables.c		\
+				plat/arm/common/${ARCH}/arm_helpers.S		\
+				plat/arm/common/arm_common.c			\
+				plat/common/${ARCH}/plat_common.c
 
-BL1_SOURCES		+=	drivers/arm/cci/cci.c				\
-				drivers/arm/ccn/ccn.c				\
+BL1_SOURCES		+=	drivers/arm/sp805/sp805.c			\
 				drivers/io/io_fip.c				\
 				drivers/io/io_memmap.c				\
 				drivers/io/io_storage.c				\
 				plat/arm/common/arm_bl1_setup.c			\
 				plat/arm/common/arm_io_storage.c		\
-				plat/common/aarch64/platform_up_stack.S
+				plat/common/${ARCH}/platform_up_stack.S
+ifdef EL3_PAYLOAD_BASE
+# Need the arm_program_trusted_mailbox() function to release secondary CPUs from
+# their holding pen
+BL1_SOURCES		+=	plat/arm/common/arm_pm.c
+endif
 
-BL2_SOURCES		+=	drivers/arm/tzc400/tzc400.c			\
-				drivers/io/io_fip.c				\
+BL2_SOURCES		+=	drivers/io/io_fip.c				\
 				drivers/io/io_memmap.c				\
 				drivers/io/io_storage.c				\
 				plat/arm/common/arm_bl2_setup.c			\
 				plat/arm/common/arm_io_storage.c		\
-				plat/arm/common/arm_security.c			\
+				plat/common/${ARCH}/platform_up_stack.S
+ifeq (${LOAD_IMAGE_V2},1)
+BL2_SOURCES		+=	plat/arm/common/${ARCH}/arm_bl2_mem_params_desc.c\
+				plat/arm/common/arm_image_load.c		\
+				common/desc_image_load.c
+endif
+
+BL2U_SOURCES		+=	plat/arm/common/arm_bl2u_setup.c		\
 				plat/common/aarch64/platform_up_stack.S
 
-BL31_SOURCES		+=	drivers/arm/cci/cci.c				\
-				drivers/arm/ccn/ccn.c				\
-				drivers/arm/gic/arm_gic.c			\
-				drivers/arm/gic/gic_v2.c			\
-				drivers/arm/gic/gic_v3.c			\
-				drivers/arm/tzc400/tzc400.c			\
-				plat/arm/common/arm_bl31_setup.c		\
+BL31_SOURCES		+=	plat/arm/common/arm_bl31_setup.c		\
 				plat/arm/common/arm_pm.c			\
-				plat/arm/common/arm_security.c			\
 				plat/arm/common/arm_topology.c			\
-				plat/common/plat_gic.c				\
 				plat/common/aarch64/platform_mp_stack.S		\
-				plat/common/aarch64/plat_psci_common.c
+				plat/common/plat_psci_common.c
 
 ifneq (${TRUSTED_BOARD_BOOT},0)
 
@@ -112,12 +151,19 @@ ifneq (${TRUSTED_BOARD_BOOT},0)
 
     # Include common TBB sources
     AUTH_SOURCES	:=	drivers/auth/auth_mod.c				\
-    				drivers/auth/crypto_mod.c			\
-    				drivers/auth/img_parser_mod.c			\
-    				drivers/auth/tbbr/tbbr_cot.c			\
+				drivers/auth/crypto_mod.c			\
+				drivers/auth/img_parser_mod.c			\
+				drivers/auth/tbbr/tbbr_cot.c			\
 
-    BL1_SOURCES		+=	${AUTH_SOURCES}
+    PLAT_INCLUDES	+=	-Iinclude/bl1/tbbr
+
+    BL1_SOURCES		+=	${AUTH_SOURCES}					\
+				bl1/tbbr/tbbr_img_desc.c			\
+				plat/arm/common/arm_bl1_fwu.c
+
     BL2_SOURCES		+=	${AUTH_SOURCES}
+
+    $(eval $(call FWU_FIP_ADD_IMG,NS_BL2U,--fwu))
 
     MBEDTLS_KEY_ALG	:=	${KEY_ALG}
 

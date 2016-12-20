@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2013-2016, ARM Limited and Contributors. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -36,7 +36,6 @@
 #include <runtime_svc.h>
 
 	.globl	runtime_exceptions
-	.globl	el3_exit
 
 	/* -----------------------------------------------------
 	 * Handle SMC exceptions separately from other sync.
@@ -130,16 +129,6 @@
 	mov	x21, x0
 
 	mov	x0, #INTR_ID_UNAVAILABLE
-#if IMF_READ_INTERRUPT_ID
-	/*
-	 * Read the id of the highest priority pending interrupt. If
-	 * no interrupt is asserted then return to where we came from.
-	 */
-	mov	x19,  #INTR_ID_UNAVAILABLE
-	bl	plat_ic_get_pending_interrupt_id
-	cmp	x19, x0
-	b.eq	interrupt_exit_\label
-#endif
 
 	/* Set the current security state in the 'flags' parameter */
 	mrs	x2, scr_el3
@@ -172,14 +161,14 @@ interrupt_exit_\label:
 	str	x18, [sp, #CTX_GPREGS_OFFSET + CTX_GPREG_SP_EL0]
 	.endm
 
-	.section	.vectors, "ax"; .align 11
-	.align	7
-runtime_exceptions:
+
+vector_base runtime_exceptions
+
 	/* -----------------------------------------------------
 	 * Current EL with _sp_el0 : 0x0 - 0x200
 	 * -----------------------------------------------------
 	 */
-sync_exception_sp_el0:
+vector_entry sync_exception_sp_el0
 	/* -----------------------------------------------------
 	 * We don't expect any synchronous exceptions from EL3
 	 * -----------------------------------------------------
@@ -187,23 +176,22 @@ sync_exception_sp_el0:
 	bl	report_unhandled_exception
 	check_vector_size sync_exception_sp_el0
 
-	.align	7
 	/* -----------------------------------------------------
 	 * EL3 code is non-reentrant. Any asynchronous exception
 	 * is a serious error. Loop infinitely.
 	 * -----------------------------------------------------
 	 */
-irq_sp_el0:
+vector_entry irq_sp_el0
 	bl	report_unhandled_interrupt
 	check_vector_size irq_sp_el0
 
-	.align	7
-fiq_sp_el0:
+
+vector_entry fiq_sp_el0
 	bl	report_unhandled_interrupt
 	check_vector_size fiq_sp_el0
 
-	.align	7
-serror_sp_el0:
+
+vector_entry serror_sp_el0
 	bl	report_unhandled_exception
 	check_vector_size serror_sp_el0
 
@@ -211,8 +199,8 @@ serror_sp_el0:
 	 * Current EL with SPx: 0x200 - 0x400
 	 * -----------------------------------------------------
 	 */
-	.align	7
-sync_exception_sp_elx:
+
+vector_entry sync_exception_sp_elx
 	/* -----------------------------------------------------
 	 * This exception will trigger if anything went wrong
 	 * during a previous exception entry or exit or while
@@ -223,18 +211,15 @@ sync_exception_sp_elx:
 	bl	report_unhandled_exception
 	check_vector_size sync_exception_sp_elx
 
-	.align	7
-irq_sp_elx:
+vector_entry irq_sp_elx
 	bl	report_unhandled_interrupt
 	check_vector_size irq_sp_elx
 
-	.align	7
-fiq_sp_elx:
+vector_entry fiq_sp_elx
 	bl	report_unhandled_interrupt
 	check_vector_size fiq_sp_elx
 
-	.align	7
-serror_sp_elx:
+vector_entry serror_sp_elx
 	bl	report_unhandled_exception
 	check_vector_size serror_sp_elx
 
@@ -242,8 +227,7 @@ serror_sp_elx:
 	 * Lower EL using AArch64 : 0x400 - 0x600
 	 * -----------------------------------------------------
 	 */
-	.align	7
-sync_exception_aarch64:
+vector_entry sync_exception_aarch64
 	/* -----------------------------------------------------
 	 * This exception vector will be the entry point for
 	 * SMCs and traps that are unhandled at lower ELs most
@@ -255,23 +239,20 @@ sync_exception_aarch64:
 	handle_sync_exception
 	check_vector_size sync_exception_aarch64
 
-	.align	7
 	/* -----------------------------------------------------
 	 * Asynchronous exceptions from lower ELs are not
 	 * currently supported. Report their occurrence.
 	 * -----------------------------------------------------
 	 */
-irq_aarch64:
+vector_entry irq_aarch64
 	handle_interrupt_exception irq_aarch64
 	check_vector_size irq_aarch64
 
-	.align	7
-fiq_aarch64:
+vector_entry fiq_aarch64
 	handle_interrupt_exception fiq_aarch64
 	check_vector_size fiq_aarch64
 
-	.align	7
-serror_aarch64:
+vector_entry serror_aarch64
 	bl	report_unhandled_exception
 	check_vector_size serror_aarch64
 
@@ -279,8 +260,7 @@ serror_aarch64:
 	 * Lower EL using AArch32 : 0x600 - 0x800
 	 * -----------------------------------------------------
 	 */
-	.align	7
-sync_exception_aarch32:
+vector_entry sync_exception_aarch32
 	/* -----------------------------------------------------
 	 * This exception vector will be the entry point for
 	 * SMCs and traps that are unhandled at lower ELs most
@@ -292,27 +272,23 @@ sync_exception_aarch32:
 	handle_sync_exception
 	check_vector_size sync_exception_aarch32
 
-	.align	7
 	/* -----------------------------------------------------
 	 * Asynchronous exceptions from lower ELs are not
 	 * currently supported. Report their occurrence.
 	 * -----------------------------------------------------
 	 */
-irq_aarch32:
+vector_entry irq_aarch32
 	handle_interrupt_exception irq_aarch32
 	check_vector_size irq_aarch32
 
-	.align	7
-fiq_aarch32:
+vector_entry fiq_aarch32
 	handle_interrupt_exception fiq_aarch32
 	check_vector_size fiq_aarch32
 
-	.align	7
-serror_aarch32:
+vector_entry serror_aarch32
 	bl	report_unhandled_exception
 	check_vector_size serror_aarch32
 
-	.align	7
 
 	/* -----------------------------------------------------
 	 * The following code handles secure monitor calls.
@@ -436,38 +412,7 @@ smc_handler64:
 #endif
 	blr	x15
 
-	/* -----------------------------------------------------
-	 * This routine assumes that the SP_EL3 is pointing to
-	 * a valid context structure from where the gp regs and
-	 * other special registers can be retrieved.
-	 *
-	 * Keep it in the same section as smc_handler as this
-	 * function uses a fall-through to el3_exit
-	 * -----------------------------------------------------
-	 */
-el3_exit: ; .type el3_exit, %function
-	/* -----------------------------------------------------
-	 * Save the current SP_EL0 i.e. the EL3 runtime stack
-	 * which will be used for handling the next SMC. Then
-	 * switch to SP_EL3
-	 * -----------------------------------------------------
-	 */
-	mov	x17, sp
-	msr	spsel, #1
-	str	x17, [sp, #CTX_EL3STATE_OFFSET + CTX_RUNTIME_SP]
-
-	/* -----------------------------------------------------
-	 * Restore SPSR_EL3, ELR_EL3 and SCR_EL3 prior to ERET
-	 * -----------------------------------------------------
-	 */
-	ldr	x18, [sp, #CTX_EL3STATE_OFFSET + CTX_SCR_EL3]
-	ldp	x16, x17, [sp, #CTX_EL3STATE_OFFSET + CTX_SPSR_EL3]
-	msr	scr_el3, x18
-	msr	spsr_el3, x16
-	msr	elr_el3, x17
-
-	/* Restore saved general purpose registers and return */
-	b	restore_gp_registers_eret
+	b	el3_exit
 
 smc_unknown:
 	/*
@@ -489,51 +434,3 @@ rt_svc_fw_critical_error:
 	msr	spsel, #1 /* Switch to SP_ELx */
 	bl	report_unhandled_exception
 endfunc smc_handler
-
-	/* -----------------------------------------------------
-	 * The following functions are used to saved and restore
-	 * all the general pupose registers. Ideally we would
-	 * only save and restore the callee saved registers when
-	 * a world switch occurs but that type of implementation
-	 * is more complex. So currently we will always save and
-	 * restore these registers on entry and exit of EL3.
-	 * These are not macros to ensure their invocation fits
-	 * within the 32 instructions per exception vector.
-	 * -----------------------------------------------------
-	 */
-func save_gp_registers
-	stp	x0, x1, [sp, #CTX_GPREGS_OFFSET + CTX_GPREG_X0]
-	stp	x2, x3, [sp, #CTX_GPREGS_OFFSET + CTX_GPREG_X2]
-	stp	x4, x5, [sp, #CTX_GPREGS_OFFSET + CTX_GPREG_X4]
-	stp	x6, x7, [sp, #CTX_GPREGS_OFFSET + CTX_GPREG_X6]
-	stp	x8, x9, [sp, #CTX_GPREGS_OFFSET + CTX_GPREG_X8]
-	stp	x10, x11, [sp, #CTX_GPREGS_OFFSET + CTX_GPREG_X10]
-	stp	x12, x13, [sp, #CTX_GPREGS_OFFSET + CTX_GPREG_X12]
-	stp	x14, x15, [sp, #CTX_GPREGS_OFFSET + CTX_GPREG_X14]
-	stp	x16, x17, [sp, #CTX_GPREGS_OFFSET + CTX_GPREG_X16]
-	save_x18_to_x29_sp_el0
-	ret
-endfunc save_gp_registers
-
-func restore_gp_registers_eret
-	ldp	x0, x1, [sp, #CTX_GPREGS_OFFSET + CTX_GPREG_X0]
-	ldp	x2, x3, [sp, #CTX_GPREGS_OFFSET + CTX_GPREG_X2]
-
-restore_gp_registers_callee_eret:
-	ldp	x4, x5, [sp, #CTX_GPREGS_OFFSET + CTX_GPREG_X4]
-	ldp	x6, x7, [sp, #CTX_GPREGS_OFFSET + CTX_GPREG_X6]
-	ldp	x8, x9, [sp, #CTX_GPREGS_OFFSET + CTX_GPREG_X8]
-	ldp	x10, x11, [sp, #CTX_GPREGS_OFFSET + CTX_GPREG_X10]
-	ldp	x12, x13, [sp, #CTX_GPREGS_OFFSET + CTX_GPREG_X12]
-	ldp	x14, x15, [sp, #CTX_GPREGS_OFFSET + CTX_GPREG_X14]
-	ldp	x18, x19, [sp, #CTX_GPREGS_OFFSET + CTX_GPREG_X18]
-	ldp	x20, x21, [sp, #CTX_GPREGS_OFFSET + CTX_GPREG_X20]
-	ldp	x22, x23, [sp, #CTX_GPREGS_OFFSET + CTX_GPREG_X22]
-	ldp	x24, x25, [sp, #CTX_GPREGS_OFFSET + CTX_GPREG_X24]
-	ldp	x26, x27, [sp, #CTX_GPREGS_OFFSET + CTX_GPREG_X26]
-	ldp	x28, x29, [sp, #CTX_GPREGS_OFFSET + CTX_GPREG_X28]
-	ldp	x30, x17, [sp, #CTX_GPREGS_OFFSET + CTX_GPREG_LR]
-	msr	sp_el0, x17
-	ldp	x16, x17, [sp, #CTX_GPREGS_OFFSET + CTX_GPREG_X16]
-	eret
-endfunc restore_gp_registers_eret

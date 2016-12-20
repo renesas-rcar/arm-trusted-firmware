@@ -44,6 +44,7 @@
 #include <uuid.h>
 #include "io_rcar.h"
 #include "io_common.h"
+#include "io_private.h"
 
 typedef struct {
 	const int32_t	name;
@@ -92,33 +93,33 @@ typedef struct {
 static const plat_rcar_name_offset_t name_offset[] = {		/* calc addr, no load, cert offset */
 	{BL31_IMAGE_ID,		0U,				RCAR_ATTR_SET_ALL(0,0,0)},
 	/* BL3-2 is optional in the platform */
-	{BL32_IMAGE_ID,		0U,				RCAR_ATTR_SET_ALL(1,0,1)},
-	{BL33_IMAGE_ID,		0U,				RCAR_ATTR_SET_ALL(2,0,2)},
-	{BL332_IMAGE_ID,	0U,				RCAR_ATTR_SET_ALL(3,0,3)},
-	{BL333_IMAGE_ID,	0U,				RCAR_ATTR_SET_ALL(4,0,4)},
-	{BL334_IMAGE_ID,	0U,				RCAR_ATTR_SET_ALL(5,0,5)},
-	{BL335_IMAGE_ID,	0U,				RCAR_ATTR_SET_ALL(6,0,6)},
-	{BL336_IMAGE_ID,	0U,				RCAR_ATTR_SET_ALL(7,0,7)},
-	{BL337_IMAGE_ID,	0U,				RCAR_ATTR_SET_ALL(8,0,8)},
-	{BL338_IMAGE_ID,	0U,				RCAR_ATTR_SET_ALL(9,0,9)},
+	{BL32_IMAGE_ID,				0U,		RCAR_ATTR_SET_ALL(1,0,1)},
+	{BL33_IMAGE_ID,				0U,		RCAR_ATTR_SET_ALL(2,0,2)},
+	{BL332_IMAGE_ID,			0U,		RCAR_ATTR_SET_ALL(3,0,3)},
+	{BL333_IMAGE_ID,			0U,		RCAR_ATTR_SET_ALL(4,0,4)},
+	{BL334_IMAGE_ID,			0U,		RCAR_ATTR_SET_ALL(5,0,5)},
+	{BL335_IMAGE_ID,			0U,		RCAR_ATTR_SET_ALL(6,0,6)},
+	{BL336_IMAGE_ID,			0U,		RCAR_ATTR_SET_ALL(7,0,7)},
+	{BL337_IMAGE_ID,			0U,		RCAR_ATTR_SET_ALL(8,0,8)},
+	{BL338_IMAGE_ID,			0U,		RCAR_ATTR_SET_ALL(9,0,9)},
 };
 #if TRUSTED_BOARD_BOOT
 static const plat_rcar_name_offset_t cert_offset[] = {
 	/* Certificates */
-	{TRUSTED_KEY_CERT_ID,	0U,				RCAR_ATTR_SET_ALL(0,1,0)},
-	{BL31_KEY_CERT_ID,	0U,				RCAR_ATTR_SET_ALL(0,1,0)},
-	{BL32_KEY_CERT_ID,	0U,				RCAR_ATTR_SET_ALL(0,1,0)},
-	{BL33_KEY_CERT_ID,	0U,				RCAR_ATTR_SET_ALL(0,1,0)},
-	{BL31_CERT_ID,		0U,				RCAR_ATTR_SET_ALL(0,1,0)},
-	{BL32_CERT_ID,		0U,				RCAR_ATTR_SET_ALL(0,1,1)},
-	{BL33_CERT_ID,		0U,				RCAR_ATTR_SET_ALL(0,1,2)},
-	{BL332_CERT_ID,		0U,				RCAR_ATTR_SET_ALL(0,1,3)},
-	{BL333_CERT_ID,		0U,				RCAR_ATTR_SET_ALL(0,1,4)},
-	{BL334_CERT_ID,		0U,				RCAR_ATTR_SET_ALL(0,1,5)},
-	{BL335_CERT_ID,		0U,				RCAR_ATTR_SET_ALL(0,1,6)},
-	{BL336_CERT_ID,		0U,				RCAR_ATTR_SET_ALL(0,1,7)},
-	{BL337_CERT_ID,		0U,				RCAR_ATTR_SET_ALL(0,1,8)},
-	{BL338_CERT_ID,		0U,				RCAR_ATTR_SET_ALL(0,1,9)},
+	{TRUSTED_KEY_CERT_ID,			0U,		RCAR_ATTR_SET_ALL(0,1,0)},
+	{SOC_FW_KEY_CERT_ID,			0U,		RCAR_ATTR_SET_ALL(0,1,0)},
+	{TRUSTED_OS_FW_KEY_CERT_ID,		0U,		RCAR_ATTR_SET_ALL(0,1,0)},
+	{NON_TRUSTED_FW_KEY_CERT_ID,		0U,		RCAR_ATTR_SET_ALL(0,1,0)},
+	{SOC_FW_CONTENT_CERT_ID,		0U,		RCAR_ATTR_SET_ALL(0,1,0)},
+	{TRUSTED_OS_FW_CONTENT_CERT_ID,		0U,		RCAR_ATTR_SET_ALL(0,1,1)},
+	{NON_TRUSTED_FW_CONTENT_CERT_ID,	0U,		RCAR_ATTR_SET_ALL(0,1,2)},
+	{BL332_CERT_ID,				0U,		RCAR_ATTR_SET_ALL(0,1,3)},
+	{BL333_CERT_ID,				0U,		RCAR_ATTR_SET_ALL(0,1,4)},
+	{BL334_CERT_ID,				0U,		RCAR_ATTR_SET_ALL(0,1,5)},
+	{BL335_CERT_ID,				0U,		RCAR_ATTR_SET_ALL(0,1,6)},
+	{BL336_CERT_ID,				0U,		RCAR_ATTR_SET_ALL(0,1,7)},
+	{BL337_CERT_ID,				0U,		RCAR_ATTR_SET_ALL(0,1,8)},
+	{BL338_CERT_ID,				0U,		RCAR_ATTR_SET_ALL(0,1,9)},
 };
 #endif /* TRUSTED_BOARD_BOOT */
 
@@ -289,8 +290,10 @@ static int32_t load_bl33x(void)
 		BL337_IMAGE_ID,
 		BL338_IMAGE_ID
 	};
+	static uint32_t load_bl33x_firsttime_flag = 0U;
 
-	for (; loop < rcar_image_number; loop++) {
+	for (; (loop < rcar_image_number) &&
+		(0U == load_bl33x_firsttime_flag); loop++) {
 
 		if (IO_SUCCESS != result){
 			break;
@@ -356,6 +359,8 @@ static int32_t load_bl33x(void)
 			(void) io_close(backend_handle);
 		}
 	}
+
+	load_bl33x_firsttime_flag = 1U;
 
 	return result;
 }
@@ -589,6 +594,11 @@ static int32_t rcar_file_read(io_entity_t *entity, uintptr_t buffer, size_t leng
 	ssize_t file_offset;
 	size_t bytes_read;
 	uintptr_t backend_handle;
+#ifdef SPD_NONE
+	static uint32_t load_bl33x_counter = 1U;
+#else
+	static uint32_t load_bl33x_counter = 0U;
+#endif /* SPD_NONE */
 
 	assert(entity != NULL);
 	assert(buffer != (uintptr_t)NULL);
@@ -641,8 +651,11 @@ static int32_t rcar_file_read(io_entity_t *entity, uintptr_t buffer, size_t leng
 			/* Close the backend. */
 			(void) io_close(backend_handle);
 
-			if ((result == IO_SUCCESS) && (buffer == (uintptr_t)NS_IMAGE_OFFSET)) {
-				result = load_bl33x();
+			if (result == IO_SUCCESS) {
+				load_bl33x_counter += 1U;
+				if (load_bl33x_counter == 3U) {
+					result = load_bl33x();
+				}
 			}
 		}
 	}

@@ -73,7 +73,7 @@ $(eval $(call add_define,RCAR_SA6_TYPE))
 #c compiler
 CC = $(CROSS_COMPILE)gcc
 CFLAGS += ${DEFINES}
-CFLAGS += -I../../include/stdlib
+CFLAGS += -I../../include/lib/stdlib
 
 #Linker
 LD = $(CROSS_COMPILE)ld

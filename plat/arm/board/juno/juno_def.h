@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2015, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2014-2016, ARM Limited and Contributors. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -39,6 +39,7 @@
 /* Board revisions */
 #define REV_JUNO_R0			0x1	/* Rev B */
 #define REV_JUNO_R1			0x2	/* Rev C */
+#define REV_JUNO_R2			0x3	/* Rev D */
 
 /* Bypass offset from start of NOR flash */
 #define BL1_ROM_BYPASS_OFFSET		0x03EC0000
@@ -49,6 +50,14 @@
 #define PSRAM_BASE			0x14000000
 #define PSRAM_SIZE			0x02000000
 
+#define JUNO_SSC_VER_PART_NUM		0x030
+
+/*******************************************************************************
+ * Juno topology related constants
+ ******************************************************************************/
+#define JUNO_CLUSTER_COUNT		2
+#define JUNO_CLUSTER0_CORE_COUNT	2
+#define JUNO_CLUSTER1_CORE_COUNT	4
 
 /*******************************************************************************
  * TZC-400 related constants

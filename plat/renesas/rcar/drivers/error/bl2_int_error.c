@@ -32,7 +32,7 @@
 #include <arch_helpers.h>
 #include <runtime_svc.h>
 #include <bl_common.h>
-#include <arm_gic.h>
+#include <gicv2.h>
 #include <mmio.h>
 #include <debug.h>
 #include "bl2_int_error.h"
@@ -52,7 +52,7 @@ void bl2_interrupt_error_id(uint32_t int_id)
 		panic();
 	}
 	/* Clear the interrupt request	*/
-	arm_gic_end_of_interrupt((uint32_t)int_id);
+	gicv2_end_of_interrupt((uint32_t)int_id);
 	bl2_swdt_release();
 	ERROR("BL2: Unhandled exception occurred.\n");
 	ERROR("     Exception type = FIQ_SP_ELX\n");
@@ -121,7 +121,7 @@ void bl2_interrupt_error_type(uint32_t ex_type)
 			ERROR("     ELR_EL1  = 0x%x\n",
 				(uint32_t)(read_elr_el1()  & 0x0FFFFFFFFU));
 			ERROR("     IAR_EL1  = 0x%x\n",
-				arm_gic_acknowledge_interrupt());
+				gicv2_acknowledge_interrupt());
 			break;
 		case FIQ_SP_ELX:
 			ERROR("     SPSR_EL1 = 0x%x\n",
@@ -129,7 +129,7 @@ void bl2_interrupt_error_type(uint32_t ex_type)
 			ERROR("     ELR_EL1  = 0x%x\n",
 				(uint32_t)(read_elr_el1()  & 0x0FFFFFFFFU));
 			ERROR("     IAR_EL1  = 0x%x\n",
-				arm_gic_acknowledge_interrupt());
+				gicv2_acknowledge_interrupt());
 			break;
 		case SERROR_SP_ELX:
 			ERROR("     SPSR_EL1 = 0x%x\n",

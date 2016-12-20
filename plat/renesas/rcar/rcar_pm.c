@@ -30,7 +30,8 @@
  */
 
 #include <arch_helpers.h>
-#include <arm_gic.h>
+#include <gicv2.h>
+#include <plat_arm.h>
 #include <assert.h>
 #include <bl_common.h>
 #include <bakery_lock.h>
@@ -45,6 +46,7 @@
 #include "drivers/iic_dvfs/iic_dvfs.h"
 #include "rcar_def.h"
 #include "rcar_private.h"
+#include "rcar_pm.h"
 
 static void rcar_program_mailbox(uint64_t mpidr, uint64_t address);
 static int32_t rcar_do_plat_actions(unsigned int afflvl, unsigned int state);
@@ -53,22 +55,14 @@ static void rcar_cluster_pwrdwn_common(void);
 static void __dead2 rcar_system_off(void);
 static void __dead2 rcar_system_reset(void);
 
-extern void rcar_bl31_save_generic_timer(uint64_t *stack);
-extern void rcar_bl31_restore_generic_timer(uint64_t *stack);
-extern uintptr_t platform_get_stack(uint64_t mpidr);
-extern void rcar_bl31_code_copy_to_system_ram(void);
-
 #define	RCAR_GENERIC_TIMER_STACK	(0x300)
-#define	IRQ_SEC_ARRAY_SIZE		(16U)
 #define	RCAR_BOOT_MODE			(0x01U)
 #define	RCAR_BOOT_COLD			(0x00U)
 
 #define	RCAR_MPIDR_CA57_CPU0		((uint64_t)0x0000U)
 #define	RCAR_MPIDR_CA53_CPU0		((uint64_t)0x0100U)
 
-extern const unsigned int irq_sec_array[IRQ_SEC_ARRAY_SIZE];
-
-static uint64_t rcar_stack_generic_timer[10] __attribute__((section("data")));
+uint64_t rcar_stack_generic_timer[5] __attribute__((section("data")));
 /*******************************************************************************
  * Private RCAR function to program the mailbox for a cpu before it is released
  * from reset.
@@ -92,7 +86,7 @@ static void rcar_program_mailbox(uint64_t mpidr, uint64_t address)
 static void rcar_cpu_pwrdwn_common(void)
 {
 	/* Prevent interrupts from spuriously waking up this cpu */
-	arm_gic_cpuif_deactivate();
+	gicv2_cpuif_disable();
 
 	/* Program the power controller to power off this cpu. */
 	rcar_pwrc_cpuoff (read_mpidr_el1());
@@ -123,7 +117,7 @@ static int32_t rcar_do_plat_actions(unsigned int afflvl, unsigned int state)
 {
 	unsigned int max_phys_off_afflvl;
 
-	assert(afflvl <= MPIDR_AFFLVL1);
+	assert(afflvl <= PLAT_MAX_PWR_LVL);
 
 	if (state != PSCI_STATE_OFF) {
 		return -EAGAIN;
@@ -259,9 +253,6 @@ void rcar_affinst_suspend(unsigned long sec_entrypoint, unsigned int afflvl,
 	/* Program the power controller to enable wakeup interrupts. */
 	rcar_pwrc_enable_interrupt_wakeup(mpidr);
 
-	/* save generic timer register */
-	rcar_bl31_save_generic_timer(rcar_stack_generic_timer);
-
 	/* Perform the common cpu specific operations */
 	rcar_cpu_pwrdwn_common();
 
@@ -305,10 +296,10 @@ void rcar_affinst_on_finish(unsigned int afflvl, unsigned int state)
 	rcar_program_mailbox(mpidr, 0U);
 
 	/* Enable the gic cpu interface */
-	arm_gic_cpuif_setup();
+	gicv2_cpuif_enable();
 
-	/* TODO: This setup is needed only after a cold boot */
-	arm_gic_pcpu_distif_setup();
+	/* Program the gic per-cpu distributor or re-distributor interface */
+	gicv2_pcpu_distif_init();
 }
 
 /*******************************************************************************
@@ -321,14 +312,13 @@ void rcar_affinst_on_finish(unsigned int afflvl, unsigned int state)
 void rcar_affinst_suspend_finish(unsigned int afflvl, unsigned int state)
 {
 	if ((uint32_t)afflvl >= (uint32_t)PLATFORM_MAX_AFFLVL) {
-		arm_gic_init(RCAR_GICC_BASE, RCAR_GICD_BASE, RCAR_GICR_BASE,
-			irq_sec_array, IRQ_SEC_ARRAY_SIZE);
-		arm_gic_setup();
+		plat_arm_gic_driver_init();
+		plat_arm_gic_init();
 		rcar_cci_init();
 		/* restore generic timer register */
 		rcar_bl31_restore_generic_timer(rcar_stack_generic_timer);
 		/* start generic timer */
-		write_cntfrq_el0(plat_get_syscnt_freq());
+		write_cntfrq_el0((unsigned long)plat_get_syscnt_freq2());
 		mmio_write_32((uintptr_t)(RCAR_CNTC_BASE+(uint32_t)CNTCR_OFF),
 					(uint32_t)(CNTCR_FCREQ(0)|CNTCR_EN));
 		rcar_pwrc_setup();
@@ -344,6 +334,8 @@ void rcar_affinst_suspend_finish(unsigned int afflvl, unsigned int state)
  ******************************************************************************/
 static void __dead2 rcar_system_off(void)
 {
+#if PMIC_ON_BOARD
+#if PMIC_LEVEL_MODE
 	int32_t error;
 
 	/* The code of iic for DVFS driver is copied to system ram */
@@ -355,6 +347,9 @@ static void __dead2 rcar_system_off(void)
 	if (error != 0) {
 		ERROR("BL3-1:Failed the SYSTEM-OFF.\n");
 	}
+#else /* pulse mode */
+#endif
+#endif
 	wfi();
 	ERROR("RCAR System Off: operation not handled.\n");
 	panic();
@@ -362,6 +357,8 @@ static void __dead2 rcar_system_off(void)
 
 static void __dead2 rcar_system_reset(void)
 {
+#if PMIC_ON_BOARD
+#if PMIC_LEVEL_MODE
 	int32_t error;
 
 	/* The code of iic for DVFS driver is copied to system ram */
@@ -373,6 +370,9 @@ static void __dead2 rcar_system_reset(void)
 	if (error != 0) {
 		ERROR("BL3-1:Failed the SYSTEM-RESET.\n");
 	}
+#else /* pulse mode */
+#endif
+#endif
 	wfi();
 	ERROR("RCAR System Reset: operation not handled.\n");
 	panic();
@@ -432,7 +432,9 @@ int platform_setup_pm(const plat_pm_ops_t **plat_ops)
 {
 	*plat_ops = &rcar_plat_pm_ops;
 
+#if PMIC_ON_BOARD
 	rcar_bl31_init_suspend_to_ram();
+#endif
 
 	return 0;
 }

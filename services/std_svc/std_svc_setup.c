@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2014-2016, ARM Limited and Contributors. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -28,9 +28,11 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <assert.h>
 #include <debug.h>
 #include <psci.h>
 #include <runtime_svc.h>
+#include <smcc_helpers.h>
 #include <std_svc.h>
 #include <stdint.h>
 #include <uuid.h>
@@ -43,33 +45,39 @@ DEFINE_SVC_UUID(arm_svc_uid,
 /* Setup Standard Services */
 static int32_t std_svc_setup(void)
 {
+	uintptr_t svc_arg;
+
+	svc_arg = get_arm_std_svc_args(PSCI_FID_MASK);
+	assert(svc_arg);
+
 	/*
 	 * PSCI is the only specification implemented as a Standard Service.
-	 * Invoke PSCI setup from here
+	 * The `psci_setup()` also does EL3 architectural setup.
 	 */
-	return psci_setup();
+	return psci_setup((const psci_lib_args_t *)svc_arg);
 }
 
 /*
  * Top-level Standard Service SMC handler. This handler will in turn dispatch
  * calls to PSCI SMC handler
  */
-uint64_t std_svc_smc_handler(uint32_t smc_fid,
-			     uint64_t x1,
-			     uint64_t x2,
-			     uint64_t x3,
-			     uint64_t x4,
+uintptr_t std_svc_smc_handler(uint32_t smc_fid,
+			     u_register_t x1,
+			     u_register_t x2,
+			     u_register_t x3,
+			     u_register_t x4,
 			     void *cookie,
 			     void *handle,
-			     uint64_t flags)
+			     u_register_t flags)
 {
 	/*
 	 * Dispatch PSCI calls to PSCI SMC handler and return its return
 	 * value
 	 */
 	if (is_psci_fid(smc_fid)) {
-		return psci_smc_handler(smc_fid, x1, x2, x3, x4, cookie,
-				handle, flags);
+		SMC_RET1(handle,
+			psci_smc_handler(smc_fid, x1, x2, x3, x4,
+					cookie, handle, flags));
 	}
 
 	switch (smc_fid) {

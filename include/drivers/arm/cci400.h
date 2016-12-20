@@ -31,6 +31,14 @@
 #ifndef __CCI_400_H__
 #define __CCI_400_H__
 
+/**************************************************************
+ * THIS DRIVER IS DEPRECATED. Please use the driver in cci.h
+ **************************************************************/
+#if ERROR_DEPRECATED
+#error " The CCI-400 specific driver is deprecated."
+#endif
+
+
 /* Slave interface offsets from PERIPHBASE */
 #define SLAVE_IFACE4_OFFSET		0x5000
 #define SLAVE_IFACE3_OFFSET		0x4000
@@ -83,10 +91,10 @@
  */
 void cci_init(uintptr_t cci_base,
 		int slave_iface3_cluster_ix,
-		int slave_iface4_cluster_ix);
+		int slave_iface4_cluster_ix) __deprecated;
 
-void cci_enable_cluster_coherency(unsigned long mpidr);
-void cci_disable_cluster_coherency(unsigned long mpidr);
+void cci_enable_cluster_coherency(unsigned long mpidr) __deprecated;
+void cci_disable_cluster_coherency(unsigned long mpidr) __deprecated;
 
 #endif /* __ASSEMBLY__ */
 #endif /* __CCI_400_H__ */

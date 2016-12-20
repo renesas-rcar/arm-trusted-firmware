@@ -31,8 +31,10 @@
 #ifndef __TEGRA_PRIVATE_H__
 #define __TEGRA_PRIVATE_H__
 
-#include <xlat_tables.h>
+#include <arch.h>
 #include <platform_def.h>
+#include <psci.h>
+#include <xlat_tables.h>
 
 /*******************************************************************************
  * Tegra DRAM memory base address
@@ -45,11 +47,11 @@ typedef struct plat_params_from_bl2 {
 } plat_params_from_bl2_t;
 
 /* Declarations for plat_psci_handlers.c */
-int32_t tegra_soc_validate_power_state(unsigned int power_state);
+int32_t tegra_soc_validate_power_state(unsigned int power_state,
+		psci_power_state_t *req_state);
 
 /* Declarations for plat_setup.c */
 const mmap_region_t *plat_get_mmio_map(void);
-uint64_t plat_get_syscnt_freq(void);
 
 /* Declarations for plat_secondary.c */
 void plat_secondary_setup(void);

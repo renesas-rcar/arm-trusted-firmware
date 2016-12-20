@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2015-2016, ARM Limited and Contributors. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -49,7 +49,7 @@ func plat_my_core_pos
 endfunc plat_my_core_pos
 
 	/* -----------------------------------------------------
-	 *  unsigned int plat_arm_calc_core_pos(uint64_t mpidr)
+	 *  unsigned int plat_arm_calc_core_pos(u_register_t mpidr)
 	 *  Helper function to calculate the core position.
 	 *  With this function: CorePos = (ClusterId * 4) +
 	 *  				  CoreId
@@ -66,7 +66,7 @@ endfunc plat_arm_calc_core_pos
 	 * int plat_crash_console_init(void)
 	 * Function to initialize the crash console
 	 * without a C Runtime to print crash report.
-	 * Clobber list : x0, x1, x2
+	 * Clobber list : x0 - x4
 	 * ---------------------------------------------
 	 */
 func plat_crash_console_init

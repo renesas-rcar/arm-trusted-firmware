@@ -31,7 +31,7 @@
 
 #include <arch.h>
 #include <arch_helpers.h>
-#include <arm_gic.h>
+#include <gicv2.h>
 #include <bl_common.h>
 #include <cci.h>
 #include <debug.h>
@@ -58,9 +58,11 @@ const uint8_t version_of_renesas[VERSION_OF_RENESAS_MAXLEN]
 					DRAM1_NS_SIZE,			\
 					MT_MEMORY | MT_RW | MT_NS)
 
+#ifdef BL32_BASE
 #define MAP_BL32_MEM	MAP_REGION_FLAT(BL32_BASE,			\
 					BL32_LIMIT - BL32_BASE,		\
 					MT_MEMORY | MT_RW | MT_SECURE)
+#endif
 
 #define MAP_DEVICE_RCAR	MAP_REGION_FLAT(DEVICE_RCAR_BASE,		\
 					DEVICE_RCAR_SIZE,		\
@@ -82,6 +84,10 @@ const uint8_t version_of_renesas[VERSION_OF_RENESAS_MAXLEN]
 #define MAP_SRAM_STACK	MAP_REGION_FLAT(DEVICE_SRAM_STACK_BASE,		\
 					DEVICE_SRAM_STACK_SIZE,		\
 					MT_MEMORY | MT_RW | MT_SECURE)
+
+#define MAP_ATFW_CRASH  MAP_REGION_FLAT(RCAR_BL31_CRASH_BASE,            \
+                                       RCAR_BL31_CRASH_SIZE,            \
+                                       MT_MEMORY | MT_RW | MT_SECURE)
 
 #define MAP_ATFW_LOG	MAP_REGION_FLAT(RCAR_BL31_LOG_BASE,		\
 					RCAR_BL31_LOG_SIZE,		\
@@ -106,7 +112,9 @@ const mmap_region_t rcar_mmap[] = {
 	MAP_SHARED_RAM,
 	MAP_FLASH0,
 	MAP_DRAM1_NS,
+#ifdef BL32_BASE
 	MAP_BL32_MEM,
+#endif
 	MAP_DEVICE_RCAR,
 	{	0}
 };
@@ -114,6 +122,7 @@ const mmap_region_t rcar_mmap[] = {
 #if IMAGE_BL31
 const mmap_region_t rcar_mmap[] = {
 	MAP_SHARED_RAM,
+	MAP_ATFW_CRASH,
 	MAP_ATFW_LOG,
 	MAP_DEVICE_RCAR,
 	MAP_DEVICE_RCAR2,
@@ -190,14 +199,14 @@ extern int32_t file_to_cert(const int32_t filename, uint32_t *cert_addr);
 extern void get_info_from_cert(uint64_t cert_addr, uint32_t *size, uintptr_t *dest_addr);
 #endif
 
-unsigned long plat_get_ns_image_entrypoint(void)
+uintptr_t plat_get_ns_image_entrypoint(void)
 {
 #if (IMAGE_BL2)
 	int32_t ret;
 	uint32_t cert_addr;
 	uint32_t l_image_size;
 	uintptr_t dest_addr;
-	ret = file_to_cert(BL33_CERT_ID, &cert_addr);
+	ret = file_to_cert(NON_TRUSTED_FW_CONTENT_CERT_ID, &cert_addr);
 	if (0 == ret) {
 		get_info_from_cert((uint64_t) cert_addr, &l_image_size, &dest_addr);
 	} else {
@@ -210,12 +219,13 @@ unsigned long plat_get_ns_image_entrypoint(void)
 #endif
 }
 
-uint64_t plat_get_syscnt_freq(void)
+unsigned int plat_get_syscnt_freq2(void)
 {
-	uint64_t counter_base_frequency;
+	unsigned int counter_base_frequency;
 
 	/* Read the frequency from Frequency modes table */
-	counter_base_frequency = mmio_read_32(ARM_SYS_CNTCTL_BASE + (uint32_t)CNTFID_OFF);
+	counter_base_frequency = (unsigned int)mmio_read_32(ARM_SYS_CNTCTL_BASE
+							 + (uint32_t)CNTFID_OFF);
 
 	/* The first entry of the frequency modes table must not be 0 */
 	if (counter_base_frequency == 0U) {
@@ -282,4 +292,53 @@ uint32_t rcar_get_spsr_for_bl33_entry(void)
 #else
 #error
 #endif
+}
+
+/* Array of secure interrupts to be configured by the gic driver */
+#if IMAGE_BL2
+static const unsigned int irq_sec_array[] = {
+	ARM_IRQ_SEC_WDT			/* 173          */
+};
+#endif
+#if IMAGE_BL31
+static const unsigned int irq_sec_array[] = {
+	ARM_IRQ_SEC_PHY_TIMER,		/* 29		*/
+	ARM_IRQ_SEC_SGI_0,		/* 8		*/
+	ARM_IRQ_SEC_SGI_1,		/* 9		*/
+	ARM_IRQ_SEC_SGI_2,		/* 10		*/
+	ARM_IRQ_SEC_SGI_3,		/* 11		*/
+	ARM_IRQ_SEC_SGI_4,		/* 12		*/
+	ARM_IRQ_SEC_SGI_5,		/* 13		*/
+	ARM_IRQ_SEC_SGI_6,		/* 14		*/
+	ARM_IRQ_SEC_SGI_7,		/* 15		*/
+	ARM_IRQ_SEC_RPC,		/* 70		*/
+	ARM_IRQ_SEC_TIMER,		/* 166		*/
+	ARM_IRQ_SEC_TIMER_UP,		/* 171		*/
+	ARM_IRQ_SEC_WDT,		/* 173		*/
+	ARM_IRQ_SEC_CRYPT,		/* 102		*/
+	ARM_IRQ_SEC_CRYPT_SecPKA,	/* 97		*/
+	ARM_IRQ_SEC_CRYPT_PubPKA	/* 98		*/
+};
+#endif
+
+static const struct gicv2_driver_data plat_gicv2_driver_data = {
+	.gicd_base = RCAR_GICD_BASE,
+	.gicc_base = RCAR_GICC_BASE,
+	.g0_interrupt_num = (uint32_t)ARRAY_SIZE(irq_sec_array),
+	.g0_interrupt_array = irq_sec_array,
+};
+
+/******************************************************************************
+ * ARM common helper to initialize the GICv2 only driver.
+ *****************************************************************************/
+void plat_arm_gic_driver_init(void)
+{
+	gicv2_driver_init(&plat_gicv2_driver_data);
+}
+
+void plat_arm_gic_init(void)
+{
+	gicv2_distif_init();
+	gicv2_pcpu_distif_init();
+	gicv2_cpuif_enable();
 }

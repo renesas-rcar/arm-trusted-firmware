@@ -41,6 +41,7 @@
 #include "io_rcar.h"
 #include "io_memdrv.h"
 #include "io_emmcdrv.h"
+#include "io_private.h"
 
 /* IO devices */
 static uintptr_t rcar_dev_handle;
@@ -105,15 +106,15 @@ static const io_block_spec_t trusted_key_cert_file_spec = {
 };
 
 static const io_block_spec_t bl31_key_cert_file_spec = {
-	.offset = BL31_KEY_CERT_ID,
+	.offset = SOC_FW_KEY_CERT_ID,
 };
 
 static const io_block_spec_t bl32_key_cert_file_spec = {
-	.offset = BL32_KEY_CERT_ID,
+	.offset = TRUSTED_OS_FW_KEY_CERT_ID,
 };
 
 static const io_block_spec_t bl33_key_cert_file_spec = {
-	.offset = BL33_KEY_CERT_ID,
+	.offset = NON_TRUSTED_FW_KEY_CERT_ID,
 };
 
 static const io_block_spec_t bl332_key_cert_file_spec = {
@@ -145,15 +146,15 @@ static const io_block_spec_t bl338_key_cert_file_spec = {
 };
 
 static const io_block_spec_t bl31_cert_file_spec = {
-	.offset = BL31_CERT_ID,
+	.offset = SOC_FW_CONTENT_CERT_ID,
 };
 
 static const io_block_spec_t bl32_cert_file_spec = {
-	.offset = BL32_CERT_ID,
+	.offset = TRUSTED_OS_FW_CONTENT_CERT_ID,
 };
 
 static const io_block_spec_t bl33_cert_file_spec = {
-	.offset = BL33_CERT_ID,
+	.offset = NON_TRUSTED_FW_CONTENT_CERT_ID,
 };
 
 static const io_block_spec_t bl332_cert_file_spec = {
@@ -263,17 +264,17 @@ static const struct plat_io_policy policies[] = {
 		(uintptr_t)&trusted_key_cert_file_spec,
 		&open_rcar
 	},
-	[BL31_KEY_CERT_ID] = {
+	[SOC_FW_KEY_CERT_ID] = {
 		&rcar_dev_handle,
 		(uintptr_t)&bl31_key_cert_file_spec,
 		&open_rcar
 	},
-	[BL32_KEY_CERT_ID] = {
+	[TRUSTED_OS_FW_KEY_CERT_ID] = {
 		&rcar_dev_handle,
 		(uintptr_t)&bl32_key_cert_file_spec,
 		&open_rcar
 	},
-	[BL33_KEY_CERT_ID] = {
+	[NON_TRUSTED_FW_KEY_CERT_ID] = {
 		&rcar_dev_handle,
 		(uintptr_t)&bl33_key_cert_file_spec,
 		&open_rcar
@@ -313,17 +314,17 @@ static const struct plat_io_policy policies[] = {
 		(uintptr_t)&bl338_key_cert_file_spec,
 		&open_rcar
 	},
-	[BL31_CERT_ID] = {
+	[SOC_FW_CONTENT_CERT_ID] = {
 		&rcar_dev_handle,
 		(uintptr_t)&bl31_cert_file_spec,
 		&open_rcar
 	},
-	[BL32_CERT_ID] = {
+	[TRUSTED_OS_FW_CONTENT_CERT_ID] = {
 		&rcar_dev_handle,
 		(uintptr_t)&bl32_cert_file_spec,
 		&open_rcar
 	},
-	[BL33_CERT_ID] = {
+	[NON_TRUSTED_FW_CONTENT_CERT_ID] = {
 		&rcar_dev_handle,
 		(uintptr_t)&bl33_cert_file_spec,
 		&open_rcar

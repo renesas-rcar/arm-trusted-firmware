@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2013-2014, ARM Limited and Contributors. All rights reserved.
+# Copyright (c) 2013-2016, ARM Limited and Contributors. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
@@ -37,12 +37,12 @@ BL32_SOURCES		+=	bl32/tsp/tsp_main.c			\
 				bl32/tsp/tsp_interrupt.c		\
 				bl32/tsp/tsp_timer.c			\
 				common/aarch64/early_exceptions.S	\
-				lib/locks/exclusive/spinlock.S
+				lib/locks/exclusive/aarch64/spinlock.S
 
 BL32_LINKERFILE		:=	bl32/tsp/tsp.ld.S
 
-# This flag determines if the TSPD initializes BL3-2 in tspd_init() (synchronous
-# method) or configures BL3-1 to pass control to BL3-2 instead of BL3-3
+# This flag determines if the TSPD initializes BL32 in tspd_init() (synchronous
+# method) or configures BL31 to pass control to BL32 instead of BL33
 # (asynchronous method).
 TSP_INIT_ASYNC         :=      0
 
@@ -52,8 +52,8 @@ $(eval $(call add_define,TSP_INIT_ASYNC))
 # Include the platform-specific TSP Makefile
 # If no platform-specific TSP Makefile exists, it means TSP is not supported
 # on this platform.
-TSP_PLAT_MAKEFILE := $(shell find plat/ -wholename '*/${PLAT}/tsp/tsp-${PLAT}.mk')
-ifeq (,$(wildcard ${TSP_PLAT_MAKEFILE}))
+TSP_PLAT_MAKEFILE := $(wildcard ${PLAT_DIR}/tsp/tsp-${PLAT}.mk)
+ifeq (,${TSP_PLAT_MAKEFILE})
   $(error TSP is not supported on platform ${PLAT})
 else
   include ${TSP_PLAT_MAKEFILE}

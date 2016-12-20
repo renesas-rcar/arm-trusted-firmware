@@ -49,15 +49,11 @@
 
 #define SPM_SYSCLK_SETTLE       128	/* 3.9ms */
 
-#if DEBUG
-static int spm_dormant_sta = CPU_DORMANT_RESET;
-#endif
-
 DEFINE_BAKERY_LOCK(spm_lock);
 
-static int spm_hotplug_ready __attribute__ ((section("tzfw_coherent_mem")));
-static int spm_mcdi_ready __attribute__ ((section("tzfw_coherent_mem")));
-static int spm_suspend_ready __attribute__ ((section("tzfw_coherent_mem")));
+static int spm_hotplug_ready __section("tzfw_coherent_mem");
+static int spm_mcdi_ready __section("tzfw_coherent_mem");
+static int spm_suspend_ready __section("tzfw_coherent_mem");
 
 void spm_lock_init(void)
 {
@@ -378,14 +374,19 @@ enum wake_reason_t spm_output_wake_reason(struct wake_status *wakesta)
 	     wakesta->raw_sta, wakesta->idle_sta, wakesta->event_reg,
 	     wakesta->isr);
 
-	INFO("dormant state = %d\n", spm_dormant_sta);
 	return wr;
 }
 
 void spm_boot_init(void)
 {
+	/* set spm transaction to secure mode */
+	mmio_write_32(DEVAPC0_APC_CON, 0x0);
+	mmio_write_32(DEVAPC0_MAS_SEC_0, 0x200);
+
 	/* Only CPU0 is online during boot, initialize cpu online reserve bit */
 	mmio_write_32(SPM_PCM_RESERVE, 0xFE);
+	mmio_clrbits_32(AP_PLL_CON3, 0xFFFFF);
+	mmio_clrbits_32(AP_PLL_CON4, 0xF);
 	spm_lock_init();
 	spm_register_init();
 }

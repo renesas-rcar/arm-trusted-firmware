@@ -39,13 +39,9 @@
 #include <mmio.h>
 
 #include "rcarboot.h"
+#include "rom_api.h"
 
 #define RCAR_BOOT_KEY_CERT	(0xE6300C00U)
-#if RCAR_LSI == RCAR_H3
-#define RCAR_SBROM_API		(0xeb10dd64U)
-#elif RCAR_LSI == RCAR_M3
-#define RCAR_SBROM_API		(0xeb1102fcU)
-#endif
 #define	RST_BASE		(0xE6160000U)
 #define	RST_MODEMR		(RST_BASE + 0x0060U)
 #define LIFEC_CC_LCS		(0xE6110028U)		/* cc_lcs  Life cycle state read */
@@ -82,9 +78,9 @@ int auth_mod_verify_img(unsigned int img_id, void *img_ptr,
 	switch (img_id) {
 #if IMAGE_BL2
 	case (uint32_t)TRUSTED_KEY_CERT_ID:
-	case (uint32_t)BL31_KEY_CERT_ID:
-	case (uint32_t)BL32_KEY_CERT_ID:
-	case (uint32_t)BL33_KEY_CERT_ID:
+	case (uint32_t)SOC_FW_KEY_CERT_ID:
+	case (uint32_t)TRUSTED_OS_FW_KEY_CERT_ID:
+	case (uint32_t)NON_TRUSTED_FW_KEY_CERT_ID:
 	case (uint32_t)BL332_KEY_CERT_ID:
 	case (uint32_t)BL333_KEY_CERT_ID:
 	case (uint32_t)BL334_KEY_CERT_ID:
@@ -92,9 +88,9 @@ int auth_mod_verify_img(unsigned int img_id, void *img_ptr,
 	case (uint32_t)BL336_KEY_CERT_ID:
 	case (uint32_t)BL337_KEY_CERT_ID:
 	case (uint32_t)BL338_KEY_CERT_ID:
-	case (uint32_t)BL31_CERT_ID:
-	case (uint32_t)BL32_CERT_ID:
-	case (uint32_t)BL33_CERT_ID:
+	case (uint32_t)SOC_FW_CONTENT_CERT_ID:
+	case (uint32_t)TRUSTED_OS_FW_CONTENT_CERT_ID:
+	case (uint32_t)NON_TRUSTED_FW_CONTENT_CERT_ID:
 	case (uint32_t)BL332_CERT_ID:
 	case (uint32_t)BL333_CERT_ID:
 	case (uint32_t)BL334_CERT_ID:
@@ -105,7 +101,7 @@ int auth_mod_verify_img(unsigned int img_id, void *img_ptr,
 		/* no check */
 		break;
 	case (uint32_t)BL31_IMAGE_ID:
-		ret = file_to_cert(BL31_CERT_ID, &cert_addr);
+		ret = file_to_cert(SOC_FW_CONTENT_CERT_ID, &cert_addr);
 		if (0 == ret) {
 			ret = sbrom_SecureBootAPI(RCAR_BOOT_KEY_CERT, cert_addr, NULL);
 			if (0 != ret) {
@@ -114,7 +110,7 @@ int auth_mod_verify_img(unsigned int img_id, void *img_ptr,
 		}
 		break;
 	case (uint32_t)BL32_IMAGE_ID:
-		ret = file_to_cert(BL32_CERT_ID, &cert_addr);
+		ret = file_to_cert(TRUSTED_OS_FW_CONTENT_CERT_ID, &cert_addr);
 		if (0 == ret) {
 			ret = sbrom_SecureBootAPI(RCAR_BOOT_KEY_CERT, cert_addr, NULL);
 			if (0 != ret) {
@@ -123,7 +119,7 @@ int auth_mod_verify_img(unsigned int img_id, void *img_ptr,
 		}
 		break;
 	case (uint32_t)BL33_IMAGE_ID:
-		ret = file_to_cert(BL33_CERT_ID, &cert_addr);
+		ret = file_to_cert(NON_TRUSTED_FW_CONTENT_CERT_ID, &cert_addr);
 		if (0 == ret) {
 			ret = sbrom_SecureBootAPI(RCAR_BOOT_KEY_CERT, cert_addr, NULL);
 			if (0 != ret) {
@@ -219,7 +215,7 @@ void auth_mod_init(void)
 	uint32_t softmd = (mmio_read_32(MFISSOFTMDR) & 0x00000001U);
 
 	/* default is Secure boot */
-	sbrom_SecureBootAPI = (SECURE_BOOT_API)RCAR_SBROM_API;
+	sbrom_SecureBootAPI = (SECURE_BOOT_API)&ROM_SecureBootAPI;
 
 	if (lcs == 0x5U) { /* LCS=Secure */
 		if (softmd == 0x1U) {

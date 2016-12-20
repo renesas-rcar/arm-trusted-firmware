@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2015, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2014-2016, ARM Limited and Contributors. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -37,13 +37,21 @@
 #include "css_mhu.h"
 #include "css_scpi.h"
 
-#define SCPI_SHARED_MEM_SCP_TO_AP	SCP_COM_SHARED_MEM_BASE
-#define SCPI_SHARED_MEM_AP_TO_SCP	(SCP_COM_SHARED_MEM_BASE + 0x100)
+#define SCPI_SHARED_MEM_SCP_TO_AP	PLAT_CSS_SCP_COM_SHARED_MEM_BASE
+#define SCPI_SHARED_MEM_AP_TO_SCP	(PLAT_CSS_SCP_COM_SHARED_MEM_BASE \
+								 + 0x100)
 
+/* Header and payload addresses for commands from AP to SCP */
 #define SCPI_CMD_HEADER_AP_TO_SCP		\
 	((scpi_cmd_t *) SCPI_SHARED_MEM_AP_TO_SCP)
 #define SCPI_CMD_PAYLOAD_AP_TO_SCP		\
 	((void *) (SCPI_SHARED_MEM_AP_TO_SCP + sizeof(scpi_cmd_t)))
+
+/* Header and payload addresses for responses from SCP to AP */
+#define SCPI_RES_HEADER_SCP_TO_AP \
+	((scpi_cmd_t *) SCPI_SHARED_MEM_SCP_TO_AP)
+#define SCPI_RES_PAYLOAD_SCP_TO_AP \
+	((void *) (SCPI_SHARED_MEM_SCP_TO_AP + sizeof(scpi_cmd_t)))
 
 /* ID of the MHU slot used for the SCPI protocol */
 #define SCPI_MHU_SLOT_ID		0
@@ -55,10 +63,10 @@ static void scpi_secure_message_start(void)
 
 static void scpi_secure_message_send(size_t payload_size)
 {
-	/* Make sure payload can be seen by SCP */
-	if (MHU_PAYLOAD_CACHED)
-		flush_dcache_range(SCPI_SHARED_MEM_AP_TO_SCP,
-				   sizeof(scpi_cmd_t) + payload_size);
+	/* Ensure that any write to the SCPI payload area is seen by SCP before
+	 * we write to the MHU register. If these 2 writes were reordered by
+	 * the CPU then SCP would read stale payload data */
+	dmbst();
 
 	mhu_secure_message_send(SCPI_MHU_SLOT_ID);
 }
@@ -78,9 +86,10 @@ static void scpi_secure_message_receive(scpi_cmd_t *cmd)
 		panic();
 	}
 
-	/* Make sure we don't read stale data */
-	if (MHU_PAYLOAD_CACHED)
-		inv_dcache_range(SCPI_SHARED_MEM_SCP_TO_AP, sizeof(*cmd));
+	/* Ensure that any read to the SCPI payload area is done after reading
+	 * the MHU register. If these 2 reads were reordered then the CPU would
+	 * read invalid payload data */
+	dmbld();
 
 	memcpy(cmd, (void *) SCPI_SHARED_MEM_SCP_TO_AP, sizeof(*cmd));
 }
@@ -159,6 +168,68 @@ void scpi_set_css_power_state(unsigned mpidr, scpi_power_state_t cpu_state,
 	 */
 
 	scpi_secure_message_end();
+}
+
+/*
+ * Query and obtain CSS power state from SCP.
+ *
+ * In response to the query, SCP returns power states of all CPUs in all
+ * clusters of the system. The returned response is then filtered based on the
+ * supplied MPIDR. Power states of requested cluster and CPUs within are updated
+ * via. supplied non-NULL pointer arguments.
+ *
+ * Returns 0 on success, or -1 on errors.
+ */
+int scpi_get_css_power_state(unsigned int mpidr, unsigned int *cpu_state_p,
+		unsigned int *cluster_state_p)
+{
+	scpi_cmd_t *cmd;
+	scpi_cmd_t response;
+	int power_state, cpu, cluster, rc = -1;
+
+	/*
+	 * Extract CPU and cluster membership of the given MPIDR. SCPI caters
+	 * for only up to 0xf clusters, and 8 CPUs per cluster
+	 */
+	cpu = mpidr & MPIDR_AFFLVL_MASK;
+	cluster = (mpidr >> MPIDR_AFF1_SHIFT) & MPIDR_AFFLVL_MASK;
+	if (cpu >= 8 || cluster >= 0xf)
+		return -1;
+
+	scpi_secure_message_start();
+
+	/* Populate request headers */
+	cmd = memset(SCPI_CMD_HEADER_AP_TO_SCP, 0, sizeof(*cmd));
+	cmd->id = SCPI_CMD_GET_CSS_POWER_STATE;
+
+	/*
+	 * Send message and wait for SCP's response
+	 */
+	scpi_secure_message_send(0);
+	scpi_secure_message_receive(&response);
+
+	if (response.status != SCP_OK)
+		goto exit;
+
+	/* Validate SCP response */
+	if (!CHECK_RESPONSE(response, cluster))
+		goto exit;
+
+	/* Extract power states for required cluster */
+	power_state = *(((uint16_t *) SCPI_RES_PAYLOAD_SCP_TO_AP) + cluster);
+	if (CLUSTER_ID(power_state) != cluster)
+		goto exit;
+
+	/* Update power state via. pointers */
+	if (cluster_state_p)
+		*cluster_state_p = CLUSTER_POWER_STATE(power_state);
+	if (cpu_state_p)
+		*cpu_state_p = CPU_POWER_STATE(power_state);
+	rc = 0;
+
+exit:
+	scpi_secure_message_end();
+	return rc;
 }
 
 uint32_t scpi_sys_power_state(scpi_system_state_t system_state)

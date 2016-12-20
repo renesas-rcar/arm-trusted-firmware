@@ -32,11 +32,12 @@
 #include <arch_helpers.h>
 #include <assert.h>
 #include <bl_common.h>
+#include <bl1.h>
 #include <console.h>
 #include <platform.h>
 #include <platform_def.h>
 #include <string.h>
-#include <arm_gic.h>
+#include <plat_arm.h>
 #include "rcar_def.h"
 #include "rcar_private.h"
 #include "io_common.h"
@@ -57,6 +58,7 @@
 #include "emmc_hal.h"
 #include "emmc_std.h"
 #include "emmc_def.h"
+#include "rom_api.h"
 
 
 /* CPG write protect registers */
@@ -87,19 +89,6 @@
 /* MIDR */
 #define MIDR_CA57		(0x0D07U << MIDR_PN_SHIFT)
 #define MIDR_CA53		(0x0D03U << MIDR_PN_SHIFT)
-
-/* MaskROM API */
-typedef uint32_t(*ROM_GETLCS_API)(uint32_t *pLcs);
-#if RCAR_LSI == RCAR_H3
-#define ROM_GETLCS_API_ADDR	((ROM_GETLCS_API)0xEB10DFE0U)
-#elif RCAR_LSI == RCAR_M3
-#define ROM_GETLCS_API_ADDR	((ROM_GETLCS_API)0xEB110578U)
-#endif
-#define LCS_CM			(0x0U)
-#define LCS_DM			(0x1U)
-#define LCS_SD			(0x3U)
-#define LCS_SE			(0x5U)
-#define LCS_FA			(0x7U)
 
 /* R-Car Gen3 product check */
 #if RCAR_LSI == RCAR_H3
@@ -201,6 +190,7 @@ bl31_params_t *bl2_plat_get_bl31_params(void)
 						VERSION_1, 0);
 
 	/* Fill BL32 related information if it exists */
+#ifdef BL32_BASE
 	if (BL32_BASE) {
 		bl2_to_bl31_params->bl32_ep_info =
 					&bl31_params_mem->bl32_ep_info;
@@ -212,6 +202,7 @@ bl31_params_t *bl2_plat_get_bl31_params(void)
 					PARAM_IMAGE_BINARY,
 					VERSION_1, 0);
 	}
+#endif
 
 	/* Fill BL33 related information */
 	bl2_to_bl31_params->bl33_ep_info = &bl31_params_mem->bl33_ep_info;
@@ -254,7 +245,7 @@ struct entry_point_info *bl2_plat_get_bl31_ep_info(void)
 		 * Run BL3-1 via an SMC to BL1.
 		 * Need to jumps entrypoint of Suspend to RAM at SMC handler.
 		 */
-		smc((unsigned long)RUN_IMAGE, (unsigned long)bl31_ep_info,
+		smc((unsigned long)BL1_SMC_RUN_IMAGE, (unsigned long)bl31_ep_info,
 			0UL, 0UL, 0UL, 0UL, 0UL, 0UL);
 
 		/* Jump to BL31 (Not come back here) */
@@ -286,16 +277,19 @@ struct entry_point_info *bl2_plat_get_bl31_ep_info(void)
 #define	LOSSY_ENA_DIS0			LOSSY_ENABLE
 
 /* Settings of Entry 1 */
-#define	LOSSY_ST_ADDR1			0x0 /* Undefined */
-#define	LOSSY_END_ADDR1			0x0 /* Undefined */
+#define	LOSSY_ST_ADDR1			0x0U /* Undefined */
+#define	LOSSY_END_ADDR1			0x0U /* Undefined */
 #define	LOSSY_FMT1				LOSSY_FMT_ARGB8888
 #define	LOSSY_ENA_DIS1			LOSSY_DISABLE
 
 /* Settings of Entry 2 */
-#define	LOSSY_ST_ADDR2			0x0 /* Undefined */
-#define	LOSSY_END_ADDR2			0x0 /* Undefined */
+#define	LOSSY_ST_ADDR2			0x0U /* Undefined */
+#define	LOSSY_END_ADDR2			0x0U /* Undefined */
 #define	LOSSY_FMT2				LOSSY_FMT_YUV422INTLV
 #define	LOSSY_ENA_DIS2			LOSSY_DISABLE
+
+static void bl2_lossy_setting(uint32_t no, uint64_t start_addr, 
+	uint64_t end_addr, uint32_t format, uint32_t enable);
 
 typedef struct bl2_lossy_info {
 	uint32_t magic;
@@ -303,32 +297,32 @@ typedef struct bl2_lossy_info {
 	uint32_t b0;
 } bl2_lossy_info_t;
 
-void bl2_lossy_setting(uint32_t no, uint32_t start_addr, uint32_t end_addr,
-	uint32_t format, uint32_t enable)
+static void bl2_lossy_setting(uint32_t no, uint64_t start_addr, 
+	uint64_t end_addr, uint32_t format, uint32_t enable)
 {
 	uint32_t reg;
-	bl2_lossy_info_t *bl2_lossy_info;
+	bl2_lossy_info_t *info_p;
 
 	/* Setting of the start address and format */
-	reg = format | (start_addr >> 20);
-	mmio_write_32(AXI_DCMPAREACRA0 + 0x8 * no, reg);
+	reg = (uint32_t)(format | (start_addr >> 20U));
+	mmio_write_32(AXI_DCMPAREACRA0 + (0x8U * (uintptr_t)no), reg);
 
 	/* Setting of the end address */
-	mmio_write_32(AXI_DCMPAREACRB0 + 0x8 * no,
-		(end_addr >> 20));
+	mmio_write_32(AXI_DCMPAREACRB0 + (0x8U * (uintptr_t)no),
+		(uint32_t)(end_addr >> 20U));
 
 	/* Enable or Disable of Lossy setting */
-	mmio_write_32(AXI_DCMPAREACRA0 + 0x8 * no, (reg | enable));
+	mmio_write_32(AXI_DCMPAREACRA0 + (0x8U * (uintptr_t)no), (reg | enable));
 
-	bl2_lossy_info = (bl2_lossy_info_t *)(LOSSY_PARAMS_BASE);
-	bl2_lossy_info += no;
-	bl2_lossy_info->magic = 0x12345678;
-	bl2_lossy_info->a0 = mmio_read_32(AXI_DCMPAREACRA0 + 0x8 * no);
-	bl2_lossy_info->b0 = mmio_read_32(AXI_DCMPAREACRB0 + 0x8 * no);
+	info_p = (bl2_lossy_info_t *)(LOSSY_PARAMS_BASE);
+	info_p += no;
+	info_p->magic = 0x12345678U;
+	info_p->a0 = mmio_read_32(AXI_DCMPAREACRA0 + (0x8U * (uintptr_t)no));
+	info_p->b0 = mmio_read_32(AXI_DCMPAREACRB0 + (0x8U * (uintptr_t)no));
 
 	NOTICE("     Entry %d: DCMPAREACRAx:0x%x DCMPAREACRBx:0x%x\n", no,
-		mmio_read_32(AXI_DCMPAREACRA0 + 0x8 * no),
-		mmio_read_32(AXI_DCMPAREACRB0 + 0x8 * no));
+		mmio_read_32(AXI_DCMPAREACRA0 + (0x8U * (uintptr_t)no)),
+		mmio_read_32(AXI_DCMPAREACRB0 + (0x8U * (uintptr_t)no)));
 }
 #endif /* #if (RCAR_LOSSY_ENABLE == 1) */
 
@@ -339,10 +333,6 @@ void bl2_lossy_setting(uint32_t no, uint32_t start_addr, uint32_t end_addr,
  ******************************************************************************/
 void bl2_early_platform_setup(meminfo_t *mem_layout)
 {
-	const unsigned int irq_sec_array[] = {
-		ARM_IRQ_SEC_WDT                /* 173          */
-	};
-	const ROM_GETLCS_API	ROM_GetLcs = ROM_GETLCS_API_ADDR;
 	uint32_t reg;
 	uint32_t lcs;
 	uint32_t modemr;
@@ -371,29 +361,27 @@ void bl2_early_platform_setup(meminfo_t *mem_layout)
 	modemr_boot_dev = modemr & MODEMR_BOOT_DEV_MASK;
 	modemr &= MODEMR_BOOT_CPU_MASK;
 
+	/* Initialize CPG configuration */
+	bl2_cpg_init();
+
 	if((modemr == MODEMR_BOOT_CPU_CA57) ||
 	   (modemr == MODEMR_BOOT_CPU_CA53)) {
 		/* initialize Pin Function */
 		pfc_init();
 	}
 
-	/* Initialize CPG configuration */
-	bl2_cpg_init();
-
 	/* Initialize the console to provide early debug support */
 	(void)console_init(0U, 0U, 0U);
 
-	/* GIC initialize		*/
-	arm_gic_init(RCAR_GICC_BASE, RCAR_GICD_BASE, RCAR_GICR_BASE
-			,irq_sec_array, ARRAY_SIZE(irq_sec_array));
-	/* GIC setup			*/
-	arm_gic_setup();
+	/* Initialize the GIC driver, cpu and distributor interfaces */
+	plat_arm_gic_driver_init();
+	plat_arm_gic_init();
 
 	/* System WDT initialize	*/
 	bl2_swdt_init();
 
 	/* Enable FIQ interrupt		*/
-	enable_fiq();
+	write_daifclr(DAIF_FIQ_BIT);
 
 	/* Initialize AVS Settings */
 	bl2_avs_init();
@@ -438,12 +426,15 @@ void bl2_early_platform_setup(meminfo_t *mem_layout)
 		((reg & RCAR_MAJOR_MASK) >> RCAR_MAJOR_SHIFT)
 		 + RCAR_MAJOR_OFFSET, (reg & RCAR_MINOR_MASK));
 	NOTICE("%s", msg);
+
+#if RCAR_LSI != RCAR_AUTO
 	if((reg & RCAR_PRODUCT_MASK) != TARGET_PRODUCT) {
 		ERROR("BL2: This IPL has been built for the %s.\n", 
 								TARGET_NAME);
 		ERROR("BL2: Please write the correct IPL to flash memory.\n");
 		panic();
 	}
+#endif /* RCAR_LSI != RCAR_AUTO */ 
 
 	/* Proceed with separated AVS processing */
 	bl2_avs_setting();
@@ -593,15 +584,15 @@ void bl2_early_platform_setup(meminfo_t *mem_layout)
 #if (RCAR_LOSSY_ENABLE == 1)
 	NOTICE("BL2: Lossy Decomp areas\n");
 	/* Lossy setting : entry 0 */
-	bl2_lossy_setting(0, LOSSY_ST_ADDR0, LOSSY_END_ADDR0,
+	bl2_lossy_setting(0U, LOSSY_ST_ADDR0, LOSSY_END_ADDR0,
 		LOSSY_FMT0, LOSSY_ENA_DIS0);
 
 	/* Lossy setting : entry 1 */
-	bl2_lossy_setting(1, LOSSY_ST_ADDR1, LOSSY_END_ADDR1,
+	bl2_lossy_setting(1U, LOSSY_ST_ADDR1, LOSSY_END_ADDR1,
 		LOSSY_FMT1, LOSSY_ENA_DIS1);
 
 	/* Lossy setting : entry 2 */
-	bl2_lossy_setting(2, LOSSY_ST_ADDR2, LOSSY_END_ADDR2,
+	bl2_lossy_setting(2U, LOSSY_ST_ADDR2, LOSSY_END_ADDR2,
 		LOSSY_FMT2, LOSSY_ENA_DIS2);
 #endif /* #if (RCAR_LOSSY_ENABLE == 1) */
 
@@ -659,14 +650,17 @@ void bl2_plat_flush_bl31_params(void)
 	uint32_t val;
 	uint32_t modemr_boot_dev;
 
-	modemr_boot_dev = mmio_read_32(RCAR_MODEMR) & MODEMR_BOOT_DEV_MASK;
+	val = mmio_read_32(RCAR_MODEMR);
+	modemr_boot_dev = val & MODEMR_BOOT_DEV_MASK;
 	if((modemr_boot_dev == MODEMR_BOOT_DEV_EMMC_25X1) ||
 	   (modemr_boot_dev == MODEMR_BOOT_DEV_EMMC_50X8)) {
 		(void)emmc_terminate();
 	}
 
-	/* Initialize secure configuration */
-	bl2_secure_setting();
+	if((val & MODEMR_BOOT_CPU_MASK) != MODEMR_BOOT_CPU_CR7) {
+		/* Initialize secure configuration */
+		bl2_secure_setting();
+	}
 
 	/* disable the System WDT, FIQ and GIC	*/
 	bl2_swdt_release();
@@ -751,6 +745,7 @@ void bl2_plat_set_bl33_ep_info(image_info_t *image,
 /*******************************************************************************
  * Populate the extents of memory available for loading BL32
  ******************************************************************************/
+#ifdef BL32_BASE
 void bl2_plat_get_bl32_meminfo(meminfo_t *bl32_meminfo)
 {
 	/*
@@ -761,7 +756,7 @@ void bl2_plat_get_bl32_meminfo(meminfo_t *bl32_meminfo)
 	bl32_meminfo->total_size = BL32_BASE;
 	bl32_meminfo->free_size = BL32_LIMIT - BL32_BASE;
 }
-
+#endif
 
 /*******************************************************************************
  * Populate the extents of memory available for loading BL33

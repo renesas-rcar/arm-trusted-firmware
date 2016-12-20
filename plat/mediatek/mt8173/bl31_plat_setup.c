@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2015, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2013-2016, ARM Limited and Contributors. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -32,6 +32,7 @@
 #include <bl_common.h>
 #include <console.h>
 #include <debug.h>
+#include <generic_delay_timer.h>
 #include <mcucfg.h>
 #include <mmio.h>
 #include <mtcmos.h>
@@ -50,13 +51,15 @@ unsigned long __COHERENT_RAM_START__;
 unsigned long __COHERENT_RAM_END__;
 
 /*
- * The next 2 constants identify the extents of the code & RO data region.
- * These addresses are used by the MMU setup code and therefore they must be
- * page-aligned.  It is the responsibility of the linker script to ensure that
- * __RO_START__ and __RO_END__ linker symbols refer to page-aligned addresses.
+ * The next 3 constants identify the extents of the code, RO data region and the
+ * limit of the BL31 image.  These addresses are used by the MMU setup code and
+ * therefore they must be page-aligned.  It is the responsibility of the linker
+ * script to ensure that __RO_START__, __RO_END__ & __BL31_END__ linker symbols
+ * refer to page-aligned addresses.
  */
 #define BL31_RO_BASE (unsigned long)(&__RO_START__)
 #define BL31_RO_LIMIT (unsigned long)(&__RO_END__)
+#define BL31_END (unsigned long)(&__BL31_END__)
 
 /*
  * The next 2 constants identify the extents of the coherent memory region.
@@ -96,6 +99,23 @@ static void platform_setup_cpu(void)
 	/* set LITTLE cores arm64 boot mode */
 	mmio_setbits_32((uintptr_t)&mt8173_mcucfg->mp0_rv_addr[0].rv_addr_hw,
 		MP0_CPUCFG_64BIT);
+
+	/* enable dcm control */
+	mmio_setbits_32((uintptr_t)&mt8173_mcucfg->bus_fabric_dcm_ctrl,
+		ADB400_GRP_DCM_EN | CCI400_GRP_DCM_EN | ADBCLK_GRP_DCM_EN |
+		EMICLK_GRP_DCM_EN | ACLK_GRP_DCM_EN | L2C_IDLE_DCM_EN |
+		INFRACLK_PSYS_DYNAMIC_CG_EN);
+	mmio_setbits_32((uintptr_t)&mt8173_mcucfg->l2c_sram_ctrl,
+		L2C_SRAM_DCM_EN);
+	mmio_setbits_32((uintptr_t)&mt8173_mcucfg->cci_clk_ctrl,
+		MCU_BUS_DCM_EN);
+}
+
+static void platform_setup_sram(void)
+{
+	/* protect BL31 memory from non-secure read/write access */
+	mmio_write_32(SRAMROM_SEC_ADDR, (uint32_t)(BL31_END + 0x3ff) & 0x3fc00);
+	mmio_write_32(SRAMROM_SEC_CTRL, 0x10000ff9);
 }
 
 /*******************************************************************************
@@ -136,8 +156,6 @@ void bl31_early_platform_setup(bl31_params_t *from_bl2,
 	assert(from_bl2->h.type == PARAM_BL31);
 	assert(from_bl2->h.version >= VERSION_1);
 
-	assert(((unsigned long)plat_params_from_bl2) == MT_BL31_PLAT_PARAM_VAL);
-
 	bl32_ep_info = *from_bl2->bl32_ep_info;
 	bl33_ep_info = *from_bl2->bl33_ep_info;
 }
@@ -148,8 +166,9 @@ void bl31_early_platform_setup(bl31_params_t *from_bl2,
 void bl31_platform_setup(void)
 {
 	platform_setup_cpu();
+	platform_setup_sram();
 
-	plat_delay_timer_init();
+	generic_delay_timer_init();
 
 	/* Initialize the gic cpu and distributor interfaces */
 	plat_mt_gic_init();

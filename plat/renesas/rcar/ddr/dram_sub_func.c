@@ -111,6 +111,11 @@ int32_t dram_update_boot_status(uint32_t status)
 			loop_count--;
 		}
 		if (0 == loop_count) {
+			ERROR(	"\nWarm booting...\n" \
+				" The potential of GP-1-8 did not switch " \
+				"to Low.\n If you expect the operation of " \
+				"cold boot,\n check the board configuration" \
+				" (ex, Dip-SW) and/or the H/W failure.\n");
 			ret = DRAM_UPDATE_STATUS_ERR;
 		}
 	}

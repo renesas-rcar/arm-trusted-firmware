@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2013-2015, ARM Limited and Contributors. All rights reserved.
+# Copyright (c) 2013-2016, ARM Limited and Contributors. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
@@ -28,47 +28,26 @@
 # POSSIBILITY OF SUCH DAMAGE.
 #
 
+include lib/psci/psci_lib.mk
+
 BL31_SOURCES		+=	bl31/bl31_main.c				\
-				bl31/context_mgmt.c				\
-				bl31/cpu_data_array.c				\
-				bl31/runtime_svc.c				\
 				bl31/interrupt_mgmt.c				\
-				bl31/aarch64/bl31_arch_setup.c			\
 				bl31/aarch64/bl31_entrypoint.S			\
-				bl31/aarch64/context.S				\
-				bl31/aarch64/cpu_data.S				\
 				bl31/aarch64/runtime_exceptions.S		\
 				bl31/aarch64/crash_reporting.S			\
-				lib/cpus/aarch64/cpu_helpers.S			\
-				lib/locks/exclusive/spinlock.S			\
+				bl31/bl31_context_mgmt.c			\
+				common/runtime_svc.c				\
 				services/std_svc/std_svc_setup.c		\
-				services/std_svc/psci/psci_off.c		\
-				services/std_svc/psci/psci_on.c			\
-				services/std_svc/psci/psci_suspend.c		\
-				services/std_svc/psci/psci_common.c		\
-				services/std_svc/psci/psci_entry.S		\
-				services/std_svc/psci/psci_helpers.S		\
-				services/std_svc/psci/psci_main.c		\
-				services/std_svc/psci/psci_setup.c		\
-				services/std_svc/psci/psci_system_off.c
+				${PSCI_LIB_SOURCES}
 
-ifeq (${USE_COHERENT_MEM}, 1)
-BL31_SOURCES		+=	lib/locks/bakery/bakery_lock_coherent.c
-else
-BL31_SOURCES		+=	lib/locks/bakery/bakery_lock_normal.c
+ifeq (${ENABLE_PMF}, 1)
+BL31_SOURCES		+=	lib/pmf/pmf_main.c
 endif
 
 BL31_LINKERFILE		:=	bl31/bl31.ld.S
 
-# Flag used by the generic interrupt management framework to  determine if
-# upon the assertion of an interrupt, it should pass the interrupt id or not
-IMF_READ_INTERRUPT_ID	:=	0
-
-$(eval $(call assert_boolean,IMF_READ_INTERRUPT_ID))
-$(eval $(call add_define,IMF_READ_INTERRUPT_ID))
-
-# Flag used to inidicate if Crash reporting via console should be included
-# in BL3-1. This defaults to being present in DEBUG builds only
+# Flag used to indicate if Crash reporting via console should be included
+# in BL31. This defaults to being present in DEBUG builds only
 ifndef CRASH_REPORTING
 CRASH_REPORTING		:=	$(DEBUG)
 endif

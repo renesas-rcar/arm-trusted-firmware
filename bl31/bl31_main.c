@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2015, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2013-2016, ARM Limited and Contributors. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -53,6 +53,21 @@ static int32_t (*bl32_init)(void);
  ******************************************************************************/
 static uint32_t next_image_type = NON_SECURE;
 
+/*
+ * Implement the ARM Standard Service function to get arguments for a
+ * particular service.
+ */
+uintptr_t get_arm_std_svc_args(unsigned int svc_mask)
+{
+	/* Setup the arguments for PSCI Library */
+	DEFINE_STATIC_PSCI_LIB_ARGS_V1(psci_args, bl31_warm_entrypoint);
+
+	/* PSCI is the only ARM Standard Service implemented */
+	assert(svc_mask == PSCI_FID_MASK);
+
+	return (uintptr_t)&psci_args;
+}
+
 /*******************************************************************************
  * Simple function to initialise all BL31 helper libraries.
  ******************************************************************************/
@@ -71,20 +86,17 @@ void bl31_lib_init(void)
  ******************************************************************************/
 void bl31_main(void)
 {
-	NOTICE("BL3-1: %s\n", version_string);
-	NOTICE("BL3-1: %s\n", build_message);
+	NOTICE("BL31: %s\n", version_string);
+	NOTICE("BL31: %s\n", build_message);
 
-	/* Perform remaining generic architectural setup from EL3 */
-	bl31_arch_setup();
-
-	/* Perform platform setup in BL1 */
+	/* Perform platform setup in BL31 */
 	bl31_platform_setup();
 
 	/* Initialise helper libraries */
 	bl31_lib_init();
 
-	/* Initialize the runtime services e.g. psci */
-	INFO("BL3-1: Initializing runtime services\n");
+	/* Initialize the runtime services e.g. psci. */
+	INFO("BL31: Initializing runtime services\n");
 	runtime_svc_init();
 
 	/*
@@ -101,7 +113,7 @@ void bl31_main(void)
 	 * If SPD had registerd an init hook, invoke it.
 	 */
 	if (bl32_init) {
-		INFO("BL3-1: Initializing BL3-2\n");
+		INFO("BL31: Initializing BL32\n");
 		(*bl32_init)();
 	}
 	/*
@@ -109,6 +121,12 @@ void bl31_main(void)
 	 * corresponding to the desired security state after the next ERET.
 	 */
 	bl31_prepare_next_image_entry();
+
+	/*
+	 * Perform any platform specific runtime setup prior to cold boot exit
+	 * from BL31
+	 */
+	bl31_plat_runtime_setup();
 }
 
 /*******************************************************************************
@@ -139,6 +157,19 @@ void bl31_prepare_next_image_entry(void)
 	entry_point_info_t *next_image_info;
 	uint32_t image_type;
 
+#if CTX_INCLUDE_AARCH32_REGS
+	/*
+	 * Ensure that the build flag to save AArch32 system registers in CPU
+	 * context is not set for AArch64-only platforms.
+	 */
+	if (((read_id_aa64pfr0_el1() >> ID_AA64PFR0_EL1_SHIFT)
+			& ID_AA64PFR0_ELX_MASK) == 0x1) {
+		ERROR("EL1 supports AArch64-only. Please set build flag "
+				"CTX_INCLUDE_AARCH32_REGS = 0");
+		panic();
+	}
+#endif
+
 	/* Determine which image to execute next */
 	image_type = bl31_get_next_image_type();
 
@@ -147,11 +178,9 @@ void bl31_prepare_next_image_entry(void)
 	assert(next_image_info);
 	assert(image_type == GET_SECURITY_STATE(next_image_info->h.attr));
 
-	INFO("BL3-1: Preparing for EL3 exit to %s world\n",
+	INFO("BL31: Preparing for EL3 exit to %s world\n",
 		(image_type == SECURE) ? "secure" : "normal");
-	INFO("BL3-1: Next image address = 0x%llx\n",
-		(unsigned long long) next_image_info->pc);
-	INFO("BL3-1: Next image spsr = 0x%x\n", next_image_info->spsr);
+	print_entry_point_info(next_image_info);
 	cm_init_my_context(next_image_info);
 	cm_prepare_el3_exit(image_type);
 }

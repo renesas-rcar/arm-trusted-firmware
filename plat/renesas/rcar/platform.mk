@@ -33,18 +33,22 @@
 # Process flags
 
 PLAT_INCLUDES		:=	-Iinclude/common/tbbr				\
+				-Iinclude/plat/arm/common			\
 				-Iplat/renesas/rcar/drivers/iic_dvfs/		\
 				-Iplat/renesas/rcar/include			\
 				-Iplat/renesas/rcar
 
-PLAT_BL_COMMON_SOURCES	:=	lib/aarch64/xlat_tables.c			\
+PLAT_BL_COMMON_SOURCES	:=	lib/xlat_tables/xlat_tables_common.c		\
+				lib/xlat_tables/aarch64/xlat_tables.c		\
 				plat/common/aarch64/plat_common.c
 
-BL2_SOURCES		+=	plat/common/aarch64/platform_up_stack.S		\
-				drivers/arm/gic/arm_gic.c			\
-				drivers/arm/gic/gic_v2.c			\
-				drivers/arm/gic/gic_v3.c			\
-				plat/common/plat_gic.c				\
+RCAR_GIC_SOURCES	:=	drivers/arm/gic/common/gic_common.c	\
+				drivers/arm/gic/v2/gicv2_main.c		\
+				drivers/arm/gic/v2/gicv2_helpers.c	\
+				plat/common/plat_gicv2.c
+
+BL2_SOURCES		+=	${RCAR_GIC_SOURCES}				\
+				plat/common/${ARCH}/platform_up_stack.S		\
 				plat/renesas/rcar/drivers/timer/bl2_swdt.c	\
 				plat/renesas/rcar/drivers/error/bl2_int_error.c	\
 				plat/renesas/rcar/aarch64/rcar_helpers.S	\
@@ -62,24 +66,22 @@ BL2_SOURCES		+=	plat/common/aarch64/platform_up_stack.S		\
 				plat/renesas/rcar/drivers/avs/avs_driver.c	\
 				plat/renesas/rcar/drivers/iic_dvfs/iic_dvfs.c	\
 				plat/renesas/rcar/drivers/wait/micro_wait.S	\
-				plat/renesas/rcar/drivers/emmc/emmc_utility.c		\
-				plat/renesas/rcar/drivers/emmc/emmc_interrupt.c		\
-				plat/renesas/rcar/drivers/emmc/emmc_cmd.c			\
-				plat/renesas/rcar/drivers/emmc/emmc_init.c			\
-				plat/renesas/rcar/drivers/emmc/emmc_mount.c			\
-				plat/renesas/rcar/drivers/emmc/emmc_read.c			\
+				plat/renesas/rcar/drivers/emmc/emmc_utility.c	\
+				plat/renesas/rcar/drivers/emmc/emmc_interrupt.c	\
+				plat/renesas/rcar/drivers/emmc/emmc_cmd.c	\
+				plat/renesas/rcar/drivers/emmc/emmc_init.c	\
+				plat/renesas/rcar/drivers/emmc/emmc_mount.c	\
+				plat/renesas/rcar/drivers/emmc/emmc_read.c	\
+				plat/renesas/rcar/drivers/rom/rom_api.c		\
 				plat/renesas/rcar/bl2_secure_setting.c		\
 				plat/renesas/rcar/bl2_cpg_init.c		\
 				plat/renesas/rcar/aarch64/bl2_reset.S
 
-BL31_SOURCES		+=	drivers/arm/cci/cci.c				\
-				drivers/arm/gic/arm_gic.c			\
-				drivers/arm/gic/gic_v2.c			\
-				drivers/arm/gic/gic_v3.c			\
+BL31_SOURCES		+=	${RCAR_GIC_SOURCES}				\
+				drivers/arm/cci/cci.c				\
 				lib/cpus/aarch64/aem_generic.S			\
 				lib/cpus/aarch64/cortex_a53.S			\
 				lib/cpus/aarch64/cortex_a57.S			\
-				plat/common/plat_gic.c				\
 				plat/common/aarch64/platform_mp_stack.S		\
 				plat/renesas/rcar/bl31_rcar_setup.c		\
 				plat/renesas/rcar/rcar_pm.c			\
@@ -93,15 +95,22 @@ BL31_SOURCES		+=	drivers/arm/cci/cci.c				\
 				plat/renesas/rcar/drivers/pwrc/rcar_pwrc.c
 
 # compile option setting
-SPD			:= opteed
 ARM_CCI_PRODUCT_ID	:= 500
 TRUSTED_BOARD_BOOT	:= 1
+ERROR_DEPRECATED	:= 1
+
+ifeq (${SPD},none)
+  SPD_NONE:=1
+  $(eval $(call add_define,SPD_NONE))
+endif
 
 # LSI setting common define
 RCAR_H3:=0
 RCAR_M3:=1
+RCAR_AUTO:=99
 $(eval $(call add_define,RCAR_H3))
 $(eval $(call add_define,RCAR_M3))
+$(eval $(call add_define,RCAR_AUTO))
 RCAR_CUT_10:=0
 RCAR_CUT_11:=1
 $(eval $(call add_define,RCAR_CUT_10))
@@ -110,7 +119,9 @@ $(eval $(call add_define,RCAR_CUT_11))
 ifndef LSI
   $(error "Error: Unknown LSI. Please use LSI=<LSI name> to specify the LSI")
 else
-  ifeq (${LSI},H3)
+  ifeq (${LSI},AUTO)
+    RCAR_LSI:=${RCAR_AUTO}
+  else ifeq (${LSI},H3)
     RCAR_LSI:=${RCAR_H3}
     ifndef LSI_CUT
       # enable compatible function.
@@ -183,6 +194,18 @@ ifndef LIFEC_DBSC_PROTECT_ENABLE
 LIFEC_DBSC_PROTECT_ENABLE := 1
 endif
 $(eval $(call add_define,LIFEC_DBSC_PROTECT_ENABLE))
+
+# Process PMIC_ON_BOARD flag
+ifndef PMIC_ON_BOARD
+PMIC_ON_BOARD := 1
+endif
+$(eval $(call add_define,PMIC_ON_BOARD))
+
+# Process PMIC_LEVEL_MODE flag
+ifndef PMIC_LEVEL_MODE
+PMIC_LEVEL_MODE := 1
+endif
+$(eval $(call add_define,PMIC_LEVEL_MODE))
 
 include plat/renesas/rcar/ddr/ddr.mk
 include plat/renesas/rcar/qos/qos.mk

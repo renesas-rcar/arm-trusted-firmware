@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2015, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2013-2016, ARM Limited and Contributors. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -34,6 +34,7 @@
 #include <debug.h>
 #include <mt8173_def.h>
 #include <platform_def.h>
+#include <utils.h>
 #include <xlat_tables.h>
 
 static const int cci_map[] = {
@@ -44,7 +45,7 @@ static const int cci_map[] = {
 /* Table of regions to map using the MMU.  */
 const mmap_region_t plat_mmap[] = {
 	/* for TF text, RO, RW */
-	MAP_REGION_FLAT(TZRAM_BASE, TZRAM_SIZE + TZRAM2_SIZE,
+	MAP_REGION_FLAT(TZRAM_BASE, TZRAM_SIZE,
 			MT_MEMORY | MT_RW | MT_SECURE),
 	MAP_REGION_FLAT(MTK_DEV_RNG0_BASE, MTK_DEV_RNG0_SIZE,
 			MT_DEVICE | MT_RW | MT_SECURE),
@@ -84,7 +85,7 @@ const mmap_region_t plat_mmap[] = {
 /* Define EL3 variants of the function initialising the MMU */
 DEFINE_CONFIGURE_MMU_EL(3)
 
-uint64_t plat_get_syscnt_freq(void)
+unsigned int plat_get_syscnt_freq2(void)
 {
 	return SYS_COUNTER_FREQ_IN_TICKS;
 }

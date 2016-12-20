@@ -72,6 +72,46 @@
 /* Reserved */
 #define RCAR_BL338_PARTITION		(0x00000000U)
 
+#else /* RCAR_SA6_TYPE == RCAR_SA6_TYPE_HYPERFLASH */
+
+/* Number of content cert for Non-secure Target Program(BL33x) */
+#define RCAR_IMAGE_NUM			(0x00000001U)
+/* Source address on eMMC for BL31 */
+#define RCAR_BL31SRC_ADDRESS		(0x00040000U)
+/* Source partition on eMMC for BL31 */
+#define RCAR_BL31_PARTITION		(0x00000001U)
+/* Source address on eMMC for BL32 */
+#define RCAR_BL32SRC_ADDRESS		(0x00200000U)
+/* Source partition on eMMC for BL32 */
+#define RCAR_BL32_PARTITION		(0x00000001U)
+/* Source address on eMMC for BL33 */
+#define RCAR_BL33SRC_ADDRESS		(0x00000000U)
+/* Source partition on eMMC for BL33 */
+#define RCAR_BL33_PARTITION		(0x00000002U)
+/* Reserved */
+#define RCAR_BL332SRC_ADDRESS		(0x00000000U)
+#define RCAR_BL332_PARTITION		(0x00000000U)
+/* Reserved */
+#define RCAR_BL333SRC_ADDRESS		(0x00000000U)
+#define RCAR_BL333_PARTITION		(0x00000000U)
+/* Reserved */
+#define RCAR_BL334SRC_ADDRESS		(0x00000000U)
+#define RCAR_BL334_PARTITION		(0x00000000U)
+/* Reserved */
+#define RCAR_BL335SRC_ADDRESS		(0x00000000U)
+#define RCAR_BL335_PARTITION		(0x00000000U)
+/* Reserved */
+#define RCAR_BL336SRC_ADDRESS		(0x00000000U)
+#define RCAR_BL336_PARTITION		(0x00000000U)
+/* Reserved */
+#define RCAR_BL337SRC_ADDRESS		(0x00000000U)
+#define RCAR_BL337_PARTITION		(0x00000000U)
+/* Reserved */
+#define RCAR_BL338SRC_ADDRESS		(0x00000000U)
+#define RCAR_BL338_PARTITION		(0x00000000U)
+
+#endif /* RCAR_SA6_TYPE == RCAR_SA6_TYPE_HYPERFLASH */
+
 /* Destination address for BL31 */
 #define RCAR_BL31DST_ADDRESS		(0x44000000U)
 #define RCAR_BL31DST_ADDRESSH		(0x00000000U)
@@ -115,90 +155,6 @@
 #define RCAR_BL338DST_ADDRESS		(0x00000000U)
 #define RCAR_BL338DST_ADDRESSH		(0x00000000U)
 #define RCAR_BL338DST_SIZE		(0x00000000U)
-
-#else /* RCAR_SA6_TYPE == RCAR_SA6_TYPE_HYPERFLASH */
-
-/* Number of content cert for Non-secure Target Program(BL33x) */
-#define RCAR_IMAGE_NUM			(0x00000001U)
-/* Source address on eMMC for BL31 */
-#define RCAR_BL31SRC_ADDRESS		(0x00040000U)
-/* Source partition on eMMC for BL31 */
-#define RCAR_BL31_PARTITION		(0x00000001U)
-/* Source address on eMMC for BL32 */
-#define RCAR_BL32SRC_ADDRESS		(0x00200000U)
-/* Source partition on eMMC for BL32 */
-#define RCAR_BL32_PARTITION		(0x00000001U)
-/* Source address on eMMC for BL33 */
-#define RCAR_BL33SRC_ADDRESS		(0x00000000U)
-/* Source partition on eMMC for BL33 */
-#define RCAR_BL33_PARTITION		(0x00000002U)
-/* Reserved */
-#define RCAR_BL332SRC_ADDRESS		(0x00000000U)
-#define RCAR_BL332_PARTITION		(0x00000000U)
-/* Reserved */
-#define RCAR_BL333SRC_ADDRESS		(0x00000000U)
-#define RCAR_BL333_PARTITION		(0x00000000U)
-/* Reserved */
-#define RCAR_BL334SRC_ADDRESS		(0x00000000U)
-#define RCAR_BL334_PARTITION		(0x00000000U)
-/* Reserved */
-#define RCAR_BL335SRC_ADDRESS		(0x00000000U)
-#define RCAR_BL335_PARTITION		(0x00000000U)
-/* Reserved */
-#define RCAR_BL336SRC_ADDRESS		(0x00000000U)
-#define RCAR_BL336_PARTITION		(0x00000000U)
-/* Reserved */
-#define RCAR_BL337SRC_ADDRESS		(0x00000000U)
-#define RCAR_BL337_PARTITION		(0x00000000U)
-/* Reserved */
-#define RCAR_BL338SRC_ADDRESS		(0x00000000U)
-#define RCAR_BL338_PARTITION		(0x00000000U)
-
-/* Destination address for BL31 */
-#define RCAR_BL31DST_ADDRESS		(0x44000000U)
-#define RCAR_BL31DST_ADDRESSH		(0x00000000U)
-/* Destination size for BL31 */
-#define RCAR_BL31DST_SIZE		(0x00004000U)
-/* Destination address for BL32 */
-#define RCAR_BL32DST_ADDRESS		(0x44100000U)
-#define RCAR_BL32DST_ADDRESSH		(0x00000000U)
-/* Destination size for BL32 */
-#define RCAR_BL32DST_SIZE		(0x00020000U)
-/* Destination address for BL33 */
-#define RCAR_BL33DST_ADDRESS		(0x49000000U)
-#define RCAR_BL33DST_ADDRESSH		(0x00000000U)
-/* Destination size for BL33 */
-#define RCAR_BL33DST_SIZE		(0x00040000U)
-/* Reserved */
-#define RCAR_BL332DST_ADDRESS		(0x00000000U)
-#define RCAR_BL332DST_ADDRESSH		(0x00000000U)
-#define RCAR_BL332DST_SIZE		(0x00000000U)
-/* Reserved */
-#define RCAR_BL333DST_ADDRESS		(0x00000000U)
-#define RCAR_BL333DST_ADDRESSH		(0x00000000U)
-#define RCAR_BL333DST_SIZE		(0x00000000U)
-/* Reserved */
-#define RCAR_BL334DST_ADDRESS		(0x00000000U)
-#define RCAR_BL334DST_ADDRESSH		(0x00000000U)
-#define RCAR_BL334DST_SIZE		(0x00000000U)
-/* Reserved */
-#define RCAR_BL335DST_ADDRESS		(0x00000000U)
-#define RCAR_BL335DST_ADDRESSH		(0x00000000U)
-#define RCAR_BL335DST_SIZE		(0x00000000U)
-/* Reserved */
-#define RCAR_BL336DST_ADDRESS		(0x00000000U)
-#define RCAR_BL336DST_ADDRESSH		(0x00000000U)
-#define RCAR_BL336DST_SIZE		(0x00000000U)
-/* Reserved */
-#define RCAR_BL337DST_ADDRESS		(0x00000000U)
-#define RCAR_BL337DST_ADDRESSH		(0x00000000U)
-#define RCAR_BL337DST_SIZE		(0x00000000U)
-/* Reserved */
-#define RCAR_BL338DST_ADDRESS		(0x00000000U)
-#define RCAR_BL338DST_ADDRESSH		(0x00000000U)
-#define RCAR_BL338DST_SIZE		(0x00000000U)
-
-#endif /* RCAR_SA6_TYPE == RCAR_SA6_TYPE_HYPERFLASH */
 
 /* SA6 */
 const uint64_t __attribute__ ((section (".sa6_image_num")))	image_num	= RCAR_IMAGE_NUM;

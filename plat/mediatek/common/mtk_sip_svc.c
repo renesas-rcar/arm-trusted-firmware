@@ -28,8 +28,12 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 #include <assert.h>
+#include <console.h>
 #include <debug.h>
+#include <mmio.h>
+#include <mtk_plat_common.h>
 #include <mtk_sip_svc.h>
+#include <plat_sip_calls.h>
 #include <runtime_svc.h>
 #include <uuid.h>
 
@@ -38,29 +42,65 @@ DEFINE_SVC_UUID(mtk_sip_svc_uid,
 		0xf7582ba4, 0x4262, 0x4d7d, 0x80, 0xe5,
 		0x8f, 0x95, 0x05, 0x00, 0x0f, 0x3d);
 
+#pragma weak mediatek_plat_sip_handler
+uint64_t mediatek_plat_sip_handler(uint32_t smc_fid,
+				uint64_t x1,
+				uint64_t x2,
+				uint64_t x3,
+				uint64_t x4,
+				void *cookie,
+				void *handle,
+				uint64_t flags)
+{
+	ERROR("%s: unhandled SMC (0x%x)\n", __func__, smc_fid);
+	SMC_RET1(handle, SMC_UNK);
+}
+
 /*
  * This function handles Mediatek defined SiP Calls */
-static uint64_t mediatek_sip_handler(uint32_t smc_fid,
-				     uint64_t x1,
-				     uint64_t x2,
-				     uint64_t x3,
-				     uint64_t x4,
-				     void *cookie,
-				     void *handle)
+uint64_t mediatek_sip_handler(uint32_t smc_fid,
+			uint64_t x1,
+			uint64_t x2,
+			uint64_t x3,
+			uint64_t x4,
+			void *cookie,
+			void *handle,
+			uint64_t flags)
 {
-	uint64_t ret;
+	uint32_t ns;
 
-	switch (smc_fid) {
-	case MTK_SIP_SET_AUTHORIZED_SECURE_REG:
-		ret = mt_sip_set_authorized_sreg((uint32_t)x1, (uint32_t)x2);
-		SMC_RET1(handle, ret);
+	/* if parameter is sent from SMC32. Clean top 32 bits */
+	clean_top_32b_of_param(smc_fid, &x1, &x2, &x3, &x4);
 
-	default:
-		ERROR("%s: unhandled SMC (0x%x)\n", __func__, smc_fid);
-		break;
+	/* Determine which security state this SMC originated from */
+	ns = is_caller_non_secure(flags);
+	if (!ns) {
+		/* SiP SMC service secure world's call */
+		;
+	} else {
+		/* SiP SMC service normal world's call */
+		switch (smc_fid) {
+#if MTK_SIP_SET_AUTHORIZED_SECURE_REG_ENABLE
+		case MTK_SIP_SET_AUTHORIZED_SECURE_REG: {
+			/* only use ret here */
+			uint64_t ret;
+
+			ret = mt_sip_set_authorized_sreg((uint32_t)x1,
+				(uint32_t)x2);
+			SMC_RET1(handle, ret);
+		}
+#endif
+#if MTK_SIP_KERNEL_BOOT_ENABLE
+		case MTK_SIP_KERNEL_BOOT_AARCH32:
+			boot_to_kernel(x1, x2, x3, x4);
+			SMC_RET0(handle);
+#endif
+		}
 	}
 
-	SMC_RET1(handle, SMC_UNK);
+	return mediatek_plat_sip_handler(smc_fid, x1, x2, x3, x4,
+					cookie, handle, flags);
+
 }
 
 /*
@@ -75,17 +115,11 @@ uint64_t sip_smc_handler(uint32_t smc_fid,
 			 void *handle,
 			 uint64_t flags)
 {
-	uint32_t ns;
-
-	/* Determine which security state this SMC originated from */
-	ns = is_caller_non_secure(flags);
-	if (!ns)
-		SMC_RET1(handle, SMC_UNK);
-
 	switch (smc_fid) {
 	case SIP_SVC_CALL_COUNT:
 		/* Return the number of Mediatek SiP Service Calls. */
-		SMC_RET1(handle, MTK_SIP_NUM_CALLS);
+		SMC_RET1(handle,
+			 MTK_COMMON_SIP_NUM_CALLS + MTK_PLAT_SIP_NUM_CALLS);
 
 	case SIP_SVC_UID:
 		/* Return UID to the caller */
@@ -98,7 +132,7 @@ uint64_t sip_smc_handler(uint32_t smc_fid,
 
 	default:
 		return mediatek_sip_handler(smc_fid, x1, x2, x3, x4,
-			cookie, handle);
+			cookie, handle, flags);
 	}
 }
 

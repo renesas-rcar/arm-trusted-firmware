@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2015, ARM Limited and Contributors. All rights reserved.
+# Copyright (c) 2015-2016, ARM Limited and Contributors. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
@@ -28,14 +28,15 @@
 # POSSIBILITY OF SUCH DAMAGE.
 #
 
-PLAT_INCLUDES		+=	-Iinclude/plat/arm/board/common/
+PLAT_INCLUDES		+=	-Iinclude/plat/arm/board/common/			\
+				-Iinclude/plat/arm/board/common/drivers
 
-PLAT_BL_COMMON_SOURCES	+=	drivers/arm/pl011/pl011_console.S			\
-				plat/arm/board/common/aarch64/board_arm_helpers.S
+PLAT_BL_COMMON_SOURCES	+=	drivers/arm/pl011/${ARCH}/pl011_console.S		\
+				plat/arm/board/common/${ARCH}/board_arm_helpers.S
 
-#BL1_SOURCES		+=
+BL1_SOURCES		+=	plat/arm/board/common/drivers/norflash/norflash.c
 
-#BL2_SOURCES		+=
+BL2_SOURCES		+=	plat/arm/board/common/drivers/norflash/norflash.c
 
 #BL31_SOURCES		+=
 
@@ -50,6 +51,18 @@ ifneq (${TRUSTED_BOARD_BOOT},0)
     endif
     $(eval $(call add_define,ARM_ROTPK_LOCATION_ID))
 
+    # Certificate NV-Counters. Use values corresponding to tied off values in
+    # ARM development platforms
+    TFW_NVCTR_VAL	?=	31
+    NTFW_NVCTR_VAL	?=	223
+
     BL1_SOURCES		+=	plat/arm/board/common/board_arm_trusted_boot.c
     BL2_SOURCES		+=	plat/arm/board/common/board_arm_trusted_boot.c
 endif
+
+# This flag controls whether memory usage needs to be optimised
+ARM_BOARD_OPTIMISE_MEM	?=	0
+
+# Process flags
+$(eval $(call assert_boolean,ARM_BOARD_OPTIMISE_MEM))
+$(eval $(call add_define,ARM_BOARD_OPTIMISE_MEM))

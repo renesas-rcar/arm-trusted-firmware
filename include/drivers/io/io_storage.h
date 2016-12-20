@@ -31,6 +31,7 @@
 #ifndef __IO_H__
 #define __IO_H__
 
+#include <errno.h>
 #include <stdint.h>
 #include <stdio.h> /* For ssize_t */
 #include <uuid.h>
@@ -42,7 +43,9 @@ typedef enum {
 	IO_TYPE_INVALID,
 	IO_TYPE_SEMIHOSTING,
 	IO_TYPE_MEMMAP,
+	IO_TYPE_DUMMY,
 	IO_TYPE_FIRMWARE_IMAGE_PACKAGE,
+	IO_TYPE_BLOCK,
 	IO_TYPE_MAX
 } io_type_t;
 
@@ -86,13 +89,6 @@ typedef struct io_block_spec {
 #define IO_MODE_INVALID (0)
 #define IO_MODE_RO	(1 << 0)
 #define IO_MODE_RW	(1 << 1)
-
-
-/* Return codes reported by 'io_*' APIs */
-#define IO_SUCCESS		(0)
-#define IO_FAIL			(-1)
-#define IO_NOT_SUPPORTED	(-2)
-#define IO_RESOURCES_EXHAUSTED	(-3)
 
 
 /* Open a connection to a device */

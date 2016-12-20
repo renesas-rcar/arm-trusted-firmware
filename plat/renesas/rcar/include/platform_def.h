@@ -73,29 +73,29 @@
 
 #define FIRMWARE_WELCOME_STR		"Booting Trusted Firmware\n"
 
-#define BL332_IMAGE_ID			(BL33_CERT_ID + 1)
-#define BL333_IMAGE_ID			(BL33_CERT_ID + 2)
-#define BL334_IMAGE_ID			(BL33_CERT_ID + 3)
-#define BL335_IMAGE_ID			(BL33_CERT_ID + 4)
-#define BL336_IMAGE_ID			(BL33_CERT_ID + 5)
-#define BL337_IMAGE_ID			(BL33_CERT_ID + 6)
-#define BL338_IMAGE_ID			(BL33_CERT_ID + 7)
+#define BL332_IMAGE_ID			(NS_BL2U_IMAGE_ID + 1)
+#define BL333_IMAGE_ID			(NS_BL2U_IMAGE_ID + 2)
+#define BL334_IMAGE_ID			(NS_BL2U_IMAGE_ID + 3)
+#define BL335_IMAGE_ID			(NS_BL2U_IMAGE_ID + 4)
+#define BL336_IMAGE_ID			(NS_BL2U_IMAGE_ID + 5)
+#define BL337_IMAGE_ID			(NS_BL2U_IMAGE_ID + 6)
+#define BL338_IMAGE_ID			(NS_BL2U_IMAGE_ID + 7)
 
-#define BL332_KEY_CERT_ID		(BL33_CERT_ID + 8)
-#define BL333_KEY_CERT_ID		(BL33_CERT_ID + 9)
-#define BL334_KEY_CERT_ID		(BL33_CERT_ID + 10)
-#define BL335_KEY_CERT_ID		(BL33_CERT_ID + 11)
-#define BL336_KEY_CERT_ID		(BL33_CERT_ID + 12)
-#define BL337_KEY_CERT_ID		(BL33_CERT_ID + 13)
-#define BL338_KEY_CERT_ID		(BL33_CERT_ID + 14)
+#define BL332_KEY_CERT_ID		(NS_BL2U_IMAGE_ID + 8)
+#define BL333_KEY_CERT_ID		(NS_BL2U_IMAGE_ID + 9)
+#define BL334_KEY_CERT_ID		(NS_BL2U_IMAGE_ID + 10)
+#define BL335_KEY_CERT_ID		(NS_BL2U_IMAGE_ID + 11)
+#define BL336_KEY_CERT_ID		(NS_BL2U_IMAGE_ID + 12)
+#define BL337_KEY_CERT_ID		(NS_BL2U_IMAGE_ID + 13)
+#define BL338_KEY_CERT_ID		(NS_BL2U_IMAGE_ID + 14)
 
-#define BL332_CERT_ID			(BL33_CERT_ID + 15)
-#define BL333_CERT_ID			(BL33_CERT_ID + 16)
-#define BL334_CERT_ID			(BL33_CERT_ID + 17)
-#define BL335_CERT_ID			(BL33_CERT_ID + 18)
-#define BL336_CERT_ID			(BL33_CERT_ID + 19)
-#define BL337_CERT_ID			(BL33_CERT_ID + 20)
-#define BL338_CERT_ID			(BL33_CERT_ID + 21)
+#define BL332_CERT_ID			(NS_BL2U_IMAGE_ID + 15)
+#define BL333_CERT_ID			(NS_BL2U_IMAGE_ID + 16)
+#define BL334_CERT_ID			(NS_BL2U_IMAGE_ID + 17)
+#define BL335_CERT_ID			(NS_BL2U_IMAGE_ID + 18)
+#define BL336_CERT_ID			(NS_BL2U_IMAGE_ID + 19)
+#define BL337_CERT_ID			(NS_BL2U_IMAGE_ID + 20)
+#define BL338_CERT_ID			(NS_BL2U_IMAGE_ID + 21)
 
 /* io drivers id */
 #define FLASH_DEV_ID			(0U)
@@ -175,9 +175,10 @@
 /*******************************************************************************
  * BL32 specific defines.
  ******************************************************************************/
-
+#ifndef SPD_NONE
 # define BL32_BASE			(0x44100000)
 # define BL32_LIMIT			(BL32_BASE + 0x100000)
+#endif
 /*
  * ID of the secure physical generic timer interrupt used by the TSP.
  */

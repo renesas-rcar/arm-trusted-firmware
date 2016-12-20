@@ -30,15 +30,20 @@
 
 #include <arch_helpers.h>
 #include <arm_def.h>
+#include <arm_gic.h>
 #include <assert.h>
+#include <console.h>
 #include <errno.h>
 #include <plat_arm.h>
+#include <platform_def.h>
 #include <psci.h>
+
+/* Standard ARM platforms are expected to export plat_arm_psci_pm_ops */
+extern const plat_psci_ops_t plat_arm_psci_pm_ops;
 
 #if ARM_RECOM_STATE_ID_ENC
 extern unsigned int arm_pm_idle_states[];
 #endif /* __ARM_RECOM_STATE_ID_ENC__ */
-
 
 #if !ARM_RECOM_STATE_ID_ENC
 /*******************************************************************************
@@ -143,4 +148,62 @@ int arm_validate_ns_entrypoint(uintptr_t entrypoint)
 		return PSCI_E_SUCCESS;
 
 	return PSCI_E_INVALID_ADDRESS;
+}
+
+/******************************************************************************
+ * Helper function to resume the platform from system suspend. Reinitialize
+ * the system components which are not in the Always ON power domain.
+ * TODO: Unify the platform setup when waking up from cold boot and system
+ * resume in arm_bl31_platform_setup().
+ *****************************************************************************/
+void arm_system_pwr_domain_resume(void)
+{
+	console_init(PLAT_ARM_BL31_RUN_UART_BASE, PLAT_ARM_BL31_RUN_UART_CLK_IN_HZ,
+						ARM_CONSOLE_BAUDRATE);
+
+	/* Assert system power domain is available on the platform */
+	assert(PLAT_MAX_PWR_LVL >= ARM_PWR_LVL2);
+
+	/*
+	 * TODO: On GICv3 systems, figure out whether the core that wakes up
+	 * first from system suspend need to initialize the re-distributor
+	 * interface of all the other suspended cores.
+	 */
+	plat_arm_gic_init();
+	plat_arm_security_setup();
+	arm_configure_sys_timer();
+}
+
+/*******************************************************************************
+ * Private function to program the mailbox for a cpu before it is released
+ * from reset. This function assumes that the Trusted mail box base is within
+ * the ARM_SHARED_RAM region
+ ******************************************************************************/
+void arm_program_trusted_mailbox(uintptr_t address)
+{
+	uintptr_t *mailbox = (void *) PLAT_ARM_TRUSTED_MAILBOX_BASE;
+
+	*mailbox = address;
+
+	/*
+	 * Ensure that the PLAT_ARM_TRUSTED_MAILBOX_BASE is within
+	 * ARM_SHARED_RAM region.
+	 */
+	assert((PLAT_ARM_TRUSTED_MAILBOX_BASE >= ARM_SHARED_RAM_BASE) &&
+		((PLAT_ARM_TRUSTED_MAILBOX_BASE + sizeof(*mailbox)) <= \
+				(ARM_SHARED_RAM_BASE + ARM_SHARED_RAM_SIZE)));
+}
+
+/*******************************************************************************
+ * The ARM Standard platform definition of platform porting API
+ * `plat_setup_psci_ops`.
+ ******************************************************************************/
+int plat_setup_psci_ops(uintptr_t sec_entrypoint,
+				const plat_psci_ops_t **psci_ops)
+{
+	*psci_ops = &plat_arm_psci_pm_ops;
+
+	/* Setup mailbox with entry point. */
+	arm_program_trusted_mailbox(sec_entrypoint);
+	return 0;
 }

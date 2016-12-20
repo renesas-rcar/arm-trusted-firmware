@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2014-2016, ARM Limited and Contributors. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -33,6 +33,7 @@
 #include <bl_common.h>
 #include <cortex_a57.h>
 #include <cpu_macros.S>
+#include <debug.h>
 #include <plat_macros.S>
 
 	/* ---------------------------------------------
@@ -99,23 +100,15 @@ func errata_a57_806969_wa
 	 * Compare x0 against revision r0p0
 	 */
 	cbz	x0, apply_806969
-#if DEBUG
+#if LOG_LEVEL >= LOG_LEVEL_VERBOSE
 	b	print_revision_warning
 #else
 	ret
 #endif
 apply_806969:
-	/*
-	 * Test if errata has already been applied in an earlier
-	 * invocation of the reset handler and does not need to
-	 * be applied again.
-	 */
 	mrs	x1, CPUACTLR_EL1
-	tst	x1, #CPUACTLR_NO_ALLOC_WBWA
-	b.ne	skip_806969
 	orr	x1, x1, #CPUACTLR_NO_ALLOC_WBWA
 	msr	CPUACTLR_EL1, x1
-skip_806969:
 	ret
 endfunc errata_a57_806969_wa
 
@@ -133,25 +126,182 @@ func errata_a57_813420_wa
 	 * Compare x0 against revision r0p0
 	 */
 	cbz	x0, apply_813420
-#if DEBUG
+#if LOG_LEVEL >= LOG_LEVEL_VERBOSE
 	b	print_revision_warning
 #else
 	ret
 #endif
 apply_813420:
-	/*
-	 * Test if errata has already been applied in an earlier
-	 * invocation of the reset handler and does not need to
-	 * be applied again.
-	 */
 	mrs	x1, CPUACTLR_EL1
-	tst	x1, #CPUACTLR_DCC_AS_DCCI
-	b.ne	skip_813420
 	orr	x1, x1, #CPUACTLR_DCC_AS_DCCI
 	msr	CPUACTLR_EL1, x1
-skip_813420:
 	ret
 endfunc errata_a57_813420_wa
+
+	/* --------------------------------------------------------------------
+	 * Disable the over-read from the LDNP instruction.
+	 *
+	 * This applies to all revisions <= r1p2. The performance degradation
+	 * observed with LDNP/STNP has been fixed on r1p3 and onwards.
+	 *
+	 * Inputs:
+	 * x0: variant[4:7] and revision[0:3] of current cpu.
+	 * Clobbers : x0 - x5, x30
+	 * ---------------------------------------------------------------------
+	 */
+func a57_disable_ldnp_overread
+	/*
+	 * Compare x0 against revision r1p2
+	 */
+	cmp	x0, #0x12
+	b.ls	disable_hint
+#if LOG_LEVEL >= LOG_LEVEL_VERBOSE
+	b	print_revision_warning
+#else
+	ret
+#endif
+disable_hint:
+	mrs	x1, CPUACTLR_EL1
+	orr	x1, x1, #CPUACTLR_DIS_OVERREAD
+	msr	CPUACTLR_EL1, x1
+	ret
+endfunc a57_disable_ldnp_overread
+
+	/* ---------------------------------------------------
+	 * Errata Workaround for Cortex A57 Errata #826974.
+	 * This applies only to revision <= r1p1 of Cortex A57.
+	 * Inputs:
+	 * x0: variant[4:7] and revision[0:3] of current cpu.
+	 * Clobbers : x0 - x5
+	 * ---------------------------------------------------
+	 */
+func errata_a57_826974_wa
+	/*
+	 * Compare x0 against revision r1p1
+	 */
+	cmp	x0, #0x11
+	b.ls	apply_826974
+#if LOG_LEVEL >= LOG_LEVEL_VERBOSE
+	b	print_revision_warning
+#else
+	ret
+#endif
+apply_826974:
+	mrs	x1, CPUACTLR_EL1
+	orr	x1, x1, #CPUACTLR_DIS_LOAD_PASS_DMB
+	msr	CPUACTLR_EL1, x1
+	ret
+endfunc errata_a57_826974_wa
+
+	/* ---------------------------------------------------
+	 * Errata Workaround for Cortex A57 Errata #826977.
+	 * This applies only to revision <= r1p1 of Cortex A57.
+	 * Inputs:
+	 * x0: variant[4:7] and revision[0:3] of current cpu.
+	 * Clobbers : x0 - x5
+	 * ---------------------------------------------------
+	 */
+func errata_a57_826977_wa
+	/*
+	 * Compare x0 against revision r1p1
+	 */
+	cmp	x0, #0x11
+	b.ls	apply_826977
+#if LOG_LEVEL >= LOG_LEVEL_VERBOSE
+	b	print_revision_warning
+#else
+	ret
+#endif
+apply_826977:
+	mrs	x1, CPUACTLR_EL1
+	orr	x1, x1, #CPUACTLR_GRE_NGRE_AS_NGNRE
+	msr	CPUACTLR_EL1, x1
+	ret
+endfunc errata_a57_826977_wa
+
+	/* ---------------------------------------------------
+	 * Errata Workaround for Cortex A57 Errata #828024.
+	 * This applies only to revision <= r1p1 of Cortex A57.
+	 * Inputs:
+	 * x0: variant[4:7] and revision[0:3] of current cpu.
+	 * Clobbers : x0 - x5
+	 * ---------------------------------------------------
+	 */
+func errata_a57_828024_wa
+	/*
+	 * Compare x0 against revision r1p1
+	 */
+	cmp	x0, #0x11
+	b.ls	apply_828024
+#if LOG_LEVEL >= LOG_LEVEL_VERBOSE
+	b	print_revision_warning
+#else
+	ret
+#endif
+apply_828024:
+	mrs	x1, CPUACTLR_EL1
+	/*
+	 * Setting the relevant bits in CPUACTLR_EL1 has to be done in 2
+	 * instructions here because the resulting bitmask doesn't fit in a
+	 * 16-bit value so it cannot be encoded in a single instruction.
+	 */
+	orr	x1, x1, #CPUACTLR_NO_ALLOC_WBWA
+	orr	x1, x1, #(CPUACTLR_DIS_L1_STREAMING | CPUACTLR_DIS_STREAMING)
+	msr	CPUACTLR_EL1, x1
+	ret
+endfunc errata_a57_828024_wa
+
+	/* ---------------------------------------------------
+	 * Errata Workaround for Cortex A57 Errata #829520.
+	 * This applies only to revision <= r1p2 of Cortex A57.
+	 * Inputs:
+	 * x0: variant[4:7] and revision[0:3] of current cpu.
+	 * Clobbers : x0 - x5
+	 * ---------------------------------------------------
+	 */
+func errata_a57_829520_wa
+	/*
+	 * Compare x0 against revision r1p2
+	 */
+	cmp	x0, #0x12
+	b.ls	apply_829520
+#if LOG_LEVEL >= LOG_LEVEL_VERBOSE
+	b	print_revision_warning
+#else
+	ret
+#endif
+apply_829520:
+	mrs	x1, CPUACTLR_EL1
+	orr	x1, x1, #CPUACTLR_DIS_INDIRECT_PREDICTOR
+	msr	CPUACTLR_EL1, x1
+	ret
+endfunc errata_a57_829520_wa
+
+	/* ---------------------------------------------------
+	 * Errata Workaround for Cortex A57 Errata #833471.
+	 * This applies only to revision <= r1p2 of Cortex A57.
+	 * Inputs:
+	 * x0: variant[4:7] and revision[0:3] of current cpu.
+	 * Clobbers : x0 - x5
+	 * ---------------------------------------------------
+	 */
+func errata_a57_833471_wa
+	/*
+	 * Compare x0 against revision r1p2
+	 */
+	cmp	x0, #0x12
+	b.ls	apply_833471
+#if LOG_LEVEL >= LOG_LEVEL_VERBOSE
+	b	print_revision_warning
+#else
+	ret
+#endif
+apply_833471:
+	mrs	x1, CPUACTLR_EL1
+	orr	x1, x1, #CPUACTLR_FORCE_FPSCR_FLUSH
+	msr	CPUACTLR_EL1, x1
+	ret
+endfunc errata_a57_833471_wa
 
 	/* -------------------------------------------------
 	 * The CPU Ops reset function for Cortex-A57.
@@ -181,17 +331,43 @@ func cortex_a57_reset_func
 	bl	errata_a57_813420_wa
 #endif
 
+#if A57_DISABLE_NON_TEMPORAL_HINT
+	mov	x0, x15
+	bl	a57_disable_ldnp_overread
+#endif
+
+#if ERRATA_A57_826974
+	mov	x0, x15
+	bl	errata_a57_826974_wa
+#endif
+
+#if ERRATA_A57_826977
+	mov	x0, x15
+	bl	errata_a57_826977_wa
+#endif
+
+#if ERRATA_A57_828024
+	mov	x0, x15
+	bl	errata_a57_828024_wa
+#endif
+
+#if ERRATA_A57_829520
+	mov	x0, x15
+	bl	errata_a57_829520_wa
+#endif
+
+#if ERRATA_A57_833471
+	mov	x0, x15
+	bl	errata_a57_833471_wa
+#endif
+
 	/* ---------------------------------------------
-	 * As a bare minimum enable the SMP bit if it is
-	 * not already set.
+	 * Enable the SMP bit.
 	 * ---------------------------------------------
 	 */
 	mrs	x0, CPUECTLR_EL1
-	tst	x0, #CPUECTLR_SMP_BIT
-	b.ne	skip_smp_setup
 	orr	x0, x0, #CPUECTLR_SMP_BIT
 	msr	CPUECTLR_EL1, x0
-skip_smp_setup:
 	isb
 	ret	x19
 endfunc cortex_a57_reset_func
@@ -301,11 +477,13 @@ endfunc cortex_a57_cluster_pwr_dwn
 	 */
 .section .rodata.cortex_a57_regs, "aS"
 cortex_a57_regs:  /* The ascii list of register names to be reported */
-	.asciz	"cpuectlr_el1", ""
+	.asciz	"cpuectlr_el1", "cpumerrsr_el1", "l2merrsr_el1", ""
 
 func cortex_a57_cpu_reg_dump
 	adr	x6, cortex_a57_regs
 	mrs	x8, CPUECTLR_EL1
+	mrs	x9, CPUMERRSR_EL1
+	mrs	x10, L2MERRSR_EL1
 	ret
 endfunc cortex_a57_cpu_reg_dump
 

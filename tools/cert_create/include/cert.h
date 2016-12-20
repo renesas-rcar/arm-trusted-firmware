@@ -54,8 +54,10 @@ typedef struct cert_s cert_t;
 struct cert_s {
 	int id;			/* Unique identifier */
 
+	const char *opt;	/* Command line option to pass filename */
 	const char *fn;		/* Filename to save the certificate */
 	const char *cn;		/* Subject CN (Company Name) */
+	const char *help_msg;	/* Help message */
 
 	/* These fields must be defined statically */
 	int key;		/* Key to be signed */
@@ -67,13 +69,15 @@ struct cert_s {
 };
 
 /* Exported API */
+int cert_init(void);
+cert_t *cert_get_by_opt(const char *opt);
 int cert_add_ext(X509 *issuer, X509 *subject, int nid, char *value);
 int cert_new(cert_t *cert, int days, int ca, STACK_OF(X509_EXTENSION) * sk);
 
 /* Macro to register the certificates used in the CoT */
 #define REGISTER_COT(_certs) \
 	cert_t *certs = &_certs[0]; \
-	const unsigned int num_certs = sizeof(_certs)/sizeof(_certs[0]);
+	const unsigned int num_certs = sizeof(_certs)/sizeof(_certs[0])
 
 /* Exported variables */
 extern cert_t *certs;

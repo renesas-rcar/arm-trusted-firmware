@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2015, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2014-2016, ARM Limited and Contributors. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -33,10 +33,16 @@
 
 #include <arm_def.h>
 
-
+#ifndef FVP_CLUSTER_COUNT
+#define FVP_CLUSTER_COUNT		2
+#endif
 #define FVP_MAX_CPUS_PER_CLUSTER	4
 
 #define FVP_PRIMARY_CPU			0x0
+
+/* Defines for the Interconnect build selection */
+#define FVP_CCI			1
+#define FVP_CCN			2
 
 /*******************************************************************************
  * FVP memory map related constants
@@ -55,19 +61,32 @@
 #define DEVICE0_BASE			0x20000000
 #define DEVICE0_SIZE			0x0c200000
 
+/*
+ *  In case of FVP models with CCN, the CCN register space overlaps into
+ *  the NSRAM area.
+ */
+#if FVP_INTERCONNECT_DRIVER == FVP_CCN
+#define DEVICE1_BASE			0x2e000000
+#define DEVICE1_SIZE			0x1A00000
+#else
 #define DEVICE1_BASE			0x2f000000
 #define DEVICE1_SIZE			0x200000
-
+#define NSRAM_BASE			0x2e000000
+#define NSRAM_SIZE			0x10000
+#endif
 /* Devices in the second GB */
 #define DEVICE2_BASE			0x7fe00000
 #define DEVICE2_SIZE			0x00200000
 
-#define NSRAM_BASE			0x2e000000
-#define NSRAM_SIZE			0x10000
-
 #define PCIE_EXP_BASE			0x40000000
 #define TZRNG_BASE			0x7fe60000
-#define TZNVCTR_BASE			0x7fe70000
+
+/* Non-volatile counters */
+#define TRUSTED_NVCTR_BASE		0x7fe70000
+#define TFW_NVCTR_BASE			(TRUSTED_NVCTR_BASE + 0x0000)
+#define TFW_NVCTR_SIZE			4
+#define NTFW_CTR_BASE			(TRUSTED_NVCTR_BASE + 0x0004)
+#define NTFW_CTR_SIZE			4
 
 /* Keys */
 #define SOC_KEYS_BASE			0x7fe80000
@@ -86,6 +105,7 @@
 #define REV_FOUNDATION_FVP_V2_0		0x0
 #define REV_FOUNDATION_FVP_V2_1		0x1
 #define REV_FOUNDATION_FVP_v9_1		0x2
+#define REV_FOUNDATION_FVP_v9_6		0x3
 
 #define BLD_GIC_VE_MMAP			0x0
 #define BLD_GIC_A53A57_MMAP		0x1
@@ -96,8 +116,14 @@
 #define PWRC_BASE			0x1c100000
 
 /* FVP SP804 timer frequency is 35 MHz*/
-#define SP804_TIMER_CLKMULT		35
-#define SP804_TIMER_CLKDIV		1
+#define SP804_TIMER_CLKMULT		1
+#define SP804_TIMER_CLKDIV		35
+
+/* SP810 controller. FVP specific flags */
+#define FVP_SP810_CTRL_TIM0_OV		(1 << 16)
+#define FVP_SP810_CTRL_TIM1_OV		(1 << 18)
+#define FVP_SP810_CTRL_TIM2_OV		(1 << 20)
+#define FVP_SP810_CTRL_TIM3_OV		(1 << 22)
 
 /*******************************************************************************
  * GIC-400 & interrupt handling related constants
@@ -133,13 +159,5 @@
 /* NSAIDs used by devices in TZC filter 2 on FVP */
 #define FVP_NSAID_HDLCD0		2
 #define FVP_NSAID_CLCD			7
-
-/*******************************************************************************
- *  Shared Data
- ******************************************************************************/
-
-/* Entrypoint mailboxes */
-#define MBOX_BASE			ARM_SHARED_RAM_BASE
-
 
 #endif /* __FVP_DEF_H__ */

@@ -40,6 +40,8 @@
 #include	"rcar_private.h"
 #include	"rcar_printf.h"
 
+#define INDEX_TIMER_COUNT	(4U)
+
 extern RCAR_INSTANTIATE_LOCK
 
 typedef struct log_head
@@ -67,7 +69,8 @@ void rcar_set_log_time(void)
 	int32_t i;
 	int32_t start_counter;
 
-	now_time = readreg_cntpct_el0();
+	now_time = (uint64_t)readreg_cntpct_el0();
+	now_time += rcar_stack_generic_timer[INDEX_TIMER_COUNT];
 	freq = read_cntfrq_el0(); /* get the frequency	*/
 	if (freq == 0U) { /* for zero division	*/
 		second = 0U;
@@ -82,8 +85,9 @@ void rcar_set_log_time(void)
 		second = second / 10U;
 		i--;
 	} while (second != 0U);
-	for (; i >= 10; i--)
+	for (; i >= 10; i--) {
 		t_log[0][i] = (int)' ';
+	}
 	start_counter = i + 1;
 	t_log[1][0] = micro_sec / 100000U;
 	micro_sec %= 100000U;
@@ -98,10 +102,11 @@ void rcar_set_log_time(void)
 
 	(void)putchar((int)'[');
 	for (i = start_counter; i < 15; i++) {
-		if (t_log[0][i] <= 9)
-			(void)putchar((int)((int)t_log[0][i] + 0x30));
-		else
+		if (t_log[0][i] <= 9) {
+			(void)putchar((int)((int)t_log[0][i] + (int)0x30));
+		} else {
 			(void)putchar((int)' ');
+		}
 	}
 	(void)putchar((int)'.');
 	for (i = 0; i < 6; i++) {
@@ -168,6 +173,7 @@ int32_t rcar_log_init(void)
 		(void)memcpy((void *)t_log->header.head, (const void *)const_header, sizeof(t_log->header.head));
 		t_log->header.index = 0U;
 		t_log->header.size = 0U;
+		rcar_stack_generic_timer[INDEX_TIMER_COUNT] = 0U;
 	}
 	rcar_lock_init();
 

@@ -39,6 +39,7 @@
 #include <openssl/x509v3.h>
 
 #include "cert.h"
+#include "cmd_opt.h"
 #include "debug.h"
 #include "key.h"
 #include "platform_oid.h"
@@ -178,4 +179,38 @@ int cert_new(cert_t *cert, int days, int ca, STACK_OF(X509_EXTENSION) * sk)
 
 	cert->x = x;
 	return 1;
+}
+
+int cert_init(void)
+{
+	cmd_opt_t cmd_opt;
+	cert_t *cert;
+	unsigned int i;
+
+	for (i = 0; i < num_certs; i++) {
+		cert = &certs[i];
+		cmd_opt.long_opt.name = cert->opt;
+		cmd_opt.long_opt.has_arg = required_argument;
+		cmd_opt.long_opt.flag = NULL;
+		cmd_opt.long_opt.val = CMD_OPT_CERT;
+		cmd_opt.help_msg = cert->help_msg;
+		cmd_opt_add(&cmd_opt);
+	}
+
+	return 0;
+}
+
+cert_t *cert_get_by_opt(const char *opt)
+{
+	cert_t *cert = NULL;
+	unsigned int i;
+
+	for (i = 0; i < num_certs; i++) {
+		cert = &certs[i];
+		if (0 == strcmp(cert->opt, opt)) {
+			return cert;
+		}
+	}
+
+	return NULL;
 }

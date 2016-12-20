@@ -29,10 +29,14 @@
 # POSSIBILITY OF SUCH DAMAGE.
 #
 
-ifeq (${RCAR_LSI},${RCAR_H3})
+ifeq (${RCAR_LSI},${RCAR_AUTO})
     BL2_SOURCES += plat/renesas/rcar/pfc/H3/pfc_init_h3.c
-endif
-ifeq (${RCAR_LSI},${RCAR_M3})
+    BL2_SOURCES += plat/renesas/rcar/pfc/M3/pfc_init_m3.c
+
+else ifeq (${RCAR_LSI},${RCAR_H3})
+    BL2_SOURCES += plat/renesas/rcar/pfc/H3/pfc_init_h3.c
+
+else ifeq (${RCAR_LSI},${RCAR_M3})
     BL2_SOURCES += plat/renesas/rcar/pfc/M3/pfc_init_m3.c
 endif
 

@@ -18,10 +18,10 @@ the platform by authenticating all firmware images up to and including the
 normal world bootloader. It does this by establishing a Chain of Trust using
 Public-Key-Cryptography Standards (PKCS).
 
-This document describes the design of the ARM Trusted Firmware TBB
-implementation. The current implementation is a proof of concept; future
-versions will provide stronger architectural interfaces and implement the
-missing functionality required in a production TBB-enabled system.
+This document describes the design of ARM Trusted Firmware TBB, which is an
+implementation of the Trusted Board Boot Requirements (TBBR) specification,
+ARM DEN0006C-1. It should be used in conjunction with the [Firmware Update]
+design document, which implements a specific aspect of the TBBR.
 
 
 2.  Chain of Trust
@@ -66,29 +66,29 @@ The keys used to establish the CoT are:
 *   **Trusted world key**
 
     The private part is used to sign the key certificates corresponding to the
-    secure world images (BL3-0, BL3-1 and BL3-2). The public part is stored in
+    secure world images (SCP_BL2, BL31 and BL32). The public part is stored in
     one of the extension fields in the trusted world certificate.
 
 *   **Non-trusted world key**
 
     The private part is used to sign the key certificate corresponding to the
-    non secure world image (BL3-3). The public part is stored in one of the
+    non secure world image (BL33). The public part is stored in one of the
     extension fields in the trusted world certificate.
 
 *   **BL3-X keys**
 
-    For each of BL3-0, BL3-1, BL3-2 and BL3-3, the private part is used to sign
-    the content certificate for the BL3-X image. The public part is stored in
-    one of the extension fields in the corresponding key certificate.
+    For each of SCP_BL2, BL31, BL32 and BL33, the private part is used to
+    sign the content certificate for the BL3-X image. The public part is stored
+    in one of the extension fields in the corresponding key certificate.
 
 The following images are included in the CoT:
 
 *   BL1
 *   BL2
-*   BL3-0 (optional)
-*   BL3-1
-*   BL3-3
-*   BL3-2 (optional)
+*   SCP_BL2 (optional)
+*   BL31
+*   BL33
+*   BL32 (optional)
 
 The following certificates are used to authenticate the images.
 
@@ -103,44 +103,45 @@ The following certificates are used to authenticate the images.
     public part of the trusted world key and the public part of the non-trusted
     world key.
 
-*   **BL3-0 key certificate**
+*   **SCP_BL2 key certificate**
 
     It is self-signed with the trusted world key. It contains the public part of
-    the BL3-0 key.
+    the SCP_BL2 key.
 
-*   **BL3-0 content certificate**
+*   **SCP_BL2 content certificate**
 
-    It is self-signed with the BL3-0 key. It contains a hash of the BL3-0 image.
+    It is self-signed with the SCP_BL2 key. It contains a hash of the SCP_BL2
+    image.
 
-*   **BL3-1 key certificate**
-
-    It is self-signed with the trusted world key. It contains the public part of
-    the BL3-1 key.
-
-*   **BL3-1 content certificate**
-
-    It is self-signed with the BL3-1 key. It contains a hash of the BL3-1 image.
-
-*   **BL3-2 key certificate**
+*   **BL31 key certificate**
 
     It is self-signed with the trusted world key. It contains the public part of
-    the BL3-2 key.
+    the BL31 key.
 
-*   **BL3-2 content certificate**
+*   **BL31 content certificate**
 
-    It is self-signed with the BL3-2 key. It contains a hash of the BL3-2 image.
+    It is self-signed with the BL31 key. It contains a hash of the BL31 image.
 
-*   **BL3-3 key certificate**
+*   **BL32 key certificate**
+
+    It is self-signed with the trusted world key. It contains the public part of
+    the BL32 key.
+
+*   **BL32 content certificate**
+
+    It is self-signed with the BL32 key. It contains a hash of the BL32 image.
+
+*   **BL33 key certificate**
 
     It is self-signed with the non-trusted world key. It contains the public
-    part of the BL3-3 key.
+    part of the BL33 key.
 
-*   **BL3-3 content certificate**
+*   **BL33 content certificate**
 
-    It is self-signed with the BL3-3 key. It contains a hash of the BL3-3 image.
+    It is self-signed with the BL33 key. It contains a hash of the BL33 image.
 
-The BL3-0 and BL3-2 certificates are optional, but they must be present if the
-corresponding BL3-0 or BL3-2 images are present.
+The SCP_BL2 and BL32 certificates are optional, but they must be present if the
+corresponding SCP_BL2 or BL32 images are present.
 
 
 3.  Trusted Board Boot Sequence
@@ -167,27 +168,27 @@ if any of the steps fail.
     registers. If the comparison succeeds, BL2 reads and saves the trusted and
     non-trusted world public keys from the verified certificate.
 
-The next two steps are executed for each of the BL3-0, BL3-1 & BL3-2 images. The
-steps for the optional BL3-0 and BL3-2 images are skipped if these images are
-not present.
+The next two steps are executed for each of the SCP_BL2, BL31 & BL32 images.
+The steps for the optional SCP_BL2 and BL32 images are skipped if these images
+are not present.
 
-*   BL2 loads and verifies the BL3-x key certificate. The certificate signature
+*   BL2 loads and verifies the BL3x key certificate. The certificate signature
     is verified using the trusted world public key. If the signature
-    verification succeeds, BL2 reads and saves the BL3-x public key from the
+    verification succeeds, BL2 reads and saves the BL3x public key from the
     certificate.
 
-*   BL2 loads and verifies the BL3-x content certificate. The signature is
-    verified using the BL3-x public key. If the signature verification succeeds,
-    BL2 reads and saves the BL3-x image hash from the certificate.
+*   BL2 loads and verifies the BL3x content certificate. The signature is
+    verified using the BL3x public key. If the signature verification succeeds,
+    BL2 reads and saves the BL3x image hash from the certificate.
 
-The next two steps are executed only for the BL3-3 image.
+The next two steps are executed only for the BL33 image.
 
-*   BL2 loads and verifies the BL3-3 key certificate. If the signature
-    verification succeeds, BL2 reads and saves the BL3-3 public key from the
+*   BL2 loads and verifies the BL33 key certificate. If the signature
+    verification succeeds, BL2 reads and saves the BL33 public key from the
     certificate.
 
-*   BL2 loads and verifies the BL3-3 content certificate. If the signature
-    verification succeeds, BL2 reads and saves the BL3-3 image hash from the
+*   BL2 loads and verifies the BL33 content certificate. If the signature
+    verification succeeds, BL2 reads and saves the BL33 image hash from the
     certificate.
 
 The next step is executed for all the boot loader images.
@@ -228,7 +229,7 @@ Trusted Firmware build process when `GENERATE_COT=1`. It takes the boot loader
 images and keys as inputs (keys must be in PEM format) and generates the
 certificates (in DER format) required to establish the CoT. New keys can be
 generated by the tool in case they are not provided. The certificates are then
-passed as inputs to the `fip_create` tool for creating the FIP.
+passed as inputs to the `fiptool` utility for creating the FIP.
 
 The certificates are also stored individually in the in the output build
 directory.
@@ -247,3 +248,4 @@ _Copyright (c) 2015, ARM Limited and Contributors. All rights reserved._
 [X.690]:             http://www.itu.int/ITU-T/studygroups/com17/languages/X.690-0207.pdf
 [Auth Framework]:    auth-framework.md
 [User Guide]:        user-guide.md
+[Firmware Update]:   firmware-update.md

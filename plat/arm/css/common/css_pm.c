@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2015-2016, ARM Limited and Contributors. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -28,19 +28,25 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <assert.h>
 #include <arch_helpers.h>
-#include <arm_gic.h>
-#include <cci.h>
-#include <css_def.h>
+#include <assert.h>
+#include <cassert.h>
+#include <css_pm.h>
 #include <debug.h>
 #include <errno.h>
 #include <plat_arm.h>
 #include <platform.h>
 #include <platform_def.h>
-#include <psci.h>
 #include "css_scpi.h"
 
+/* Macros to read the CSS power domain state */
+#define CSS_CORE_PWR_STATE(state)	(state)->pwr_domain_state[ARM_PWR_LVL0]
+#define CSS_CLUSTER_PWR_STATE(state)	(state)->pwr_domain_state[ARM_PWR_LVL1]
+#define CSS_SYSTEM_PWR_STATE(state)	((PLAT_MAX_PWR_LVL > ARM_PWR_LVL1) ?\
+				(state)->pwr_domain_state[ARM_PWR_LVL2] : 0)
+
+/* Allow CSS platforms to override `plat_arm_psci_pm_ops` */
+#pragma weak plat_arm_psci_pm_ops
 
 #if ARM_RECOM_STATE_ID_ENC
 /*
@@ -50,29 +56,30 @@
  *  The table must be terminated by a NULL entry.
  */
 const unsigned int arm_pm_idle_states[] = {
-	/* State-id - 0x01 */
-	arm_make_pwrstate_lvl1(ARM_LOCAL_STATE_RUN, ARM_LOCAL_STATE_RET,
-			ARM_PWR_LVL0, PSTATE_TYPE_STANDBY),
-	/* State-id - 0x02 */
-	arm_make_pwrstate_lvl1(ARM_LOCAL_STATE_RUN, ARM_LOCAL_STATE_OFF,
-			ARM_PWR_LVL0, PSTATE_TYPE_POWERDOWN),
-	/* State-id - 0x22 */
-	arm_make_pwrstate_lvl1(ARM_LOCAL_STATE_OFF, ARM_LOCAL_STATE_OFF,
-			ARM_PWR_LVL1, PSTATE_TYPE_POWERDOWN),
+	/* State-id - 0x001 */
+	arm_make_pwrstate_lvl2(ARM_LOCAL_STATE_RUN, ARM_LOCAL_STATE_RUN,
+		ARM_LOCAL_STATE_RET, ARM_PWR_LVL0, PSTATE_TYPE_STANDBY),
+	/* State-id - 0x002 */
+	arm_make_pwrstate_lvl2(ARM_LOCAL_STATE_RUN, ARM_LOCAL_STATE_RUN,
+		ARM_LOCAL_STATE_OFF, ARM_PWR_LVL0, PSTATE_TYPE_POWERDOWN),
+	/* State-id - 0x022 */
+	arm_make_pwrstate_lvl2(ARM_LOCAL_STATE_RUN, ARM_LOCAL_STATE_OFF,
+		ARM_LOCAL_STATE_OFF, ARM_PWR_LVL1, PSTATE_TYPE_POWERDOWN),
+#if PLAT_MAX_PWR_LVL > ARM_PWR_LVL1
+	/* State-id - 0x222 */
+	arm_make_pwrstate_lvl2(ARM_LOCAL_STATE_OFF, ARM_LOCAL_STATE_OFF,
+		ARM_LOCAL_STATE_OFF, ARM_PWR_LVL2, PSTATE_TYPE_POWERDOWN),
+#endif
 	0,
 };
-#endif
+#endif /* __ARM_RECOM_STATE_ID_ENC__ */
 
-/*******************************************************************************
- * Private function to program the mailbox for a cpu before it is released
- * from reset.
- ******************************************************************************/
-static void css_program_mailbox(uintptr_t address)
-{
-	uintptr_t *mailbox = (void *) TRUSTED_MAILBOX_BASE;
-	*mailbox = address;
-	flush_dcache_range((uintptr_t) mailbox, sizeof(*mailbox));
-}
+/*
+ * All the power management helpers in this file assume at least cluster power
+ * level is supported.
+ */
+CASSERT(PLAT_MAX_PWR_LVL >= ARM_PWR_LVL1,
+		assert_max_pwr_lvl_supported_mismatch);
 
 /*******************************************************************************
  * Handler called when a power domain is about to be turned on. The
@@ -90,29 +97,39 @@ int css_pwr_domain_on(u_register_t mpidr)
 	return PSCI_E_SUCCESS;
 }
 
-/*******************************************************************************
- * Handler called when a power level has just been powered on after
- * being turned off earlier. The target_state encodes the low power state that
- * each level has woken up from.
- ******************************************************************************/
-void css_pwr_domain_on_finish(const psci_power_state_t *target_state)
+static void css_pwr_domain_on_finisher_common(
+		const psci_power_state_t *target_state)
 {
-	assert(target_state->pwr_domain_state[ARM_PWR_LVL0] ==
-						ARM_LOCAL_STATE_OFF);
+	assert(CSS_CORE_PWR_STATE(target_state) == ARM_LOCAL_STATE_OFF);
 
 	/*
 	 * Perform the common cluster specific operations i.e enable coherency
 	 * if this cluster was off.
 	 */
-	if (target_state->pwr_domain_state[ARM_PWR_LVL1] ==
-						ARM_LOCAL_STATE_OFF)
-		cci_enable_snoop_dvm_reqs(MPIDR_AFFLVL1_VAL(read_mpidr_el1()));
+	if (CSS_CLUSTER_PWR_STATE(target_state) == ARM_LOCAL_STATE_OFF)
+		plat_arm_interconnect_enter_coherency();
+}
+
+/*******************************************************************************
+ * Handler called when a power level has just been powered on after
+ * being turned off earlier. The target_state encodes the low power state that
+ * each level has woken up from. This handler would never be invoked with
+ * the system power domain uninitialized as either the primary would have taken
+ * care of it as part of cold boot or the first core awakened from system
+ * suspend would have already initialized it.
+ ******************************************************************************/
+void css_pwr_domain_on_finish(const psci_power_state_t *target_state)
+{
+	/* Assert that the system power domain need not be initialized */
+	assert(CSS_SYSTEM_PWR_STATE(target_state) == ARM_LOCAL_STATE_RUN);
+
+	css_pwr_domain_on_finisher_common(target_state);
+
+	/* Program the gic per-cpu distributor or re-distributor interface */
+	plat_arm_gic_pcpu_init();
 
 	/* Enable the gic cpu interface */
-	arm_gic_cpuif_setup();
-
-	/* todo: Is this setup only needed after a cold boot? */
-	arm_gic_pcpu_distif_setup();
+	plat_arm_gic_cpuif_enable();
 }
 
 /*******************************************************************************
@@ -124,14 +141,18 @@ void css_pwr_domain_on_finish(const psci_power_state_t *target_state)
 static void css_power_down_common(const psci_power_state_t *target_state)
 {
 	uint32_t cluster_state = scpi_power_on;
+	uint32_t system_state = scpi_power_on;
 
 	/* Prevent interrupts from spuriously waking up this cpu */
-	arm_gic_cpuif_deactivate();
+	plat_arm_gic_cpuif_disable();
+
+	/* Check if power down at system power domain level is requested */
+	if (CSS_SYSTEM_PWR_STATE(target_state) == ARM_LOCAL_STATE_OFF)
+			system_state = scpi_power_retention;
 
 	/* Cluster is to be turned off, so disable coherency */
-	if (target_state->pwr_domain_state[ARM_PWR_LVL1] ==
-						ARM_LOCAL_STATE_OFF) {
-		cci_disable_snoop_dvm_reqs(MPIDR_AFFLVL1_VAL(read_mpidr()));
+	if (CSS_CLUSTER_PWR_STATE(target_state) == ARM_LOCAL_STATE_OFF) {
+		plat_arm_interconnect_exit_coherency();
 		cluster_state = scpi_power_off;
 	}
 
@@ -142,18 +163,16 @@ static void css_power_down_common(const psci_power_state_t *target_state)
 	scpi_set_css_power_state(read_mpidr_el1(),
 				 scpi_power_off,
 				 cluster_state,
-				 scpi_power_on);
+				 system_state);
 }
 
 /*******************************************************************************
  * Handler called when a power domain is about to be turned off. The
  * target_state encodes the power state that each level should transition to.
  ******************************************************************************/
-static void css_pwr_domain_off(const psci_power_state_t *target_state)
+void css_pwr_domain_off(const psci_power_state_t *target_state)
 {
-	assert(target_state->pwr_domain_state[ARM_PWR_LVL0] ==
-						ARM_LOCAL_STATE_OFF);
-
+	assert(CSS_CORE_PWR_STATE(target_state) == ARM_LOCAL_STATE_OFF);
 	css_power_down_common(target_state);
 }
 
@@ -161,19 +180,16 @@ static void css_pwr_domain_off(const psci_power_state_t *target_state)
  * Handler called when a power domain is about to be suspended. The
  * target_state encodes the power state that each level should transition to.
  ******************************************************************************/
-static void css_pwr_domain_suspend(const psci_power_state_t *target_state)
+void css_pwr_domain_suspend(const psci_power_state_t *target_state)
 {
 	/*
-	 * Juno has retention only at cpu level. Just return
+	 * CSS currently supports retention only at cpu level. Just return
 	 * as nothing is to be done for retention.
 	 */
-	if (target_state->pwr_domain_state[ARM_PWR_LVL0] ==
-						ARM_LOCAL_STATE_RET)
+	if (CSS_CORE_PWR_STATE(target_state) == ARM_LOCAL_STATE_RET)
 		return;
 
-	assert(target_state->pwr_domain_state[ARM_PWR_LVL0] ==
-						ARM_LOCAL_STATE_OFF);
-
+	assert(CSS_CORE_PWR_STATE(target_state) == ARM_LOCAL_STATE_OFF);
 	css_power_down_common(target_state);
 }
 
@@ -184,23 +200,27 @@ static void css_pwr_domain_suspend(const psci_power_state_t *target_state)
  * TODO: At the moment we reuse the on finisher and reinitialize the secure
  * context. Need to implement a separate suspend finisher.
  ******************************************************************************/
-static void css_pwr_domain_suspend_finish(
+void css_pwr_domain_suspend_finish(
 				const psci_power_state_t *target_state)
 {
-	/*
-	 * Return as nothing is to be done on waking up from retention.
-	 */
-	if (target_state->pwr_domain_state[ARM_PWR_LVL0] ==
-						ARM_LOCAL_STATE_RET)
+	/* Return as nothing is to be done on waking up from retention. */
+	if (CSS_CORE_PWR_STATE(target_state) == ARM_LOCAL_STATE_RET)
 		return;
 
-	css_pwr_domain_on_finish(target_state);
+	/* Perform system domain restore if woken up from system suspend */
+	if (CSS_SYSTEM_PWR_STATE(target_state) == ARM_LOCAL_STATE_OFF)
+		arm_system_pwr_domain_resume();
+	else
+		/* Enable the gic cpu interface */
+		plat_arm_gic_cpuif_enable();
+
+	css_pwr_domain_on_finisher_common(target_state);
 }
 
 /*******************************************************************************
  * Handlers to shutdown/reboot the system
  ******************************************************************************/
-static void __dead2 css_system_off(void)
+void __dead2 css_system_off(void)
 {
 	uint32_t response;
 
@@ -216,7 +236,7 @@ static void __dead2 css_system_off(void)
 	panic();
 }
 
-static void __dead2 css_system_reset(void)
+void __dead2 css_system_reset(void)
 {
 	uint32_t response;
 
@@ -242,8 +262,14 @@ void css_cpu_standby(plat_local_state_t cpu_state)
 	assert(cpu_state == ARM_LOCAL_STATE_RET);
 
 	scr = read_scr_el3();
-	/* Enable PhysicalIRQ bit for NS world to wake the CPU */
-	write_scr_el3(scr | SCR_IRQ_BIT);
+	/*
+	 * Enable the Non secure interrupt to wake the CPU.
+	 * In GICv3 affinity routing mode, the non secure group1 interrupts use
+	 * the PhysicalFIQ at EL3 whereas in GICv2, it uses the PhysicalIRQ.
+	 * Enabling both the bits works for both GICv2 mode and GICv3 affinity
+	 * routing mode.
+	 */
+	write_scr_el3(scr | SCR_IRQ_BIT | SCR_FIQ_BIT);
 	isb();
 	dsb();
 	wfi();
@@ -256,9 +282,64 @@ void css_cpu_standby(plat_local_state_t cpu_state)
 }
 
 /*******************************************************************************
- * Export the platform handlers to enable psci to invoke them
+ * Handler called to return the 'req_state' for system suspend.
  ******************************************************************************/
-static const plat_psci_ops_t css_ops = {
+void css_get_sys_suspend_power_state(psci_power_state_t *req_state)
+{
+	unsigned int i;
+
+	/*
+	 * System Suspend is supported only if the system power domain node
+	 * is implemented.
+	 */
+	assert(PLAT_MAX_PWR_LVL >= ARM_PWR_LVL2);
+
+	for (i = ARM_PWR_LVL0; i <= PLAT_MAX_PWR_LVL; i++)
+		req_state->pwr_domain_state[i] = ARM_LOCAL_STATE_OFF;
+}
+
+/*******************************************************************************
+ * Handler to query CPU/cluster power states from SCP
+ ******************************************************************************/
+int css_node_hw_state(u_register_t mpidr, unsigned int power_level)
+{
+	int rc, element;
+	unsigned int cpu_state, cluster_state;
+
+	/*
+	 * The format of 'power_level' is implementation-defined, but 0 must
+	 * mean a CPU. We also allow 1 to denote the cluster
+	 */
+	if (power_level != ARM_PWR_LVL0 && power_level != ARM_PWR_LVL1)
+		return PSCI_E_INVALID_PARAMS;
+
+	/* Query SCP */
+	rc = scpi_get_css_power_state(mpidr, &cpu_state, &cluster_state);
+	if (rc != 0)
+		return PSCI_E_INVALID_PARAMS;
+
+	/* Map power states of CPU and cluster to expected PSCI return codes */
+	if (power_level == ARM_PWR_LVL0) {
+		/*
+		 * The CPU state returned by SCP is an 8-bit bit mask
+		 * corresponding to each CPU in the cluster
+		 */
+		element = mpidr & MPIDR_AFFLVL_MASK;
+		return CSS_CPU_PWR_STATE(cpu_state, element) ==
+			CSS_CPU_PWR_STATE_ON ? HW_ON : HW_OFF;
+	} else {
+		assert(cluster_state == CSS_CLUSTER_PWR_STATE_ON ||
+				cluster_state == CSS_CLUSTER_PWR_STATE_OFF);
+		return cluster_state == CSS_CLUSTER_PWR_STATE_ON ? HW_ON :
+			HW_OFF;
+	}
+}
+
+/*******************************************************************************
+ * Export the platform handlers via plat_arm_psci_pm_ops. The ARM Standard
+ * platform will take care of registering the handlers with PSCI.
+ ******************************************************************************/
+const plat_psci_ops_t plat_arm_psci_pm_ops = {
 	.pwr_domain_on		= css_pwr_domain_on,
 	.pwr_domain_on_finish	= css_pwr_domain_on_finish,
 	.pwr_domain_off		= css_pwr_domain_off,
@@ -268,18 +349,6 @@ static const plat_psci_ops_t css_ops = {
 	.system_off		= css_system_off,
 	.system_reset		= css_system_reset,
 	.validate_power_state	= arm_validate_power_state,
-	.validate_ns_entrypoint = arm_validate_ns_entrypoint
+	.validate_ns_entrypoint = arm_validate_ns_entrypoint,
+	.get_node_hw_state	= css_node_hw_state
 };
-
-/*******************************************************************************
- * Export the platform specific psci ops.
- ******************************************************************************/
-int plat_setup_psci_ops(uintptr_t sec_entrypoint,
-				const plat_psci_ops_t **psci_ops)
-{
-	*psci_ops = &css_ops;
-
-	/* Setup mailbox with entry point. */
-	css_program_mailbox(sec_entrypoint);
-	return 0;
-}

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2015, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2014-2016, ARM Limited and Contributors. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -60,7 +60,7 @@ typedef struct {
  * Unlike the SCPI protocol, the boot protocol uses the same memory region
  * for both AP -> SCP and SCP -> AP transfers; define the address of this...
  */
-#define BOM_SHARED_MEM		SCP_COM_SHARED_MEM_BASE
+#define BOM_SHARED_MEM		PLAT_CSS_SCP_COM_SHARED_MEM_BASE
 #define BOM_CMD_HEADER		((bom_cmd_t *) BOM_SHARED_MEM)
 #define BOM_CMD_PAYLOAD		((void *) (BOM_SHARED_MEM + sizeof(bom_cmd_t)))
 
@@ -77,10 +77,10 @@ static void scp_boot_message_start(void)
 
 static void scp_boot_message_send(size_t payload_size)
 {
-	/* Make sure payload can be seen by SCP */
-	if (MHU_PAYLOAD_CACHED)
-		flush_dcache_range(BOM_SHARED_MEM,
-				   sizeof(bom_cmd_t) + payload_size);
+	/* Ensure that any write to the BOM payload area is seen by SCP before
+	 * we write to the MHU register. If these 2 writes were reordered by
+	 * the CPU then SCP would read stale payload data */
+	dmbst();
 
 	/* Send command to SCP */
 	mhu_secure_message_send(BOM_MHU_SLOT_ID);
@@ -99,9 +99,10 @@ static uint32_t scp_boot_message_wait(size_t size)
 		panic();
 	}
 
-	/* Make sure we see the reply from the SCP and not any stale data */
-	if (MHU_PAYLOAD_CACHED)
-		inv_dcache_range(BOM_SHARED_MEM, size);
+	/* Ensure that any read to the BOM payload area is done after reading
+	 * the MHU register. If these 2 reads were reordered then the CPU would
+	 * read invalid payload data */
+	dmbld();
 
 	return *(uint32_t *) BOM_SHARED_MEM;
 }
@@ -118,10 +119,10 @@ int scp_bootloader_transfer(void *image, unsigned int image_size)
 	cmd_info_payload_t *cmd_info_payload;
 	cmd_data_payload_t *cmd_data_payload;
 
-	assert((uintptr_t) image == BL30_BASE);
+	assert((uintptr_t) image == SCP_BL2_BASE);
 
 	if ((image_size == 0) || (image_size % 4 != 0)) {
-		ERROR("Invalid size for the BL3-0 image. Must be a multiple of "
+		ERROR("Invalid size for the SCP_BL2 image. Must be a multiple of "
 			"4 bytes and not zero (current size = 0x%x)\n",
 			image_size);
 		return -1;
@@ -134,7 +135,7 @@ int scp_bootloader_transfer(void *image, unsigned int image_size)
 
 	mhu_secure_init();
 
-	VERBOSE("Send info about the BL3-0 image to be transferred to SCP\n");
+	VERBOSE("Send info about the SCP_BL2 image to be transferred to SCP\n");
 
 	/*
 	 * Send information about the SCP firmware image about to be transferred
@@ -174,9 +175,9 @@ int scp_bootloader_transfer(void *image, unsigned int image_size)
 		return -1;
 	}
 
-	VERBOSE("Transferring BL3-0 image to SCP\n");
+	VERBOSE("Transferring SCP_BL2 image to SCP\n");
 
-	/* Transfer BL3-0 image to SCP */
+	/* Transfer SCP_BL2 image to SCP */
 	scp_boot_message_start();
 
 	BOM_CMD_HEADER->id = BOOT_CMD_DATA;

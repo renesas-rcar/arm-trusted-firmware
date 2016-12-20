@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2013-2016, ARM Limited and Contributors. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -28,10 +28,10 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <bl_common.h>
 #include <arch.h>
-#include <tsp.h>
 #include <asm_macros.S>
+#include <bl_common.h>
+#include <tsp.h>
 
 
 	/* ----------------------------------------------------
@@ -70,144 +70,118 @@
 	add	sp, sp, SCRATCH_REG_SIZE
 	.endm
 
+	/* ----------------------------------------------------
+	 * Common TSP interrupt handling routine
+	 * ----------------------------------------------------
+	 */
+	.macro	handle_tsp_interrupt label
+	/* Enable the SError interrupt */
+	msr	daifclr, #DAIF_ABT_BIT
+
+	save_caller_regs_and_lr
+	bl	tsp_common_int_handler
+	cbz	x0, interrupt_exit_\label
+
+	/*
+	 * This interrupt was not targetted to S-EL1 so send it to
+	 * the monitor and wait for execution to resume.
+	 */
+	smc	#0
+interrupt_exit_\label:
+	restore_caller_regs_and_lr
+	eret
+	.endm
+
 	.globl	tsp_exceptions
 
 	/* -----------------------------------------------------
 	 * TSP exception handlers.
 	 * -----------------------------------------------------
 	 */
-	.section	.vectors, "ax"; .align 11
-
-	.align	7
-tsp_exceptions:
+vector_base tsp_exceptions
 	/* -----------------------------------------------------
-	 * Current EL with _sp_el0 : 0x0 - 0x180. No exceptions
+	 * Current EL with _sp_el0 : 0x0 - 0x200. No exceptions
 	 * are expected and treated as irrecoverable errors.
 	 * -----------------------------------------------------
 	 */
-sync_exception_sp_el0:
-	wfi
-	b	sync_exception_sp_el0
+vector_entry sync_exception_sp_el0
+	bl	plat_panic_handler
 	check_vector_size sync_exception_sp_el0
 
-	.align	7
-
-irq_sp_el0:
-	b	irq_sp_el0
+vector_entry irq_sp_el0
+	bl	plat_panic_handler
 	check_vector_size irq_sp_el0
 
-	.align	7
-fiq_sp_el0:
-	b	fiq_sp_el0
+vector_entry fiq_sp_el0
+	bl	plat_panic_handler
 	check_vector_size fiq_sp_el0
 
-	.align	7
-serror_sp_el0:
-	b	serror_sp_el0
+vector_entry serror_sp_el0
+	bl	plat_panic_handler
 	check_vector_size serror_sp_el0
 
 
 	/* -----------------------------------------------------
-	 * Current EL with SPx: 0x200 - 0x380. Only IRQs/FIQs
+	 * Current EL with SPx: 0x200 - 0x400. Only IRQs/FIQs
 	 * are expected and handled
 	 * -----------------------------------------------------
 	 */
-	.align	7
-sync_exception_sp_elx:
-	wfi
-	b	sync_exception_sp_elx
+vector_entry sync_exception_sp_elx
+	bl	plat_panic_handler
 	check_vector_size sync_exception_sp_elx
 
-	.align	7
-irq_sp_elx:
-	/* Enable the SError interrupt */
-	msr	daifclr, #DAIF_ABT_BIT
-
-	save_caller_regs_and_lr
-	/* We just update some statistics in the handler */
-	bl	tsp_irq_received
-	/* Hand over control to the normal world to handle the IRQ */
-	smc	#0
-	/* The resume std smc starts from here */
-	restore_caller_regs_and_lr
-	eret
+vector_entry irq_sp_elx
+	handle_tsp_interrupt irq_sp_elx
 	check_vector_size irq_sp_elx
 
-	.align	7
-fiq_sp_elx:
-	/* Enable the SError interrupt */
-	msr	daifclr, #DAIF_ABT_BIT
-
-	save_caller_regs_and_lr
-	bl	tsp_fiq_handler
-	cbz	x0, fiq_sp_elx_done
-
-	/*
-	 * This FIQ was not targetted to S-EL1 so send it to
-	 * the monitor and wait for execution to resume.
-	 */
-	smc	#0
-fiq_sp_elx_done:
-	restore_caller_regs_and_lr
-	eret
+vector_entry fiq_sp_elx
+	handle_tsp_interrupt fiq_sp_elx
 	check_vector_size fiq_sp_elx
 
-	.align	7
-serror_sp_elx:
-	b	serror_sp_elx
+vector_entry serror_sp_elx
+	bl	plat_panic_handler
 	check_vector_size serror_sp_elx
 
 
 	/* -----------------------------------------------------
-	 * Lower EL using AArch64 : 0x400 - 0x580. No exceptions
+	 * Lower EL using AArch64 : 0x400 - 0x600. No exceptions
 	 * are handled since TSP does not implement a lower EL
 	 * -----------------------------------------------------
 	 */
-	.align	7
-sync_exception_aarch64:
-	wfi
-	b	sync_exception_aarch64
+vector_entry sync_exception_aarch64
+	bl	plat_panic_handler
 	check_vector_size sync_exception_aarch64
 
-	.align	7
-irq_aarch64:
-	b	irq_aarch64
+vector_entry irq_aarch64
+	bl	plat_panic_handler
 	check_vector_size irq_aarch64
 
-	.align	7
-fiq_aarch64:
-	b	fiq_aarch64
+vector_entry fiq_aarch64
+	bl	plat_panic_handler
 	check_vector_size fiq_aarch64
 
-	.align	7
-serror_aarch64:
-	b	serror_aarch64
+vector_entry serror_aarch64
+	bl	plat_panic_handler
 	check_vector_size serror_aarch64
 
 
 	/* -----------------------------------------------------
-	 * Lower EL using AArch32 : 0x600 - 0x780. No exceptions
+	 * Lower EL using AArch32 : 0x600 - 0x800. No exceptions
 	 * handled since the TSP does not implement a lower EL.
 	 * -----------------------------------------------------
 	 */
-	.align	7
-sync_exception_aarch32:
-	wfi
-	b	sync_exception_aarch32
+vector_entry sync_exception_aarch32
+	bl	plat_panic_handler
 	check_vector_size sync_exception_aarch32
 
-	.align	7
-irq_aarch32:
-	b	irq_aarch32
+vector_entry irq_aarch32
+	bl	plat_panic_handler
 	check_vector_size irq_aarch32
 
-	.align	7
-fiq_aarch32:
-	b	fiq_aarch32
+vector_entry fiq_aarch32
+	bl	plat_panic_handler
 	check_vector_size fiq_aarch32
 
-	.align	7
-serror_aarch32:
-	b	serror_aarch32
+vector_entry serror_aarch32
+	bl	plat_panic_handler
 	check_vector_size serror_aarch32
-	.align	7

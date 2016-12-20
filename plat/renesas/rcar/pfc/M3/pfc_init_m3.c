@@ -870,7 +870,7 @@ static void StartRtDma0_Descriptor(void)
 	reg &= (RCAR_PRODUCT_MASK | RCAR_CUT_MASK);
 	if (reg == (RCAR_PRODUCT_M3_CUT10)) {
 		/* Module stop clear */
-		while((mmio_read_32(CPG_MSTPSR0) & RMSTPCR0_RTDMAC) != 0U) {
+		while((mmio_read_32(CPG_RMSTPCR0) & RMSTPCR0_RTDMAC) != 0U) {
 			reg = mmio_read_32(CPG_RMSTPCR0);
 			reg &= ~RMSTPCR0_RTDMAC;
 			cpg_write(CPG_RMSTPCR0, reg);
@@ -1266,13 +1266,13 @@ void pfc_init_m3(void)
 	/* initialize DRV control register */
 	reg = mmio_read_32(PFC_DRVCTRL0);
 	reg = ((reg & DRVCTRL0_MASK) | DRVCTRL0_QSPI0_SPCLK(3)
-				  | DRVCTRL0_QSPI0_MOSI_IO0(3)
-				  | DRVCTRL0_QSPI0_MISO_IO1(3)
-				  | DRVCTRL0_QSPI0_IO2(3)
-				  | DRVCTRL0_QSPI0_IO3(3)
-				  | DRVCTRL0_QSPI0_SSL(3)
-				  | DRVCTRL0_QSPI1_SPCLK(3)
-				  | DRVCTRL0_QSPI1_MOSI_IO0(3));
+				     | DRVCTRL0_QSPI0_MOSI_IO0(3)
+				     | DRVCTRL0_QSPI0_MISO_IO1(3)
+				     | DRVCTRL0_QSPI0_IO2(3)
+				     | DRVCTRL0_QSPI0_IO3(3)
+				     | DRVCTRL0_QSPI0_SSL(3)
+				     | DRVCTRL0_QSPI1_SPCLK(3)
+				     | DRVCTRL0_QSPI1_MOSI_IO0(3));
 	pfc_reg_write(PFC_DRVCTRL0, reg);
 	reg = mmio_read_32(PFC_DRVCTRL1);
 	reg = ((reg & DRVCTRL1_MASK) | DRVCTRL1_QSPI1_MISO_IO1(3)
@@ -1290,14 +1290,14 @@ void pfc_init_m3(void)
 				     | DRVCTRL2_AVB_RD1(7)
 				     | DRVCTRL2_AVB_RD2(7)
 				     | DRVCTRL2_AVB_RD3(7)
-				     | DRVCTRL2_AVB_TX_CTL(7)
-				     | DRVCTRL2_AVB_TXC(7)
-				     | DRVCTRL2_AVB_TD0(7));
+				     | DRVCTRL2_AVB_TX_CTL(3)
+				     | DRVCTRL2_AVB_TXC(3)
+				     | DRVCTRL2_AVB_TD0(3));
 	pfc_reg_write(PFC_DRVCTRL2, reg);
 	reg = mmio_read_32(PFC_DRVCTRL3);
-	reg = ((reg & DRVCTRL3_MASK) | DRVCTRL3_AVB_TD1(7)
-				     | DRVCTRL3_AVB_TD2(7)
-				     | DRVCTRL3_AVB_TD3(7)
+	reg = ((reg & DRVCTRL3_MASK) | DRVCTRL3_AVB_TD1(3)
+				     | DRVCTRL3_AVB_TD2(3)
+				     | DRVCTRL3_AVB_TD3(3)
 				     | DRVCTRL3_AVB_TXCREFCLK(7)
 				     | DRVCTRL3_AVB_MDIO(7)
 				     | DRVCTRL3_AVB_MDC(7)
@@ -1319,30 +1319,30 @@ void pfc_init_m3(void)
 				     | DRVCTRL5_PWM0(7)
 				     | DRVCTRL5_PWM1(7)
 				     | DRVCTRL5_PWM2(7)
-				     | DRVCTRL5_A0(7)
-				     | DRVCTRL5_A1(7)
-				     | DRVCTRL5_A2(7)
-				     | DRVCTRL5_A3(7));
+				     | DRVCTRL5_A0(3)
+				     | DRVCTRL5_A1(3)
+				     | DRVCTRL5_A2(3)
+				     | DRVCTRL5_A3(3));
 	pfc_reg_write(PFC_DRVCTRL5, reg);
 	reg = mmio_read_32(PFC_DRVCTRL6);
-	reg = ((reg & DRVCTRL6_MASK) | DRVCTRL6_A4(7)
-				     | DRVCTRL6_A5(7)
-				     | DRVCTRL6_A6(7)
-				     | DRVCTRL6_A7(7)
+	reg = ((reg & DRVCTRL6_MASK) | DRVCTRL6_A4(3)
+				     | DRVCTRL6_A5(3)
+				     | DRVCTRL6_A6(3)
+				     | DRVCTRL6_A7(3)
 				     | DRVCTRL6_A8(7)
 				     | DRVCTRL6_A9(7)
 				     | DRVCTRL6_A10(7)
 				     | DRVCTRL6_A11(7));
 	pfc_reg_write(PFC_DRVCTRL6, reg);
 	reg = mmio_read_32(PFC_DRVCTRL7);
-	reg = ((reg & DRVCTRL7_MASK) | DRVCTRL7_A12(7)
-				     | DRVCTRL7_A13(7)
-				     | DRVCTRL7_A14(7)
-				     | DRVCTRL7_A15(7)
-				     | DRVCTRL7_A16(7)
-				     | DRVCTRL7_A17(7)
-				     | DRVCTRL7_A18(7)
-				     | DRVCTRL7_A19(7));
+	reg = ((reg & DRVCTRL7_MASK) | DRVCTRL7_A12(3)
+				     | DRVCTRL7_A13(3)
+				     | DRVCTRL7_A14(3)
+				     | DRVCTRL7_A15(3)
+				     | DRVCTRL7_A16(3)
+				     | DRVCTRL7_A17(3)
+				     | DRVCTRL7_A18(3)
+				     | DRVCTRL7_A19(3));
 	pfc_reg_write(PFC_DRVCTRL7, reg);
 	reg = mmio_read_32(PFC_DRVCTRL8);
 	reg = ((reg & DRVCTRL8_MASK) | DRVCTRL8_CLKOUT(7)
@@ -1367,16 +1367,16 @@ void pfc_init_m3(void)
 	reg = mmio_read_32(PFC_DRVCTRL10);
 	reg = ((reg & DRVCTRL10_MASK) | DRVCTRL10_D6(7)
 				      | DRVCTRL10_D7(7)
-				      | DRVCTRL10_D8(7)
-				      | DRVCTRL10_D9(7)
-				      | DRVCTRL10_D10(7)
-				      | DRVCTRL10_D11(7)
-				      | DRVCTRL10_D12(7)
-				      | DRVCTRL10_D13(7));
+				      | DRVCTRL10_D8(3)
+				      | DRVCTRL10_D9(3)
+				      | DRVCTRL10_D10(3)
+				      | DRVCTRL10_D11(3)
+				      | DRVCTRL10_D12(3)
+				      | DRVCTRL10_D13(3));
 	pfc_reg_write(PFC_DRVCTRL10, reg);
 	reg = mmio_read_32(PFC_DRVCTRL11);
-	reg = ((reg & DRVCTRL11_MASK) | DRVCTRL11_D14(7)
-				      | DRVCTRL11_D15(7)
+	reg = ((reg & DRVCTRL11_MASK) | DRVCTRL11_D14(3)
+				      | DRVCTRL11_D15(3)
 				      | DRVCTRL11_AVS1(7)
 				      | DRVCTRL11_AVS2(7)
 				      | DRVCTRL11_HDMI0_CEC(7)
@@ -1387,7 +1387,7 @@ void pfc_init_m3(void)
 	reg = mmio_read_32(PFC_DRVCTRL12);
 	reg = ((reg & DRVCTRL12_MASK) | DRVCTRL12_DU_DOTCLKIN2(3)
 				      | DRVCTRL12_DU_DOTCLKIN3(3)
-				         | DRVCTRL12_DU_FSCLKST(3)
+				      | DRVCTRL12_DU_FSCLKST(3)
 				      | DRVCTRL12_DU_TMS(3));
 	pfc_reg_write(PFC_DRVCTRL12, reg);
 	reg = mmio_read_32(PFC_DRVCTRL13);

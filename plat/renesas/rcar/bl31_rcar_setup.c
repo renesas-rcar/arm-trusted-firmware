@@ -31,7 +31,6 @@
 
 #include <arch.h>
 #include <arch_helpers.h>
-#include <arm_gic.h>
 #include <assert.h>
 #include <bl_common.h>
 #include <bl31.h>
@@ -40,6 +39,7 @@
 #include <platform.h>
 #include <stddef.h>
 #include <debug.h>
+#include <plat_arm.h>
 #include "drivers/pwrc/rcar_pwrc.h"
 #include "rcar_def.h"
 #include "rcar_private.h"
@@ -97,26 +97,6 @@ static entry_point_info_t bl33_image_ep_info;
  ******************************************************************************/
 static bl31_params_t *bl2_to_bl31_params;
 #endif
-
-/* Array of secure interrupts to be configured by the gic driver */
-const unsigned int irq_sec_array[] = {
-	ARM_IRQ_SEC_PHY_TIMER,		/* 29		*/
-	ARM_IRQ_SEC_SGI_0,		/* 8		*/
-	ARM_IRQ_SEC_SGI_1,		/* 9		*/
-	ARM_IRQ_SEC_SGI_2,		/* 10		*/
-	ARM_IRQ_SEC_SGI_3,		/* 11		*/
-	ARM_IRQ_SEC_SGI_4,		/* 12		*/
-	ARM_IRQ_SEC_SGI_5,		/* 13		*/
-	ARM_IRQ_SEC_SGI_6,		/* 14		*/
-	ARM_IRQ_SEC_SGI_7,		/* 15		*/
-	ARM_IRQ_SEC_RPC,		/* 70		*/
-	ARM_IRQ_SEC_TIMER,		/* 166		*/
-	ARM_IRQ_SEC_TIMER_UP,		/* 171		*/
-	ARM_IRQ_SEC_WDT,		/* 173		*/
-	ARM_IRQ_SEC_CRYPT,		/* 102		*/
-	ARM_IRQ_SEC_CRYPT_SecPKA,	/* 97		*/
-	ARM_IRQ_SEC_CRYPT_PubPKA	/* 98		*/
-};
 
 uint32_t rcar_boot_kind_flag __attribute__((section("data")));
 
@@ -224,10 +204,9 @@ void bl31_early_platform_setup(bl31_params_t *from_bl2,
 void bl31_platform_setup(void)
 {
 
-	/* Initialize the gic cpu and distributor interfaces */
-	arm_gic_init(RCAR_GICC_BASE, RCAR_GICD_BASE, RCAR_GICR_BASE,
-			irq_sec_array, ARRAY_SIZE(irq_sec_array));
-	arm_gic_setup();
+	/* Initialize the GIC driver, cpu and distributor interfaces */
+	plat_arm_gic_driver_init();
+	plat_arm_gic_init();
 
 	/* Enable and initialize the System level generic timer */
 	mmio_write_32(RCAR_CNTC_BASE + CNTCR_OFF, CNTCR_FCREQ(0) | CNTCR_EN);

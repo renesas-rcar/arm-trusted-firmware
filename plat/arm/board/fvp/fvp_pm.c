@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2015, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2013-2016, ARM Limited and Contributors. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -30,7 +30,6 @@
 
 #include <arch_helpers.h>
 #include <arm_config.h>
-#include <arm_gic.h>
 #include <assert.h>
 #include <debug.h>
 #include <errno.h>
@@ -66,24 +65,13 @@ const unsigned int arm_pm_idle_states[] = {
 #endif
 
 /*******************************************************************************
- * Private FVP function to program the mailbox for a cpu before it is released
- * from reset.
- ******************************************************************************/
-static void fvp_program_mailbox(uintptr_t address)
-{
-	uintptr_t *mailbox = (void *) MBOX_BASE;
-	*mailbox = address;
-	flush_dcache_range((uintptr_t) mailbox, sizeof(*mailbox));
-}
-
-/*******************************************************************************
  * Function which implements the common FVP specific operations to power down a
  * cpu in response to a CPU_OFF or CPU_SUSPEND request.
  ******************************************************************************/
 static void fvp_cpu_pwrdwn_common(void)
 {
 	/* Prevent interrupts from spuriously waking up this cpu */
-	arm_gic_cpuif_deactivate();
+	plat_arm_gic_cpuif_disable();
 
 	/* Program the power controller to power off this cpu. */
 	fvp_pwrc_write_ppoffr(read_mpidr_el1());
@@ -98,11 +86,47 @@ static void fvp_cluster_pwrdwn_common(void)
 	uint64_t mpidr = read_mpidr_el1();
 
 	/* Disable coherency if this cluster is to be turned off */
-	fvp_cci_disable();
+	fvp_interconnect_disable();
 
 	/* Program the power controller to turn the cluster off */
 	fvp_pwrc_write_pcoffr(mpidr);
 }
+
+static void fvp_power_domain_on_finish_common(const psci_power_state_t *target_state)
+{
+	unsigned long mpidr;
+
+	assert(target_state->pwr_domain_state[ARM_PWR_LVL0] ==
+					ARM_LOCAL_STATE_OFF);
+
+	/* Get the mpidr for this cpu */
+	mpidr = read_mpidr_el1();
+
+	/* Perform the common cluster specific operations */
+	if (target_state->pwr_domain_state[ARM_PWR_LVL1] ==
+					ARM_LOCAL_STATE_OFF) {
+		/*
+		 * This CPU might have woken up whilst the cluster was
+		 * attempting to power down. In this case the FVP power
+		 * controller will have a pending cluster power off request
+		 * which needs to be cleared by writing to the PPONR register.
+		 * This prevents the power controller from interpreting a
+		 * subsequent entry of this cpu into a simple wfi as a power
+		 * down request.
+		 */
+		fvp_pwrc_write_pponr(mpidr);
+
+		/* Enable coherency if this cluster was off */
+		fvp_interconnect_enable();
+	}
+
+	/*
+	 * Clear PWKUPR.WEN bit to ensure interrupts do not interfere
+	 * with a cpu power down unless the bit is set again
+	 */
+	fvp_pwrc_clr_wen(mpidr);
+}
+
 
 /*******************************************************************************
  * FVP handler called when a CPU is about to enter standby.
@@ -130,11 +154,9 @@ int fvp_pwr_domain_on(u_register_t mpidr)
 	unsigned int psysr;
 
 	/*
-	 * Ensure that we do not cancel an inflight power off request
-	 * for the target cpu. That would leave it in a zombie wfi.
-	 * Wait for it to power off, program the jump address for the
-	 * target cpu and then program the power controller to turn
-	 * that cpu on
+	 * Ensure that we do not cancel an inflight power off request for the
+	 * target cpu. That would leave it in a zombie wfi. Wait for it to power
+	 * off and then program the power controller to turn that CPU on.
 	 */
 	do {
 		psysr = fvp_pwrc_read_psysr(mpidr);
@@ -207,43 +229,13 @@ void fvp_pwr_domain_suspend(const psci_power_state_t *target_state)
  ******************************************************************************/
 void fvp_pwr_domain_on_finish(const psci_power_state_t *target_state)
 {
-	unsigned long mpidr;
-
-	assert(target_state->pwr_domain_state[ARM_PWR_LVL0] ==
-					ARM_LOCAL_STATE_OFF);
-
-	/* Get the mpidr for this cpu */
-	mpidr = read_mpidr_el1();
-
-	/* Perform the common cluster specific operations */
-	if (target_state->pwr_domain_state[ARM_PWR_LVL1] ==
-					ARM_LOCAL_STATE_OFF) {
-		/*
-		 * This CPU might have woken up whilst the cluster was
-		 * attempting to power down. In this case the FVP power
-		 * controller will have a pending cluster power off request
-		 * which needs to be cleared by writing to the PPONR register.
-		 * This prevents the power controller from interpreting a
-		 * subsequent entry of this cpu into a simple wfi as a power
-		 * down request.
-		 */
-		fvp_pwrc_write_pponr(mpidr);
-
-		/* Enable coherency if this cluster was off */
-		fvp_cci_enable();
-	}
-
-	/*
-	 * Clear PWKUPR.WEN bit to ensure interrupts do not interfere
-	 * with a cpu power down unless the bit is set again
-	 */
-	fvp_pwrc_clr_wen(mpidr);
+	fvp_power_domain_on_finish_common(target_state);
 
 	/* Enable the gic cpu interface */
-	arm_gic_cpuif_setup();
+	plat_arm_gic_pcpu_init();
 
-	/* TODO: This setup is needed only after a cold boot */
-	arm_gic_pcpu_distif_setup();
+	/* Program the gic per-cpu distributor or re-distributor interface */
+	plat_arm_gic_cpuif_enable();
 }
 
 /*******************************************************************************
@@ -262,7 +254,10 @@ void fvp_pwr_domain_suspend_finish(const psci_power_state_t *target_state)
 					ARM_LOCAL_STATE_RET)
 		return;
 
-	fvp_pwr_domain_on_finish(target_state);
+	fvp_power_domain_on_finish_common(target_state);
+
+	/* Enable the gic cpu interface */
+	plat_arm_gic_cpuif_enable();
 }
 
 /*******************************************************************************
@@ -292,10 +287,47 @@ static void __dead2 fvp_system_reset(void)
 	panic();
 }
 
+static int fvp_node_hw_state(u_register_t target_cpu,
+			     unsigned int power_level)
+{
+	unsigned int psysr;
+	int ret;
+
+	/*
+	 * The format of 'power_level' is implementation-defined, but 0 must
+	 * mean a CPU. We also allow 1 to denote the cluster
+	 */
+	if (power_level != ARM_PWR_LVL0 && power_level != ARM_PWR_LVL1)
+		return PSCI_E_INVALID_PARAMS;
+
+	/*
+	 * Read the status of the given MPDIR from FVP power controller. The
+	 * power controller only gives us on/off status, so map that to expected
+	 * return values of the PSCI call
+	 */
+	psysr = fvp_pwrc_read_psysr(target_cpu);
+	if (psysr == PSYSR_INVALID)
+		return PSCI_E_INVALID_PARAMS;
+
+	switch (power_level) {
+	case ARM_PWR_LVL0:
+		ret = (psysr & PSYSR_AFF_L0) ? HW_ON : HW_OFF;
+		break;
+	case ARM_PWR_LVL1:
+		ret = (psysr & PSYSR_AFF_L1) ? HW_ON : HW_OFF;
+		break;
+	default:
+		assert(0);
+	}
+
+	return ret;
+}
+
 /*******************************************************************************
- * Export the platform handlers to enable psci to invoke them
+ * Export the platform handlers via plat_arm_psci_pm_ops. The ARM Standard
+ * platform layer will take care of registering the handlers with PSCI.
  ******************************************************************************/
-static const plat_psci_ops_t fvp_plat_psci_ops = {
+const plat_psci_ops_t plat_arm_psci_pm_ops = {
 	.cpu_standby = fvp_cpu_standby,
 	.pwr_domain_on = fvp_pwr_domain_on,
 	.pwr_domain_off = fvp_pwr_domain_off,
@@ -305,18 +337,6 @@ static const plat_psci_ops_t fvp_plat_psci_ops = {
 	.system_off = fvp_system_off,
 	.system_reset = fvp_system_reset,
 	.validate_power_state = arm_validate_power_state,
-	.validate_ns_entrypoint = arm_validate_ns_entrypoint
+	.validate_ns_entrypoint = arm_validate_ns_entrypoint,
+	.get_node_hw_state = fvp_node_hw_state
 };
-
-/*******************************************************************************
- * Export the platform specific psci ops & initialize the fvp power controller
- ******************************************************************************/
-int plat_setup_psci_ops(uintptr_t sec_entrypoint,
-				const plat_psci_ops_t **psci_ops)
-{
-	*psci_ops = &fvp_plat_psci_ops;
-
-	/* Program the jump address */
-	fvp_program_mailbox(sec_entrypoint);
-	return 0;
-}

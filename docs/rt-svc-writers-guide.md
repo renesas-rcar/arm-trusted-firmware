@@ -19,7 +19,7 @@ Contents
 ----------------
 
 This document describes how to add a runtime service to the EL3 Runtime
-Firmware component of ARM Trusted Firmware (BL3-1).
+Firmware component of ARM Trusted Firmware (BL31).
 
 Software executing in the normal world and in the trusted world at exception
 levels lower than EL3 will request runtime services using the Secure Monitor
@@ -30,9 +30,9 @@ results are returned.
 
 SMC Functions are grouped together based on the implementor of the service, for
 example a subset of the Function IDs are designated as "OEM Calls" (see [SMCCC]
-for full details). The EL3 runtime services framework in BL3-1 enables the
+for full details). The EL3 runtime services framework in BL31 enables the
 independent implementation of services for each group, which are then compiled
-into the BL3-1 image. This simplifies the integration of common software from
+into the BL31 image. This simplifies the integration of common software from
 ARM to support [PSCI], Secure Monitor for a Trusted OS and SoC specific
 software. The common runtime services framework ensures that SMC Functions are
 dispatched to their respective service implementation - the [Firmware Design]
@@ -95,8 +95,7 @@ handler will be responsible for all SMC Functions within a given service type.
 
 ARM Trusted Firmware has a [`services`] directory in the source tree under which
 each owning entity can place the implementation of its runtime service.  The
-[PSCI] implementation is located here in the [`services/std_svc/psci`]
-directory.
+[PSCI] implementation is located here in the [`lib/psci`] directory.
 
 Runtime service sources will need to include the [`runtime_svc.h`] header file.
 
@@ -114,7 +113,7 @@ initialization and call handler functions.
     is also used for diagnostic purposes
 
 *   `_start` and `_end` values must be based on the `OEN_*` values defined in
-    [`runtime_svc.h`]
+    [`smcc.h`]
 
 *   `_type` must be one of `SMC_TYPE_FAST` or `SMC_TYPE_STD`
 
@@ -124,12 +123,12 @@ initialization and call handler functions.
 
 *   `_smch` is the SMC handler function with the `rt_svc_handle` signature:
 
-        typedef uint64_t (*rt_svc_handle)(uint32_t smc_fid,
-                                          uint64_t x1, uint64_t x2,
-                                          uint64_t x3, uint64_t x4,
-                                          void *reserved,
+        typedef uintptr_t (*rt_svc_handle_t)(uint32_t smc_fid,
+                                          u_register_t x1, u_register_t x2,
+                                          u_register_t x3, u_register_t x4,
+                                          void *cookie,
                                           void *handle,
-                                          uint64_t flags);
+                                          u_register_t flags);
 
 Details of the requirements and behavior of the two callbacks is provided in
 the following sections.
@@ -189,12 +188,12 @@ SMC calls for a service are forwarded by the framework to the service's SMC
 handler function (`_smch` in the service declaration). This function must have
 the following signature:
 
-    typedef uint64_t (*rt_svc_handle)(uint32_t smc_fid,
-                                      uint64_t x1, uint64_t x2,
-                                      uint64_t x3, uint64_t x4,
-                                      void *reserved,
-                                      void *handle,
-                                      uint64_t flags);
+    typedef uintptr_t (*rt_svc_handle_t)(uint32_t smc_fid,
+                                       u_register_t x1, u_register_t x2,
+                                       u_register_t x3, u_register_t x4,
+                                       void *cookie,
+                                       void *handle,
+                                       u_register_t flags);
 
 The handler is responsible for:
 
@@ -253,10 +252,9 @@ The handler is responsible for:
         SMC_RET3(handle, x0, x1, x2);
         SMC_RET4(handle, x0, x1, x2, x3);
 
-The `reserved` parameter to the handler is reserved for future use and can be
-ignored. The value returned by a SMC handler is also reserved for future use -
-completion of the handler function must always be via one of the `SMC_RETn()`
-macros.
+The `cookie` parameter to the handler is reserved for future use and can be
+ignored. The `handle` is returned by the SMC handler - completion of the
+handler function must always be via one of the `SMC_RETn()` macros.
 
 NOTE: The PSCI and Test Secure-EL1 Payload Dispatcher services do not follow
 all of the above requirements yet.
@@ -290,20 +288,20 @@ between the normal and secure worlds, deliver SMC Calls through to Secure-EL1
 and generally manage the Secure-EL1 Payload through CPU power-state transitions.
 
 TODO: Provide details of the additional work required to implement a SPD and
-the BL3-1 support for these services. Or a reference to the document that will
+the BL31 support for these services. Or a reference to the document that will
 provide this information....
 
 
 - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-_Copyright (c) 2014, ARM Limited and Contributors. All rights reserved._
+_Copyright (c) 2014-2015, ARM Limited and Contributors. All rights reserved._
 
 
-[Firmware Design]:  ./firmware-design.md
-
+[Firmware Design]:          ./firmware-design.md
 [`services`]:               ../services
-[`services/std_svc/psci`]:  ../services/std_svc/psci
+[`lib/psci`]:               ../lib/psci
 [`std_svc_setup.c`]:        ../services/std_svc/std_svc_setup.c
-[`runtime_svc.h`]:          ../include/runtime_svc.h
+[`runtime_svc.h`]:          ../include/common/runtime_svc.h
+[`smcc.h`]:                 ../include/lib/smcc.h
 [PSCI]:                     http://infocenter.arm.com/help/topic/com.arm.doc.den0022c/DEN0022C_Power_State_Coordination_Interface.pdf "Power State Coordination Interface PDD (ARM DEN 0022C)"
 [SMCCC]:                    http://infocenter.arm.com/help/topic/com.arm.doc.den0028a/index.html "SMC Calling Convention PDD (ARM DEN 0028A)"

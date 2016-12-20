@@ -34,7 +34,7 @@
 #include "qos_init_h3_es10.h"
 
 
-#define	RCAR_QOS_VERSION		"rev.0.32"
+#define	RCAR_QOS_VERSION		"rev.0.33"
 
 #define	RCAR_QOS_NONE			(3U)
 #define	RCAR_QOS_TYPE_DEFAULT		(0U)
@@ -42,6 +42,7 @@
 #define	RCAR_DRAM_SPLIT_LINEAR		(0U)
 #define	RCAR_DRAM_SPLIT_4CH		(1U)
 #define	RCAR_DRAM_SPLIT_2CH		(2U)
+#define	RCAR_DRAM_SPLIT_AUTO		(3U)
 
 #define	DBSC_BASE			(0xE6790000U)
 #define	DBSC_AXARB			(DBSC_BASE + 0x0800U)
@@ -316,7 +317,8 @@ static const mstat_slot_t mstat_be[] = {
 void qos_init_h3_es10(void)
 {
 	/* DRAM Split Address mapping */
-#if RCAR_DRAM_SPLIT == RCAR_DRAM_SPLIT_4CH
+#if (RCAR_DRAM_SPLIT == RCAR_DRAM_SPLIT_4CH) || \
+    (RCAR_DRAM_SPLIT == RCAR_DRAM_SPLIT_AUTO)
 	NOTICE("BL2: DRAM Split is 4ch\n");
 	io_write_32(AXI_ADSPLCR0, ADSPLCR0_ADRMODE_DEFAULT
 				  | ADSPLCR0_SPLITSEL(0xFFU)

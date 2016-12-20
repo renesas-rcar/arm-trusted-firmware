@@ -48,8 +48,8 @@
  */
 typedef struct auth_img_desc_s {
 	unsigned int img_id;
-	const struct auth_img_desc_s *parent;
 	img_type_t img_type;
+	const struct auth_img_desc_s *parent;
 	auth_method_desc_t img_auth_methods[AUTH_METHOD_NUM];
 	auth_param_desc_t authenticated_data[COT_MAX_VERIFIED_PARAMS];
 } auth_img_desc_t;
@@ -65,7 +65,7 @@ int auth_mod_verify_img(unsigned int img_id,
 #define REGISTER_COT(_cot) \
 	const auth_img_desc_t *const cot_desc_ptr = \
 			(const auth_img_desc_t *const)&_cot[0]; \
-	unsigned int auth_img_flags[sizeof(_cot)/sizeof(_cot[0])];
+	unsigned int auth_img_flags[sizeof(_cot)/sizeof(_cot[0])]
 
 #endif /* TRUSTED_BOARD_BOOT */
 

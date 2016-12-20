@@ -44,14 +44,14 @@
 #define BL33_IMAGE_NAME			"bl33.bin"
 
 #if TRUSTED_BOARD_BOOT
-#define BL2_CERT_NAME			"bl2.crt"
+#define TRUSTED_BOOT_FW_CERT_NAME	"tb_fw.crt"
 #define TRUSTED_KEY_CERT_NAME		"trusted_key.crt"
-#define BL31_KEY_CERT_NAME		"bl31_key.crt"
-#define BL32_KEY_CERT_NAME		"bl32_key.crt"
-#define BL33_KEY_CERT_NAME		"bl33_key.crt"
-#define BL31_CERT_NAME			"bl31.crt"
-#define BL32_CERT_NAME			"bl32.crt"
-#define BL33_CERT_NAME			"bl33.crt"
+#define SOC_FW_KEY_CERT_NAME		"soc_fw_key.crt"
+#define TOS_FW_KEY_CERT_NAME		"tos_fw_key.crt"
+#define NT_FW_KEY_CERT_NAME		"nt_fw_key.crt"
+#define SOC_FW_CONTENT_CERT_NAME	"soc_fw_content.crt"
+#define TOS_FW_CONTENT_CERT_NAME	"tos_fw_content.crt"
+#define NT_FW_CONTENT_CERT_NAME		"nt_fw_content.crt"
 #endif /* TRUSTED_BOARD_BOOT */
 
 /* IO devices */
@@ -76,36 +76,36 @@ static const io_file_spec_t sh_file_spec[] = {
 		.mode = FOPEN_MODE_RB
 	},
 #if TRUSTED_BOARD_BOOT
-	[BL2_CERT_ID] = {
-		.path = BL2_CERT_NAME,
+	[TRUSTED_BOOT_FW_CERT_ID] = {
+		.path = TRUSTED_BOOT_FW_CERT_NAME,
 		.mode = FOPEN_MODE_RB
 	},
 	[TRUSTED_KEY_CERT_ID] = {
 		.path = TRUSTED_KEY_CERT_NAME,
 		.mode = FOPEN_MODE_RB
 	},
-	[BL31_KEY_CERT_ID] = {
-		.path = BL31_KEY_CERT_NAME,
+	[SOC_FW_KEY_CERT_ID] = {
+		.path = SOC_FW_KEY_CERT_NAME,
 		.mode = FOPEN_MODE_RB
 	},
-	[BL32_KEY_CERT_ID] = {
-		.path = BL32_KEY_CERT_NAME,
+	[TRUSTED_OS_FW_KEY_CERT_ID] = {
+		.path = TOS_FW_KEY_CERT_NAME,
 		.mode = FOPEN_MODE_RB
 	},
-	[BL33_KEY_CERT_ID] = {
-		.path = BL33_KEY_CERT_NAME,
+	[NON_TRUSTED_FW_KEY_CERT_ID] = {
+		.path = NT_FW_KEY_CERT_NAME,
 		.mode = FOPEN_MODE_RB
 	},
-	[BL31_CERT_ID] = {
-		.path = BL31_CERT_NAME,
+	[SOC_FW_CONTENT_CERT_ID] = {
+		.path = SOC_FW_CONTENT_CERT_NAME,
 		.mode = FOPEN_MODE_RB
 	},
-	[BL32_CERT_ID] = {
-		.path = BL32_CERT_NAME,
+	[TRUSTED_OS_FW_CONTENT_CERT_ID] = {
+		.path = TOS_FW_CONTENT_CERT_NAME,
 		.mode = FOPEN_MODE_RB
 	},
-	[BL33_CERT_ID] = {
-		.path = BL33_CERT_NAME,
+	[NON_TRUSTED_FW_CONTENT_CERT_ID] = {
+		.path = NT_FW_CONTENT_CERT_NAME,
 		.mode = FOPEN_MODE_RB
 	},
 #endif /* TRUSTED_BOARD_BOOT */
@@ -114,14 +114,14 @@ static const io_file_spec_t sh_file_spec[] = {
 
 static int open_semihosting(const uintptr_t spec)
 {
-	int result = IO_FAIL;
+	int result;
 	uintptr_t local_image_handle;
 
 	/* See if the file exists on semi-hosting.*/
 	result = io_dev_init(sh_dev_handle, (uintptr_t)NULL);
-	if (result == IO_SUCCESS) {
+	if (result == 0) {
 		result = io_open(sh_dev_handle, spec, &local_image_handle);
-		if (result == IO_SUCCESS) {
+		if (result == 0) {
 			VERBOSE("Using Semi-hosting IO\n");
 			io_close(local_image_handle);
 		}
@@ -137,11 +137,11 @@ void plat_arm_io_setup(void)
 
 	/* Register the additional IO devices on this platform */
 	io_result = register_io_dev_sh(&sh_dev_con);
-	assert(io_result == IO_SUCCESS);
+	assert(io_result == 0);
 
 	/* Open connections to devices and cache the handles */
 	io_result = io_dev_open(sh_dev_con, (uintptr_t)NULL, &sh_dev_handle);
-	assert(io_result == IO_SUCCESS);
+	assert(io_result == 0);
 
 	/* Ignore improbable errors in release builds */
 	(void)io_result;
@@ -154,7 +154,7 @@ int plat_arm_get_alt_image_source(unsigned int image_id, uintptr_t *dev_handle,
 				  uintptr_t *image_spec)
 {
 	int result = open_semihosting((const uintptr_t)&sh_file_spec[image_id]);
-	if (result == IO_SUCCESS) {
+	if (result == 0) {
 		*dev_handle = sh_dev_handle;
 		*image_spec = (uintptr_t)&sh_file_spec[image_id];
 	}

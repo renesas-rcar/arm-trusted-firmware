@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2015-2016, ARM Limited and Contributors. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -29,25 +29,8 @@
  */
 
 #include <arch.h>
-#include <psci.h>
 #include <plat_arm.h>
 #include <platform_def.h>
-
-#define get_arm_cluster_core_count(mpidr)\
-		(((mpidr) & 0x100) ? PLAT_ARM_CLUSTER1_CORE_COUNT :\
-				PLAT_ARM_CLUSTER0_CORE_COUNT)
-
-/* The power domain tree descriptor which need to be exported by ARM platforms */
-extern const unsigned char arm_power_domain_tree_desc[];
-
-
-/*******************************************************************************
- * This function returns the ARM default topology tree information.
- ******************************************************************************/
-const unsigned char *plat_get_power_domain_tree_desc(void)
-{
-	return arm_power_domain_tree_desc;
-}
 
 /*******************************************************************************
  * This function validates an MPIDR by checking whether it falls within the
@@ -66,12 +49,12 @@ int arm_check_mpidr(u_register_t mpidr)
 	cluster_id = (mpidr >> MPIDR_AFF1_SHIFT) & MPIDR_AFFLVL_MASK;
 	cpu_id = (mpidr >> MPIDR_AFF0_SHIFT) & MPIDR_AFFLVL_MASK;
 
-	if (cluster_id >= ARM_CLUSTER_COUNT)
+	if (cluster_id >= PLAT_ARM_CLUSTER_COUNT)
 		return -1;
 
 	/* Validate cpu_id by checking whether it represents a CPU in
 	   one of the two clusters present on the platform. */
-	if (cpu_id >= get_arm_cluster_core_count(mpidr))
+	if (cpu_id >= plat_arm_get_cluster_core_count(mpidr))
 		return -1;
 
 	return 0;

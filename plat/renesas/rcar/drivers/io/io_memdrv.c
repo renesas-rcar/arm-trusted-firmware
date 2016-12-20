@@ -35,6 +35,7 @@
 #include <io_storage.h>
 #include <string.h>
 #include "io_common.h"
+#include "io_private.h"
 #include "io_memdrv.h"
 #include "dma_driver.h"
 

@@ -95,7 +95,7 @@
 
 #define DRAM1_NS_BASE		(DRAM1_BASE + 0x8000000U)
 #define DRAM1_NS_SIZE		(DRAM1_SIZE - DRAM1_NS_BASE)
-#define DRAM1_NS_END		(DRAM1_NS_BASE + DRAM1_NS_SIZE - 1)
+#define DRAM1_NS_END		((DRAM1_NS_BASE + DRAM1_NS_SIZE) - 0x00000001U)
 
 #define DRAM_LIMIT		MAKE_ULL(0x0000010000000000)	/* AArch64 */
 
@@ -121,7 +121,7 @@
 #define RCAR_MMAP_ENTRIES		7
 #endif
 #if IMAGE_BL31
-#define RCAR_MMAP_ENTRIES		8
+#define RCAR_MMAP_ENTRIES		9
 #endif
 
 /* Load address of BL33 in the RCAR port */
@@ -244,6 +244,7 @@
 #define RCAR_PRODUCT_M3			(0x00005200U)
 #define RCAR_CUT_ES10			(0x00000000U)
 #define RCAR_CUT_ES11			(0x00000001U)
+#define RCAR_CUT_ES20			(0x00000010U)
 #define RCAR_MAJOR_MASK			(0x000000F0U)
 #define RCAR_MINOR_MASK			(0x0000000FU)
 #define RCAR_PRODUCT_SHIFT		(8U)
@@ -284,10 +285,8 @@
  *  Shared Data
  ******************************************************************************/
 
-#define	RCAR_BL31_MAIL_BASE	(0x4403E000)
-#define	RCAR_BL31_MAIL_SIZE	(0x00002000)
-#define	RCAR_BL31_WORK_BASE	(0x44022000)
-#define	RCAR_BL31_WORK_SIZE	(0x0001C000)
+#define	RCAR_BL31_CRASH_BASE	(0x4403F000U)
+#define	RCAR_BL31_CRASH_SIZE	(0x00001000U)
 
 /* Entrypoint mailboxes */
 #define MBOX_BASE		RCAR_SHARED_MEM_BASE

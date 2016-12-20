@@ -29,7 +29,12 @@
 # POSSIBILITY OF SUCH DAMAGE.
 #
 
-ifdef RCAR_LSI_CUT_COMPAT
+ifeq (${RCAR_LSI},${RCAR_AUTO})
+    BL2_SOURCES += plat/renesas/rcar/qos/H3/ES10/qos_init_h3_es10.c
+    BL2_SOURCES += plat/renesas/rcar/qos/H3/WS11/qos_init_h3_ws11.c
+    BL2_SOURCES += plat/renesas/rcar/qos/M3/qos_init_m3_es10.c
+
+else ifdef RCAR_LSI_CUT_COMPAT
   ifeq (${RCAR_LSI},${RCAR_H3})
     BL2_SOURCES += plat/renesas/rcar/qos/H3/ES10/qos_init_h3_es10.c
     BL2_SOURCES += plat/renesas/rcar/qos/H3/WS11/qos_init_h3_ws11.c

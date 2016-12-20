@@ -37,8 +37,8 @@
 /* Trusted Boot Firmware BL2 */
 #define BL2_IMAGE_ID			1
 
-/* SCP Firmware BL3-0 */
-#define BL30_IMAGE_ID			2
+/* SCP Firmware SCP_BL2 */
+#define SCP_BL2_IMAGE_ID		2
 
 /* EL3 Runtime Firmware BL31 */
 #define BL31_IMAGE_ID			3
@@ -50,17 +50,32 @@
 #define BL33_IMAGE_ID			5
 
 /* Certificates */
-#define BL2_CERT_ID			6
+#define TRUSTED_BOOT_FW_CERT_ID		6
 #define TRUSTED_KEY_CERT_ID		7
 
-#define BL30_KEY_CERT_ID		8
-#define BL31_KEY_CERT_ID		9
-#define BL32_KEY_CERT_ID		10
-#define BL33_KEY_CERT_ID		11
+#define SCP_FW_KEY_CERT_ID		8
+#define SOC_FW_KEY_CERT_ID		9
+#define TRUSTED_OS_FW_KEY_CERT_ID	10
+#define NON_TRUSTED_FW_KEY_CERT_ID	11
 
-#define BL30_CERT_ID			12
-#define BL31_CERT_ID			13
-#define BL32_CERT_ID			14
-#define BL33_CERT_ID			15
+#define SCP_FW_CONTENT_CERT_ID		12
+#define SOC_FW_CONTENT_CERT_ID		13
+#define TRUSTED_OS_FW_CONTENT_CERT_ID	14
+#define NON_TRUSTED_FW_CONTENT_CERT_ID	15
+
+/* Non-Trusted ROM Firmware NS_BL1U */
+#define NS_BL1U_IMAGE_ID		16
+
+/* Trusted FWU Certificate */
+#define FWU_CERT_ID			17
+
+/* Trusted FWU SCP Firmware SCP_BL2U */
+#define SCP_BL2U_IMAGE_ID		18
+
+/* Trusted FWU Boot Firmware BL2U */
+#define BL2U_IMAGE_ID			19
+
+/* Non-Trusted FWU Firmware NS_BL2U */
+#define NS_BL2U_IMAGE_ID		20
 
 #endif /* __TBBR_IMG_DEF_H__ */

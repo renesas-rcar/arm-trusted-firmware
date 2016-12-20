@@ -29,7 +29,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 #include <cci.h>
-#include <gic_v2.h>
+#include <gic_common.h>
+#include <gicv2.h>
 #include "rcar_def.h"
 
 .section .rodata.gic_reg_name, "aS"
@@ -102,4 +103,9 @@ cci_iface_regs:
 	ldr	w9, [x7, #SNOOP_CTRL_REG]
 	/* Store to the crash buf and print to console */
 	bl	str_in_crash_buf_print
+	.endm
+
+	.macro plat_crash_print_regs
+	plat_print_gic_regs
+	plat_print_interconnect_regs
 	.endm

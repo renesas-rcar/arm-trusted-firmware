@@ -38,31 +38,45 @@
 static key_t tbb_keys[] = {
 	[ROT_KEY] = {
 		.id = ROT_KEY,
+		.opt = "rot-key",
+		.help_msg = "Root Of Trust key (input/output file)",
 		.desc = "Root Of Trust key"
 	},
 	[TRUSTED_WORLD_KEY] = {
 		.id = TRUSTED_WORLD_KEY,
+		.opt = "trusted-world-key",
+		.help_msg = "Trusted World key (input/output file)",
 		.desc = "Trusted World key"
 	},
 	[NON_TRUSTED_WORLD_KEY] = {
 		.id = NON_TRUSTED_WORLD_KEY,
+		.opt = "non-trusted-world-key",
+		.help_msg = "Non Trusted World key (input/output file)",
 		.desc = "Non Trusted World key"
 	},
-	[BL30_KEY] = {
-		.id = BL30_KEY,
-		.desc = "BL30 key"
+	[SCP_FW_CONTENT_CERT_KEY] = {
+		.id = SCP_FW_CONTENT_CERT_KEY,
+		.opt = "scp-fw-key",
+		.help_msg = "SCP Firmware Content Certificate key (input/output file)",
+		.desc = "SCP Firmware Content Certificate key"
 	},
-	[BL31_KEY] = {
-		.id = BL31_KEY,
-		.desc = "BL31 key"
+	[SOC_FW_CONTENT_CERT_KEY] = {
+		.id = SOC_FW_CONTENT_CERT_KEY,
+		.opt = "soc-fw-key",
+		.help_msg = "SoC Firmware Content Certificate key (input/output file)",
+		.desc = "SoC Firmware Content Certificate key"
 	},
-	[BL32_KEY] = {
-		.id = BL32_KEY,
-		.desc = "BL32 key"
+	[TRUSTED_OS_FW_CONTENT_CERT_KEY] = {
+		.id = TRUSTED_OS_FW_CONTENT_CERT_KEY,
+		.opt = "tos-fw-key",
+		.help_msg = "Trusted OS Firmware Content Certificate key (input/output file)",
+		.desc = "Trusted OS Firmware Content Certificate key"
 	},
-	[BL33_KEY] = {
-		.id = BL33_KEY,
-		.desc = "BL33 key"
+	[NON_TRUSTED_FW_CONTENT_CERT_KEY] = {
+		.id = NON_TRUSTED_FW_CONTENT_CERT_KEY,
+		.opt = "nt-fw-key",
+		.help_msg = "Non Trusted Firmware Content Certificate key (input/output file)",
+		.desc = "Non Trusted Firmware Content Certificate key"
 	}
 };
 

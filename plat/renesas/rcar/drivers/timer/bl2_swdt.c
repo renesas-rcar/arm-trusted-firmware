@@ -31,8 +31,7 @@
 
 #include <arch_helpers.h>
 #include <mmio.h>
-#include <arm_gic.h>
-#include <gic_v2.h>
+#include <gicv2.h>
 #include <debug.h>
 #include "bl2_swdt.h"
 #include "rcar_def.h"
@@ -145,6 +144,7 @@ void bl2_swdt_init(void)
 	mmio_write_32(SWDT_WTCSRA,(WTCSRA_UPPER_BYTE | sr | SWDT_ENABLE));
 }
 
+extern void gicd_set_icenabler(uintptr_t base, unsigned int id);
 static void bl2_swdt_disable(void)
 {
 	uint32_t rmsk;
@@ -173,9 +173,9 @@ void bl2_swdt_release(void)
 				+ (ARM_IRQ_SEC_WDT & (uint32_t)(~ITARGET_MASK)));
 	uint32_t i;
 
-        disable_fiq();
+	write_daifset(DAIF_FIQ_BIT);
         bl2_swdt_disable();
-        arm_gic_cpuif_deactivate();
+        gicv2_cpuif_disable();
 	for (i=0U; i<IGROUPR_NUM; i++) {
 		mmio_write_32((p_igroupr + (uint32_t)(i * 4U)), 0U);
 	}
@@ -191,7 +191,7 @@ void bl2_swdt_release(void)
 void bl2_swdt_exec(uint64_t addr)
 {
 	/* Clear the interrupt request	*/
-	arm_gic_end_of_interrupt((uint32_t)ARM_IRQ_SEC_WDT);
+	gicv2_end_of_interrupt((uint32_t)ARM_IRQ_SEC_WDT);
         bl2_swdt_release();
 	ERROR("\n");
 	ERROR("BL2: System WDT overflow, occured address is 0x%x\n"

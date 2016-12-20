@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2015, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2013-2016, ARM Limited and Contributors. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -30,6 +30,7 @@
 #include <arm_gic.h>
 #include <bl_common.h>
 #include <mt8173_def.h>
+#include <utils.h>
 
 const unsigned int mt_irq_sec_array[] = {
 	MT_IRQ_SEC_SGI_0,

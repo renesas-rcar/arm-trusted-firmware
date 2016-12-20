@@ -30,7 +30,14 @@
  */
 
 #include <stdint.h>
+#include <debug.h>
+#include <mmio.h>
+#include "rcar_def.h"
 #include "pfc_init.h"
+#if RCAR_LSI == RCAR_AUTO
+  #include "H3/pfc_init_h3.h"
+  #include "M3/pfc_init_m3.h"
+#endif
 #if RCAR_LSI == RCAR_H3	/* H3 */
   #include "H3/pfc_init_h3.h"
 #endif
@@ -38,10 +45,32 @@
   #include "M3/pfc_init_m3.h"
 #endif
 
+#define PRR_PRODUCT_ERR(reg)	do{\
+				ERROR("LSI Product ID(PRR=0x%x) PFC "\
+				"initialize not supported.\n",reg);\
+				panic();\
+				}while(0)
+
 
 void pfc_init(void)
 {
-#if RCAR_LSI == RCAR_H3		/* H3 */
+#if RCAR_LSI == RCAR_AUTO
+	uint32_t reg;
+
+	reg = mmio_read_32(RCAR_PRR);
+	switch (reg & RCAR_PRODUCT_MASK) {
+	case RCAR_PRODUCT_H3:
+		pfc_init_h3();
+		break;
+	case RCAR_PRODUCT_M3:
+		pfc_init_m3();
+		break;
+	default:
+		PRR_PRODUCT_ERR(reg);
+		break;
+	};
+
+#elif RCAR_LSI == RCAR_H3	/* H3 */
 	pfc_init_h3();
 #elif RCAR_LSI == RCAR_M3	/* M3 */
 	pfc_init_m3();

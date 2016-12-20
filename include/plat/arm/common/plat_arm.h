@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2015-2016, ARM Limited and Contributors. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -31,16 +31,18 @@
 #define __PLAT_ARM_H__
 
 #include <bakery_lock.h>
-#include <bl_common.h>
 #include <cassert.h>
 #include <cpu_data.h>
 #include <stdint.h>
+#include <utils.h>
+#include <xlat_tables.h>
 
-
-/*
- * Extern declarations common to ARM standard platforms
- */
-extern const mmap_region_t plat_arm_mmap[];
+/*******************************************************************************
+ * Forward declarations
+ ******************************************************************************/
+struct bl31_params;
+struct meminfo;
+struct image_info;
 
 #define ARM_CASSERT_MMAP						\
 	CASSERT((ARRAY_SIZE(plat_arm_mmap) + ARM_BL_REGIONS)		\
@@ -50,23 +52,15 @@ extern const mmap_region_t plat_arm_mmap[];
 /*
  * Utility functions common to ARM standard platforms
  */
-
-void arm_configure_mmu_el1(unsigned long total_base,
-			unsigned long total_size,
-			unsigned long ro_start,
-			unsigned long ro_limit
+void arm_setup_page_tables(uintptr_t total_base,
+			size_t total_size,
+			uintptr_t code_start,
+			uintptr_t code_limit,
+			uintptr_t rodata_start,
+			uintptr_t rodata_limit
 #if USE_COHERENT_MEM
-			, unsigned long coh_start,
-			unsigned long coh_limit
-#endif
-);
-void arm_configure_mmu_el3(unsigned long total_base,
-			unsigned long total_size,
-			unsigned long ro_start,
-			unsigned long ro_limit
-#if USE_COHERENT_MEM
-			, unsigned long coh_start,
-			unsigned long coh_limit
+			, uintptr_t coh_start,
+			uintptr_t coh_limit
 #endif
 );
 
@@ -87,7 +81,7 @@ void arm_configure_mmu_el3(unsigned long total_base,
 #else
 
 /*
- * Empty macros for all other BL stages other than BL3-1
+ * Empty macros for all other BL stages other than BL31
  */
 #define ARM_INSTANTIATE_LOCK
 #define arm_lock_init()
@@ -123,22 +117,31 @@ void arm_configure_mmu_el3(unsigned long total_base,
 		(((lvl1_state) << ARM_LOCAL_PSTATE_WIDTH) | \
 		arm_make_pwrstate_lvl0(lvl0_state, pwr_lvl, type))
 
+/* Make composite power state parameter till power level 2 */
+#define arm_make_pwrstate_lvl2(lvl2_state, lvl1_state, lvl0_state, pwr_lvl, type) \
+		(((lvl2_state) << (ARM_LOCAL_PSTATE_WIDTH * 2)) | \
+		arm_make_pwrstate_lvl1(lvl1_state, lvl0_state, pwr_lvl, type))
+
 #endif /* __ARM_RECOM_STATE_ID_ENC__ */
 
-
-/* CCI utility functions */
-void arm_cci_init(void);
 
 /* IO storage utility functions */
 void arm_io_setup(void);
 
 /* Security utility functions */
-void arm_tzc_setup(void);
+void arm_tzc400_setup(void);
+struct tzc_dmc500_driver_data;
+void arm_tzc_dmc500_setup(struct tzc_dmc500_driver_data *plat_driver_data);
+
+/* Systimer utility function */
+void arm_configure_sys_timer(void);
 
 /* PM utility functions */
 int arm_validate_power_state(unsigned int power_state,
 			    psci_power_state_t *req_state);
 int arm_validate_ns_entrypoint(uintptr_t entrypoint);
+void arm_system_pwr_domain_resume(void);
+void arm_program_trusted_mailbox(uintptr_t address);
 
 /* Topology utility function */
 int arm_check_mpidr(u_register_t mpidr);
@@ -149,28 +152,62 @@ void arm_bl1_platform_setup(void);
 void arm_bl1_plat_arch_setup(void);
 
 /* BL2 utility functions */
-void arm_bl2_early_platform_setup(meminfo_t *mem_layout);
+void arm_bl2_early_platform_setup(struct meminfo *mem_layout);
 void arm_bl2_platform_setup(void);
 void arm_bl2_plat_arch_setup(void);
 uint32_t arm_get_spsr_for_bl32_entry(void);
 uint32_t arm_get_spsr_for_bl33_entry(void);
 
-/* BL3-1 utility functions */
-void arm_bl31_early_platform_setup(bl31_params_t *from_bl2,
+/* BL2U utility functions */
+void arm_bl2u_early_platform_setup(struct meminfo *mem_layout,
+				void *plat_info);
+void arm_bl2u_platform_setup(void);
+void arm_bl2u_plat_arch_setup(void);
+
+/* BL31 utility functions */
+#if LOAD_IMAGE_V2
+void arm_bl31_early_platform_setup(void *from_bl2,
 				void *plat_params_from_bl2);
+#else
+void arm_bl31_early_platform_setup(struct bl31_params *from_bl2,
+				void *plat_params_from_bl2);
+#endif /* LOAD_IMAGE_V2 */
 void arm_bl31_platform_setup(void);
+void arm_bl31_plat_runtime_setup(void);
 void arm_bl31_plat_arch_setup(void);
 
 /* TSP utility functions */
 void arm_tsp_early_platform_setup(void);
 
+/* SP_MIN utility functions */
+void arm_sp_min_early_platform_setup(void *from_bl2,
+		void *plat_params_from_bl2);
+
+/* FIP TOC validity check */
+int arm_io_is_toc_valid(void);
 
 /*
  * Mandatory functions required in ARM standard platforms
  */
+unsigned int plat_arm_get_cluster_core_count(u_register_t mpidr);
+void plat_arm_gic_driver_init(void);
 void plat_arm_gic_init(void);
+void plat_arm_gic_cpuif_enable(void);
+void plat_arm_gic_cpuif_disable(void);
+void plat_arm_gic_pcpu_init(void);
 void plat_arm_security_setup(void);
 void plat_arm_pwrc_setup(void);
+void plat_arm_interconnect_init(void);
+void plat_arm_interconnect_enter_coherency(void);
+void plat_arm_interconnect_exit_coherency(void);
+
+#if LOAD_IMAGE_V2
+/*
+ * This function is called after loading SCP_BL2 image and it is used to perform
+ * any platform-specific actions required to handle the SCP firmware.
+ */
+int plat_arm_bl2_handle_scp_bl2(struct image_info *scp_bl2_image_info);
+#endif
 
 /*
  * Optional functions required in ARM standard platforms
@@ -181,6 +218,6 @@ int plat_arm_get_alt_image_source(
 	uintptr_t *dev_handle,
 	uintptr_t *image_spec);
 unsigned int plat_arm_calc_core_pos(u_register_t mpidr);
-
+const mmap_region_t *plat_arm_get_mmap(void);
 
 #endif /* __PLAT_ARM_H__ */

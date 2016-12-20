@@ -34,10 +34,9 @@
 .global	rcar_bl31_restore_generic_timer
 
 #define	OFFSET_SP_X9_X10	(0x00)
-#define	OFFSET_CNTP_TVAL_EL0	(0x10)
-#define	OFFSET_CNTKCTL_EL1	(0x20)
-#define	OFFSET_CNTHP_TVAL_EL2	(0x30)
-#define	OFFSET_CNTHCTL_EL2	(0x40)
+#define	OFFSET_CNTFID0		(0x10)
+#define	OFFSET_CNTPCT_EL0	(0x18)
+#define	OFFSET_TIMER_COUNT	(0x20)
 
 /* X0 : Jump address */
 /* X1 : Stack address */
@@ -80,26 +79,16 @@ func rcar_bl31_save_generic_timer
 
 	stp	x9, x10, [x0, #OFFSET_SP_X9_X10]
 
-	/* save cntp_tval_el0 and cntv_tval_el0 */
-	mrs	x9, cntp_tval_el0
-	mrs	x10, cntv_tval_el0
-	stp	x9, x10, [x0, #OFFSET_CNTP_TVAL_EL0]
+	/* stop the generic timer */
+	mov_imm	x10, (RCAR_CNTC_BASE_A + CNTCR_OFF)
+	mov	x9, #0
+	str	w9, [x10]
 
-	/* save cntvct_el0 and cntv_cval_el0 */
-	mrs	x9, cntkctl_el1
-	mrs	x10, cntv_cval_el0
-	stp	x9, x10, [x0, #OFFSET_CNTKCTL_EL1]
-
-	/* save cnthp_tval_el2 and cntps_tval_el1 */
-	mrs	x9, cnthp_tval_el2
-	mrs	x10, cntps_tval_el1
-	stp	x9, x10, [x0, #OFFSET_CNTHP_TVAL_EL2]
-
-	/* save cnthctl_el2 and CNTFID0 */
-	mov_imm	x9, (RCAR_CNTC_BASE_A + CNTFID_OFF)
-	ldr	x10, [x9]
-	mrs	x9, cnthctl_el2
-	stp	x9, x10, [x0, #OFFSET_CNTHCTL_EL2]
+	/* save CNTFID0 and cntpct_el0 */
+	mov_imm	x10, (RCAR_CNTC_BASE_A + CNTFID_OFF)
+	ldr	x9, [x10]
+	mrs	x10, cntpct_el0
+	stp	x9, x10, [x0, #OFFSET_CNTFID0]
 
 	ldp	x9, x10, [x0, #OFFSET_SP_X9_X10]
 
@@ -111,26 +100,13 @@ func rcar_bl31_restore_generic_timer
 
 	stp	x9, x10, [x0, #OFFSET_SP_X9_X10]
 
-	/* restore cnthctl_el2 and CNTFID0 */
-	ldp	x9, x10, [x0, #OFFSET_CNTHCTL_EL2]
-	msr	cnthctl_el2, x9
+	/* restore CNTFID0 and cntpct_el0 */
+	ldr	x10, [x0, #OFFSET_CNTFID0]
 	mov_imm	x9, (RCAR_CNTC_BASE_A + CNTFID_OFF)
 	str	x10, [x9]
-
-	/* restore cnthp_tval_el2 and cntps_tval_el1 */
-	ldp	x9, x10, [x0, #OFFSET_CNTHP_TVAL_EL2]
-	msr	cnthp_tval_el2, x9
-	msr	cntps_tval_el1, x10
-
-	/* restore cntkctl_el1 and cntv_cval_el0 */
-	ldp	x9, x10, [x0, #OFFSET_CNTKCTL_EL1]
-	msr	cntkctl_el1, x9
-	msr	cntv_cval_el0, x10
-
-	/* restore cntp_tval_el0 and cntv_tval_el0 */
-	ldp	x9, x10, [x0, #OFFSET_CNTP_TVAL_EL0]
-	msr	cntp_tval_el0, x9
-	msr	cntv_tval_el0, x10
+	ldp	x9, x10, [x0, #OFFSET_CNTPCT_EL0]
+	add	x9, x9, x10
+	str	x9, [x0, #OFFSET_TIMER_COUNT]
 
 	ldp	x9, x10, [x0, #OFFSET_SP_X9_X10]
 

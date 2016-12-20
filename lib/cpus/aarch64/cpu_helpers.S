@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2014-2016, ARM Limited and Contributors. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -35,6 +35,7 @@
 #if IMAGE_BL31
 #include <cpu_data.h>
 #endif
+#include <debug.h>
 
  /* Reset fn is needed in BL at reset vector */
 #if IMAGE_BL1 || IMAGE_BL31
@@ -204,17 +205,18 @@ error_exit:
 	ret
 endfunc get_cpu_ops_ptr
 
-#if DEBUG
+#if LOG_LEVEL >= LOG_LEVEL_VERBOSE
+.section .rodata.rev_verbose_str, "aS"
+rev_verbose_str:
+	.asciz "VERBOSE: Skipping CPU specific reset operation for non-matching CPU revision number.\n"
+
 	/*
-	 * This function prints a warning message to the crash console
-	 * if the CPU revision/part number does not match the errata
-	 * workaround enabled in the build.
+	 * This function prints the above warning message to the crash console.
+	 * It should be called when a CPU specific operation is enabled in the
+	 * build but doesn't apply to this CPU revision/part number.
+	 *
 	 * Clobber: x30, x0 - x5
 	 */
-.section .rodata.rev_warn_str, "aS"
-rev_warn_str:
-	.asciz "Warning: Skipping Errata workaround for non matching CPU revision number.\n"
-
 	.globl	print_revision_warning
 func print_revision_warning
 	mov	x5, x30
@@ -223,7 +225,7 @@ func print_revision_warning
 	/* Check if the console is initialized */
 	cbz	x0, 1f
 	/* The console is initialized */
-	adr	x4, rev_warn_str
+	adr	x4, rev_verbose_str
 	bl	asm_print_str
 1:
 	ret	x5

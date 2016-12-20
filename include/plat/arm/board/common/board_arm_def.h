@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2015-2016, ARM Limited and Contributors. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -39,9 +39,7 @@
  */
 
 /* Size of cacheable stacks */
-#if DEBUG_XLAT_TABLE
-# define PLATFORM_STACK_SIZE 0x800
-#elif IMAGE_BL1
+#if IMAGE_BL1
 #if TRUSTED_BOARD_BOOT
 # define PLATFORM_STACK_SIZE 0x1000
 #else
@@ -53,6 +51,8 @@
 # else
 #  define PLATFORM_STACK_SIZE 0x400
 # endif
+#elif IMAGE_BL2U
+# define PLATFORM_STACK_SIZE 0x200
 #elif IMAGE_BL31
 # define PLATFORM_STACK_SIZE 0x400
 #elif IMAGE_BL32
@@ -60,55 +60,50 @@
 #endif
 
 /*
+ * The constants below are not optimised for memory usage. Platforms that wish
+ * to optimise these constants should set `ARM_BOARD_OPTIMISE_MEM` to 1 and
+ * provide there own values.
+ */
+#if !ARM_BOARD_OPTIMISE_MEM
+/*
  * PLAT_ARM_MMAP_ENTRIES depends on the number of entries in the
  * plat_arm_mmap array defined for each BL stage.
+ *
+ * Provide relatively optimised values for the runtime images (BL31 and BL32).
+ * Optimisation is less important for the other, transient boot images so a
+ * common, maximum value is used across these images.
  */
-#if IMAGE_BL1
-# if PLAT_fvp
-#  define PLAT_ARM_MMAP_ENTRIES		7
-# else
-#  define PLAT_ARM_MMAP_ENTRIES		6
-# endif
-#endif
-#if IMAGE_BL2
-# if PLAT_fvp
-#  define PLAT_ARM_MMAP_ENTRIES		9
-# else
-#  define PLAT_ARM_MMAP_ENTRIES		8
-# endif
-#endif
-#if IMAGE_BL31
-#define PLAT_ARM_MMAP_ENTRIES		5
-#endif
-#if IMAGE_BL32
-#define PLAT_ARM_MMAP_ENTRIES		4
+#if IMAGE_BL31 || IMAGE_BL32
+# define PLAT_ARM_MMAP_ENTRIES		6
+# define MAX_XLAT_TABLES		4
+#else
+# define PLAT_ARM_MMAP_ENTRIES		10
+# define MAX_XLAT_TABLES		5
 #endif
 
 /*
- * Platform specific page table and MMU setup constants
+ * PLAT_ARM_MAX_BL1_RW_SIZE is calculated using the current BL1 RW debug size
+ * plus a little space for growth.
  */
-#if IMAGE_BL1
-# if PLAT_juno
-#  define MAX_XLAT_TABLES		2
-# else
-#  define MAX_XLAT_TABLES		3
-# endif /* PLAT_ */
-#elif IMAGE_BL2
-# if PLAT_juno
-#  define MAX_XLAT_TABLES		3
-# else
-#  define MAX_XLAT_TABLES		4
-# endif /* PLAT_ */
-#elif IMAGE_BL31
-# define MAX_XLAT_TABLES		2
-#elif IMAGE_BL32
-# if ARM_TSP_RAM_LOCATION_ID == ARM_DRAM_ID
-#  define MAX_XLAT_TABLES		3
-# else
-#  define MAX_XLAT_TABLES		2
-# endif
+#define PLAT_ARM_MAX_BL1_RW_SIZE	0xA000
+
+/*
+ * PLAT_ARM_MAX_BL2_SIZE is calculated using the current BL2 debug size plus a
+ * little space for growth.
+ */
+#if TRUSTED_BOARD_BOOT
+# define PLAT_ARM_MAX_BL2_SIZE		0x1D000
+#else
+# define PLAT_ARM_MAX_BL2_SIZE		0xF000
 #endif
 
+/*
+ * PLAT_ARM_MAX_BL31_SIZE is calculated using the current BL31 debug size plus a
+ * little space for growth.
+ */
+#define PLAT_ARM_MAX_BL31_SIZE		0x1D000
+
+#endif /* ARM_BOARD_OPTIMISE_MEM */
 
 #define MAX_IO_DEVICES			3
 #define MAX_IO_HANDLES			4
@@ -117,6 +112,9 @@
 
 #define PLAT_ARM_FIP_BASE		V2M_FLASH0_BASE
 #define PLAT_ARM_FIP_MAX_SIZE		V2M_FLASH0_SIZE
+
+#define PLAT_ARM_NVM_BASE		V2M_FLASH0_BASE
+#define PLAT_ARM_NVM_SIZE		V2M_FLASH0_SIZE
 
 
 #endif /* __BOARD_ARM_DEF_H__ */

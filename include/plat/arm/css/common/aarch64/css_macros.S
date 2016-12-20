@@ -36,13 +36,13 @@
 	/* ---------------------------------------------
 	 * The below required platform porting macro
 	 * prints out relevant GIC registers whenever an
-	 * unhandled exception is taken in BL3-1.
+	 * unhandled exception is taken in BL31.
 	 * Clobbers: x0 - x10, x16, x17, sp
 	 * ---------------------------------------------
 	 */
-	.macro plat_print_gic_regs
-	mov_imm	x16, PLAT_CSS_GICD_BASE
-	mov_imm	x17, PLAT_CSS_GICC_BASE
+	.macro css_print_gic_regs
+	mov_imm	x16, PLAT_ARM_GICD_BASE
+	mov_imm	x17, PLAT_ARM_GICC_BASE
 	arm_print_gic_regs
 	.endm
 

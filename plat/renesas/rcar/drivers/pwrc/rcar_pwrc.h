@@ -84,9 +84,13 @@ void rcar_bl31_init_suspend_to_ram(void);
 extern uint32_t rcar_bl31_asm_switch_stack_pointer(uintptr_t jump, uintptr_t stack,
                 void *arg);
 
+extern void rcar_bl31_save_generic_timer(uint64_t *rcar_stack_generic_timer);
+
 extern uint8_t __system_ram_start__[1];
 extern uint8_t __system_ram_end__[1];
 extern uint8_t __SRAM_COPY_START__[1];
+
+extern uint64_t rcar_stack_generic_timer[5];
 
 #endif /*__ASSEMBLY__*/
 
