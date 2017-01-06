@@ -87,16 +87,11 @@ extern unsigned long __COHERENT_RAM_END__;
 #define BL31_COHERENT_RAM_LIMIT (uint64_t)(&__COHERENT_RAM_END__)
 #endif
 
-#if RESET_TO_BL31
-static entry_point_info_t bl32_image_ep_info;
-static entry_point_info_t bl33_image_ep_info;
-#else
 /*******************************************************************************
  * Reference to structure which holds the arguments that have been passed to
  * BL31 from BL2.
  ******************************************************************************/
 static bl31_params_t *bl2_to_bl31_params;
-#endif
 
 uint32_t rcar_boot_kind_flag __attribute__((section("data")));
 
