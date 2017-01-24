@@ -377,10 +377,10 @@ void bl2_early_platform_setup(meminfo_t *mem_layout)
 	   (modemr == MODEMR_BOOT_CPU_CA53)) {
 		/* initialize Pin Function */
 		pfc_init();
-	}
 
-	/* Initialize the console to provide early debug support */
-	(void)console_init(0U, 0U, 0U);
+		/* Initialize the console to provide early debug support */
+		(void)console_init(0U, 0U, 0U);
+	}
 
 	/* Initialize the GIC driver, cpu and distributor interfaces */
 	plat_arm_gic_driver_init();
