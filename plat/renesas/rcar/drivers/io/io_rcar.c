@@ -528,7 +528,7 @@ static int32_t rcar_dev_init(io_dev_info_t *dev_info, const uintptr_t init_param
 	} else {
 
 		if (RCAR_CERT_LOAD == rcar_cert_load) {
-			/* not load certificate file after 1at initialize */
+			/* not load certificate file after 1st initialize */
 			result = IO_SUCCESS;
 		} else {
 
@@ -624,7 +624,7 @@ static int32_t rcar_dev_init(io_dev_info_t *dev_info, const uintptr_t init_param
 						(size_t) rcar_image_number)),
 						&bytes_read);
 				if (result != IO_SUCCESS) {
-					WARN("cert file road error.\n");
+					WARN("cert file read error.\n");
 					result = IO_FAIL;
 				} else {
 
