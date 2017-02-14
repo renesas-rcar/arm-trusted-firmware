@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2015-2016, Renesas Electronics Corporation
+# Copyright (c) 2015-2017, Renesas Electronics Corporation
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -30,14 +30,16 @@
 #
 
 ifeq (${RCAR_LSI},${RCAR_AUTO})
-    BL2_SOURCES += plat/renesas/rcar/qos/H3/ES10/qos_init_h3_es10.c
-    BL2_SOURCES += plat/renesas/rcar/qos/H3/WS11/qos_init_h3_ws11.c
-    BL2_SOURCES += plat/renesas/rcar/qos/M3/qos_init_m3_es10.c
+    BL2_SOURCES += plat/renesas/rcar/qos/H3/qos_init_h3_v10.c
+    BL2_SOURCES += plat/renesas/rcar/qos/H3/qos_init_h3_v11.c
+    BL2_SOURCES += plat/renesas/rcar/qos/H3/qos_init_h3_v20.c
+    BL2_SOURCES += plat/renesas/rcar/qos/M3/qos_init_m3_v10.c
 
 else ifdef RCAR_LSI_CUT_COMPAT
   ifeq (${RCAR_LSI},${RCAR_H3})
-    BL2_SOURCES += plat/renesas/rcar/qos/H3/ES10/qos_init_h3_es10.c
-    BL2_SOURCES += plat/renesas/rcar/qos/H3/WS11/qos_init_h3_ws11.c
+    BL2_SOURCES += plat/renesas/rcar/qos/H3/qos_init_h3_v10.c
+    BL2_SOURCES += plat/renesas/rcar/qos/H3/qos_init_h3_v11.c
+    BL2_SOURCES += plat/renesas/rcar/qos/H3/qos_init_h3_v20.c
   endif
   ifeq (${RCAR_LSI},${RCAR_M3})
     $(error "Error: ${LSI} is not supported.")
@@ -45,14 +47,17 @@ else ifdef RCAR_LSI_CUT_COMPAT
 else
   ifeq (${RCAR_LSI},${RCAR_H3})
     ifeq (${LSI_CUT},10)
-      BL2_SOURCES += plat/renesas/rcar/qos/H3/ES10/qos_init_h3_es10.c
+      BL2_SOURCES += plat/renesas/rcar/qos/H3/qos_init_h3_v10.c
     endif
     ifeq (${LSI_CUT},11)
-      BL2_SOURCES += plat/renesas/rcar/qos/H3/WS11/qos_init_h3_ws11.c
+      BL2_SOURCES += plat/renesas/rcar/qos/H3/qos_init_h3_v11.c
+    endif
+    ifeq (${LSI_CUT},20)
+      BL2_SOURCES += plat/renesas/rcar/qos/H3/qos_init_h3_v20.c
     endif
   endif
   ifeq (${RCAR_LSI},${RCAR_M3})
-    BL2_SOURCES += plat/renesas/rcar/qos/M3/qos_init_m3_es10.c
+    BL2_SOURCES += plat/renesas/rcar/qos/M3/qos_init_m3_v10.c
   endif
 endif
 

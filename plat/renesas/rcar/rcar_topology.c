@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2014, ARM Limited and Contributors. All rights reserved.
- * Copyright (c) 2015-2016, Renesas Electronics Corporation. All rights reserved.
+ * Copyright (c) 2015-2017, Renesas Electronics Corporation. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -29,7 +29,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <assert.h>
+#include <debug.h>
 #include <platform_def.h>
 /* TODO: Reusing psci error codes & state information. Get our own! */
 #include <psci.h>
@@ -53,8 +53,6 @@ typedef struct affinity_info {
 static affinity_info_t rcar_aff1_topology_map[PLATFORM_CLUSTER_COUNT];
 static affinity_info_t rcar_aff0_topology_map[PLATFORM_CORE_COUNT];
 
-/* Simple global variable to safeguard us from stupidity */
-static unsigned int topology_setup_done;
 
 /*******************************************************************************
  * This function implements a part of the critical interface between the psci
@@ -73,28 +71,15 @@ unsigned int plat_get_aff_count(unsigned int aff_lvl,
 	unsigned int aff_count = 1, ctr;
 	unsigned char parent_aff_id;
 
-	assert(topology_setup_done == 1);
-
 	switch (aff_lvl) {
 	case 3:
 	case 2:
-		/*
-		 * Assert if the parent affinity instance is not 0.
-		 * This also takes care of level 3 in an obfuscated way
-		 */
-		parent_aff_id = (mpidr >> MPIDR_AFF3_SHIFT) & MPIDR_AFFLVL_MASK;
-		assert(parent_aff_id == 0);
-
 		/*
 		 * Report that we implement a single instance of
 		 * affinity levels 2 & 3 which are AFF_ABSENT
 		 */
 		break;
 	case 1:
-		/* Assert if the parent affinity instance is not 0. */
-		parent_aff_id = (mpidr >> MPIDR_AFF2_SHIFT) & MPIDR_AFFLVL_MASK;
-		assert(parent_aff_id == 0);
-
 		/* Fetch the starting index in the aff1 array */
 		for (ctr = 0;
 		     rcar_aff1_topology_map[ctr].sibling != AFFINST_INVAL;
@@ -104,9 +89,11 @@ unsigned int plat_get_aff_count(unsigned int aff_lvl,
 
 		break;
 	case 0:
-		/* Assert if the cluster id is anything apart from 0 or 1 */
+		/* Panic if the cluster id is anything apart from 0 or 1 */
 		parent_aff_id = (mpidr >> MPIDR_AFF1_SHIFT) & MPIDR_AFFLVL_MASK;
-		assert(parent_aff_id < PLATFORM_CLUSTER_COUNT);
+		if (PLATFORM_CLUSTER_COUNT <= parent_aff_id) {
+			panic();
+		}
 
 		/* Fetch the starting index in the aff0 array */
 		for (ctr = rcar_aff1_topology_map[parent_aff_id].child;
@@ -117,7 +104,8 @@ unsigned int plat_get_aff_count(unsigned int aff_lvl,
 
 		break;
 	default:
-		assert(0);
+		panic();
+		break;
 	}
 
 	return aff_count;
@@ -143,8 +131,6 @@ unsigned int plat_get_aff_state(unsigned int aff_lvl,
 	unsigned int aff_state = PSCI_AFF_ABSENT, idx;
 	idx = (mpidr >> MPIDR_AFF1_SHIFT) & MPIDR_AFFLVL_MASK;
 
-	assert(topology_setup_done == 1);
-
 	switch (aff_lvl) {
 	case 3:
 	case 2:
@@ -163,7 +149,8 @@ unsigned int plat_get_aff_state(unsigned int aff_lvl,
 		aff_state = rcar_aff0_topology_map[idx].state;
 		break;
 	default:
-		assert(0);
+		panic();
+		break;
 	}
 
 	return aff_state;
@@ -178,8 +165,6 @@ void rcar_setup_topology(void)
 {
 	unsigned char aff0, aff1, aff_state, aff0_offset = 0;
 	unsigned long mpidr;
-
-	topology_setup_done = 0;
 
 	for (aff1 = 0; aff1 < PLATFORM_CLUSTER_COUNT; aff1++) {
 
@@ -219,5 +204,4 @@ void rcar_setup_topology(void)
 	/* Tie-off the last aff1 sibling to AFFINST_INVAL to avoid overflow */
 	rcar_aff1_topology_map[aff1 - 1].sibling = AFFINST_INVAL;
 
-	topology_setup_done = 1;
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2016, Renesas Electronics Corporation
+ * Copyright (c) 2015-2017, Renesas Electronics Corporation
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -29,9 +29,9 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef PFC_INIT_H3_H__
-#define PFC_INIT_H3_H__
+#ifndef QOS_INIT_H_M3_V10__
+#define QOS_INIT_H_M3_V10__
 
-void pfc_init_h3(void);
+void qos_init_m3_v10(void);
 
-#endif	/* PFC_INIT_H3_H__ */
+#endif	/* QOS_INIT_H_M3_V10__ */

@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2014, ARM Limited and Contributors. All rights reserved.
- * Copyright (c) 2015-2016, Renesas Electronics Corporation. All rights reserved.
+ * Copyright (c) 2015-2017, Renesas Electronics Corporation. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -237,8 +237,8 @@ unsigned int plat_get_syscnt_freq2(void)
 
 /* Map of CCI masters with the slave interfaces they are connected */
 static int cci_map[] = {
-	CCI500_CLUSTER0_SL_IFACE_IX,
-	CCI500_CLUSTER1_SL_IFACE_IX
+	CCI500_CLUSTER0_SL_IFACE_IX_FOR_M3,
+	CCI500_CLUSTER1_SL_IFACE_IX_FOR_M3
 };
 
 void rcar_cci_init(void)
@@ -247,10 +247,10 @@ void rcar_cci_init(void)
 	 * Initialize CCI-500 driver
 	 */
 	uint32_t product = mmio_read_32((uintptr_t)RCAR_PRR)
-			& RCAR_PRODUCT_MASK;
-	if (RCAR_PRODUCT_M3 == product) {
-		cci_map[0U] = CCI500_CLUSTER0_SL_IFACE_IX_FOR_M3;
-		cci_map[1U] = CCI500_CLUSTER1_SL_IFACE_IX_FOR_M3;
+			& (RCAR_PRODUCT_MASK | RCAR_CUT_MASK);
+	if((RCAR_PRODUCT_H3_CUT10 == product) || (RCAR_PRODUCT_H3_CUT11 == product)) {
+		cci_map[0U] = CCI500_CLUSTER0_SL_IFACE_IX;
+		cci_map[1U] = CCI500_CLUSTER1_SL_IFACE_IX;
 	}
 	cci_init(RCAR_CCI_BASE, cci_map, ARRAY_SIZE(cci_map));
 }

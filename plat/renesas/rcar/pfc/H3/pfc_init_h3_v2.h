@@ -29,14 +29,9 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef	__BOOT_INIT_DRAM_
-#define	__BOOT_INIT_DRAM_
+#ifndef PFC_INIT_H3_V2_H__
+#define PFC_INIT_H3_V2_H__
 
-extern int32_t InitDram(void);
-#define INITDRAM_OK (0)
-#define INITDRAM_NG (0xffffffff)
-#define INITDRAM_ERR_I (0xffffffff)
-#define INITDRAM_ERR_O (0xfffffffe)
-#define INITDRAM_ERR_T (0xfffffff0)
+void pfc_init_h3_v2(void);
 
-#endif /* __BOOT_INIT_DRAM_*/
+#endif	/* PFC_INIT_H3_V2_H__ */

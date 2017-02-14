@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2014, ARM Limited and Contributors. All rights reserved.
- * Copyright (c) 2015-2016, Renesas Electronics Corporation. All rights reserved.
+ * Copyright (c) 2015-2017, Renesas Electronics Corporation. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -31,7 +31,6 @@
 
 #include <arch.h>
 #include <arch_helpers.h>
-#include <assert.h>
 #include <bl_common.h>
 #include <bl31.h>
 #include <console.h>
@@ -105,8 +104,6 @@ entry_point_info_t *bl31_plat_get_next_image_ep_info(uint32_t type)
 {
 	entry_point_info_t *next_image_info;
 
-	assert(sec_state_is_valid(type));
-
 	next_image_info =
 			(type == NON_SECURE) ?
 					bl2_to_bl31_params->bl33_ep_info :
@@ -170,12 +167,11 @@ void bl31_early_platform_setup(bl31_params_t *from_bl2,
 	NOTICE("BL3-1 : Rev.%s\n",version_of_renesas);
 
 	/* Check params passed from BL2 should not be NULL,
-	 * We are not checking plat_params_from_bl2 as NULL as we are not
-	 * using it on RCAR
 	 */
-	assert(from_bl2 != NULL);
-	assert(from_bl2->h.type == PARAM_BL31);
-	assert(from_bl2->h.version >= VERSION_1);
+	if ((NULL == from_bl2) || ((uint8_t)PARAM_BL31 != from_bl2->h.type) ||
+	    ((uint8_t)VERSION_1 > from_bl2->h.version)) {
+		panic();
+	}
 
 	bl2_to_bl31_params = from_bl2;
 
@@ -228,4 +224,16 @@ void bl31_plat_arch_setup(void)
 #endif
 	);
 
+}
+
+/*******************************************************************************
+ * There check whether duplication of physical address is valid or not.
+ ******************************************************************************/
+uint32_t bl31_plat_mmu_pa_chk(uint32_t pa_flg, uintptr_t chk_va, uint64_t chk_pa)
+{
+	if ((DEVICE_SRAM_SHADOW_BASE == chk_va) &&
+	    (DEVICE_SRAM_BASE_U == chk_pa)) {
+		pa_flg = 1U;
+	}
+	return pa_flg;
 }

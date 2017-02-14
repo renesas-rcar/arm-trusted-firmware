@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2016, Renesas Electronics Corporation
+ * Copyright (c) 2015-2017, Renesas Electronics Corporation
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -31,10 +31,10 @@
 
 #include <stdint.h>
 #include <debug.h>
-#include "qos_init_h3_es10.h"
+#include "qos_init_h3_v10.h"
 
 
-#define	RCAR_QOS_VERSION		"rev.0.33"
+#define	RCAR_QOS_VERSION		"rev.0.34"
 
 #define	RCAR_QOS_NONE			(3U)
 #define	RCAR_QOS_TYPE_DEFAULT		(0U)
@@ -314,7 +314,7 @@ static const mstat_slot_t mstat_be[] = {
 #endif
 
 
-void qos_init_h3_es10(void)
+void qos_init_h3_v10(void)
 {
 	/* DRAM Split Address mapping */
 #if (RCAR_DRAM_SPLIT == RCAR_DRAM_SPLIT_4CH) || \
@@ -352,11 +352,10 @@ void qos_init_h3_es10(void)
 	/* Resource Alloc setting */
 	io_write_32(RALLOC_RAS,   0x00000040U);
 	io_write_32(RALLOC_FIXTH, 0x000F0005U);
-	io_write_32(RALLOC_RAEN,  0x00000001U);
 	io_write_32(RALLOC_REGGD, 0x00000004U);
 	io_write_64(RALLOC_DANN,  0x0202000004040404U);
 	io_write_32(RALLOC_DANT,  0x003C1110U);
-	io_write_32(RALLOC_EC,    0x00080001U);	/* need for H3 ES1 */
+	io_write_32(RALLOC_EC,    0x00080001U);	/* need for H3 v1.* */
 	io_write_64(RALLOC_EMS,   0x0000000000000000U);
 	io_write_32(RALLOC_INSFC, 0xC7840001U);
 	io_write_32(RALLOC_BERR,  0x00000000U);
@@ -406,6 +405,6 @@ void qos_init_h3_es10(void)
 	NOTICE("BL2: QoS is None\n");
 
 	/* Resource Alloc setting */
-	io_write_32(RALLOC_EC,    0x00080001U);	/* need for H3 ES1 */
+	io_write_32(RALLOC_EC,    0x00080001U);	/* need for H3 v1.* */
 #endif /* !(RCAR_QOS_TYPE == RCAR_QOS_NONE) */
 }

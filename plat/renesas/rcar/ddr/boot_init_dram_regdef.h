@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2016, Renesas Electronics Corporation
+ * Copyright (c) 2015-2017, Renesas Electronics Corporation
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -29,7 +29,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#define RCAR_DDR_VERSION        "rev.0.20"
+#define RCAR_DDR_VERSION        "rev.0.21"
 #define DRAM_CH_CNT		0x04
 #define SLICE_CNT		0x04
 #define CS_CNT			0x02
@@ -51,13 +51,20 @@
 #define	RST_BASE		(0xE6160000U)
 #define	RST_MODEMR		(RST_BASE + 0x0060U)
 #define	CPG_BASE		(0xE6150000U)
-#define	CPG_PLLECR		(CPG_BASE + 0x00D0U)
-#define	CPG_CPGWPR		(CPG_BASE + 0x900U)
-#define	CPG_PLL1CR		(CPG_BASE + 0x028U)
-#define	CPG_PLL3CR		(CPG_BASE + 0x0DCU)
-#define	CPG_SRCR4		(CPG_BASE + 0x0BCU)
-#define	CPG_SRSTCLR4		(CPG_BASE + 0x950U)
-#define CPG_PLLECR_PLL3ST_BIT   (1<<3)
+#define	CPG_PLLECR		(CPG_BASE + 0x000D0U)
+#define	CPG_CPGWPR		(CPG_BASE + 0x0900U)
+#define	CPG_PLL1CR		(CPG_BASE + 0x0028U)
+#define	CPG_PLL3CR		(CPG_BASE + 0x00DCU)
+#define	CPG_SRCR4		(CPG_BASE + 0x00BCU)
+#define	CPG_SRSTCLR4	(CPG_BASE + 0x0950U)
+#define CPG_PLLECR_PLL3E_BIT	(1<<3)
+#define CPG_PLLECR_PLL3ST_BIT	(1<<11)
+/* PLL3 W/A */
+#define	CPG_FRQCRB		(CPG_BASE + 0x0004U)
+#define	CPG_FRQCRB_KICK_BIT		(1<<31)
+#define	CPG_FRQCRD		(CPG_BASE + 0x00E4U)
+#define	CPG_MSTPCRM1	(CPG_BASE + 0x0380U)
+#define CPG_MSTPCRM1_ZB3ST_BIT   (1<<11)
 /* chip_id and calibration code */
 #define LIFEC_CHIPID(x)		(0xE6110040U+(x)*4)
 #define LIFEC_TERMCODE		0xE61100BCU
@@ -200,6 +207,7 @@
 #define DBSC_DBCAM0CNF1		0xE6790904U
 #define DBSC_DBCAM0CNF2		0xE6790908U
 #define DBSC_DBCAM0CNF3		0xE679090CU
+#define DBSC_DBBCAMSWAP		0xE67909F0U
 #define DBSC_DBBCAMDIS		0xE67909FCU
 #define DBSC_DBSCHCNT0		0xE6791000U
 #define DBSC_DBSCHCNT1		0xE6791004U

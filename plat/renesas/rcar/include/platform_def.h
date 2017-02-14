@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2014, ARM Limited and Contributors. All rights reserved.
- * Copyright (c) 2015-2016, Renesas Electronics Corporation. All rights reserved.
+ * Copyright (c) 2015-2017, Renesas Electronics Corporation. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -150,7 +150,7 @@
  * size plus a little space for growth.
  */
 #define	RCAR_SECRAM_BASE		(0xE6300000)
-#define BL2_BASE			(0xE6302000)
+#define BL2_BASE			(0xE6304000)
 #define BL2_LIMIT			(0xE632E800)
 
 /*******************************************************************************

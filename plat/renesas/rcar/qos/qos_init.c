@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2016, Renesas Electronics Corporation
+ * Copyright (c) 2015-2017, Renesas Electronics Corporation
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -34,16 +34,18 @@
 #include <mmio.h>
 #include "qos_init.h"
 #if RCAR_LSI == RCAR_AUTO
-  #include "H3/ES10/qos_init_h3_es10.h"
-  #include "H3/WS11/qos_init_h3_ws11.h"
-  #include "M3/qos_init_m3_es10.h"
+  #include "H3/qos_init_h3_v10.h"
+  #include "H3/qos_init_h3_v11.h"
+  #include "H3/qos_init_h3_v20.h"
+  #include "M3/qos_init_m3_v10.h"
 #endif
 #if RCAR_LSI == RCAR_H3	/* H3 */
-  #include "H3/ES10/qos_init_h3_es10.h"
-  #include "H3/WS11/qos_init_h3_ws11.h"
+  #include "H3/qos_init_h3_v10.h"
+  #include "H3/qos_init_h3_v11.h"
+  #include "H3/qos_init_h3_v20.h"
 #endif
 #if RCAR_LSI == RCAR_M3	/* M3 */
-  #include "M3/qos_init_m3_es10.h"
+  #include "M3/qos_init_m3_v10.h"
 #endif
 
  /* Product Register */
@@ -54,6 +56,7 @@
 #define PRR_PRODUCT_M3		(0x00005200U)           /* R-Car M3 */
 #define PRR_PRODUCT_10		(0x00U)
 #define PRR_PRODUCT_11		(0x01U)
+#define PRR_PRODUCT_20		(0x10U)
 
 #define PRR_PRODUCT_ERR(reg)	do{\
 				ERROR("LSI Product ID(PRR=0x%x) QoS "\
@@ -76,10 +79,13 @@ void qos_init(void)
 	case PRR_PRODUCT_H3:
 		switch (reg & PRR_CUT_MASK) {
 		case PRR_PRODUCT_10:
-			qos_init_h3_es10();
+			qos_init_h3_v10();
 			break;
 		case PRR_PRODUCT_11:
-			qos_init_h3_ws11();
+			qos_init_h3_v11();
+			break;
+		case PRR_PRODUCT_20:
+			qos_init_h3_v20();
 			break;
 		default:
 			PRR_CUT_ERR(reg);
@@ -87,7 +93,7 @@ void qos_init(void)
 		}
 		break;
 	case PRR_PRODUCT_M3:
-		qos_init_m3_es10();
+		qos_init_m3_v10();
 		break;
 	default:
 		PRR_PRODUCT_ERR(reg);
@@ -102,10 +108,13 @@ void qos_init(void)
 #else
 		switch (reg & PRR_CUT_MASK) {
 		case PRR_PRODUCT_10:
-			qos_init_h3_es10();
+			qos_init_h3_v10();
 			break;
 		case PRR_PRODUCT_11:
-			qos_init_h3_ws11();
+			qos_init_h3_v11();
+			break;
+		case PRR_PRODUCT_20:
+			qos_init_h3_v20();
 			break;
 		default:
 			PRR_CUT_ERR(reg);
@@ -117,7 +126,7 @@ void qos_init(void)
 #if RCAR_LSI != RCAR_M3
 		PRR_PRODUCT_ERR(reg);
 #else
-		qos_init_m3_es10();
+		qos_init_m3_v10();
 #endif
 		break;
 	default:
@@ -132,14 +141,21 @@ void qos_init(void)
 			!= (reg & (PRR_PRODUCT_MASK | PRR_CUT_MASK))) {
 		PRR_PRODUCT_ERR(reg);
 	}
-	qos_init_h3_es10();
+	qos_init_h3_v10();
   #elif RCAR_LSI_CUT == RCAR_CUT_11
 	/* H3 Cut 11 */
 	if ((PRR_PRODUCT_H3 | PRR_PRODUCT_11)
 			!= (reg & (PRR_PRODUCT_MASK | PRR_CUT_MASK))) {
 		PRR_PRODUCT_ERR(reg);
 	}
-	qos_init_h3_ws11();
+	qos_init_h3_v11();
+  #elif RCAR_LSI_CUT == RCAR_CUT_20
+	/* H3 Cut 20 */
+	if ((PRR_PRODUCT_H3 | PRR_PRODUCT_20)
+			!= (reg & (PRR_PRODUCT_MASK | PRR_CUT_MASK))) {
+		PRR_PRODUCT_ERR(reg);
+	}
+	qos_init_h3_v20();
   #else
    #error "Don't have QoS initialize routine(H3)."
   #endif
@@ -148,7 +164,7 @@ void qos_init(void)
 			!= (reg & (PRR_PRODUCT_MASK | PRR_CUT_MASK))) {
 		PRR_PRODUCT_ERR(reg);
 	}
-	qos_init_m3_es10();
+	qos_init_m3_v10();
  #else
   #error "Don't have QoS initialize routine(M3)."
  #endif

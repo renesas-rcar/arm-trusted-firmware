@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2016, Renesas Electronics Corporation
+ * Copyright (c) 2015-2017, Renesas Electronics Corporation
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -33,10 +33,18 @@ SECTIONS
 	. = 0x00000000;
 	.rodata : {
 		KEEP(*(.sa0_bootrom))
-		. = 0x00000D54;
-		KEEP(*(.sa0_bl2cert_addr))
-		. = 0x00000E64;
-		KEEP(*(.sa0_bl2cert_size))
+                /* A-side IPL content cert "Start Address"(New Map) */
+		. = 0x000001D4;		/* H'00000080 + H'00000154 */
+		KEEP(*(.sa0_bl2cert_addr0a))
+                /* A-side IPL content cert "Size"(New Map) */
+		. = 0x000002E4;		/* H'00000080 + H'00000264 */
+		KEEP(*(.sa0_bl2cert_size0a))
+		/* A-side IPL content cert "Start Address"(Old Map) */
+		. = 0x00000D54;		/* H'00000C00 + H'00000154 */
+		KEEP(*(.sa0_bl2cert_addr1a))
+		/* A-side IPL content cert "Size"(Old Map) */
+		. = 0x00000E64;		/* H'00000C00 + H'00000264 */
+		KEEP(*(.sa0_bl2cert_size1a))
 	}
 
 }

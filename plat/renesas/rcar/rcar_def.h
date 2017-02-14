@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2014, ARM Limited and Contributors. All rights reserved.
- * Copyright (c) 2015-2016, Renesas Electronics Corporation. All rights reserved.
+ * Copyright (c) 2015-2017, Renesas Electronics Corporation. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -251,8 +251,9 @@
 #define RCAR_MAJOR_SHIFT		(4U)
 #define RCAR_MINOR_SHIFT		(0U)
 #define RCAR_MAJOR_OFFSET		(1U)
-#define RCAR_PRODUCT_H3_CUT10		(RCAR_PRODUCT_H3 | 0x00U) /* H3 WS1.0 */
-#define RCAR_PRODUCT_H3_CUT11		(RCAR_PRODUCT_H3 | 0x01U) /* H3 WS1.1 */
+#define RCAR_PRODUCT_H3_CUT10		(RCAR_PRODUCT_H3 | 0x00U) /* H3 Ver1.0 */
+#define RCAR_PRODUCT_H3_CUT11		(RCAR_PRODUCT_H3 | 0x01U) /* H3 Ver1.1 */
+#define RCAR_PRODUCT_H3_CUT20		(RCAR_PRODUCT_H3 | 0x10U) /* H3 Ver2.0 */
 #define RCAR_PRODUCT_M3_CUT10		(RCAR_PRODUCT_M3 | 0x00U) /* M3 */
 
 /*******************************************************************************

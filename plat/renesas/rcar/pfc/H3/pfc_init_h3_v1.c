@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2016, Renesas Electronics Corporation
+ * Copyright (c) 2015-2017, Renesas Electronics Corporation
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -31,7 +31,7 @@
 
 #include <stdint.h>		/* for uint32_t */
 #include <mmio.h>
-#include "pfc_init_h3.h"
+#include "pfc_init_h3_v1.h"
 
 
 /* GPIO base address */
@@ -808,7 +808,7 @@ static void pfc_reg_write(uint32_t addr, uint32_t data)
 }
 
 
-void pfc_init_h3(void)
+void pfc_init_h3_v1(void)
 {
 	uint32_t reg;
 

@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2014, ARM Limited and Contributors. All rights reserved.
- * Copyright (c) 2015-2016, Renesas Electronics Corporation. All rights reserved.
+ * Copyright (c) 2015-2017, Renesas Electronics Corporation. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -80,6 +80,10 @@
 #define	RST_WDTRSTCR		(RST_BASE + 0x0054U)
 #define	WDTRSTCR_PASSWORD	(0xA55A0000U)
 #define	WDTRSTCR_RWDT_RSTMSK	((uint32_t)1U << 0U)
+
+/* MFIS Registers */
+#define	MFISWPCNTR_PASSWORD	(0xACCE0000U)
+#define	MFISWPCNTR		(0xE6260900U)
 
 /* IPMMUregisters */
 #define IPMMU_MM_BASE		(0xE67B0000U)	/* IPMMU-MM */
@@ -301,7 +305,7 @@ static void bl2_lossy_setting(uint32_t no, uint64_t start_addr,
 	uint64_t end_addr, uint32_t format, uint32_t enable)
 {
 	uint32_t reg;
-	bl2_lossy_info_t *info_p;
+	bl2_lossy_info_t info;
 
 	/* Setting of the start address and format */
 	reg = (uint32_t)(format | (start_addr >> 20U));
@@ -314,11 +318,16 @@ static void bl2_lossy_setting(uint32_t no, uint64_t start_addr,
 	/* Enable or Disable of Lossy setting */
 	mmio_write_32(AXI_DCMPAREACRA0 + (0x8U * (uintptr_t)no), (reg | enable));
 
-	info_p = (bl2_lossy_info_t *)(LOSSY_PARAMS_BASE);
-	info_p += no;
-	info_p->magic = 0x12345678U;
-	info_p->a0 = mmio_read_32(AXI_DCMPAREACRA0 + (0x8U * (uintptr_t)no));
-	info_p->b0 = mmio_read_32(AXI_DCMPAREACRB0 + (0x8U * (uintptr_t)no));
+	info.magic = 0x12345678U;
+	info.a0 = mmio_read_32(AXI_DCMPAREACRA0 + (0x8U * (uintptr_t)no));
+	info.b0 = mmio_read_32(AXI_DCMPAREACRB0 + (0x8U * (uintptr_t)no));
+
+	mmio_write_32(LOSSY_PARAMS_BASE +
+		(sizeof(bl2_lossy_info_t) * (uintptr_t)no), info.magic);
+	mmio_write_32(LOSSY_PARAMS_BASE +
+		(sizeof(bl2_lossy_info_t) * (uintptr_t)no) + 0x4U, info.a0);
+	mmio_write_32(LOSSY_PARAMS_BASE +
+		(sizeof(bl2_lossy_info_t) * (uintptr_t)no) + 0x8U, info.b0);
 
 	NOTICE("     Entry %d: DCMPAREACRAx:0x%x DCMPAREACRBx:0x%x\n", no,
 		mmio_read_32(AXI_DCMPAREACRA0 + (0x8U * (uintptr_t)no)),
@@ -422,7 +431,7 @@ void bl2_early_platform_setup(meminfo_t *mem_layout)
 		str = unknown;
 		break;
 	}
-	(void)sprintf(msg, "BL2: PRR is R-Car %s ES%d.%d\n", str,
+	(void)sprintf(msg, "BL2: PRR is R-Car %s Ver%d.%d\n", str,
 		((reg & RCAR_MAJOR_MASK) >> RCAR_MAJOR_SHIFT)
 		 + RCAR_MAJOR_OFFSET, (reg & RCAR_MINOR_MASK));
 	NOTICE("%s", msg);
@@ -660,6 +669,17 @@ void bl2_plat_flush_bl31_params(void)
 	if((val & MODEMR_BOOT_CPU_MASK) != MODEMR_BOOT_CPU_CR7) {
 		/* Initialize secure configuration */
 		bl2_secure_setting();
+	}
+
+	val = mmio_read_32(RCAR_PRR);
+	if ((RCAR_PRODUCT_M3 == (val & RCAR_PRODUCT_MASK)) ||
+		((RCAR_PRODUCT_H3 == (val & RCAR_PRODUCT_MASK)) &&
+			(RCAR_CUT_ES20 > (val & RCAR_CUT_MASK)))) {
+		/* No need to disable MFIS write protection */
+		;
+	} else {
+		/* Disable MFIS write protection */
+		mmio_write_32(MFISWPCNTR, MFISWPCNTR_PASSWORD | 0x1U);
 	}
 
 	/* disable the System WDT, FIQ and GIC	*/

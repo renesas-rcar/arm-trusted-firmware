@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2016, Renesas Electronics Corporation
+ * Copyright (c) 2015-2017, Renesas Electronics Corporation
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -29,9 +29,9 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef QOS_INIT_H_H3_WS11__
-#define QOS_INIT_H_H3_WS11__
+#ifndef QOS_INIT_H_H3_V11__
+#define QOS_INIT_H_H3_V11__
 
-void qos_init_h3_ws11(void);
+void qos_init_h3_v11(void);
 
-#endif	/* QOS_INIT_H_H3_WS11__ */
+#endif	/* QOS_INIT_H_H3_V11__ */

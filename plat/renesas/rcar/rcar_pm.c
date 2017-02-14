@@ -32,7 +32,6 @@
 #include <arch_helpers.h>
 #include <gicv2.h>
 #include <plat_arm.h>
-#include <assert.h>
 #include <bl_common.h>
 #include <bakery_lock.h>
 #include <cci.h>
@@ -117,8 +116,6 @@ static int32_t rcar_do_plat_actions(unsigned int afflvl, unsigned int state)
 {
 	unsigned int max_phys_off_afflvl;
 
-	assert(afflvl <= PLAT_MAX_PWR_LVL);
-
 	if (state != PSCI_STATE_OFF) {
 		return -EAGAIN;
 	}
@@ -128,7 +125,6 @@ static int32_t rcar_do_plat_actions(unsigned int afflvl, unsigned int state)
 	 * all the platform specific actions until that level is hit.
 	 */
 	max_phys_off_afflvl = psci_get_max_phys_off_afflvl();
-	assert(max_phys_off_afflvl != PSCI_INVALID_DATA);
 	if (afflvl != max_phys_off_afflvl) {
 		return -EAGAIN;
 	}

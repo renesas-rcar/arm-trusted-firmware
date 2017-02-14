@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2016, Renesas Electronics Corporation
+ * Copyright (c) 2015-2017, Renesas Electronics Corporation
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -34,7 +34,7 @@
 
 #include	<arch_helpers.h>
 
-#define		VERSION_OF_RENESAS	"1.0.12"
+#define		VERSION_OF_RENESAS	"1.0.13"
 #define		VERSION_OF_RENESAS_MAXLEN	(128)
 
 extern const uint8_t	version_of_renesas[VERSION_OF_RENESAS_MAXLEN];

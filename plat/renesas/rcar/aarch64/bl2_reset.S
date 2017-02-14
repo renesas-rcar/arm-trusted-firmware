@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2016, Renesas Electronics Corporation
+ * Copyright (c) 2015-2017, Renesas Electronics Corporation
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -119,6 +119,19 @@ func bl2_reset
 	adr	x0, bl2_exceptions
 	msr	vbar_el3, x0
 	isb
+
+	/* ---------------------------------------------
+	 * If SError is vaild, enable SError exception(clear PSTATE.A bit)
+	 * and clear SError exception.
+	 * ---------------------------------------------
+	 */
+	mov	x0, #(SCR_RES1_BITS | SCR_EA_BIT | SCR_SIF_BIT)
+	msr	scr_el3, x0
+
+	msr	daifclr, #DAIF_ABT_BIT
+	nop
+	msr	daifset, #DAIF_ABT_BIT
+
 
 	/* ---------------------------------------------------------------------
 	 * The initial state of the Architectural feature trap register
@@ -241,6 +254,11 @@ FiqSPx:
 
 	.align	7
 SErrorSPx:
+	/* ---------------------------------------------
+	 * If SError is vaild, clear SError exception.
+	 * ---------------------------------------------
+	 */
+	eret
 	mov	x0, #SERROR_SP_ELX
 	bl	plat_report_exception
 	b	SErrorSPx

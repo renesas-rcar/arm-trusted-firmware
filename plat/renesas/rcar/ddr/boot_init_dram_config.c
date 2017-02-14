@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2016, Renesas Electronics Corporation
+ * Copyright (c) 2015-2017, Renesas Electronics Corporation
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -33,7 +33,7 @@
  *	NUMBER OF BOARD CONFIGRATION
  *	PLEASE DEFINE
  ******************************************************************************/
-#define BOARDNUM 4
+#define BOARDNUM 10
 /*******************************************************************************
  *	PLEASE SET board number or board judge function
  ******************************************************************************/
@@ -43,12 +43,11 @@ static uint32_t _board_judge(void);
 static uint32_t boardcnf_get_brd_type(void) {
 		return _board_judge();
 }
-#else
+#else // BOARD_JUDGE_AUTO
 static uint32_t boardcnf_get_brd_type(void) {
 		return (1);
 }
-#endif
-
+#endif // BOARD_JUDGE_AUTO
 /*******************************************************************************
  *	BOARD CONFIGRATION
  *	PLEASE DEFINE boardcnfs[]
@@ -144,18 +143,18 @@ static const struct _boardcnf boardcnfs[BOARDNUM] = {
 /*dqdm_adj_w*/		{ 0, 0, 0, 0, 0, 0, 0, 0,
 			  0, 0, 0, 0, 0, 0, 0, 0,
 			  0, 0, 0, 0, 0, 0, 0, 0,
-			  0, 0, 0, 0, 0, 0, 0, 0},
+			  0, 0, 0, 0, 0, 0, 0, 0 },
 /*dm_adj_r*/		{ 0, 0, 0, 0 },
 /*dqdm_adj_r*/		{ 0, 0, 0, 0, 0, 0, 0, 0,
 			  0, 0, 0, 0, 0, 0, 0, 0,
 			  0, 0, 0, 0, 0, 0, 0, 0,
-			  0, 0, 0, 0, 0, 0, 0, 0}
+			  0, 0, 0, 0, 0, 0, 0, 0 }
 		},
 /*ch[1]*/	{
 /*ddr_density[]*/	{ 0x02, 0x02 }, 
 /*ca_swap*/		0x00543210,
 /*dqs_swap*/		0x2310,
-/*dq_swap*/		{ 0x01327654, 0x34526107, 0x35421670, 0x70615324 },
+/*dq_swap[]*/		{ 0x01327654, 0x34526107, 0x35421670, 0x70615324 },
 /*dm_swap[]*/		{ 0x08, 0x08, 0x08, 0x08 },
 /*wdqlvl_patt[]*/	WDQLVL_PAT,
 /*cacs_adj*/		{ 0, 0, 0, 0, 0, 0, 0, 0, 
@@ -164,16 +163,15 @@ static const struct _boardcnf boardcnfs[BOARDNUM] = {
 /*dqdm_adj_w*/		{ 0, 0, 0, 0, 0, 0, 0, 0,
 			  0, 0, 0, 0, 0, 0, 0, 0,
 			  0, 0, 0, 0, 0, 0, 0, 0,
-			  0, 0, 0, 0, 0, 0, 0, 0},
+			  0, 0, 0, 0, 0, 0, 0, 0 },
 /*dm_adj_r*/		{ 0, 0, 0, 0 },
 /*dqdm_adj_r*/		{ 0, 0, 0, 0, 0, 0, 0, 0,
 			  0, 0, 0, 0, 0, 0, 0, 0,
 			  0, 0, 0, 0, 0, 0, 0, 0,
-			  0, 0, 0, 0, 0, 0, 0, 0}
+			  0, 0, 0, 0, 0, 0, 0, 0 }
 		}
 	}
 },
-
 /*
  * boardcnf[1] RENESAS KRIEK board w M3PKG
  */
@@ -198,18 +196,18 @@ static const struct _boardcnf boardcnfs[BOARDNUM] = {
 /*dqdm_adj_w*/		{ 0, 0, 0, 0, 0, 0, 0, 0,
 			  0, 0, 0, 0, 0, 0, 0, 0,
 			  0, 0, 0, 0, 0, 0, 0, 0,
-			  0, 0, 0, 0, 0, 0, 0, 0},
+			  0, 0, 0, 0, 0, 0, 0, 0 },
 /*dm_adj_r*/		{ 0, 0, 0, 0 },
 /*dqdm_adj_r*/		{ 0, 0, 0, 0, 0, 0, 0, 0,
 			  0, 0, 0, 0, 0, 0, 0, 0,
 			  0, 0, 0, 0, 0, 0, 0, 0,
-			  0, 0, 0, 0, 0, 0, 0, 0}
+			  0, 0, 0, 0, 0, 0, 0, 0 }
 		},
 /*ch[1]*/	{
-/*ddr_density[]*/	{ 0x02, 0x02 }, 
+/*ddr_density[]*/	{ 0x02, 0x02 },
 /*ca_swap*/		0x00302154,
 /*dqs_swap*/		0x2310,
-/*dq_swap*/		{ 0x01672543, 0x45361207, 0x45632107, 0x60715234 },
+/*dq_swap[]*/		{ 0x01672543, 0x45361207, 0x45632107, 0x60715234 },
 /*dm_swap[]*/		{ 0x08, 0x08, 0x08, 0x08 },
 /*wdqlvl_patt[]*/	WDQLVL_PAT,
 /*cacs_adj*/		{ 0, 0, 0, 0, 0, 0, 0, 0, 
@@ -218,17 +216,17 @@ static const struct _boardcnf boardcnfs[BOARDNUM] = {
 /*dqdm_adj_w*/		{ 0, 0, 0, 0, 0, 0, 0, 0,
 			  0, 0, 0, 0, 0, 0, 0, 0,
 			  0, 0, 0, 0, 0, 0, 0, 0,
-			  0, 0, 0, 0, 0, 0, 0, 0},
+			  0, 0, 0, 0, 0, 0, 0, 0 },
 /*dm_adj_r*/		{ 0, 0, 0, 0 },
 /*dqdm_adj_r*/		{ 0, 0, 0, 0, 0, 0, 0, 0,
 			  0, 0, 0, 0, 0, 0, 0, 0,
 			  0, 0, 0, 0, 0, 0, 0, 0,
-			  0, 0, 0, 0, 0, 0, 0, 0}
+			  0, 0, 0, 0, 0, 0, 0, 0 }
 		}
 	}
 },
 /*
- * boardcnf[2] RENESAS SALVATOR-X board w H3SIP
+ * boardcnf[2] RENESAS SALVATOR-X board w H3SIP-1rank
  */	
 {
 	0x0f,		/* phyvalid */
@@ -251,18 +249,18 @@ static const struct _boardcnf boardcnfs[BOARDNUM] = {
 /*dqdm_adj_w*/		{ 0, 0, 0, 0, 0, 0, 0, 0,
 			  0, 0, 0, 0, 0, 0, 0, 0,
 			  0, 0, 0, 0, 0, 0, 0, 0,
-			  0, 0, 0, 0, 0, 0, 0, 0},
+			  0, 0, 0, 0, 0, 0, 0, 0 },
 /*dm_adj_r*/		{ 0, 0, 0, 0 },
 /*dqdm_adj_r*/		{ 0, 0, 0, 0, 0, 0, 0, 0,
 			  0, 0, 0, 0, 0, 0, 0, 0,
 			  0, 0, 0, 0, 0, 0, 0, 0,
-			  0, 0, 0, 0, 0, 0, 0, 0}
+			  0, 0, 0, 0, 0, 0, 0, 0 }
 		},
 /*ch[1]*/	{
-/*ddr_density[]*/	{ 0x02, 0xff }, 
+/*ddr_density[]*/	{ 0x02, 0xff },
 /*ca_swap*/		0x00543210,
 /*dqs_swap*/		0x3102,
-/*dq_swap*/		{ 0x23547610, 0x34526107, 0x67452310, 0x32106754 },
+/*dq_swap[]*/		{ 0x23547610, 0x34526107, 0x67452310, 0x32106754 },
 /*dm_swap[]*/		{ 0x08, 0x08, 0x08, 0x08 },
 /*wdqlvl_patt[]*/	WDQLVL_PAT,
 /*cacs_adj*/		{ 0, 0, 0, 0, 0, 0, 0, 0, 
@@ -271,12 +269,12 @@ static const struct _boardcnf boardcnfs[BOARDNUM] = {
 /*dqdm_adj_w*/		{ 0, 0, 0, 0, 0, 0, 0, 0,
 			  0, 0, 0, 0, 0, 0, 0, 0,
 			  0, 0, 0, 0, 0, 0, 0, 0,
-			  0, 0, 0, 0, 0, 0, 0, 0},
+			  0, 0, 0, 0, 0, 0, 0, 0 },
 /*dm_adj_r*/		{ 0, 0, 0, 0 },
 /*dqdm_adj_r*/		{ 0, 0, 0, 0, 0, 0, 0, 0,
 			  0, 0, 0, 0, 0, 0, 0, 0,
 			  0, 0, 0, 0, 0, 0, 0, 0,
-			  0, 0, 0, 0, 0, 0, 0, 0}
+			  0, 0, 0, 0, 0, 0, 0, 0 }
 		},
 /*ch[2]*/	{
 /*ddr_density[]*/	{ 0x02, 0xff }, 
@@ -291,18 +289,18 @@ static const struct _boardcnf boardcnfs[BOARDNUM] = {
 /*dqdm_adj_w*/		{ 0, 0, 0, 0, 0, 0, 0, 0,
 			  0, 0, 0, 0, 0, 0, 0, 0,
 			  0, 0, 0, 0, 0, 0, 0, 0,
-			  0, 0, 0, 0, 0, 0, 0, 0},
+			  0, 0, 0, 0, 0, 0, 0, 0 },
 /*dm_adj_r*/		{ 0, 0, 0, 0 },
 /*dqdm_adj_r*/		{ 0, 0, 0, 0, 0, 0, 0, 0,
 			  0, 0, 0, 0, 0, 0, 0, 0,
 			  0, 0, 0, 0, 0, 0, 0, 0,
-			  0, 0, 0, 0, 0, 0, 0, 0}
+			  0, 0, 0, 0, 0, 0, 0, 0 }
 		},
 /*ch[3]*/	{
 /*ddr_density[]*/	{ 0x02, 0xff }, 
 /*ca_swap*/		0x00543210,
 /*dqs_swap*/		0x0213,
-/*dq_swap*/		{ 0x01327654, 0x70615432, 0x54760123, 0x07162345 },
+/*dq_swap[]*/		{ 0x01327654, 0x70615432, 0x54760123, 0x07162345 },
 /*dm_swap[]*/		{ 0x08, 0x08, 0x08, 0x08 },
 /*wdqlvl_patt[]*/	WDQLVL_PAT,
 /*cacs_adj*/		{ 0, 0, 0, 0, 0, 0, 0, 0, 
@@ -311,29 +309,28 @@ static const struct _boardcnf boardcnfs[BOARDNUM] = {
 /*dqdm_adj_w*/		{ 0, 0, 0, 0, 0, 0, 0, 0,
 			  0, 0, 0, 0, 0, 0, 0, 0,
 			  0, 0, 0, 0, 0, 0, 0, 0,
-			  0, 0, 0, 0, 0, 0, 0, 0},
+			  0, 0, 0, 0, 0, 0, 0, 0 },
 /*dm_adj_r*/		{ 0, 0, 0, 0 },
 /*dqdm_adj_r*/		{ 0, 0, 0, 0, 0, 0, 0, 0,
 			  0, 0, 0, 0, 0, 0, 0, 0,
 			  0, 0, 0, 0, 0, 0, 0, 0,
-			  0, 0, 0, 0, 0, 0, 0, 0}
+			  0, 0, 0, 0, 0, 0, 0, 0 }
 		}
 	}
 },
-
 /*
  * boardcnf[3] RENESAS Starter Kit board w M3SIP(1RANK)
  */	
 {
 	0x03,		/* phyvalid */
 	0x01,		/* dbi_en */
-	0x0300,		/* cacs_dly */
+	0x02c0,		/* cacs_dly */
 	0,		/* cacs_dly_adj */
 	0x0300,		/* dqdm_dly_w */
 	0x00a0,		/* dqdm_dly_r */
 	{
 /*ch[0]*/	{
-/*ddr_density[]*/	{ 0x02, 0xFF },    // M3 Starter Kit(8G bit 1rank)
+/*ddr_density[]*/	{ 0x02, 0xFF },    // M3SIP(8G bit 1rank)
 /*ca_swap*/		0x00543210U,
 /*dqs_swap*/		0x3201U,
 /*dq_swap[]*/		{ 0x70612543, 0x43251670, 0x45326170, 0x10672534 },
@@ -345,18 +342,18 @@ static const struct _boardcnf boardcnfs[BOARDNUM] = {
 /*dqdm_adj_w*/		{ 0, 0, 0, 0, 0, 0, 0, 0,
 			  0, 0, 0, 0, 0, 0, 0, 0,
 			  0, 0, 0, 0, 0, 0, 0, 0,
-			  0, 0, 0, 0, 0, 0, 0, 0},
+			  0, 0, 0, 0, 0, 0, 0, 0 },
 /*dm_adj_r*/		{ 0, 0, 0, 0 },
 /*dqdm_adj_r*/		{ 0, 0, 0, 0, 0, 0, 0, 0,
 			  0, 0, 0, 0, 0, 0, 0, 0,
 			  0, 0, 0, 0, 0, 0, 0, 0,
-			  0, 0, 0, 0, 0, 0, 0, 0}
+			  0, 0, 0, 0, 0, 0, 0, 0 }
 		},
 /*ch[1]*/	{
-/*ddr_density[]*/	{ 0x02, 0xFF },    // M3 Starter Kit(8G bit 1rank)
+/*ddr_density[]*/	{ 0x02, 0xFF },    // M3SIP(8G bit 1rank)
 /*ca_swap*/		0x00543210,
 /*dqs_swap*/		0x2310,
-/*dq_swap*/		{ 0x01327654, 0x34526107, 0x35421670, 0x70615324 },
+/*dq_swap[]*/		{ 0x01327654, 0x34526107, 0x35421670, 0x70615324 },
 /*dm_swap[]*/		{ 0x08, 0x08, 0x08, 0x08 },
 /*wdqlvl_patt[]*/	WDQLVL_PAT,
 /*cacs_adj*/		{ 0, 0, 0, 0, 0, 0, 0, 0, 
@@ -365,12 +362,530 @@ static const struct _boardcnf boardcnfs[BOARDNUM] = {
 /*dqdm_adj_w*/		{ 0, 0, 0, 0, 0, 0, 0, 0,
 			  0, 0, 0, 0, 0, 0, 0, 0,
 			  0, 0, 0, 0, 0, 0, 0, 0,
-			  0, 0, 0, 0, 0, 0, 0, 0},
+			  0, 0, 0, 0, 0, 0, 0, 0 },
 /*dm_adj_r*/		{ 0, 0, 0, 0 },
 /*dqdm_adj_r*/		{ 0, 0, 0, 0, 0, 0, 0, 0,
 			  0, 0, 0, 0, 0, 0, 0, 0,
 			  0, 0, 0, 0, 0, 0, 0, 0,
-			  0, 0, 0, 0, 0, 0, 0, 0}
+			  0, 0, 0, 0, 0, 0, 0, 0 }
+		}
+	}
+},
+/*
+ * boardcnf[4] RENESAS SALVATOR-M(1rank) board w H3SoC
+ */	
+{
+	0x0f,		/* phyvalid */
+	0x00,		/* dbi_en */
+	0x220,		/* cacs_dly */
+	-50,		/* cacs_dly_adj */
+	0x300,		/* dqdm_dly_w */
+	0x0a0,		/* dqdm_dly_r */
+	{
+/*ch[0]*/	{
+/*ddr_density[]*/	{ 0x02, 0xff }, 
+/*ca_swap*/		0x00315024,
+/*dqs_swap*/		0x3120,
+/*dq_swap[]*/		{ 0x30671254, 0x26541037, 0x17054623, 0x12307645 },
+/*dm_swap[]*/		{ 0x08, 0x08, 0x08, 0x08 },
+/*wdqlvl_patt[]*/	WDQLVL_PAT,
+/*cacs_adj*/		{ 0, 0, 0, 0, 0, 0, 0, 0, 
+			  0, 0 },
+/*dm_adj_w*/		{ 0, 0, 0, 0 },
+/*dqdm_adj_w*/		{ 0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0 },
+/*dm_adj_r*/		{ 0, 0, 0, 0 },
+/*dqdm_adj_r*/		{ 0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0 }
+			},
+/*ch[1]*/	{
+/*ddr_density[]*/	{ 0x02, 0xff },
+/*ca_swap*/		0x00025143,
+/*dqs_swap*/		0x3210,
+/*dq_swap[]*/		{ 0x70613542, 0x16245307, 0x30712645, 0x21706354 },
+/*dm_swap[]*/		{ 0x08, 0x08, 0x08, 0x08 },
+/*wdqlvl_patt[]*/	WDQLVL_PAT,
+/*cacs_adj*/		{ 0, 0, 0, 0, 0, 0, 0, 0, 
+			  0, 0 },
+/*dm_adj_w*/		{ 0, 0, 0, 0 },
+/*dqdm_adj_w*/		{ 0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0 },
+/*dm_adj_r*/		{ 0, 0, 0, 0 },
+/*dqdm_adj_r*/		{ 0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0 }
+			},
+/*ch[2]*/	{
+/*ddr_density[]*/	{ 0x02, 0xff }, 
+/*ca_swap*/		0x00523104,
+/*dqs_swap*/		0x2301,
+/*dq_swap[]*/		{ 0x70613542, 0x16245307, 0x30712645, 0x21706354 },
+/*dm_swap[]*/		{ 0x08, 0x08, 0x08, 0x08 },
+/*wdqlvl_patt[]*/	WDQLVL_PAT,
+/*cacs_adj*/		{ 0, 0, 0, 0, 0, 0, 0, 0, 
+			  0, 0 },
+/*dm_adj_w*/		{ 0, 0, 0, 0 },
+/*dqdm_adj_w*/		{ 0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0 },
+/*dm_adj_r*/		{ 0, 0, 0, 0 },
+/*dqdm_adj_r*/		{ 0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0 }
+			},
+/*ch[3]*/	{
+/*ddr_density[]*/	{ 0x02, 0xff },
+/*ca_swap*/		0x00153402,
+/*dqs_swap*/		0x2031,
+/*dq_swap[]*/		{ 0x30671254, 0x26541037, 0x17054623, 0x12307645 },
+/*dm_swap[]*/		{ 0x08, 0x08, 0x08, 0x08 },
+/*wdqlvl_patt[]*/	WDQLVL_PAT,
+/*cacs_adj*/		{ 0, 0, 0, 0, 0, 0, 0, 0, 
+			  0, 0 },
+/*dm_adj_w*/		{ 0, 0, 0, 0 },
+/*dqdm_adj_w*/		{ 0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0 },
+/*dm_adj_r*/		{ 0, 0, 0, 0 },
+/*dqdm_adj_r*/		{ 0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0 }
+		}
+	}
+},
+/*
+ * boardcnf[5] RENESAS KRIEK-1rank board w M3PKG
+ */
+{
+	0x03,		/* phyvalid */
+	0x01,		/* dbi_en */
+	0x2c0,		/* cacs_dly */
+	0,		/* cacs_dly_adj */
+	0x300,		/* dqdm_dly_w */
+	0x0a0,		/* dqdm_dly_r */
+	{
+/*ch[0]*/	{
+/*ddr_density[]*/	{ 0x02, 0xff }, 
+/*ca_swap*/		0x00345201,
+/*dqs_swap*/		0x3201,
+/*dq_swap[]*/		{ 0x01672543, 0x45361207, 0x45632107, 0x60715234 },
+/*dm_swap[]*/		{ 0x08, 0x08, 0x08, 0x08 },
+/*wdqlvl_patt[]*/	WDQLVL_PAT,
+/*cacs_adj*/		{ 0, 0, 0, 0, 0, 0, 0, 0, 
+			  0, 0 },
+/*dm_adj_w*/		{ 0, 0, 0, 0 },
+/*dqdm_adj_w*/		{ 0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0 },
+/*dm_adj_r*/		{ 0, 0, 0, 0 },
+/*dqdm_adj_r*/		{ 0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0 }
+		},
+/*ch[1]*/	{
+/*ddr_density[]*/	{ 0x02, 0xff },
+/*ca_swap*/		0x00302154,
+/*dqs_swap*/		0x2310,
+/*dq_swap[]*/		{ 0x01672543, 0x45361207, 0x45632107, 0x60715234 },
+/*dm_swap[]*/		{ 0x08, 0x08, 0x08, 0x08 },
+/*wdqlvl_patt[]*/	WDQLVL_PAT,
+/*cacs_adj*/		{ 0, 0, 0, 0, 0, 0, 0, 0, 
+			  0, 0 },
+/*dm_adj_w*/		{ 0, 0, 0, 0 },
+/*dqdm_adj_w*/		{ 0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0 },
+/*dm_adj_r*/		{ 0, 0, 0, 0 },
+/*dqdm_adj_r*/		{ 0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0 }
+		}
+	}
+},
+/*
+ * boardcnf[6] RENESAS SALVATOR-X board w H3SIP-2rank
+ */	
+{
+	0x0f,		/* phyvalid */
+	0x00,		/* dbi_en */
+	0x300,		/* cacs_dly */
+	-320,		/* cacs_dly_adj */
+	0x300,		/* dqdm_dly_w */
+	0x0a0,		/* dqdm_dly_r */
+	{
+/*ch[0]*/	{
+/*ddr_density[]*/	{ 0x02, 0x02 }, 
+/*ca_swap*/		0x00543210,
+/*dqs_swap*/		0x3210,
+/*dq_swap[]*/		{ 0x20741365, 0x34256107, 0x57460321, 0x70614532 },
+/*dm_swap[]*/		{ 0x08, 0x08, 0x08, 0x08 },
+/*wdqlvl_patt[]*/	WDQLVL_PAT,
+/*cacs_adj*/		{ 0, 0, 0, 0, 0, 0, 0, 0, 
+			  0, 0 },
+/*dm_adj_w*/		{ 0, 0, 0, 0 },
+/*dqdm_adj_w*/		{ 0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0 },
+/*dm_adj_r*/		{ 0, 0, 0, 0 },
+/*dqdm_adj_r*/		{ 0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0 }
+		},
+/*ch[1]*/	{
+/*ddr_density[]*/	{ 0x02, 0x02 },
+/*ca_swap*/		0x00543210,
+/*dqs_swap*/		0x3102,
+/*dq_swap[]*/		{ 0x23547610, 0x34526107, 0x67452310, 0x32106754 },
+/*dm_swap[]*/		{ 0x08, 0x08, 0x08, 0x08 },
+/*wdqlvl_patt[]*/	WDQLVL_PAT,
+/*cacs_adj*/		{ 0, 0, 0, 0, 0, 0, 0, 0, 
+			  0, 0 },
+/*dm_adj_w*/		{ 0, 0, 0, 0 },
+/*dqdm_adj_w*/		{ 0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0 },
+/*dm_adj_r*/		{ 0, 0, 0, 0 },
+/*dqdm_adj_r*/		{ 0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0 }
+		},
+/*ch[2]*/	{
+/*ddr_density[]*/	{ 0x02, 0x02 }, 
+/*ca_swap*/		0x00543210,
+/*dqs_swap*/		0x0213,
+/*dq_swap[]*/		{ 0x30216754, 0x67453210, 0x70165243, 0x07162345 },
+/*dm_swap[]*/		{ 0x08, 0x08, 0x08, 0x08 },
+/*wdqlvl_patt[]*/	WDQLVL_PAT,
+/*cacs_adj*/		{ 0, 0, 0, 0, 0, 0, 0, 0, 
+			  0, 0 },
+/*dm_adj_w*/		{ 0, 0, 0, 0 },
+/*dqdm_adj_w*/		{ 0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0 },
+/*dm_adj_r*/		{ 0, 0, 0, 0 },
+/*dqdm_adj_r*/		{ 0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0 }
+		},
+/*ch[3]*/	{
+/*ddr_density[]*/	{ 0x02, 0x02 },
+/*ca_swap*/		0x00543210,
+/*dqs_swap*/		0x0213,
+/*dq_swap[]*/		{ 0x01327654, 0x70615432, 0x54760123, 0x07162345 },
+/*dm_swap[]*/		{ 0x08, 0x08, 0x08, 0x08 },
+/*wdqlvl_patt[]*/	WDQLVL_PAT,
+/*cacs_adj*/		{ 0, 0, 0, 0, 0, 0, 0, 0, 
+			  0, 0 },
+/*dm_adj_w*/		{ 0, 0, 0, 0 },
+/*dqdm_adj_w*/		{ 0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0 },
+/*dm_adj_r*/		{ 0, 0, 0, 0 },
+/*dqdm_adj_r*/		{ 0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0 }
+		}
+	}
+},
+/*
+ * boardcnf[7] RENESAS SALVATOR-X board w H3SIP_ver2.0-1rank
+ */
+{
+	0x0f,		/* phyvalid */
+	0x01,		/* dbi_en */
+	0x300,		/* cacs_dly */
+	0,		/* cacs_dly_adj */
+	0x300,		/* dqdm_dly_w */
+	0x0a0,		/* dqdm_dly_r */
+	{
+/*ch[0]*/	{
+/*ddr_density[]*/	{ 0x02, 0xff }, 
+/*ca_swap*/		0x00543210,
+/*dqs_swap*/		0x2310,
+/*dq_swap[]*/		{ 0x70631425 , 0x34527016 , 0x43527610 , 0x32104567 },
+/*dm_swap[]*/		{ 0x08, 0x08, 0x08, 0x08 },
+/*wdqlvl_patt[]*/	WDQLVL_PAT,
+/*cacs_adj*/		{ 0, 0, 0, 0, 0, 0, 0, 0, 
+			  0, 0 },
+/*dm_adj_w*/		{ 0, 0, 0, 0 },
+/*dqdm_adj_w*/		{ 0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0 },
+/*dm_adj_r*/		{ 0, 0, 0, 0 },
+/*dqdm_adj_r*/		{ 0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0 }
+		},
+/*ch[1]*/	{
+/*ddr_density[]*/	{ 0x02, 0xff },
+/*ca_swap*/		0x00105432,
+/*dqs_swap*/		0x3210,
+/*dq_swap[]*/		{ 0x43256107 , 0x07162354 , 0x10234567 , 0x01235467 },
+/*dm_swap[]*/		{ 0x08, 0x08, 0x08, 0x08 },
+/*wdqlvl_patt[]*/	WDQLVL_PAT,
+/*cacs_adj*/		{ 0, 0, 0, 0, 0, 0, 0, 0, 
+			  0, 0 },
+/*dm_adj_w*/		{ 0, 0, 0, 0 },
+/*dqdm_adj_w*/		{ 0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0 },
+/*dm_adj_r*/		{ 0, 0, 0, 0 },
+/*dqdm_adj_r*/		{ 0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0 }
+		},
+/*ch[2]*/	{
+/*ddr_density[]*/	{ 0x02, 0xff }, 
+/*ca_swap*/		0x00543210,
+/*dqs_swap*/		0x2301,
+/*dq_swap[]*/		{ 0x01327654 , 0x02316457 , 0x10234567 , 0x01325467 },
+/*dm_swap[]*/		{ 0x08, 0x08, 0x08, 0x08 },
+/*wdqlvl_patt[]*/	WDQLVL_PAT,
+/*cacs_adj*/		{ 0, 0, 0, 0, 0, 0, 0, 0, 
+			  0, 0 },
+/*dm_adj_w*/		{ 0, 0, 0, 0 },
+/*dqdm_adj_w*/		{ 0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0 },
+/*dm_adj_r*/		{ 0, 0, 0, 0 },
+/*dqdm_adj_r*/		{ 0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0 }
+		},
+/*ch[3]*/	{
+/*ddr_density[]*/	{ 0x02, 0xff },
+/*ca_swap*/		0x00543210,
+/*dqs_swap*/		0x2301,
+/*dq_swap[]*/		{ 0x12034765 , 0x23105467 , 0x23017645 , 0x32106745 },
+/*dm_swap[]*/		{ 0x08, 0x08, 0x08, 0x08 },
+/*wdqlvl_patt[]*/	WDQLVL_PAT,
+/*cacs_adj*/		{ 0, 0, 0, 0, 0, 0, 0, 0, 
+			  0, 0 },
+/*dm_adj_w*/		{ 0, 0, 0, 0 },
+/*dqdm_adj_w*/		{ 0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0 },
+/*dm_adj_r*/		{ 0, 0, 0, 0 },
+/*dqdm_adj_r*/		{ 0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0 }
+		}
+	}
+},
+/*
+ * boardcnf[8] RENESAS SALVATOR-X board w H3SIP_ver2.0-2rank
+ */
+{
+	0x0f,		/* phyvalid */
+	0x01,		/* dbi_en */
+	0x300,		/* cacs_dly */
+	0,		/* cacs_dly_adj */
+	0x300,		/* dqdm_dly_w */
+	0x0a0,		/* dqdm_dly_r */
+	{
+/*ch[0]*/	{
+/*ddr_density[]*/	{ 0x02, 0x02 }, 
+/*ca_swap*/		0x00543210,
+/*dqs_swap*/		0x2310,
+/*dq_swap[]*/		{ 0x70631425 , 0x34527016 , 0x43527610 , 0x32104567 },
+/*dm_swap[]*/		{ 0x08, 0x08, 0x08, 0x08 },
+/*wdqlvl_patt[]*/	WDQLVL_PAT,
+/*cacs_adj*/		{ 0, 0, 0, 0, 0, 0, 0, 0, 
+			  0, 0 },
+/*dm_adj_w*/		{ 0, 0, 0, 0 },
+/*dqdm_adj_w*/		{ 0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0 },
+/*dm_adj_r*/		{ 0, 0, 0, 0 },
+/*dqdm_adj_r*/		{ 0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0 }
+		},
+/*ch[1]*/	{
+/*ddr_density[]*/	{ 0x02, 0x02 }, 
+/*ca_swap*/		0x00105432,
+/*dqs_swap*/		0x3210,
+/*dq_swap[]*/		{ 0x43256107 , 0x07162354 , 0x10234567 , 0x01235467 },
+/*dm_swap[]*/		{ 0x08, 0x08, 0x08, 0x08 },
+/*wdqlvl_patt[]*/	WDQLVL_PAT,
+/*cacs_adj*/		{ 0, 0, 0, 0, 0, 0, 0, 0, 
+			  0, 0 },
+/*dm_adj_w*/		{ 0, 0, 0, 0 },
+/*dqdm_adj_w*/		{ 0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0 },
+/*dm_adj_r*/		{ 0, 0, 0, 0 },
+/*dqdm_adj_r*/		{ 0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0 }
+		},
+/*ch[2]*/	{
+/*ddr_density[]*/	{ 0x02, 0x02 }, 
+/*ca_swap*/		0x00543210,
+/*dqs_swap*/		0x2301,
+/*dq_swap[]*/		{ 0x01327654 , 0x02316457 , 0x10234567 , 0x01325467 },
+/*dm_swap[]*/		{ 0x08, 0x08, 0x08, 0x08 },
+/*wdqlvl_patt[]*/	WDQLVL_PAT,
+/*cacs_adj*/		{ 0, 0, 0, 0, 0, 0, 0, 0, 
+			  0, 0 },
+/*dm_adj_w*/		{ 0, 0, 0, 0 },
+/*dqdm_adj_w*/		{ 0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0 },
+/*dm_adj_r*/		{ 0, 0, 0, 0 },
+/*dqdm_adj_r*/		{ 0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0 }
+		},
+/*ch[3]*/	{
+/*ddr_density[]*/	{ 0x02, 0x02 }, 
+/*ca_swap*/		0x00543210,
+/*dqs_swap*/		0x2301,
+/*dq_swap[]*/		{ 0x12034765 , 0x23105467 , 0x23017645 , 0x32106745 },
+/*dm_swap[]*/		{ 0x08, 0x08, 0x08, 0x08 },
+/*wdqlvl_patt[]*/	WDQLVL_PAT,
+/*cacs_adj*/		{ 0, 0, 0, 0, 0, 0, 0, 0, 
+			  0, 0 },
+/*dm_adj_w*/		{ 0, 0, 0, 0 },
+/*dqdm_adj_w*/		{ 0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0 },
+/*dm_adj_r*/		{ 0, 0, 0, 0 },
+/*dqdm_adj_r*/		{ 0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0 }
+		}
+	}
+},
+/*
+ * boardcnf[9] RENESAS SALVATOR-MS(1rank) board w H3SoC_VER2.0
+ */
+{
+	0x0f,		/* phyvalid */
+	0x01,		/* dbi_en */
+	0x220,		/* cacs_dly */
+	-50,		/* cacs_dly_adj */
+	0x300,		/* dqdm_dly_w */
+	0x0a0,		/* dqdm_dly_r */
+	{
+/*ch[0]*/	{
+/*ddr_density[]*/	{ 0x02, 0xff }, 
+/*ca_swap*/		0x00543210,
+/*dqs_swap*/		0x3120,
+/*dq_swap[]*/		{ 0x23674510, 0x53467210, 0x75346210, 0x27645310 },
+/*dm_swap[]*/		{ 0x08, 0x08, 0x08, 0x08 },
+/*wdqlvl_patt[]*/	WDQLVL_PAT,
+/*cacs_adj*/		{ 0, 0, 0, 0, 0, 0, 0, 0, 
+			  0, 0 },
+/*dm_adj_w*/		{ 0, 0, 0, 0 },
+/*dqdm_adj_w*/		{ 0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0 },
+/*dm_adj_r*/		{ 0, 0, 0, 0 },
+/*dqdm_adj_r*/		{ 0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0 }
+			},
+/*ch[1]*/	{
+/*ddr_density[]*/	{ 0x02, 0xff },
+/*ca_swap*/		0x00543210,
+/*dqs_swap*/		0x3210,
+/*dq_swap[]*/		{ 0x37652401, 0x43752610, 0x43257610, 0x23764510 },
+/*dm_swap[]*/		{ 0x08, 0x08, 0x08, 0x08 },
+/*wdqlvl_patt[]*/	WDQLVL_PAT,
+/*cacs_adj*/		{ 0, 0, 0, 0, 0, 0, 0, 0, 
+			  0, 0 },
+/*dm_adj_w*/		{ 0, 0, 0, 0 },
+/*dqdm_adj_w*/		{ 0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0 },
+/*dm_adj_r*/		{ 0, 0, 0, 0 },
+/*dqdm_adj_r*/		{ 0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0 }
+			},
+/*ch[2]*/	{
+/*ddr_density[]*/	{ 0x02, 0xff }, 
+/*ca_swap*/		0x00452103,
+/*dqs_swap*/		0x2301,
+/*dq_swap[]*/		{ 0x26573401, 0x43752610, 0x43257610, 0x32764510 },
+/*dm_swap[]*/		{ 0x08, 0x08, 0x08, 0x08 },
+/*wdqlvl_patt[]*/	WDQLVL_PAT,
+/*cacs_adj*/		{ 0, 0, 0, 0, 0, 0, 0, 0, 
+			  0, 0 },
+/*dm_adj_w*/		{ 0, 0, 0, 0 },
+/*dqdm_adj_w*/		{ 0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0 },
+/*dm_adj_r*/		{ 0, 0, 0, 0 },
+/*dqdm_adj_r*/		{ 0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0 }
+			},
+/*ch[3]*/	{
+/*ddr_density[]*/	{ 0x02, 0xff },
+/*ca_swap*/		0x00520413,
+/*dqs_swap*/		0x2031,
+/*dq_swap[]*/		{ 0x32674501, 0x53467210, 0x75346210, 0x47652301 },
+/*dm_swap[]*/		{ 0x08, 0x08, 0x08, 0x08 },
+/*wdqlvl_patt[]*/	WDQLVL_PAT,
+/*cacs_adj*/		{ 0, 0, 0, 0, 0, 0, 0, 0, 
+			  0, 0 },
+/*dm_adj_w*/		{ 0, 0, 0, 0 },
+/*dqdm_adj_w*/		{ 0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0 },
+/*dm_adj_r*/		{ 0, 0, 0, 0 },
+/*dqdm_adj_r*/		{ 0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0 }
 		}
 	}
 }
@@ -467,6 +982,8 @@ static const uint32_t TermcodeBySample[20][3]= {
 #define    PFC_PUD5   0xE6060454U
 /* R/W  32      LSI pin pull-up/down control register 6 */
 #define    PFC_PUD6   0xE6060458U
+/* R    32      General input register 5 */
+#define	   GPIO_INDT5 0xE605500CU
 /* R    32      General input register 6 */
 #define    GPIO_INDT6 0xE605540CU
 
@@ -524,6 +1041,7 @@ static uint32_t opencheck_SSI_WS6(void)
 	/* GPSR6[15]=SSI_WS6*/
 	micro_wait(10);
 	up = (mmio_read_32(GPIO_INDT6)>>15) & 0x1; 
+
 	dsb_sev();
 
 	pfc_write_and_poll(GPIO_GPSR6,gpsr6_bak);
@@ -539,89 +1057,60 @@ static uint32_t opencheck_SSI_WS6(void)
 		return 1;
 	}
 }
-static uint32_t opencheck_USB0_OVC(void)
+static uint32_t evaborad_softsw_check(void)
 {
-	uint32_t dataL, down, up;
-	uint32_t gpsr6_bak;
-	uint32_t puen6_bak;
-	uint32_t pud6_bak;
+	uint32_t dataL;
 
-	gpsr6_bak = mmio_read_32(GPIO_GPSR6);
-	puen6_bak = mmio_read_32(PFC_PUEN6);
-	pud6_bak = mmio_read_32(PFC_PUD6);
-	dsb_sev();
-
-	dataL = (gpsr6_bak & ~BIT25);
-	pfc_write_and_poll(GPIO_GPSR6, dataL);
-
-	/* Pull-Up/Down Enable (PUEN6[0]=1) */
-	dataL = puen6_bak;
-	dataL |= (BIT0);
-	pfc_write_and_poll(PFC_PUEN6, dataL);
-
-	/* Pull-Down-Enable (PUD6[0]=0, PUEN6[0]=1) */
-	dataL = pud6_bak;
-	dataL &= ~(BIT0);
-	pfc_write_and_poll(PFC_PUD6,dataL);
-
-	/* GPSR6[25]=UUSB0_OVC*/
-	micro_wait(10);
-	down = (mmio_read_32(GPIO_INDT6)>>25) & 0x1; 
-	dsb_sev();
-
-	/* Pull-Up-Enable (PUD6[0]=1, PUEN6[22]=1)*/
-	dataL = pud6_bak;
-	dataL |= (BIT0);
-	pfc_write_and_poll(PFC_PUD6,dataL);
-
-	/* GPSR6[25]=USB0_OVC*/
-	micro_wait(10);
-	up = (mmio_read_32(GPIO_INDT6)>>25) & 0x1; 
-	dsb_sev();
-
-	pfc_write_and_poll(GPIO_GPSR6,gpsr6_bak);
-	pfc_write_and_poll(PFC_PUEN6,puen6_bak);
-	pfc_write_and_poll(PFC_PUD6,pud6_bak);
-
-	// Compare
-	if( down == up ){
-		// Same = Connect
-		return 0;
-	}else{
-		// Diff = Open
-		return 1;
-	}
+	// GP5[17] : SoftSW[0]
+	// GP5[20] : SoftSW[1]
+	// GP5[22] : SoftSW[2]
+	// GP5[23] : SoftSW[3]
+	dataL = mmio_read_32(GPIO_INDT5) & 0x00D20000;
+	dataL = (((dataL >> 20) + 0x00000001) & 0x0000000E)
+		|((dataL >> 17) & 0x00000001);
+	return (dataL);
 }
 static uint32_t _board_judge(void) {
 	uint32_t brd;
 	uint32_t usb2_ovc_open;
-	uint32_t usb0_ovc_open;
 
 	usb2_ovc_open = opencheck_SSI_WS6();
-	usb0_ovc_open = opencheck_USB0_OVC();
 
-	if(usb2_ovc_open) {
-		if(usb0_ovc_open) {
-			if(PRR_PRODUCT_H3 == Prr_Product) {
-				/* RENESAS H3 Starter Kit board */
-				brd= 2;
-			} else {
-				/* RENESAS M3 Starter Kit board */
-				brd = 3;
-			}
+	/* SoftSW No4 ON/OFF (ON = Starter Kit) */
+	if((evaborad_softsw_check() & 0x08)==0x00) {
+		if(PRR_PRODUCT_H3 == Prr_Product) {
+		  if (PRR_PRODUCT_11>=Prr_Cut) {
+			/* RENESAS Starter Kit(H3-SIP) board */
+			brd = 2;
+		  } else {
+			/* RENESAS SALVATOR-X (H3SIP_VER2.0) */
+			brd = 7;
+		  }
 		} else {
+			/* RENESAS Starter Kit(M3-SIP 1RANK) board */
+			brd = 3;
+		}
+	} else {
+		if(usb2_ovc_open) {
 			/* RENESAS Kriek board */
 			brd = 1;
-	  	}
-	} else {
-		if(PRR_PRODUCT_H3 == Prr_Product) {
-			/* RENESAS SALVATOR-X (H3-SIP)*/
-			brd= 2;
 		} else {
-			/* RENESAS SALVATOR-X (M3-SIP)*/
-			brd= 0;
+			if(PRR_PRODUCT_H3 == Prr_Product) {
+			  if (PRR_PRODUCT_11>=Prr_Cut) {
+				/* RENESAS SALVATOR-X (H3-SIP) */
+				brd = 2;
+			  } else {
+				/* RENESAS SALVATOR-X (H3SIP_VER2.0) */
+				brd = 7;
+			  }
+			} else {
+				/* RENESAS SALVATOR-X (M3-SIP) */
+				brd = 0;
+			}
 		}
 	}
+	
 	return brd;
 }
 #endif
+

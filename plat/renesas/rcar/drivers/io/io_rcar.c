@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2014, ARM Limited and Contributors. All rights reserved.
- * Copyright (c) 2015-2016, Renesas Electronics Corporation. All rights reserved.
+ * Copyright (c) 2015-2017, Renesas Electronics Corporation. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -42,6 +42,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <uuid.h>
+#include <mmio.h>
 #include "io_rcar.h"
 #include "io_common.h"
 #include "io_private.h"
@@ -85,6 +86,10 @@ typedef struct {
 #define RCAR_CERT_SIZE			(0x800U)	/* cert field size*/
 #define RCAR_CERT_INFO_SIZE_OFFSET	(0x264U)	/* byte address set : must 4byte alignment */
 #define RCAR_CERT_INFO_DST_OFFSET	(0x154U)	/* byte address set : must 4byte alignment */
+#define RCAR_CERT_INFO_SIZE_OFFSET1	(0x364U)	/* for Map Type-1 */
+#define RCAR_CERT_INFO_DST_OFFSET1	(0x1D4U)	/* for Map Type-1 */
+#define RCAR_CERT_INFO_SIZE_OFFSET2	(0x464U)	/* for Map Type-2 */
+#define RCAR_CERT_INFO_DST_OFFSET2	(0x254U)	/* for Map Type-2 */
 #define RCAR_CERT_LOAD			(1U)
 
 #define RCAR_FLASH_CERT_HEADER	RCAR_GET_FLASH_ADR(6U, 0U)
@@ -253,19 +258,73 @@ static int32_t file_to_offset(const int32_t file, uintptr_t *offset,
 	return status;
 }
 
+#define RCAR_BOOT_KEY_CERT_NEW	(0xE6300F00U)
+#define	RCAR_CERT_MAGIC_NUM	(0xE291F358U)
 void get_info_from_cert(uint64_t cert_addr, uint32_t *size, uintptr_t *dest_addr)
 {
+	uint32_t	val;
+	uint32_t	magicNumber;
+	uint32_t	certInfo1;
+	uint32_t	certInfo2;
+	uintptr_t	pSize;
+	uintptr_t	pDestH;
+	uintptr_t	pDestL;
+
 	assert(size != NULL);
 	assert(dest_addr != NULL);
 
 	cert_addr &= 0xFFFFFFFFU;		/* need? */
 
-	*size = *((uint32_t *)(cert_addr + RCAR_CERT_INFO_SIZE_OFFSET)) * 4U;
-	*dest_addr = ((uintptr_t)
-		*((uint32_t *)(cert_addr + RCAR_CERT_INFO_DST_OFFSET + 4)))
-		<< 32;
-	*dest_addr += ((uintptr_t)
-		*((uint32_t *)(cert_addr + RCAR_CERT_INFO_DST_OFFSET)));
+	magicNumber = mmio_read_32((uintptr_t)RCAR_BOOT_KEY_CERT_NEW);
+	val = mmio_read_32((uintptr_t)RCAR_BOOT_KEY_CERT_NEW+0xCU);
+	certInfo1 = (val >> 18) & 0x3U;
+	val = mmio_read_32((uintptr_t)cert_addr+0xCU);
+	certInfo2 = (val >> 21) & 0x3U;
+	if (RCAR_CERT_MAGIC_NUM == magicNumber) {
+		if (0x1U != certInfo1) {
+			ERROR("BL2: Cert is invalid.\n");
+			*size = 0x0U;
+			*dest_addr = 0x0U;
+		} else {
+			if (0x2U == certInfo2) {
+				pSize = cert_addr + RCAR_CERT_INFO_SIZE_OFFSET2;
+				*size = mmio_read_32(pSize) * 4U;
+				pDestL = cert_addr + RCAR_CERT_INFO_DST_OFFSET2;
+				pDestH = pDestL + 4U;
+				*dest_addr =
+				((uintptr_t)mmio_read_32(pDestH) << 32) +
+				((uintptr_t)mmio_read_32(pDestL));
+			} else if (0x1U == certInfo2) {
+				pSize = cert_addr + RCAR_CERT_INFO_SIZE_OFFSET1;
+				*size = mmio_read_32(pSize) * 4U;
+				pDestL = cert_addr + RCAR_CERT_INFO_DST_OFFSET1;
+				pDestH = pDestL + 4U;
+				*dest_addr =
+				((uintptr_t)mmio_read_32(pDestH) << 32) +
+				((uintptr_t)mmio_read_32(pDestL));
+			} else if (0x0U == certInfo2) {
+				pSize = cert_addr + RCAR_CERT_INFO_SIZE_OFFSET;
+				*size = mmio_read_32(pSize) * 4U;
+				pDestL = cert_addr + RCAR_CERT_INFO_DST_OFFSET;
+				pDestH = pDestL + 4U;
+				*dest_addr =
+				((uintptr_t)mmio_read_32(pDestH) << 32) +
+				((uintptr_t)mmio_read_32(pDestL));
+ 			} else /* if (0x3U == certInfo2) */ {
+				ERROR("BL2: Cert is invalid.\n");
+				*size = 0x0U;
+				*dest_addr = 0x0U;
+ 			}
+		}
+	} else {
+		pSize = cert_addr + RCAR_CERT_INFO_SIZE_OFFSET;
+		*size = mmio_read_32(pSize) * 4U;
+		pDestL = cert_addr + RCAR_CERT_INFO_DST_OFFSET;
+		pDestH = pDestL + 4U;
+		*dest_addr =
+		((uintptr_t)mmio_read_32(pDestH) << 32) +
+		((uintptr_t)mmio_read_32(pDestL));
+	}
 }
 
 static int32_t load_bl33x(void)

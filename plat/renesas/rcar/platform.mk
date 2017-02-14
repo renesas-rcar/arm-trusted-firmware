@@ -1,6 +1,6 @@
 #
 # Copyright (c) 2013-2014, ARM Limited and Contributors. All rights reserved.
-# Copyright (c) 2015-2016, Renesas Electronics Corporation. All rights reserved.
+# Copyright (c) 2015-2017, Renesas Electronics Corporation. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
@@ -113,8 +113,10 @@ $(eval $(call add_define,RCAR_M3))
 $(eval $(call add_define,RCAR_AUTO))
 RCAR_CUT_10:=0
 RCAR_CUT_11:=1
+RCAR_CUT_20:=10
 $(eval $(call add_define,RCAR_CUT_10))
 $(eval $(call add_define,RCAR_CUT_11))
+$(eval $(call add_define,RCAR_CUT_20))
 
 ifndef LSI
   $(error "Error: Unknown LSI. Please use LSI=<LSI name> to specify the LSI")
@@ -134,6 +136,9 @@ else
       endif
       ifeq (${LSI_CUT},11)
         RCAR_LSI_CUT:=1
+      endif
+      ifeq (${LSI_CUT},20)
+        RCAR_LSI_CUT:=10
       endif
       $(eval $(call add_define,RCAR_LSI_CUT))
     endif

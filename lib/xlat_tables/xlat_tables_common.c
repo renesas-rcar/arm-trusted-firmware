@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2016, ARM Limited and Contributors. All rights reserved.
- * Copyright (c) 2015-2016, Renesas Electronics Corporation. All rights reserved.
+ * Copyright (c) 2015-2017, Renesas Electronics Corporation. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -39,6 +39,7 @@
 #include <types.h>
 #include <utils.h>
 #include <xlat_tables.h>
+#include <platform.h>
 
 #if LOG_LEVEL >= LOG_LEVEL_VERBOSE
 #define LVL0_SPACER ""
@@ -103,7 +104,6 @@ void mmap_add_region(unsigned long long base_pa, uintptr_t base_va,
 	assert(base_pa < end_pa); /* Check for overflows */
 	assert(base_va < end_va);
 
-#if !PLAT_rcar
 #if DEBUG
 
 	/* Check for PAs and VAs overlaps with all other regions */
@@ -142,6 +142,9 @@ void mmap_add_region(unsigned long long base_pa, uintptr_t base_va,
 				(end_pa < mm->base_pa) || (base_pa > mm_end_pa);
 			int separated_va =
 				(end_va < mm->base_va) || (base_va > mm_end_va);
+#if (IMAGE_BL31 && PLAT_rcar)
+			separated_pa = (int)bl31_plat_mmu_pa_chk(separated_pa, base_va, mm->base_pa);
+#endif /* IMAGE_BL31 && PLAT_rcar */
 
 			assert(separated_va && separated_pa);
 		}
@@ -150,7 +153,6 @@ void mmap_add_region(unsigned long long base_pa, uintptr_t base_va,
 	mm = mmap; /* Restore pointer to the start of the array */
 
 #endif /* DEBUG */
-#endif /* !PLAT_rcar */
 
 	/* Find correct place in mmap to insert new region */
 	while (mm->base_va < base_va && mm->size)
