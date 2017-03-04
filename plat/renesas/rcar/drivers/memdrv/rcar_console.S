@@ -37,7 +37,6 @@
 	.globl	console_core_init
 	.globl	console_core_putc
 	.globl	console_core_getc
-	.globl	readreg_cntpct_el0
 
 	.extern	rcar_log_init
 	.extern	rcar_set_log_data
@@ -97,13 +96,3 @@ endfunc console_core_getc
 func console_uninit
 	ret
 endfunc console_uninit
-
-	/* --------------------------------------------
-	 * uint64_t readreg_cntpct_el0(void)
-	 * Function to read CNTPCT_EL0 register.
-	 * --------------------------------------------
-	 */
-func readreg_cntpct_el0
-	mrs	x0, cntpct_el0
-	ret
-endfunc readreg_cntpct_el0
