@@ -38,6 +38,7 @@
 
 #if ((IMAGE_BL31 || IMAGE_BL2) && PLAT_rcar)
 extern void	rcar_set_log_time(void);
+static int newline = 1;
 #endif
 /***********************************************************
  * The tf_printf implementation for all BL stages
@@ -55,6 +56,10 @@ static void string_print(const char *str)
 {
 	while (*str)
 		putchar(*str++);
+#if ((IMAGE_BL31 || IMAGE_BL2) && PLAT_rcar)
+	if ((str - 1) && (*(str - 1) == '\n'))
+		newline = 1;
+#endif
 }
 
 #ifdef AARCH32
@@ -181,7 +186,10 @@ void tf_printf(const char *fmt, ...)
 	char *str;
 
 #if ((IMAGE_BL31 || IMAGE_BL2) && PLAT_rcar)
-	rcar_set_log_time();
+	if (newline) {
+		newline = 0;
+		rcar_set_log_time();
+	}
 #endif
 
 	va_start(args, fmt);
@@ -240,6 +248,10 @@ loop:
 			fmt++;
 			continue;
 		}
+#if ((IMAGE_BL31 || IMAGE_BL2) && PLAT_rcar)
+		if (*fmt == '\n')
+			newline = 1;
+#endif
 		putchar(*fmt++);
 	}
 exit:
