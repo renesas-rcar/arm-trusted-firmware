@@ -88,6 +88,8 @@ static bl31_params_t *bl2_to_bl31_params;
 
 uint32_t rcar_boot_kind_flag __attribute__((section("data")));
 
+static uint64_t rcar_boot_mpidr;
+
 /*******************************************************************************
  * Return a pointer to the 'entry_point_info' structure of the next image for the
  * security state specified. BL33 corresponds to the non-secure image type
@@ -124,38 +126,6 @@ entry_point_info_t *bl31_plat_get_next_image_ep_info(uint32_t type)
 void bl31_early_platform_setup(bl31_params_t *from_bl2,
 		void *plat_params_from_bl2)
 {
-#if DEBUG
-	uint32_t chk_data;
-	uint32_t freq_data;
-	uint32_t product_cut = mmio_read_32((uintptr_t)RCAR_PRR)
-				& (RCAR_PRODUCT_MASK | RCAR_CUT_MASK);
-
-	/*
-	 * Check frequency data in CNTFID0
-	 */
-	chk_data = mmio_read_32((uintptr_t)RCAR_MODEMR) & CHECK_MD13_MD14;
-	switch (chk_data) {
-	case FREQ_8_33M:
-		freq_data = 8333300U; /* 8.33MHz	*/
-		break;
-	case FREQ_10M:
-		freq_data = 10000000U; /* 10MHz	*/
-		break;
-	case FREQ_12_5M:
-		freq_data = 12500000U; /* 12.5MHz	*/
-		break;
-	case FREQ_16_66M:
-		freq_data = 16666600U; /* 16.66MHz	*/
-		if (product_cut == (RCAR_PRODUCT_H3 | RCAR_CUT_ES10)) {
-			freq_data = freq_data >> 1;
-		}
-		break;
-	default:
-		freq_data = 0U;
-		break;
-	}
-#endif
-
 	/* Initialize the log area to provide early debug support */
 	console_init(1U, 0U, 0U);
 
@@ -167,9 +137,6 @@ void bl31_early_platform_setup(bl31_params_t *from_bl2,
 	    ((uint8_t)VERSION_1 > from_bl2->h.version)) {
 		panic();
 	}
-	assert(plat_get_syscnt_freq() == freq_data);
-	assert(read_cntfrq_el0() == plat_get_syscnt_freq());
-	assert(read_cntfrq_el0() != 0);
 
 	bl2_to_bl31_params = from_bl2;
 
@@ -205,6 +172,9 @@ void bl31_platform_setup(void)
 
 	/* Topologies are best known to the platform. */
 	rcar_setup_topology();
+
+	/* Get the mpidr for boot cpu */
+	rcar_boot_mpidr = read_mpidr_el1() & 0x0000ffffU;
 }
 
 /*******************************************************************************
@@ -235,3 +205,30 @@ uint32_t bl31_plat_mmu_pa_chk(uint32_t pa_flg, uintptr_t chk_va, uint64_t chk_pa
 	}
 	return pa_flg;
 }
+
+/*******************************************************************************
+ * Instead of svc_migrate_info in RCAR.
+ * returned PSCI_TOS_NOT_UP_MIG_CAP and boot MPIDR.
+ ******************************************************************************/
+uint32_t bl31_plat_cpu_migrate_info(u_register_t *resident_cpu)
+{
+	*resident_cpu = rcar_boot_mpidr;
+	return (uint32_t)PSCI_TOS_NOT_UP_MIG_CAP;
+}
+
+/*******************************************************************************
+ * There check whether CPU_OFF is OK or not.
+ ******************************************************************************/
+int32_t bl31_plat_denied_cpu_off_chk(void)
+{
+	int32_t rc = PSCI_E_SUCCESS;
+	uint64_t tmp_mpidr;
+
+	tmp_mpidr = read_mpidr_el1() & 0x0000ffffU;
+
+	if (tmp_mpidr == rcar_boot_mpidr) {
+		rc = PSCI_E_DENIED;
+	}
+	return rc;
+}
+

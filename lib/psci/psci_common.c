@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2013-2016, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2015-2017, Renesas Electronics Corporation. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -841,13 +842,7 @@ int psci_spd_migrate_info(u_register_t *mpidr)
 {
 	int rc;
 
-	if (!psci_spd_pm || !psci_spd_pm->svc_migrate_info)
-		return PSCI_E_NOT_SUPPORTED;
-
-	rc = psci_spd_pm->svc_migrate_info(mpidr);
-
-	assert(rc == PSCI_TOS_UP_MIG_CAP || rc == PSCI_TOS_NOT_UP_MIG_CAP \
-		|| rc == PSCI_TOS_NOT_PRESENT_MP || rc == PSCI_E_NOT_SUPPORTED);
+	rc = (int)bl31_plat_cpu_migrate_info(mpidr);
 
 	return rc;
 }

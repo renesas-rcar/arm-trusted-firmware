@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2013-2014, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2015-2017, Renesas Electronics Corporation. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -101,6 +102,15 @@
 #define OPTEED_C_RT_CTX_X30		0x58
 #define OPTEED_C_RT_CTX_SIZE		0x60
 #define OPTEED_C_RT_CTX_ENTRIES		(OPTEED_C_RT_CTX_SIZE >> DWORD_SHIFT)
+
+/*******************************************************************************
+ * Parameter value to be passed from ARM Trusted FW to OP-TEE
+ ******************************************************************************/
+#if PLAT_rcar
+/* optee_vector:cpu_suspend x0 */
+#define TFW_ARG_CPU_SUSPEND		(0x0UL)
+#define TFW_ARG_SYSTEM_SUSPEND		(0x1UL)
+#endif
 
 #ifndef __ASSEMBLY__
 

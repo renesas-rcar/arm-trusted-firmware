@@ -98,25 +98,32 @@ void bl2_swdt_init(void)
 							 | WTCSRA_CKS_DIV16));
 
 	/* Set the overflow counter				*/
+	/* The System Watchdog timer is a single-channel timer  */
+	/* that uses the OSCCLK as an input clock and can be    */
+	/* used as a watchdog timer.                            */
 	switch (chk_data) {
-	case FREQ_8_33M:	/* MD13=0 and MD14=0		*/
-	case FREQ_12_5M:	/* MD13=0 and MD14=1		*/
+	case MD14_MD13_TYPE_0:	/* MD13=0 and MD14=0		*/
+	case MD14_MD13_TYPE_2:	/* MD13=0 and MD14=1		*/
 		/* OSCCLK=130.2kHz count=40687, set 0x5A5A6111	*/
-		mmio_write_32(SWDT_WTCNT,(WTCNT_UPPER_BYTE | WTCNT_COUNT_8p13k));
+		mmio_write_32(SWDT_WTCNT,(WTCNT_UPPER_BYTE |
+			WTCNT_COUNT_8p13k));
 		break;
-	case FREQ_10M:	/* MD13=1 and MD14=0		*/
+	case MD14_MD13_TYPE_1:	/* MD13=1 and MD14=0		*/
 		/* OSCCLK=131.57kHz count=41115, set 0x5A5A5F65	*/
-		mmio_write_32(SWDT_WTCNT,(WTCNT_UPPER_BYTE | WTCNT_COUNT_8p22k));
+		mmio_write_32(SWDT_WTCNT,(WTCNT_UPPER_BYTE |
+			WTCNT_COUNT_8p22k));
 		break;
-	case FREQ_16_66M:	/* MD13=1 and MD14=1		*/
+	case MD14_MD13_TYPE_3:	/* MD13=1 and MD14=1		*/
 		/* OSCCLK=130.2kHz				*/
 		if (product_cut==(RCAR_PRODUCT_H3 | RCAR_CUT_ES10)) {
 			/* R-car H3 ES1.0			*/
 			/* count=20343, set 0x5A5AB089		*/
-			mmio_write_32(SWDT_WTCNT,(WTCNT_UPPER_BYTE | WTCNT_COUNT_8p13k_H3ES1p0));
+			mmio_write_32(SWDT_WTCNT,(WTCNT_UPPER_BYTE |
+				WTCNT_COUNT_8p13k_H3ES1p0));
 		} else {
 			/* count=40687, set 0x5A5A6111		*/
-			mmio_write_32(SWDT_WTCNT,(WTCNT_UPPER_BYTE | WTCNT_COUNT_8p13k));
+			mmio_write_32(SWDT_WTCNT,(WTCNT_UPPER_BYTE |
+				WTCNT_COUNT_8p13k));
 		}
 		break;
 	default:
@@ -138,7 +145,6 @@ void bl2_swdt_init(void)
 	mmio_write_32(SWDT_WTCSRA,(WTCSRA_UPPER_BYTE | sr | SWDT_ENABLE));
 }
 
-extern void gicd_set_icenabler(uintptr_t base, unsigned int id);
 static void bl2_swdt_disable(void)
 {
 	uint32_t rmsk;

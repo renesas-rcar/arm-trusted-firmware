@@ -69,8 +69,10 @@ void rcar_set_log_time(void)
 	int32_t i;
 	int32_t start_counter;
 
-	now_time = (uint64_t)readreg_cntpct_el0();
+	now_time = (uint64_t)read_cntpct_el0();
+#if IMAGE_BL31
 	now_time += rcar_stack_generic_timer[INDEX_TIMER_COUNT];
+#endif
 	freq = read_cntfrq_el0(); /* get the frequency	*/
 	if (freq == 0U) { /* for zero division	*/
 		second = 0U;
@@ -173,7 +175,9 @@ int32_t rcar_log_init(void)
 		(void)memcpy((void *)t_log->header.head, (const void *)const_header, sizeof(t_log->header.head));
 		t_log->header.index = 0U;
 		t_log->header.size = 0U;
+#if IMAGE_BL31
 		rcar_stack_generic_timer[INDEX_TIMER_COUNT] = 0U;
+#endif
 	}
 	rcar_lock_init();
 

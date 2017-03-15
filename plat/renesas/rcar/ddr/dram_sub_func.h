@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2016, Renesas Electronics Corporation
+ * Copyright (c) 2015-2017, Renesas Electronics Corporation
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -29,8 +29,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef __DRAM_SUB_FUNC_H_
-#define __DRAM_SUB_FUNC_H_
+#ifndef DRAM_SUB_FUNC_H_
+#define DRAM_SUB_FUNC_H_
 
 #define DRAM_BOOT_STATUS_COLD	(0U)
 #define DRAM_BOOT_STATUS_WARM	(1U)
@@ -40,4 +40,4 @@
 void dram_get_boot_status(uint32_t *status);
 int32_t dram_update_boot_status(uint32_t status);
 
-#endif /* __DRAM_SUB_FUNC_H_ */
+#endif /* DRAM_SUB_FUNC_H_ */

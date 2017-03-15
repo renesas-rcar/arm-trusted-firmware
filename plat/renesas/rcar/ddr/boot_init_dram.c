@@ -1818,9 +1818,7 @@ static void dbsc_regset(void)
 	 * DBSC_DBRNK4 rkwr
 	 * DBSC_DBRNK5 rkww
 	*/
-	uint32_t _par_DBRNK_VAL;
-
-	_par_DBRNK_VAL = 0x6007;
+ #define _par_DBRNK_VAL		(0x7007)
 
 	for(i=0;i<4;i++){
 		uint32_t dataL2;
@@ -1921,7 +1919,8 @@ static void dbsc_regset_post(void)
 		mmio_write_32(DBSC_DBMEMCONF(ch,2), 0x00000000);
 		mmio_write_32(DBSC_DBMEMCONF(ch,3), 0x00000000);
 	}
-	mmio_write_32(DBSC_DBBUS0CNF1,0x00000000);
+
+	mmio_write_32(DBSC_DBBUS0CNF1,0x00000010); 
 	mmio_write_32(DBSC_DBBUS0CNF0,0x00000000);
 	/*set DBI */
 	if(Boardcnf.dbi_en)
@@ -2450,13 +2449,13 @@ static uint32_t init_ddr(void)
 	***********************************************************************/
 #ifdef DDR_BACKUPMODE
 	if(ddrBackup) {
-		tf_printf("[WARM_BOOT]");
+		NOTICE("[WARM_BOOT]");
 	} else {
-		tf_printf("[COLD_BOOT]");
+		NOTICE("[COLD_BOOT]");
 	}
 	err=dram_update_boot_status(ddrBackup);
 	if(err){
-		tf_printf("[BOOT_STATUS_UPDATE_ERROR]");
+		NOTICE("[BOOT_STATUS_UPDATE_ERROR]");
 		return INITDRAM_ERR_I;
 	}
 #endif
@@ -2501,7 +2500,7 @@ static uint32_t init_ddr(void)
 	/* CMOS MODE */
 	change_lpddr4_en(0);
 
-	ch=0x0f;
+	ch=0x08; // all ch
 
 #ifdef DDR_BACKUPMODE
 	if(ddrBackup==DRAM_BOOT_STATUS_COLD){
@@ -3407,7 +3406,7 @@ int32_t InitDram(void)
 	/***********************************************************************
 	initialize DDRPHY
 	***********************************************************************/
-	tf_printf("..%d\n",failcount);
+	NOTICE("..%d\n",failcount);
 	if(failcount==0)
 		return INITDRAM_OK;
 	else {

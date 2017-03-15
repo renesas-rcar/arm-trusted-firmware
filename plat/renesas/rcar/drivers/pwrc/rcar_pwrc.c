@@ -97,7 +97,9 @@ RCAR_INSTANTIATE_LOCK
 #define	SCTLR_EL3_M_BIT			((uint32_t)1U << 0)
 
 /* prototype */
+#if PMIC_ON_BOARD
 static void rcar_bl31_set_self_refresh(void);
+#endif /* PMIC_ON_BOARD */
 static void SCU_power_up(uint64_t mpidr);
 
 uint32_t rcar_pwrc_status(uint64_t mpidr)
@@ -313,6 +315,13 @@ void rcar_pwrc_clusteroff(uint64_t mpidr)
 	rcar_lock_release();
 }
 
+#if !PMIC_ON_BOARD
+void rcar_pwrc_system_reset(void)
+{
+	mmio_write_32(RCAR_SRESCR, (0x5AA50000U | BIT_SOFTRESET));
+}
+#endif
+
 #define	RST_CA53CPU0BARH		(0xE6160080U)
 #define	RST_CA53CPU0BARL		(0xE6160084U)
 
@@ -342,6 +351,7 @@ void rcar_pwrc_setup(void)
 	rcar_lock_init();
 }
 
+#if PMIC_ON_BOARD
 void __attribute__ ((section (".system_ram"))) __attribute__ ((noinline)) rcar_bl31_go_suspend_to_ram(void)
 {
 	uint8_t		mode;
@@ -456,3 +466,4 @@ void rcar_bl31_init_suspend_to_ram(void)
 		panic();
 	}
 }
+#endif /* PMIC_ON_BOARD */

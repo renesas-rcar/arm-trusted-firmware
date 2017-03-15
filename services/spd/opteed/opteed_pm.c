@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2013-2015, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2015-2017, Renesas Electronics Corporation. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -86,9 +87,22 @@ static void opteed_cpu_suspend_handler(uint64_t max_off_pwrlvl)
 	int32_t rc = 0;
 	uint32_t linear_id = plat_my_core_pos();
 	optee_context_t *optee_ctx = &opteed_sp_context[linear_id];
+#if PLAT_rcar
+	uint64_t psci_func;
+#endif
 
 	assert(optee_vectors);
 	assert(get_optee_pstate(optee_ctx->state) == OPTEE_PSTATE_ON);
+
+#if PLAT_rcar
+	if (max_off_pwrlvl == (uint64_t)PLAT_MAX_PWR_LVL) {
+		psci_func = TFW_ARG_SYSTEM_SUSPEND;
+	} else {
+		psci_func = TFW_ARG_CPU_SUSPEND;
+	}
+	write_ctx_reg(get_gpregs_ctx(&optee_ctx->cpu_ctx),
+		CTX_GPREG_X0, psci_func);
+#endif
 
 	/* Program the entry point and enter OPTEE */
 	cm_set_elr_el3(SECURE, (uint64_t) &optee_vectors->cpu_suspend_entry);

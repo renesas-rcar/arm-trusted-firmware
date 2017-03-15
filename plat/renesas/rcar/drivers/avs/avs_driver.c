@@ -36,7 +36,8 @@
 #include "avs_driver.h"
 #include "rcar_def.h"
 
-#if AVS_SETTING_ENABLE == 1
+#if (AVS_SETTING_ENABLE==1)
+#if (PMIC_ON_BOARD==1)
 /* Read PMIC register for debug. 1:enable / 0:disable */
 #define AVS_READ_PMIC_REG_ENABLE	0
 /* The re-try number of times of the AVS setting. */
@@ -164,14 +165,16 @@ static void avs_set_iic_clock(void);
 static uint8_t avs_read_pmic_reg(uint8_t addr);
 static void avs_poll(uint8_t bit_pos, uint8_t val);
 #endif
-#endif	/* AVS_SETTING_ENABLE */
+#endif	/* (PMIC_ON_BOARD==1) */
+#endif	/* (AVS_SETTING_ENABLE==1) */
 
 /*
  * Initialize to enable the AVS setting.
  */
 void bl2_avs_init(void)
 {
-#if AVS_SETTING_ENABLE == 1
+#if (AVS_SETTING_ENABLE==1)
+#if (PMIC_ON_BOARD==1)
 	uint32_t val;
 	uint32_t mstp;
 
@@ -213,7 +216,8 @@ void bl2_avs_init(void)
 
 	INFO("BL2: Read KSEN_ADJCNTS.VOLCOND=0x%x efuse_avs=%u\n",
 		val, efuse_avs);
-#endif	/* AVS_SETTING_ENABLE */
+#endif	/* (PMIC_ON_BOARD==1) */
+#endif	/* (AVS_SETTING_ENABLE==1) */
 }
 
 /*
@@ -222,7 +226,8 @@ void bl2_avs_init(void)
  */
 void bl2_avs_setting(void)
 {
-#if AVS_SETTING_ENABLE == 1
+#if (AVS_SETTING_ENABLE==1)
+#if (PMIC_ON_BOARD==1)
 	avs_error_t err;
 
 	INFO("BL2: bl2_avs_setting avs_status=%d\n", avs_status);
@@ -418,7 +423,8 @@ void bl2_avs_setting(void)
 		panic();
 		break;
 	}
-#endif	/* AVS_SETTING_ENABLE */
+#endif	/* (PMIC_ON_BOARD==1) */
+#endif	/* (AVS_SETTING_ENABLE==1) */
 }
 
 /*
@@ -426,7 +432,8 @@ void bl2_avs_setting(void)
  */
 void bl2_avs_end(void)
 {
-#if AVS_SETTING_ENABLE == 1
+#if (AVS_SETTING_ENABLE==1)
+#if (PMIC_ON_BOARD==1)
 	uint32_t mstp;
 
 	INFO("BL2: bl2_avs_end avs_status=%d\n", avs_status);
@@ -453,10 +460,12 @@ void bl2_avs_end(void)
 	/* Disables the supply of clock signal to a module. */
 	cpg_write(CPG_SMSTPCR9,
 			mmio_read_32(CPG_SMSTPCR9) | mstp);
-#endif	/* AVS_SETTING_ENABLE */
+#endif	/* (PMIC_ON_BOARD==1) */
+#endif	/* (AVS_SETTING_ENABLE==1) */
 }
 
-#if AVS_SETTING_ENABLE == 1
+#if (AVS_SETTING_ENABLE==1)
+#if (PMIC_ON_BOARD==1)
 /*
  * Check error and judge re-try.
  */
@@ -508,20 +517,22 @@ static void avs_set_iic_clock(void)
 
 	/* Read Mode pin register. */
 	md_pin = mmio_read_32(RCAR_MODEMR) & CHECK_MD13_MD14;
+	/* Set the module clock (CP phy) for the IIC-DVFS. */
+	/* CP phy is EXTAL / 2.                            */
 	switch (md_pin) {
-	case FREQ_8_33M:		/* 8.3333MHz */
+	case MD14_MD13_TYPE_0:	/* EXTAL = 16.6666MHz */
 		mmio_write_8(IIC_ICCL, ICCL_FREQ_8p33M);
 		mmio_write_8(IIC_ICCH, ICCH_FREQ_8p33M);
 		break;
-	case FREQ_10M:		/* 10MHz */
+	case MD14_MD13_TYPE_1:	/* EXTAL = 20MHz */
 		mmio_write_8(IIC_ICCL, ICCL_FREQ_10M);
 		mmio_write_8(IIC_ICCH, ICCH_FREQ_10M);
 		break;
-	case FREQ_12_5M:		/* 12.5MHz */
+	case MD14_MD13_TYPE_2:	/* EXTAL = 25MHz (H3/M3) */
 		mmio_write_8(IIC_ICCL, ICCL_FREQ_12p5M);
 		mmio_write_8(IIC_ICCH, ICCH_FREQ_12p5M);
 		break;
-	case FREQ_16_66M:	/* 16.6666MHz */
+	case MD14_MD13_TYPE_3:	/* EXTAL = 33.3333MHz */
 		mmio_write_8(IIC_ICCL, ICCL_FREQ_16p66M);
 		mmio_write_8(IIC_ICCH, ICCH_FREQ_16p66M);
 		break;
@@ -645,4 +656,5 @@ static void avs_poll(uint8_t bit_pos, uint8_t val)
 	}
 }
 #endif	/* AVS_READ_PMIC_REG_ENABLE */
-#endif	/* AVS_SETTING_ENABLE */
+#endif	/* (PMIC_ON_BOARD==1) */
+#endif	/* (AVS_SETTING_ENABLE==1) */

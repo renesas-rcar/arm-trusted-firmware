@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2014, ARM Limited and Contributors. All rights reserved.
- * Copyright (c) 2015-2016, Renesas Electronics Corporation. All rights reserved.
+ * Copyright (c) 2015-2017, Renesas Electronics Corporation. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -53,6 +53,11 @@ static void rcar_cpu_pwrdwn_common(void);
 static void rcar_cluster_pwrdwn_common(void);
 static void __dead2 rcar_system_off(void);
 static void __dead2 rcar_system_reset(void);
+
+#if !PMIC_ON_BOARD
+static int32_t cpu_on_check(uint64_t mpidr);
+extern int32_t platform_is_primary_cpu(uint64_t mpidr);
+#endif
 
 #define	RCAR_GENERIC_TIMER_STACK	(0x300)
 #define	RCAR_BOOT_MODE			(0x01U)
@@ -318,7 +323,9 @@ void rcar_affinst_suspend_finish(unsigned int afflvl, unsigned int state)
 		mmio_write_32((uintptr_t)(RCAR_CNTC_BASE+(uint32_t)CNTCR_OFF),
 					(uint32_t)(CNTCR_FCREQ(0)|CNTCR_EN));
 		rcar_pwrc_setup();
+#if PMIC_ON_BOARD
 		rcar_bl31_init_suspend_to_ram();
+#endif /* PMIC_ON_BOARD */
 	}
 
 	rcar_affinst_on_finish(afflvl, state);
@@ -345,6 +352,20 @@ static void __dead2 rcar_system_off(void)
 	}
 #else /* pulse mode */
 #endif
+#else /* not PMIC_ON_BOARD */
+	uint64_t my_cpu;
+	int32_t rtn_primary;
+	int32_t rtn_on;
+
+	my_cpu = read_mpidr_el1();
+	rtn_primary = platform_is_primary_cpu(my_cpu);
+	rtn_on = cpu_on_check(my_cpu);
+	if ((rtn_primary != 0) && (rtn_on == 0)) {
+		rcar_pwrc_cpuoff(my_cpu);
+		rcar_pwrc_clusteroff(my_cpu);
+	} else {
+		panic();
+	}
 #endif
 	wfi();
 	ERROR("RCAR System Off: operation not handled.\n");
@@ -368,11 +389,52 @@ static void __dead2 rcar_system_reset(void)
 	}
 #else /* pulse mode */
 #endif
+#else /* not PMIC_ON_BOARD */
+	rcar_pwrc_system_reset();
 #endif
 	wfi();
 	ERROR("RCAR System Reset: operation not handled.\n");
 	panic();
 }
+
+#if !PMIC_ON_BOARD
+static int32_t cpu_on_check(uint64_t mpidr)
+{
+	uint64_t i;
+	uint64_t j;
+	uint64_t cpu_count;
+	uintptr_t reg_PSTR;
+	uint32_t status;
+	uint64_t my_cpu;
+	int32_t rtn;
+
+	const uint64_t cpu_num_in_core[PLATFORM_CLUSTER_COUNT] = {
+			(uint64_t)PLATFORM_CLUSTER0_CORE_COUNT,
+			(uint64_t)PLATFORM_CLUSTER1_CORE_COUNT
+	};
+	const uintptr_t registerPSTR[PLATFORM_CLUSTER_COUNT] = {
+			RCAR_CA57PSTR,
+			RCAR_CA53PSTR
+	};
+
+	rtn = 0;
+	my_cpu = mpidr & ((uint64_t)((MPIDR_CLUSTER_MASK) | (MPIDR_CPU_MASK)));
+	for (i = 0U; i < ((uint64_t)(PLATFORM_CLUSTER_COUNT)); i++) {
+		cpu_count = cpu_num_in_core[i];
+		reg_PSTR = registerPSTR[i];
+		for (j = 0U; j < cpu_count; j++) {
+			if (my_cpu != ((i * 0x100U) + j)) {
+				status = mmio_read_32(reg_PSTR) >> (j * 4U);
+				if ((status & 0x00000003U) == 0U) {
+					rtn--;
+				}
+			}
+		}
+	}
+	return (rtn);
+
+}
+#endif
 
 /*******************************************************************************
  * RCAR handler called to check the validity of the power state parameter.
@@ -385,7 +447,14 @@ int rcar_validate_power_state(unsigned int power_state)
 		 * It's possible to enter standby only on affinity level 0
 		 * i.e. a cpu on the rcar. Ignore any other affinity level.
 		 */
-		if (psci_get_pstate_afflvl(power_state) != MPIDR_AFFLVL0) {
+		if (psci_get_pstate_pwrlvl(power_state) != PSCI_CPU_PWR_LVL) {
+			return PSCI_E_INVALID_PARAMS;
+		}
+	} else {
+		/*
+		 * System suspend is only supported via PSCI SYSTEM_SUSPEND.
+		 */
+		if (psci_get_pstate_pwrlvl(power_state) == PLAT_MAX_PWR_LVL) {
 			return PSCI_E_INVALID_PARAMS;
 		}
 	}
@@ -399,12 +468,13 @@ int rcar_validate_power_state(unsigned int power_state)
 
 	return PSCI_E_SUCCESS;
 }
-
+#if PMIC_ON_BOARD
 unsigned int rcar_get_sys_suspend_power_state(void)
 {
 	return psci_make_powerstate(0, PSTATE_TYPE_POWERDOWN,
 			PLATFORM_MAX_AFFLVL);
 }
+#endif /* PMIC_ON_BOARD */
 /*******************************************************************************
  * Export the platform handlers to enable psci to invoke them
  ******************************************************************************/
@@ -418,7 +488,9 @@ static const plat_pm_ops_t rcar_plat_pm_ops = {
 	.system_off = rcar_system_off,
 	.system_reset = rcar_system_reset,
 	.validate_power_state = rcar_validate_power_state,
+#if PMIC_ON_BOARD
 	.get_sys_suspend_power_state = rcar_get_sys_suspend_power_state
+#endif /* PMIC_ON_BOARD */
 };
 
 /*******************************************************************************
@@ -430,7 +502,7 @@ int platform_setup_pm(const plat_pm_ops_t **plat_ops)
 
 #if PMIC_ON_BOARD
 	rcar_bl31_init_suspend_to_ram();
-#endif
+#endif /* PMIC_ON_BOARD */
 
 	return 0;
 }

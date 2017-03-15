@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2016, Renesas Electronics Corporation
+ * Copyright (c) 2015-2017, Renesas Electronics Corporation
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -32,7 +32,6 @@
 #include <mmio.h>
 #include <debug.h>
 #include "dram_sub_func.h"
-//#include "iic_dvfs.h"
 
 /* Local defines */
 #define DRAM_BACKUP_GPIO_USE	(0)
@@ -51,19 +50,25 @@
 
 void dram_get_boot_status(uint32_t *status)
 {
+#if (PMIC_ON_BOARD==1)
+
 	uint32_t reg_data;
 
 	reg_data = mmio_read_32(GPIO_INDT1);
-	if (0 != (reg_data & (1 << 8))) {
+	if (0U != (reg_data & ((uint32_t)1U << 8))) {
 		*status = DRAM_BOOT_STATUS_WARM;
 	} else {
 		*status = DRAM_BOOT_STATUS_COLD;
 	}
+#else	/* (PMIC_ON_BOARD==1) */
+	*status = DRAM_BOOT_STATUS_COLD;
+#endif	/* (PMIC_ON_BOARD==1) */
 }
 
 int32_t dram_update_boot_status(uint32_t status)
 {
 	int32_t ret = 0;
+#if (PMIC_ON_BOARD==1)
 	uint32_t reg_data;
 #if DRAM_BACKUP_GPIO_USE==0
 	uint8_t bkup_mode_cnt = 0U;
@@ -72,9 +77,8 @@ int32_t dram_update_boot_status(uint32_t status)
 	uint32_t loop_count;
 
 	if (status == DRAM_BOOT_STATUS_WARM) {
-
 #if DRAM_BACKUP_GPIO_USE==1
-		mmio_setbits_32(GPIO_OUTDT1, (1<<9));
+		mmio_setbits_32(GPIO_OUTDT1, ((uint32_t)1U<<9));
 #else
 		/* Set BKUP_CRTL_OUT=High (BKUP mode cnt register) */
 		i2c_dvfs_ret = rcar_iic_dvfs_recieve(PMIC_SLAVE_ADDR,
@@ -85,7 +89,7 @@ int32_t dram_update_boot_status(uint32_t status)
 		} else {
 			INFO("     BKUP mode cnt READ value = %d\n",
 				bkup_mode_cnt);
-			bkup_mode_cnt &= ~BIT_BKUP_CTRL_OUT;
+			bkup_mode_cnt &= (uint8_t)~BIT_BKUP_CTRL_OUT;
 			i2c_dvfs_ret = rcar_iic_dvfs_send(PMIC_SLAVE_ADDR,
 					PMIC_BKUP_MODE_CNT, bkup_mode_cnt);
 			if (0 != i2c_dvfs_ret) {
@@ -94,23 +98,23 @@ int32_t dram_update_boot_status(uint32_t status)
 				ret = DRAM_UPDATE_STATUS_ERR;
 			} else {
 				INFO("BKUP_TRG = %s, BKUP_REQB = %s\n",
-					*((volatile uint32_t*)GPIO_INDT1)
-					& (1<<8) ? "1" : "0",
-					*((volatile uint32_t*)GPIO_INDT1)
-					& (1<<9) ? "1" : "0");
+					((mmio_read_32(GPIO_INDT1) &
+					((uint32_t)1U<<8)) != 0U) ? "1" : "0",
+					((mmio_read_32(GPIO_INDT1) &
+					((uint32_t)1U<<9)) != 0U) ? "1" : "0");
 			}
 		}
 #endif
 		/* Wait GP1_8(BKUP_TRG)=Low */
-		loop_count = 1000;
-		while (0 < loop_count) {
+		loop_count = 1000U;
+		while (0U < loop_count) {
 			reg_data = mmio_read_32(GPIO_INDT1);
-			if ((reg_data & (1 << 8)) == 0) {
+			if ((reg_data & ((uint32_t)1U << 8)) == 0U) {
 				break;
 			}
 			loop_count--;
 		}
-		if (0 == loop_count) {
+		if (0U == loop_count) {
 			ERROR(	"\nWarm booting...\n" \
 				" The potential of GP-1-8 did not switch " \
 				"to Low.\n If you expect the operation of " \
@@ -119,6 +123,6 @@ int32_t dram_update_boot_status(uint32_t status)
 			ret = DRAM_UPDATE_STATUS_ERR;
 		}
 	}
-
+#endif	/* (PMIC_ON_BOARD==1) */
 	return ret;
 }

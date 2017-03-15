@@ -59,6 +59,7 @@
 #include "emmc_std.h"
 #include "emmc_def.h"
 #include "rom_api.h"
+#include "board.h"
 
 
 /* CPG write protect registers */
@@ -623,6 +624,7 @@ void bl2_early_platform_setup(meminfo_t *mem_layout)
  ******************************************************************************/
 static uint32_t isDdrBackupMode(void)
 {
+#if (PMIC_ON_BOARD==1)
 	static uint32_t backupTriggerOnce = 1U;
 	static uint32_t backupTrigger = 0U;
 	if (backupTriggerOnce == 1U) {
@@ -633,6 +635,9 @@ static uint32_t isDdrBackupMode(void)
 		}
 	}
 	return backupTrigger;
+#else	/* (PMIC_ON_BOARD==1) */
+	return 0U;	/* Cold boot only */
+#endif	/* (PMIC_ON_BOARD==1) */
 }
 
 /*******************************************************************************
@@ -786,6 +791,51 @@ void bl2_plat_get_bl33_meminfo(meminfo_t *bl33_meminfo)
 	/* Non-secure target programs loading area limit is 40-bits address. */
 	bl33_meminfo->total_base = DRAM1_NS_BASE;
 	bl33_meminfo->total_size = DRAM_LIMIT - DRAM1_NS_BASE;
-	bl33_meminfo->free_base = DRAM1_NS_BASE;
-	bl33_meminfo->free_size = DRAM_LIMIT;
+	bl33_meminfo->free_base = AARCH64_SPACE_BASE;
+	bl33_meminfo->free_size = AARCH64_SPACE_SIZE;
 }
+
+void bl2_init_generic_timer(void)
+{
+	uint32_t reg;
+	uint32_t modemr;
+	uint32_t modemr_pll;
+	uint32_t pll_table[] = { 8333300U,	/* MD14/MD13 : 0b00 */
+				10000000U,	/* MD14/MD13 : 0b01 */
+				12500000U,	/* MD14/MD13 : 0b10 */
+				16666600U};	/* MD14/MD13 : 0b11 */
+	uint32_t reg_cntfid;
+	uint32_t board_type;
+	uint32_t board_rev;
+
+	modemr = mmio_read_32(RCAR_MODEMR);
+	modemr_pll = (modemr & MODEMR_BOOT_PLL_MASK);
+
+	/* Set frequency data in CNTFID0 */
+	reg_cntfid = pll_table[modemr_pll >> MODEMR_BOOT_PLL_SHIFT];
+	reg = mmio_read_32(RCAR_PRR) & (RCAR_PRODUCT_MASK | RCAR_CUT_MASK);
+	switch (modemr_pll) {
+	case MD14_MD13_TYPE_0:
+		(void)get_board_type(&board_type, &board_rev);
+		if (BOARD_SALVATOR_XS == board_type) {
+			reg_cntfid = 8320000U;
+		}
+		break;
+	case MD14_MD13_TYPE_3:
+		if (RCAR_PRODUCT_H3_CUT10 == reg) {
+			reg_cntfid = reg_cntfid >> 1U;
+		}
+		break;
+	default:
+		/* none */
+		break;
+	}
+	/* Update memory mapped and register based freqency */
+	write_cntfrq_el0((u_register_t )reg_cntfid);
+	mmio_write_32(ARM_SYS_CNTCTL_BASE + (uintptr_t)CNTFID_OFF, reg_cntfid);
+	/* Enable counter */
+	mmio_setbits_32(RCAR_CNTC_BASE + (uintptr_t)CNTCR_OFF,
+		(uint32_t)CNTCR_EN);
+}
+
+

@@ -164,6 +164,7 @@ void bl2_plat_get_bl32_meminfo(struct meminfo *mem_info);
 /*******************************************************************************
  * Optional BL2 functions (may be overridden)
  ******************************************************************************/
+void bl2_init_generic_timer(void);
 
 /*******************************************************************************
  * Mandatory BL3-1 functions

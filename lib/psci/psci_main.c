@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2013-2016, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2015-2017, Renesas Electronics Corporation. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -209,12 +210,16 @@ int psci_cpu_off(void)
 	int rc;
 	unsigned int target_pwrlvl = PLAT_MAX_PWR_LVL;
 
-	/*
-	 * Do what is needed to power off this CPU and possible higher power
-	 * levels if it able to do so. Upon success, enter the final wfi
-	 * which will power down this CPU.
-	 */
-	rc = psci_do_cpu_off(target_pwrlvl);
+	rc = (int)bl31_plat_denied_cpu_off_chk();
+
+	if(PSCI_E_SUCCESS == rc) {
+		/*
+		 * Do what is needed to power off this CPU and possible higher power
+		 * levels if it able to do so. Upon success, enter the final wfi
+		 * which will power down this CPU.
+		 */
+		rc = psci_do_cpu_off(target_pwrlvl);
+	}
 
 	/*
 	 * The only error cpu_off can return is E_DENIED. So check if that's

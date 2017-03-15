@@ -40,4 +40,6 @@ void bl2_swdt_release(void);
 
 void bl2_swdt_exec(uint64_t addr);
 
+extern void gicd_set_icenabler(uintptr_t base, unsigned int id);
+
 #endif /* BL2_SWDT_H__ */

@@ -71,6 +71,7 @@
 
 #define FLASH0_BASE		0x08000000U		/* LBSC RPC address */
 #define FLASH0_SIZE		0x04000000U		/* 64MB */
+#define FLASH_MEMORY_SIZE	0x04000000U		/* HyperFlash 64MB */
 
 /* Aggregate of all devices in the first GB */
 #define DEVICE_RCAR_BASE	0xE6000000U
@@ -102,6 +103,16 @@
 #define SYS_CNTCTL_BASE		0xE6080000U
 
 
+/* for Loading BL33-BL33x source/destination address range check */
+#define	DRAM_40BIT_BASE			MAKE_ULL(0x0400000000)
+#define	DRAM_40BIT_SIZE			MAKE_ULL(0x0400000000)
+
+#define	DRAM_PROTECTED_BASE		MAKE_ULL(0x43F00000)
+#define	DRAM_40BIT_PROTECTED_BASE	MAKE_ULL(0x0403F00000)
+#define	DRAM_PROTECTED_SIZE		MAKE_ULL(0x03F00000)
+
+#define	AARCH64_SPACE_BASE		MAKE_ULL(0x00000000000)
+#define	AARCH64_SPACE_SIZE		MAKE_ULL(0x10000000000)
 
 /*
  * The number of regions like RO(code), coherent and data required by
@@ -234,20 +245,15 @@
 #define	RCAR_SYSCISCR			(0xE6180008U)					/* Interrupt status clear register					*/
 /* Product register	*/
 #define	RCAR_PRR			(0xFFF00044U)					/* Product register							*/
-#define	RCAR_PRR_A			(0xFFF00044)					/* Product register, assembly version					*/
 
 /*******************************************************************************
  *  RCAR product and cut information
  ******************************************************************************/
 #define RCAR_PRODUCT_MASK		(0x00007F00U)
-#define RCAR_PRODUCT_MASK_A		(0x00007F00)
 #define RCAR_CUT_MASK			(0x000000FFU)
-#define RCAR_CUT_MASK_A			(0x000000FF)
 #define RCAR_PRODUCT_H3			(0x00004F00U)
-#define RCAR_PRODUCT_H3_A		(0x00004F00)
 #define RCAR_PRODUCT_M3			(0x00005200U)
 #define RCAR_CUT_ES10			(0x00000000U)
-#define RCAR_CUT_ES10_A			(0x00000000)
 #define RCAR_CUT_ES11			(0x00000001U)
 #define RCAR_CUT_ES20			(0x00000010U)
 #define RCAR_MAJOR_MASK			(0x000000F0U)
@@ -275,6 +281,8 @@
 #define MODEMR_BOOT_DEV_QSPI_FLASH80	(0x0000000CU)
 #define MODEMR_BOOT_DEV_EMMC_25X1	(0x0000000AU)
 #define MODEMR_BOOT_DEV_EMMC_50X8	(0x0000001AU)
+#define MODEMR_BOOT_PLL_MASK		(0x00006000U)
+#define MODEMR_BOOT_PLL_SHIFT		(13U)
 
 /****************************************************************************************************************************************************************/
 /* Memory mapped Generic timer interfaces  */
@@ -305,10 +313,9 @@
  *  MODEMR PLL masks and bitfield values
  ******************************************************************************/
 #define	CHECK_MD13_MD14		(0x6000U)
-#define	CHECK_MD13_MD14_A	(0x6000)
-#define	FREQ_8_33M		(0x0000U)
-#define	FREQ_10M		(0x2000U)
-#define	FREQ_12_5M		(0x4000U)
-#define	FREQ_16_66M		(0x6000U)
+#define	MD14_MD13_TYPE_0	(0x0000U)	/* MD14=0 MD13=0 */
+#define	MD14_MD13_TYPE_1	(0x2000U)	/* MD14=0 MD13=1 */
+#define	MD14_MD13_TYPE_2	(0x4000U)	/* MD14=1 MD13=0 */
+#define	MD14_MD13_TYPE_3	(0x6000U)	/* MD14=1 MD13=1 */
 
 #endif /* RCAR_DEF_H__ */

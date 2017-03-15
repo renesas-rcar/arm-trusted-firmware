@@ -153,7 +153,8 @@ static int32_t rcar_dev_close(io_dev_info_t *dev_info);
 static int32_t file_to_offset(const int32_t file, uintptr_t *offset,
 	uint32_t *cert_addr, uint32_t *is_noload, uintptr_t *partition);
 static int32_t load_bl33x(void);
-
+static int32_t check_load_area(uintptr_t src, uintptr_t dst, uintptr_t len);
+static int32_t skip_check_load_src = 0;
 
 /* Identify the device type as a virtual driver */
 static io_type_t device_type_rcar(void)
@@ -389,8 +390,16 @@ static int32_t load_bl33x(void)
 
 			if (IO_SUCCESS == result) {
 
-				result = io_read(backend_handle, 
-					dest_addr, 
+                                result = check_load_area((uintptr_t)file_offset,
+					dest_addr,
+                                	(uintptr_t)l_image_size);
+                                if (result != IO_SUCCESS) {
+                                	WARN("load_bl33x: check load area\n");
+                                        result = IO_FAIL;
+                                }
+
+				result = io_read(backend_handle,
+					dest_addr,
 					(size_t)l_image_size,
 					(size_t *)&bytes_read);
 				if (IO_SUCCESS != result) {
@@ -421,6 +430,79 @@ static int32_t load_bl33x(void)
 
 	load_bl33x_firsttime_flag = 1U;
 
+	return result;
+}
+
+static int32_t check_load_area(uintptr_t src, uintptr_t dst, uintptr_t len)
+{
+	int32_t result = IO_SUCCESS;
+
+	/* check source range */
+	if (skip_check_load_src == 0) {
+		if (FLASH_MEMORY_SIZE <= (src + len)) {
+			ERROR("BL2: check_load_area (source address)\n");
+			result = IO_FAIL;
+		}
+	}
+
+	/* check destination range */
+	if ((dst + len) < 0x100000000U) {
+		/* check legacy range */
+		/* destination address is lower than the SDRAM top address */
+		if (dst < DRAM1_BASE) {
+			ERROR("BL2: check_load_area (destination address)\n");
+			result = IO_FAIL;
+		}
+		/* destination address is on the protected area */
+		if ((DRAM_PROTECTED_BASE <= dst) &&
+		    (dst < (DRAM_PROTECTED_BASE + DRAM_PROTECTED_SIZE))) {
+			ERROR("BL2: check_load_area (destination address)\n");
+			result = IO_FAIL;
+		}
+		/* destination address is higher than the SDRAM last address */
+		if ((DRAM1_BASE + DRAM1_SIZE) <= dst) {
+			ERROR("BL2: check_load_area (destination address)\n");
+			result = IO_FAIL;
+		}
+		if (dst < DRAM_PROTECTED_BASE) {
+			if (DRAM_PROTECTED_BASE <= (dst + len)) {
+				ERROR("BL2: check_load_area (destination address)\n");
+				result = IO_FAIL;
+			}
+		}
+		if ((DRAM1_BASE + DRAM1_SIZE) <= (dst + len)) {
+			ERROR("BL2: check_load_area (destination address)\n");
+			result = IO_FAIL;
+		}
+	} else {
+		/* check 40 bit range */
+		/* destination address is lower than the SDRAM top address */
+		if (dst < DRAM_40BIT_BASE) {
+			ERROR("BL2: check_load_area (destination address)\n");
+			result = IO_FAIL;
+		}
+		/* destination address is on the protected area */
+		if ((DRAM_40BIT_PROTECTED_BASE <= dst) &&
+		    (dst < (DRAM_40BIT_PROTECTED_BASE + DRAM_PROTECTED_SIZE))) {
+			ERROR("BL2: check_load_area (destination address)\n");
+			result = IO_FAIL;
+		}
+		/* destination address is higher than the SDRAM last address */
+		if ((DRAM_40BIT_BASE + DRAM_40BIT_SIZE) <= dst) {
+			ERROR("BL2: check_load_area (destination address)\n");
+			result = IO_FAIL;
+		}
+		if (dst < DRAM_40BIT_PROTECTED_BASE) {
+			if (DRAM_40BIT_PROTECTED_BASE <= (dst + len)) {
+				ERROR("BL2: check_load_area (destination address)\n");
+				result = IO_FAIL;
+			}
+		}
+		if ((DRAM_40BIT_BASE + DRAM_40BIT_SIZE) <= (dst + len)) {
+			ERROR("BL2: check_load_area (destination address)\n");
+			result = IO_FAIL;
+		}
+	}
 	return result;
 }
 
@@ -474,9 +556,11 @@ static int32_t rcar_dev_init(io_dev_info_t *dev_info, const uintptr_t init_param
 				if ( image_name == EMMC_DEV_ID) {
 					offset =
 					(ssize_t)RCAR_EMMC_CERT_HEADER;
+					skip_check_load_src = 1;
 				} else {
 					offset =
 					(ssize_t)RCAR_FLASH_CERT_HEADER;
+					skip_check_load_src = 0;
 				}
 				result = io_seek(backend_handle,
 						IO_SEEK_SET, offset);
@@ -499,7 +583,7 @@ static int32_t rcar_dev_init(io_dev_info_t *dev_info, const uintptr_t init_param
 					for (loop = 0U; loop <
 						(rcar_image_number + 2U);
 								loop++) {
-						rcar_image_header[loop] = 
+						rcar_image_header[loop] =
 						rcar_image_header_tmp
 							[loop * 2U + 1U];
 						rcar_image_header_prttn[loop] =
@@ -691,6 +775,17 @@ static int32_t rcar_file_read(io_entity_t *entity, uintptr_t buffer, size_t leng
 			if (result != IO_SUCCESS) {
 				WARN("rcar_file_read: failed to seek\n");
 				result = IO_FAIL;
+			}
+
+			if (load_bl33x_counter == 2U) {
+				/* Loading target is BL33 */
+				result = check_load_area((uintptr_t)file_offset,
+					buffer,
+					(uintptr_t)length);
+				if (result != IO_SUCCESS) {
+					WARN("rcar_file_read: load area err\n");
+					result = IO_FAIL;
+				}
 			}
 
 			if (result == IO_SUCCESS) {

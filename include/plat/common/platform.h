@@ -244,6 +244,8 @@ void bl31_platform_setup(void);
 void bl31_plat_runtime_setup(void);
 struct entry_point_info *bl31_plat_get_next_image_ep_info(uint32_t type);
 uint32_t bl31_plat_mmu_pa_chk(uint32_t pa_flg, uintptr_t chk_va, uint64_t chk_pa);
+uint32_t bl31_plat_cpu_migrate_info(u_register_t *resident_cpu);
+int32_t bl31_plat_denied_cpu_off_chk(void);
 
 /*******************************************************************************
  * Mandatory PSCI functions (BL31)

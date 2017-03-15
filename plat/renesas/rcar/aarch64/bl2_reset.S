@@ -34,7 +34,6 @@
 #include <bl1.h>
 #include <runtime_svc.h>
 #include "platform_def.h"
-#include "rcar_def.h"
 
 
 #define	RST_BASE		(0xE6160000)
@@ -65,14 +64,11 @@
 #define	RST_CPUnBARH_MASK	(0x000000FF)
 #define	RST_CPUnBARL_MASK	(0xFFFFFFFC)
 
-#define CNT_CLK_8_33M		 (8333300) /* 8.33MHz */
-#define CNT_CLK_10M		(10000000) /* 10MHz */
-#define CNT_CLK_12_5M		(12500000) /* 12.5MHz */
-#define CNT_CLK_16_66M		(16666600) /* 16.66MHz */
 
 	.global	bl2_reset
 	.global	bl2_secondly_reset
 	.global	bl2_init_secondly_reset
+	.global	bl2_init_generic_timer
 
 func bl2_reset
     mov x0,  #0
@@ -162,37 +158,6 @@ func bl2_reset
 	msr	cptr_el3, x0
 
 	/* --------------------------------------------
-	 * Enable the generic timer via memory mapped
-	 * access.
-	 * Enable it here quite early in the boot
-	 * phase as long as we are still in EL3
-	 * --------------------------------------------
-	 */
-	ldr	x0, =RCAR_MODEMR_A
-	ldr	w1, [x0]
-	bic	w1, w1, #~CHECK_MD13_MD14_A
-	lsr	w1, w1, #11			/* index for the freq table */
-	adr	x0, FREQ_TABLE
-	ldr	w0, [x0, x1]
-
-	ldr	x2, =RCAR_PRR_A
-	ldr	w1, [x2]
-	bic	w1, w1, #~(RCAR_PRODUCT_MASK_A | RCAR_CUT_MASK_A)
-	ldr	w2, =(RCAR_PRODUCT_H3_A | RCAR_CUT_ES10_A)
-	cmp	w1, w2
-	lsr	w1, w0, #1
-	csel	w0, w1, w0, eq
-
-	ldr	x1, =RCAR_CNTC_BASE_A
-	/* Update memory mapped and register based freqency */
-	msr	cntfrq_el0, x0
-	str	w0, [x1, #CNTFID_OFF]
-	/* Enable counter */
-	ldr	w0, [x1]
-	orr	w0, w0, #CNTCR_EN
-	str	w0, [x1]
-
-	/* --------------------------------------------
 	 * Allocate a stack whose memory will be marked
 	 * as Normal-IS-WBWA when the MMU is enabled.
 	 * There is no risk of reading stale stack
@@ -201,6 +166,15 @@ func bl2_reset
 	 * --------------------------------------------
 	 */
 	bl	plat_set_my_stack
+
+	/* --------------------------------------------
+	 * Enable the generic timer via memory mapped
+	 * access.
+	 * Enable it here quite early in the boot
+	 * phase as long as we are still in EL3
+	 * --------------------------------------------
+	 */
+	bl	bl2_init_generic_timer
 
 	mov	x0, #(SCR_RES1_BITS | SCR_RW_BIT)
 	msr	scr_el3, x0
@@ -223,11 +197,6 @@ BL2_MEM_INFO:					/* meminfo_t */
 	.quad	BL31_BASE			/* free_base */
 	.quad	(BL31_LIMIT - BL31_BASE)	/* free_size */
 
-FREQ_TABLE:
-	.word	CNT_CLK_8_33M
-	.word	CNT_CLK_10M
-	.word	CNT_CLK_12_5M
-	.word	CNT_CLK_16_66M
 
 	.section	.vectors, "ax"; .align 11
 

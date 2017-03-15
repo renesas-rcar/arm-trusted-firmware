@@ -252,12 +252,19 @@ entry_point_info_t *bl2_load_images(void)
 
 	e = load_bl32(bl2_to_bl31_params);
 	if (e) {
+#if PLAT_rcar
+		if (e) {
+			ERROR("Failed to load BL32 (%i)\n", e);
+			plat_error_handler(e);
+		}
+#else
 		if (e == -EAUTH) {
 			ERROR("Failed to authenticate BL32\n");
 			plat_error_handler(e);
 		} else {
 			WARN("Failed to load BL32 (%i)\n", e);
 		}
+#endif /* PLAT_rcar */
 	}
 
 #ifdef PRELOADED_BL33_BASE

@@ -35,6 +35,7 @@
 PLAT_INCLUDES		:=	-Iinclude/common/tbbr				\
 				-Iinclude/plat/arm/common			\
 				-Iplat/renesas/rcar/drivers/iic_dvfs/		\
+				-Iplat/renesas/rcar/drivers/board/		\
 				-Iplat/renesas/rcar/include			\
 				-Iplat/renesas/rcar
 
@@ -65,7 +66,6 @@ BL2_SOURCES		+=	${RCAR_GIC_SOURCES}				\
 				plat/renesas/rcar/drivers/rpc/rpc_driver.c	\
 				plat/renesas/rcar/drivers/dma/dma_driver.c	\
 				plat/renesas/rcar/drivers/avs/avs_driver.c	\
-				plat/renesas/rcar/drivers/iic_dvfs/iic_dvfs.c	\
 				plat/renesas/rcar/drivers/wait/micro_wait.S	\
 				plat/renesas/rcar/drivers/emmc/emmc_utility.c	\
 				plat/renesas/rcar/drivers/emmc/emmc_interrupt.c	\
@@ -74,6 +74,7 @@ BL2_SOURCES		+=	${RCAR_GIC_SOURCES}				\
 				plat/renesas/rcar/drivers/emmc/emmc_mount.c	\
 				plat/renesas/rcar/drivers/emmc/emmc_read.c	\
 				plat/renesas/rcar/drivers/rom/rom_api.c		\
+				plat/renesas/rcar/drivers/board/board.c		\
 				plat/renesas/rcar/bl2_secure_setting.c		\
 				plat/renesas/rcar/bl2_cpg_init.c		\
 				plat/renesas/rcar/aarch64/bl2_reset.S
@@ -88,7 +89,6 @@ BL31_SOURCES		+=	${RCAR_GIC_SOURCES}				\
 				plat/renesas/rcar/rcar_pm.c			\
 				plat/renesas/rcar/drivers/memdrv/rcar_console.S	\
 				plat/renesas/rcar/drivers/memdrv/rcar_printf.c	\
-				plat/renesas/rcar/drivers/iic_dvfs/iic_dvfs.c	\
 				plat/renesas/rcar/rcar_topology.c		\
 				plat/renesas/rcar/aarch64/rcar_helpers.S	\
 				plat/renesas/rcar/aarch64/rcar_common.c		\
@@ -205,6 +205,10 @@ $(eval $(call add_define,LIFEC_DBSC_PROTECT_ENABLE))
 ifndef PMIC_ON_BOARD
 PMIC_ON_BOARD := 1
 endif
+ifeq (${PMIC_ON_BOARD},1)
+BL2_SOURCES		+=	plat/renesas/rcar/drivers/iic_dvfs/iic_dvfs.c
+BL31_SOURCES		+=	plat/renesas/rcar/drivers/iic_dvfs/iic_dvfs.c
+endif
 $(eval $(call add_define,PMIC_ON_BOARD))
 
 # Process PMIC_LEVEL_MODE flag
@@ -212,6 +216,12 @@ ifndef PMIC_LEVEL_MODE
 PMIC_LEVEL_MODE := 1
 endif
 $(eval $(call add_define,PMIC_LEVEL_MODE))
+
+# Process RCAR_GEN3_ULCB flag
+ifndef RCAR_GEN3_ULCB
+RCAR_GEN3_ULCB := 0
+endif
+$(eval $(call add_define,RCAR_GEN3_ULCB))
 
 include plat/renesas/rcar/ddr/ddr.mk
 include plat/renesas/rcar/qos/qos.mk
