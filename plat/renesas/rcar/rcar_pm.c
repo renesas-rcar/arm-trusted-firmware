@@ -59,6 +59,8 @@ static int32_t cpu_on_check(uint64_t mpidr);
 extern int32_t platform_is_primary_cpu(uint64_t mpidr);
 #endif
 
+extern void cpld_reset_cpu(void);
+
 #define	RCAR_GENERIC_TIMER_STACK	(0x300)
 #define	RCAR_BOOT_MODE			(0x01U)
 #define	RCAR_BOOT_COLD			(0x00U)
@@ -351,6 +353,17 @@ static void __dead2 rcar_system_off(void)
 		ERROR("BL3-1:Failed the SYSTEM-OFF.\n");
 	}
 #else /* pulse mode */
+	int32_t error;
+
+	/* The code of iic for DVFS driver is copied to system ram */
+	rcar_bl31_code_copy_to_system_ram();
+
+	error = rcar_iic_dvfs_send(SLAVE_ADDR_PMIC
+					,REG_ADDR_BKUP_Mode_Cnt
+					,REG_DATA_P_ALL_OFF);
+	if (error != 0) {
+		ERROR("BL3-1:Failed the SYSTEM-RESET.\n");
+	}
 #endif
 #else /* not PMIC_ON_BOARD */
 	uint64_t my_cpu;
@@ -388,6 +401,10 @@ static void __dead2 rcar_system_reset(void)
 		ERROR("BL3-1:Failed the SYSTEM-RESET.\n");
 	}
 #else /* pulse mode */
+	#if (RCAR_GEN3_ULCB==1)
+	/* Starter Kit */
+		cpld_reset_cpu();
+	#endif
 #endif
 #else /* not PMIC_ON_BOARD */
 	rcar_pwrc_system_reset();

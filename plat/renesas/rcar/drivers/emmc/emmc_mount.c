@@ -37,12 +37,14 @@
 
 /* ************************ HEADER (INCLUDE) SECTION *********************** */
 #include <debug.h>
+#include <mmio.h>
 #include "emmc_config.h"
 #include "emmc_hal.h"
 #include "emmc_std.h"
 #include "emmc_registers.h"
 #include "emmc_def.h"
 #include "micro_wait.h"
+#include "rcar_def.h"
 
 /* ***************** MACROS, CONSTANTS, COMPILATION FLAGS ****************** */
 
@@ -59,6 +61,8 @@ static EMMC_ERROR_CODE emmc_bus_width(uint32_t width);
 static uint32_t emmc_set_timeout_register_value(uint32_t freq);
 static void set_sd_clk(uint32_t clkDiv);
 static uint32_t emmc_calc_tran_speed(uint32_t* freq);
+static void emmc_get_partition_access(void);
+static void emmc_set_bootpartition(void);
 
 /* ********************************* CODE ********************************** */
 
@@ -171,6 +175,9 @@ static EMMC_ERROR_CODE emmc_card_init (void)
     }
 
 	micro_wait(1000U);		/* wait 1ms */
+
+	/* Get current access partition */
+	emmc_get_partition_access();
 
 	/* CMD0, arg=0x00000000 */
     result = emmc_send_idle_cmd (0x00000000);
@@ -310,6 +317,8 @@ static EMMC_ERROR_CODE emmc_card_init (void)
         return result;
     }
 
+	/* Set boot partition */
+	emmc_set_bootpartition();
 
     return EMMC_SUCCESS;
 }
@@ -387,7 +396,7 @@ static EMMC_ERROR_CODE emmc_high_speed(void)
 
 	/* CMD13 */
     emmc_make_nontrans_cmd(CMD13_SEND_STATUS, EMMC_RCA<<16);
-    result = emmc_exec_cmd(EMMC_R1_ERROR_MASK, mmc_drv_obj.response);
+    result = emmc_exec_cmd(EMMC_R1_ERROR_MASK_WITHOUT_CRC, mmc_drv_obj.response);
     if (result != EMMC_SUCCESS)
     {
         emmc_write_error_info_func_no(EMMC_FUNCNO_HIGH_SPEED);
@@ -802,4 +811,57 @@ static uint32_t emmc_set_timeout_register_value(
 	}
 
 	return timeoutCnt;
+}
+
+static void emmc_get_partition_access(void)
+{
+	uint32_t reg;
+	EMMC_ERROR_CODE result;
+
+	reg = mmio_read_32(RCAR_PRR) & (RCAR_PRODUCT_MASK | RCAR_CUT_MASK);
+	if ((reg == RCAR_PRODUCT_H3_CUT20) || (reg == RCAR_PRODUCT_M3_CUT11)) {
+		SETR_32(SD_OPTION, 0x000060EEU);	/* 8 bits width */
+		/* CMD8 (EXT_CSD) */
+		emmc_make_trans_cmd(CMD8_SEND_EXT_CSD, 0x00000000U,
+				(uint32_t *)(&mmc_drv_obj.ext_csd_data[0]),
+				EMMC_MAX_EXT_CSD_LENGTH,
+				HAL_MEMCARD_READ,
+				HAL_MEMCARD_NOT_DMA);
+		mmc_drv_obj.get_partition_access_flag = TRUE;
+		result = emmc_exec_cmd(EMMC_R1_ERROR_MASK, mmc_drv_obj.response);
+		mmc_drv_obj.get_partition_access_flag = FALSE;
+		if (result == EMMC_SUCCESS)
+		{
+			mmc_drv_obj.partition_access =
+				(EMMC_PARTITION_ID)(mmc_drv_obj.ext_csd_data[179]
+							& PARTITION_ID_MASK);
+		} else if (result == EMMC_ERR_CMD_TIMEOUT) {
+			mmc_drv_obj.partition_access = PARTITION_ID_BOOT_1;
+		} else {
+			emmc_write_error_info(EMMC_FUNCNO_GET_PERTITION_ACCESS, result);
+			panic();
+		}
+		SETR_32(SD_OPTION, 0x0000C0EEU);	/* Initialize */
+	}
+}
+
+static void emmc_set_bootpartition(void)
+{
+	uint32_t reg;
+
+	reg = mmio_read_32(RCAR_PRR) & (RCAR_PRODUCT_MASK | RCAR_CUT_MASK);
+	if (reg == RCAR_PRODUCT_M3_CUT10) {
+		mmc_drv_obj.boot_partition_en =
+			(EMMC_PARTITION_ID)((mmc_drv_obj.ext_csd_data[179] &
+				EMMC_BOOT_PARTITION_EN_MASK) >>
+					EMMC_BOOT_PARTITION_EN_SHIFT);
+	} else if ((reg == RCAR_PRODUCT_H3_CUT20) || (reg == RCAR_PRODUCT_M3_CUT11)) {
+		mmc_drv_obj.boot_partition_en = mmc_drv_obj.partition_access;
+	} else {
+		if ((mmio_read_32(MFISBTSTSR) & MFISBTSTSR_BOOT_PARTITION) != 0U) {
+			mmc_drv_obj.boot_partition_en = PARTITION_ID_BOOT_2;
+		} else {
+			mmc_drv_obj.boot_partition_en = PARTITION_ID_BOOT_1;
+		}
+	}
 }

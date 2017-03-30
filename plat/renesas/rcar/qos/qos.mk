@@ -34,7 +34,7 @@ ifeq (${RCAR_LSI},${RCAR_AUTO})
     BL2_SOURCES += plat/renesas/rcar/qos/H3/qos_init_h3_v11.c
     BL2_SOURCES += plat/renesas/rcar/qos/H3/qos_init_h3_v20.c
     BL2_SOURCES += plat/renesas/rcar/qos/M3/qos_init_m3_v10.c
-
+    BL2_SOURCES += plat/renesas/rcar/qos/M3/qos_init_m3_v11.c
 else ifdef RCAR_LSI_CUT_COMPAT
   ifeq (${RCAR_LSI},${RCAR_H3})
     BL2_SOURCES += plat/renesas/rcar/qos/H3/qos_init_h3_v10.c
@@ -42,7 +42,8 @@ else ifdef RCAR_LSI_CUT_COMPAT
     BL2_SOURCES += plat/renesas/rcar/qos/H3/qos_init_h3_v20.c
   endif
   ifeq (${RCAR_LSI},${RCAR_M3})
-    $(error "Error: ${LSI} is not supported.")
+    BL2_SOURCES += plat/renesas/rcar/qos/M3/qos_init_m3_v10.c
+    BL2_SOURCES += plat/renesas/rcar/qos/M3/qos_init_m3_v11.c
   endif
 else
   ifeq (${RCAR_LSI},${RCAR_H3})
@@ -57,7 +58,12 @@ else
     endif
   endif
   ifeq (${RCAR_LSI},${RCAR_M3})
-    BL2_SOURCES += plat/renesas/rcar/qos/M3/qos_init_m3_v10.c
+    ifeq (${LSI_CUT},10)
+     BL2_SOURCES += plat/renesas/rcar/qos/M3/qos_init_m3_v10.c
+    endif
+    ifeq (${LSI_CUT},11)
+     BL2_SOURCES += plat/renesas/rcar/qos/M3/qos_init_m3_v11.c
+    endif
   endif
 endif
 

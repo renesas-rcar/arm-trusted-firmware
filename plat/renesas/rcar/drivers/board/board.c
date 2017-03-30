@@ -32,6 +32,10 @@
 #include <iic_dvfs.h>
 #include "board.h"
 
+
+/************************************************************************
+ * Defines
+ ************************************************************************/
 #ifndef BOARD_DEFAULT
 #define BOARD_DEFAULT		(BOARD_SALVATOR_X << BOARD_CODE_SHIFT)
 #endif
@@ -44,6 +48,19 @@
 #define BOARD_CODE_SHIFT	(3U)
 
 #define BOARD_ID_UNKNOWN	(0xFFU)
+
+
+/************************************************************************
+ * Global variables
+ ************************************************************************/
+const char *g_board_tbl[] = {
+	[BOARD_SALVATOR_X]	= "Salvator-X",
+	[BOARD_SALVATOR_XS]	= "Salvator-XS",
+	[BOARD_KRIEK]		= "Kriek",
+	[BOARD_STARTER_KIT]	= "Starter Kit"
+};
+const char *g_board_unknown	= "unknown";
+
 
 int32_t get_board_type(uint32_t *type, uint32_t *rev)
 {

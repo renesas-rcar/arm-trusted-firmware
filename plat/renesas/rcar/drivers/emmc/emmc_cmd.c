@@ -82,6 +82,7 @@ EMMC_ERROR_CODE emmc_exec_cmd (
     HAL_MEMCARD_RESPONSE_TYPE response_type;
     HAL_MEMCARD_COMMAND_TYPE cmd_type;
     EMMC_INT_STATE state;
+    uint32_t	err_not_care_flag = FALSE;
 
     /* parameter check */
     if (response == NULL)
@@ -192,10 +193,16 @@ EMMC_ERROR_CODE emmc_exec_cmd (
                 /* check interrupt */
                 if((mmc_drv_obj.int_event2 & SD_INFO2_ALL_ERR) != 0)
                 {
-                    /* error interrupt */
-                	cmdErrSdInfo2Log();
-                    rtn_code = EMMC_ERR_INFO2;
-                    state = ESTATE_ERROR;
+			if ((mmc_drv_obj.get_partition_access_flag == TRUE) &&
+				((mmc_drv_obj.int_event2 & SD_INFO2_ERR6) != 0U)) {
+				err_not_care_flag = TRUE;
+				rtn_code = EMMC_ERR_CMD_TIMEOUT;
+			} else {
+				/* error interrupt */
+				cmdErrSdInfo2Log();
+				rtn_code = EMMC_ERR_INFO2;
+			}
+			state = ESTATE_ERROR;
                     break;
                 }
                 else if((mmc_drv_obj.int_event1 & SD_INFO1_INFO0) == 0)
@@ -361,8 +368,12 @@ EMMC_ERROR_CODE emmc_exec_cmd (
                 /* through */
 
             case ESTATE_ERROR:
-                emmc_softreset();
-                emmc_write_error_info(EMMC_FUNCNO_EXEC_CMD, rtn_code);
+        	if (err_not_care_flag == TRUE) {
+			mmc_drv_obj.during_cmd_processing = FALSE;
+        	} else {
+			emmc_softreset();
+			emmc_write_error_info(EMMC_FUNCNO_EXEC_CMD, rtn_code);
+        	}
                 return rtn_code;
 
             default:

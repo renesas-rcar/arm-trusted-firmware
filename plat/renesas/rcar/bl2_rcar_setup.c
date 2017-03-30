@@ -348,6 +348,8 @@ void bl2_early_platform_setup(meminfo_t *mem_layout)
 	uint32_t modemr;
 	uint32_t modemr_boot_dev;
 	int32_t ret;
+	uint32_t board_type;
+	uint32_t board_rev;
 	char msg[128];
 	const char *str;
 	const char *cpu_ca57        = "CA57";
@@ -435,6 +437,26 @@ void bl2_early_platform_setup(meminfo_t *mem_layout)
 	(void)sprintf(msg, "BL2: PRR is R-Car %s Ver%d.%d\n", str,
 		((reg & RCAR_MAJOR_MASK) >> RCAR_MAJOR_SHIFT)
 		 + RCAR_MAJOR_OFFSET, (reg & RCAR_MINOR_MASK));
+	NOTICE("%s", msg);
+
+	/* Board ID detection */
+	(void)get_board_type(&board_type, &board_rev);
+	
+	switch (board_type) {
+	case BOARD_SALVATOR_X:
+	case BOARD_SALVATOR_XS:
+	case BOARD_KRIEK:
+	case BOARD_STARTER_KIT:
+		/* Do nothing. */
+		break;
+	default:
+		board_type = BOARD_UNKNOWN;
+		break;
+	}
+	
+	(void)sprintf(msg, "BL2: Board is %s Rev%d.%d\n",
+		GET_BOARD_NAME(board_type), GET_BOARD_MAJOR(board_rev),
+		GET_BOARD_MINOR(board_rev));
 	NOTICE("%s", msg);
 
 #if RCAR_LSI != RCAR_AUTO

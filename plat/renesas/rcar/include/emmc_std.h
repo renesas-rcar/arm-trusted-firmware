@@ -176,30 +176,31 @@ typedef enum
 } EMMC_ERROR_CODE;
 
 /** @brief Function number */
-#define EMMC_FUNCNO_NONE							0
-#define EMMC_FUNCNO_DRIVER_INIT						1
-#define EMMC_FUNCNO_CARD_POWER_ON					2
-#define EMMC_FUNCNO_MOUNT							3
-#define EMMC_FUNCNO_CARD_INIT						4
-#define EMMC_FUNCNO_HIGH_SPEED						5
-#define EMMC_FUNCNO_BUS_WIDTH						6
-#define EMMC_FUNCNO_MULTI_BOOT_SELECT_PARTITION		7
-#define EMMC_FUNCNO_MULTI_BOOT_READ_SECTOR			8
-#define EMMC_FUNCNO_TRANS_DATA_READ_SECTOR			9
-#define EMMC_FUNCNO_UBOOT_IMAGE_SELECT_PARTITION	10
-#define EMMC_FUNCNO_UBOOT_IMAGE_READ_SECTOR			11
-#define EMMC_FUNCNO_SET_CLOCK						12
-#define EMMC_FUNCNO_EXEC_CMD						13
-#define EMMC_FUNCNO_READ_SECTOR						14
-#define EMMC_FUNCNO_WRITE_SECTOR					15
-#define EMMC_FUNCNO_ERASE_SECTOR					16
-
+#define EMMC_FUNCNO_NONE						0U
+#define EMMC_FUNCNO_DRIVER_INIT						1U
+#define EMMC_FUNCNO_CARD_POWER_ON					2U
+#define EMMC_FUNCNO_MOUNT						3U
+#define EMMC_FUNCNO_CARD_INIT						4U
+#define EMMC_FUNCNO_HIGH_SPEED						5U
+#define EMMC_FUNCNO_BUS_WIDTH						6U
+#define EMMC_FUNCNO_MULTI_BOOT_SELECT_PARTITION				7U
+#define EMMC_FUNCNO_MULTI_BOOT_READ_SECTOR				8U
+#define EMMC_FUNCNO_TRANS_DATA_READ_SECTOR				9U
+#define EMMC_FUNCNO_UBOOT_IMAGE_SELECT_PARTITION			10U
+#define EMMC_FUNCNO_UBOOT_IMAGE_READ_SECTOR				11U
+#define EMMC_FUNCNO_SET_CLOCK						12U
+#define EMMC_FUNCNO_EXEC_CMD						13U
+#define EMMC_FUNCNO_READ_SECTOR						14U
+#define EMMC_FUNCNO_WRITE_SECTOR					15U
+#define EMMC_FUNCNO_ERASE_SECTOR					16U
+#define EMMC_FUNCNO_GET_PERTITION_ACCESS				17U
 /** @brief Response
  */
 /** R1 */
-#define EMMC_R1_ERROR_MASK                      0xFDBFE080UL        /* Type 'E' bit and bit14(must be 0). ignore bit22 */
-#define EMMC_R1_STATE_MASK                      0x00001E00UL        /* [12:9] */
-#define EMMC_R1_READY                           0x00000100UL        /* bit8 */
+#define EMMC_R1_ERROR_MASK                      0xFDBFE080U        /* Type 'E' bit and bit14(must be 0). ignore bit22 */
+#define EMMC_R1_ERROR_MASK_WITHOUT_CRC          (0xFD3FE080U)        /* Ignore bit23 (Not check CRC error) */
+#define EMMC_R1_STATE_MASK                      0x00001E00U        /* [12:9] */
+#define EMMC_R1_READY                           0x00000100U        /* bit8 */
 #define EMMC_R1_STATE_SHIFT                     9
 
 /** R4 */
@@ -310,7 +311,8 @@ typedef enum
 #define EMMC_SWITCH_PARTITION_CONFIG    0x03B30000UL    /**< Partition config = 0x00 */
 
 #define TIMING_HIGH_SPEED					1UL
-#define EMMC_PARTITION_CONFIG_ENABLE_MASK	0x38UL
+#define EMMC_BOOT_PARTITION_EN_MASK	0x38U
+#define EMMC_BOOT_PARTITION_EN_SHIFT	3U
 
 /** Bus width */
 #define EMMC_BUSWIDTH_1BIT              CE_CMD_SET_DATW_1BIT
@@ -321,7 +323,9 @@ typedef enum
 #define EMMC_MAX_RESPONSE_LENGTH        17
 #define EMMC_MAX_CID_LENGTH             16
 #define EMMC_MAX_CSD_LENGTH             16
-#define EMMC_MAX_EXT_CSD_LENGTH         512
+#define EMMC_MAX_EXT_CSD_LENGTH         512U
+#define EMMC_RES_REG_ALIGNED            4U
+#define EMMC_BUF_REG_ALIGNED            8U
 
 /** @brief for TAAC mask
  */
@@ -440,6 +444,10 @@ typedef struct {
     volatile uint32_t dma_error_flag;             /**< True : occurred DMAC error */
     volatile uint32_t force_terminate;            /**< force terminate flag */
     volatile uint32_t state_machine_blocking;     /**< state machine blocking flag : True or False */
+    volatile uint32_t get_partition_access_flag;  /**< True : get partition access processing */
+
+    EMMC_PARTITION_ID  boot_partition_en;       /**< Boot partition */
+    EMMC_PARTITION_ID  partition_access;        /**< Current access partition */
 
     /* timeout */
     uint32_t  hs_timing;                       	/**< high speed */
@@ -468,11 +476,18 @@ typedef struct {
     uint32_t  reserved3;
     uint32_t  reserved4;
 
-    /* Card registers (4byte align) */
-    uint8_t   csd_data[EMMC_MAX_CSD_LENGTH];              /**< CSD */
-    uint8_t   cid_data[EMMC_MAX_CID_LENGTH];              /**< CID */
-    uint8_t   ext_csd_data[EMMC_MAX_EXT_CSD_LENGTH];      /**< EXT_CSD */
-    uint8_t   response_data[EMMC_MAX_RESPONSE_LENGTH];    /**< other response */
+    /* CSD registers (4byte align) */
+    uint8_t   csd_data[EMMC_MAX_CSD_LENGTH]               /**< CSD */
+    __attribute__ ((aligned(EMMC_RES_REG_ALIGNED)));
+    /* CID registers (4byte align) */
+    uint8_t   cid_data[EMMC_MAX_CID_LENGTH]               /**< CID */
+    __attribute__ ((aligned(EMMC_RES_REG_ALIGNED)));
+    /* EXT CSD registers (8byte align) */
+    uint8_t   ext_csd_data[EMMC_MAX_EXT_CSD_LENGTH]       /**< EXT_CSD */
+    __attribute__ ((aligned(EMMC_BUF_REG_ALIGNED)));
+    /* Response registers (4byte align) */
+    uint8_t   response_data[EMMC_MAX_RESPONSE_LENGTH]     /**< other response */
+    __attribute__ ((aligned(EMMC_RES_REG_ALIGNED)));
 } st_mmc_base;
 
 typedef int (*func)(void);

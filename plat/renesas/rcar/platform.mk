@@ -93,7 +93,8 @@ BL31_SOURCES		+=	${RCAR_GIC_SOURCES}				\
 				plat/renesas/rcar/aarch64/rcar_helpers.S	\
 				plat/renesas/rcar/aarch64/rcar_common.c		\
 				plat/renesas/rcar/drivers/pwrc/rcar_call_sram.S	\
-				plat/renesas/rcar/drivers/pwrc/rcar_pwrc.c
+				plat/renesas/rcar/drivers/pwrc/rcar_pwrc.c	\
+				plat/renesas/rcar/drivers/cpld/ulcb_cpld.c
 
 # compile option setting
 ARM_CCI_PRODUCT_ID	:= 500
@@ -145,6 +146,20 @@ else
     endif
   else ifeq (${LSI},M3)
     RCAR_LSI:=${RCAR_M3}
+    ifndef LSI_CUT
+      # enable compatible function.
+      RCAR_LSI_CUT_COMPAT := 1
+      $(eval $(call add_define,RCAR_LSI_CUT_COMPAT))
+    else
+      # disable compatible function.
+      ifeq (${LSI_CUT},10)
+        RCAR_LSI_CUT:=0
+      endif
+      ifeq (${LSI_CUT},11)
+        RCAR_LSI_CUT:=1
+      endif
+      $(eval $(call add_define,RCAR_LSI_CUT))
+    endif
   else
     $(error "Error: ${LSI} is not supported.")
   endif
@@ -220,6 +235,10 @@ $(eval $(call add_define,PMIC_LEVEL_MODE))
 # Process RCAR_GEN3_ULCB flag
 ifndef RCAR_GEN3_ULCB
 RCAR_GEN3_ULCB := 0
+endif
+ifeq (${RCAR_GEN3_ULCB},1)
+ BOARD_DEFAULT := 0x10
+ $(eval $(call add_define,BOARD_DEFAULT))
 endif
 $(eval $(call add_define,RCAR_GEN3_ULCB))
 

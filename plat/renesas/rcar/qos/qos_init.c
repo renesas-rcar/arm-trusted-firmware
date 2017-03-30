@@ -38,6 +38,7 @@
   #include "H3/qos_init_h3_v11.h"
   #include "H3/qos_init_h3_v20.h"
   #include "M3/qos_init_m3_v10.h"
+  #include "M3/qos_init_m3_v11.h"
 #endif
 #if RCAR_LSI == RCAR_H3	/* H3 */
   #include "H3/qos_init_h3_v10.h"
@@ -46,6 +47,7 @@
 #endif
 #if RCAR_LSI == RCAR_M3	/* M3 */
   #include "M3/qos_init_m3_v10.h"
+  #include "M3/qos_init_m3_v11.h"
 #endif
 
  /* Product Register */
@@ -74,9 +76,10 @@ void qos_init(void)
 	uint32_t reg;
 
 	reg = mmio_read_32(PRR);
-#if RCAR_LSI == RCAR_AUTO
+#if (RCAR_LSI == RCAR_AUTO) || RCAR_LSI_CUT_COMPAT
 	switch (reg & PRR_PRODUCT_MASK) {
 	case PRR_PRODUCT_H3:
+ #if (RCAR_LSI == RCAR_AUTO) || (RCAR_LSI == RCAR_H3)
 		switch (reg & PRR_CUT_MASK) {
 		case PRR_PRODUCT_10:
 			qos_init_h3_v10();
@@ -91,43 +94,26 @@ void qos_init(void)
 			PRR_CUT_ERR(reg);
 			break;
 		}
+ #else
+		PRR_PRODUCT_ERR(reg);
+ #endif
 		break;
 	case PRR_PRODUCT_M3:
-		qos_init_m3_v10();
-		break;
-	default:
-		PRR_PRODUCT_ERR(reg);
-		break;
-	}
-
-#elif RCAR_LSI_CUT_COMPAT
-	switch (reg & PRR_PRODUCT_MASK) {
-	case PRR_PRODUCT_H3:
-#if RCAR_LSI != RCAR_H3
-		PRR_PRODUCT_ERR(reg);
-#else
+ #if (RCAR_LSI == RCAR_AUTO) || (RCAR_LSI == RCAR_M3)
 		switch (reg & PRR_CUT_MASK) {
 		case PRR_PRODUCT_10:
-			qos_init_h3_v10();
+			qos_init_m3_v10();
 			break;
-		case PRR_PRODUCT_11:
-			qos_init_h3_v11();
-			break;
-		case PRR_PRODUCT_20:
-			qos_init_h3_v20();
+		case PRR_PRODUCT_20: /* M3 Cut 11 */
+			qos_init_m3_v11();
 			break;
 		default:
 			PRR_CUT_ERR(reg);
 			break;
 		}
-#endif
-		break;
-	case PRR_PRODUCT_M3:
-#if RCAR_LSI != RCAR_M3
+ #else
 		PRR_PRODUCT_ERR(reg);
-#else
-		qos_init_m3_v10();
-#endif
+ #endif
 		break;
 	default:
 		PRR_PRODUCT_ERR(reg);
@@ -160,13 +146,25 @@ void qos_init(void)
    #error "Don't have QoS initialize routine(H3)."
   #endif
  #elif RCAR_LSI == RCAR_M3	/* M3 */
+  #if RCAR_LSI_CUT == RCAR_CUT_10
+	/* M3 Cut 10 */
 	if ((PRR_PRODUCT_M3 | PRR_PRODUCT_10)
 			!= (reg & (PRR_PRODUCT_MASK | PRR_CUT_MASK))) {
 		PRR_PRODUCT_ERR(reg);
 	}
 	qos_init_m3_v10();
+  #elif RCAR_LSI_CUT == RCAR_CUT_11
+	/* M3 Cut 11 */
+	if ((PRR_PRODUCT_M3 | PRR_PRODUCT_20)
+			!= (reg & (PRR_PRODUCT_MASK | PRR_CUT_MASK))) {
+		PRR_PRODUCT_ERR(reg);
+	}
+	qos_init_m3_v11();
+  #else
+   #error "Don't have QoS initialize routine(M3)."
+  #endif
  #else
-  #error "Don't have QoS initialize routine(M3)."
+  #error "Don't have QoS initialize routine(Unknown chip)."
  #endif
 #endif
 }

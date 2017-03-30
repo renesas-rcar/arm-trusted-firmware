@@ -265,7 +265,8 @@
 #define RCAR_PRODUCT_H3_CUT10		(RCAR_PRODUCT_H3 | 0x00U) /* H3 Ver1.0 */
 #define RCAR_PRODUCT_H3_CUT11		(RCAR_PRODUCT_H3 | 0x01U) /* H3 Ver1.1 */
 #define RCAR_PRODUCT_H3_CUT20		(RCAR_PRODUCT_H3 | 0x10U) /* H3 Ver2.0 */
-#define RCAR_PRODUCT_M3_CUT10		(RCAR_PRODUCT_M3 | 0x00U) /* M3 */
+#define RCAR_PRODUCT_M3_CUT10		(RCAR_PRODUCT_M3 | 0x00U) /* M3 Ver1.0 */
+#define RCAR_PRODUCT_M3_CUT11		(RCAR_PRODUCT_M3 | 0x10U) /* M3 Ver1.1 */
 
 /*******************************************************************************
  *  RCAR MD pin information

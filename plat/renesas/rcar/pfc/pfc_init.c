@@ -120,8 +120,8 @@ void pfc_init(void)
 			PRR_CUT_ERR(reg);
 			break;
 		}
-		break;
 #endif
+		break;
 	case PRR_PRODUCT_M3:
 #if RCAR_LSI != RCAR_M3
 		PRR_PRODUCT_ERR(reg);
@@ -132,7 +132,7 @@ void pfc_init(void)
 	default:
 		PRR_PRODUCT_ERR(reg);
 		break;
-	};
+	}
 
 #else
  #if RCAR_LSI == RCAR_H3	/* H3 */
@@ -161,13 +161,12 @@ void pfc_init(void)
    #error "Don't have PFC initialize routine(H3)."
   #endif
  #elif RCAR_LSI == RCAR_M3	/* M3 */
-	if ((PRR_PRODUCT_M3 | PRR_PRODUCT_10)
-			!= (reg & (PRR_PRODUCT_MASK | PRR_CUT_MASK))) {
+	if ((PRR_PRODUCT_M3) != (reg & PRR_PRODUCT_MASK)) {
 		PRR_PRODUCT_ERR(reg);
 	}
-		pfc_init_m3();
+	pfc_init_m3();
  #else
-  #error "Don't have PFC initialize routine(M3)."
+  #error "Don't have PFC initialize routine(unknown)."
  #endif
 #endif
 }

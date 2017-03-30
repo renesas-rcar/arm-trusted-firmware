@@ -98,6 +98,13 @@
 #define	CPG_CPGWPR		(CPG_BASE+0x0900U)	// CPG Write Protect Register
 
 
+/** Boot Status register
+ */
+#define  MFISBTSTSR			(0xE6260604U)
+
+#define  MFISBTSTSR_BOOT_PARTITION	(0x00000010U)
+
+
 /** brief eMMC(SDHI2/MMC0) registers
  */
 #define	MMC0_SD_BASE		(0xEE140000U)

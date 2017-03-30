@@ -142,14 +142,13 @@ static int32_t emmcdrv_block_open(io_dev_info_t *dev_info, const uintptr_t spec,
 		current_file.file_pos = 0;
 
 		if (emmcdrv_bootpartition == PARTITION_ID_USER) {
-			emmcdrv_bootpartition =
-			(EMMC_PARTITION_ID)(uint8_t)(
-			(mmc_drv_obj.ext_csd_data[EMMC_EXT_CSD_PARTITION_CONFIG]
-			& EMMC_PARTITION_CONFIG_ENABLE_MASK) >> 3U);
+			emmcdrv_bootpartition = mmc_drv_obj.boot_partition_en;
 			/* Partition check */
 			if ((PARTITION_ID_BOOT_1==emmcdrv_bootpartition) ||
 			    (PARTITION_ID_BOOT_2==emmcdrv_bootpartition)) {
 				current_file.partition = emmcdrv_bootpartition;
+				NOTICE("BL2: eMMC boot from partition %d\n",
+					emmcdrv_bootpartition);
 			} else {
 				WARN("BL2 :eMMC boot partition error.\n");
 				result = IO_FAIL;

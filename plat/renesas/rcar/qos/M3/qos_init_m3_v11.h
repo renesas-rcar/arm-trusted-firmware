@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2017, Renesas Electronics Corporation
+ * Copyright (c) 2017, Renesas Electronics Corporation
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -29,14 +29,9 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef	RCAR_VERSION_H__
-#define	RCAR_VERSION_H__
+#ifndef QOS_INIT_H_M3_V11__
+#define QOS_INIT_H_M3_V11__
 
-#include	<arch_helpers.h>
+void qos_init_m3_v11(void);
 
-#define		VERSION_OF_RENESAS	"1.0.14"
-#define		VERSION_OF_RENESAS_MAXLEN	(128)
-
-extern const uint8_t	version_of_renesas[VERSION_OF_RENESAS_MAXLEN];
-
-#endif	/* RCAR_VERSION_H__	*/
+#endif	/* QOS_INIT_H_M3_V11__ */
