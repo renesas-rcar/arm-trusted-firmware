@@ -165,13 +165,15 @@ extern unsigned long __COHERENT_RAM_END__;
 #endif
 
 /*
- * The next 2 constants identify the extents of the code & RO data region.
- * These addresses are used by the MMU setup code and therefore they must be
- * page-aligned.  It is the responsibility of the linker script to ensure that
- * __RO_START__ and __RO_END__ linker symbols refer to page-aligned addresses.
+ * The next 3 constants identify the extents of the code, RO data region and the
+ * limit of the BL2 image. These addresses are used by the MMU setup code and
+ * therefore they must be page-aligned.  It is the responsibility of the linker
+ * script to ensure that __RO_START__, __RO_END__ & __BL2_END__ linker symbols
+ * refer to page-aligned addresses.
  */
 #define BL2_RO_BASE (unsigned long)(&__RO_START__)
 #define BL2_RO_LIMIT (unsigned long)(&__RO_END__)
+#define BL2_END (unsigned long)(&__BL2_END__)
 
 #if USE_COHERENT_MEM
 /*
@@ -928,7 +930,7 @@ void bl2_plat_arch_setup(void)
 #if RCAR_BL2_DCACHE == 1
 	NOTICE("BL2: D-Cache enable\n");
 	rcar_configure_mmu_el1(BL2_BASE,
-			      (RCAR_SYSRAM_LIMIT - BL2_BASE),
+			      (BL2_END - BL2_BASE),
 			      BL2_RO_BASE,
 			      BL2_RO_LIMIT
 #if USE_COHERENT_MEM

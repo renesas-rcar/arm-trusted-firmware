@@ -16,11 +16,7 @@ ENTRY(bl2_entrypoint)
 #endif
 
 MEMORY {
-#if PLAT_rcar
-    RAM (rwx): ORIGIN = BL2_BASE, LENGTH = RCAR_SYSRAM_LIMIT - BL2_BASE
-#else
     RAM (rwx): ORIGIN = BL2_BASE, LENGTH = BL2_LIMIT - BL2_BASE
-#endif
 }
 
 
