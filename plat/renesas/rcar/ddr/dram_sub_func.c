@@ -33,6 +33,7 @@
 #include <debug.h>
 #include "dram_sub_func.h"
 
+#if (PMIC_ON_BOARD==1)
 /* Local defines */
 #define DRAM_BACKUP_GPIO_USE	(0)
 #if DRAM_BACKUP_GPIO_USE==0
@@ -47,6 +48,7 @@
 #if DRAM_BACKUP_GPIO_USE==1
 #define	GPIO_OUTDT1		(0xE6051008U)
 #endif
+#endif /* PMIC_ON_BOARD */
 
 void dram_get_boot_status(uint32_t *status)
 {
