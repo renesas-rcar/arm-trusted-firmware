@@ -368,19 +368,19 @@ static const struct plat_io_policy policies[] = {
 	}
 };
 
-static const io_drv_spec_t io_drv_spec_memdrv = {
+static io_drv_spec_t io_drv_spec_memdrv = {
 	FLASH0_BASE,
 	FLASH0_SIZE,
 	0U
 };
 
-static const io_drv_spec_t io_drv_spec_emmcdrv = {
+static io_drv_spec_t io_drv_spec_emmcdrv = {
 	0U,
 	0U,
 	0U
 };
 
-static const struct plat_io_policy drv_policies[] = {
+static struct plat_io_policy drv_policies[] __attribute__ ((section (".data")))= {
 	/* FLASH_DEV_ID */
 	{
 		&memdrv_dev_handle,
