@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2014, ARM Limited and Contributors. All rights reserved.
- * Copyright (c) 2015-2016, Renesas Electronics Corporation. All rights reserved.
+ * Copyright (c) 2015-2017, Renesas Electronics Corporation. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -190,7 +190,6 @@ static int32_t open_rcar(const uintptr_t spec);
 static int32_t open_memmap(const uintptr_t spec);
 static int32_t open_emmcdrv(const uintptr_t spec);
 
-/* sakata check table info */
 struct plat_io_policy {
 	uintptr_t *dev_handle;
 	uintptr_t image_spec;
@@ -402,9 +401,7 @@ static int32_t open_rcar(const uintptr_t spec)
 
 	/* See if a Firmware Image Package is available */
 	result = io_dev_init(rcar_dev_handle, (uintptr_t)boot_io_drv_id);
-	if (result == IO_SUCCESS) {
-		VERBOSE("Using RCar File Manager\n");
-	}
+
 	return result;
 }
 
@@ -418,7 +415,6 @@ static int32_t open_memmap(const uintptr_t spec)
 	if (result == IO_SUCCESS) {
 		result = io_open(memdrv_dev_handle, spec, &local_image_handle);
 		if (result == IO_SUCCESS) {
-			VERBOSE("Using Memdrv IO\n");
 			(void)io_close(local_image_handle);
 		}
 	}
@@ -430,9 +426,7 @@ static int32_t open_emmcdrv(const uintptr_t spec)
 	int32_t result;
 
 	result = io_dev_init(emmcdrv_dev_handle, 0U);
-	if (result == IO_SUCCESS) {
-		VERBOSE("Using eMMCdrv IO\n");
-		}
+
 	return result;
 }
 

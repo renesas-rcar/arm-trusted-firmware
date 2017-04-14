@@ -32,6 +32,7 @@
 #include <mmio.h>
 #include <debug.h>
 #include "rcar_def.h"
+#include "bl2_cpg_register.h"
 #include "iic_dvfs.h"
 
 #define DVFS_RETRY_MAX			(2U)
@@ -45,10 +46,6 @@
 #define IIC_DVFS_SET_ICCH_EXTAL_TYPE_1	(0x02U)
 #define IIC_DVFS_SET_ICCH_EXTAL_TYPE_2	(0x03U)
 #define IIC_DVFS_SET_ICCH_EXTAL_TYPE_3	(0x05U)
-
-#define CPG_REG_BASE			(0xE6150000U)
-#define CPG_REG_SMSTPCR9		(CPG_REG_BASE + 0x0994U)
-#define CPG_REG_MSTPSR9			(CPG_REG_BASE + 0x09A4U)
 
 #define CPG_BIT_SMSTPCR9_DVFS		(0x04000000U)
 
@@ -128,10 +125,10 @@ int32_t
 	uint32_t err_count;
 
 	/* Clock supply of DVFS is enabled */
-	reg = mmio_read_32(CPG_REG_SMSTPCR9) & ~CPG_BIT_SMSTPCR9_DVFS;
+	reg = mmio_read_32(SCMSTPCR9) & ~CPG_BIT_SMSTPCR9_DVFS;
 	mmio_write_32(RCAR_CPGWPR, ~reg);
-	mmio_write_32(CPG_REG_SMSTPCR9, reg);
-	while ((mmio_read_32(CPG_REG_MSTPSR9) & CPG_BIT_SMSTPCR9_DVFS)
+	mmio_write_32(SCMSTPCR9, reg);
+	while ((mmio_read_32(SCMSTPCR9) & CPG_BIT_SMSTPCR9_DVFS)
 							!= 0x00000000U) {
 	}
 
@@ -184,10 +181,10 @@ int32_t
 	uint32_t err_count;
 
 	/* Clock supply of DVFS is enabled */
-	reg = mmio_read_32(CPG_REG_SMSTPCR9) & ~CPG_BIT_SMSTPCR9_DVFS;
+	reg = mmio_read_32(SCMSTPCR9) & ~CPG_BIT_SMSTPCR9_DVFS;
 	mmio_write_32(RCAR_CPGWPR, ~reg);
-	mmio_write_32(CPG_REG_SMSTPCR9, reg);
-	while ((mmio_read_32(CPG_REG_MSTPSR9) & CPG_BIT_SMSTPCR9_DVFS)
+	mmio_write_32(SCMSTPCR9, reg);
+	while ((mmio_read_32(SCMSTPCR9) & CPG_BIT_SMSTPCR9_DVFS)
 							!= 0x00000000U) {
 	}
 

@@ -31,7 +31,6 @@
 
 #include <stddef.h>
 
-#include <assert.h>
 #include <auth_mod.h>
 #include <debug.h>
 #include <platform.h>

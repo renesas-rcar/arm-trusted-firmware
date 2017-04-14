@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2016, Renesas Electronics Corporation
+ * Copyright (c) 2015-2017, Renesas Electronics Corporation
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -40,9 +40,6 @@
 
 static void enableRPC(void);
 static void setupRPC(void);
-#if DEBUG
-static void disableRPC(void);
-#endif
 
 static void enableRPC(void)
 {
@@ -62,23 +59,9 @@ static void setupRPC(void)
 	}
 }
 
-#if DEBUG
-static void disableRPC(void)
-{
-	cpg_write(CPG_SMSTPCR9,
-		mmio_read_32(CPG_SMSTPCR9) | 0x00020000U);
-}
-#endif
-
 void initRPC(void)
 {
 	enableRPC();
 	setupRPC();
 }
 
-#if DEBUG
-void termRPC(void)
-{
-	disableRPC();
-}
-#endif

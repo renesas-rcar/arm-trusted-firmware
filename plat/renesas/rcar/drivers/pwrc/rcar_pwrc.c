@@ -432,6 +432,11 @@ void rcar_bl31_code_copy_to_system_ram(void)
 
 	flush_dcache_range((uint64_t)DEVICE_SRAM_SHADOW_BASE,
 			((uint64_t)__system_ram_end__ - (uint64_t)__system_ram_start__));
+
+	/* Invalidate instruction cache */
+	iciallu();
+	dsb();
+	isb();
 }
 
 void rcar_bl31_set_suspend_to_ram(void)

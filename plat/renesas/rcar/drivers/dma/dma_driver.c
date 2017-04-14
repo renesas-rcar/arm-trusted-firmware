@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2016, Renesas Electronics Corporation
+ * Copyright (c) 2015-2017, Renesas Electronics Corporation
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -39,45 +39,12 @@
 #include "dma_driver.h"
 #include "debug.h"
 
-static void regdump(void);
 
 static void enableDMA(void);
 static void setupDMA(void);
 static void startDMA(uintptr_t dst, uint32_t src, uint32_t len);
 static void endDMA(void);
-#if DEBUG
-static void disableDMA(void);
-#endif
 
-static void regdump(void)
-{
-#if DEBUG
-	INFO("BL2:\n"
-		"%s(0x%x) : 0x%x\n"
-		"%s(0x%x) : 0x%x\n"
-		"%s(0x%x) : 0x%x\n"
-		"%s(0x%x) : 0x%x\n"
-		"%s(0x%x) : 0x%x\n"
-		"%s(0x%x) : 0x%x\n"
-		"%s(0x%x) : 0x%x\n"
-		"%s(0x%x) : 0x%x\n"
-		"%s(0x%x) : 0x%x\n"
-		"%s(0x%x) : 0x%x\n"
-		"%s(0x%x) : 0x%x\n",
-		"SMSTPCR2  ",CPG_SMSTPCR2,mmio_read_32(CPG_SMSTPCR2),
-		"SRCR2     ",CPG_SRCR2,mmio_read_32(CPG_SRCR2),
-		"MSTPSR2   ",CPG_MSTPSR2,mmio_read_32(CPG_MSTPSR2),
-		"DMAOR     ",DMA_DMAOR,mmio_read_16(DMA_DMAOR),
-		"DMASEC    ",DMA_DMASEC,mmio_read_32(DMA_DMASEC),
-		"DMACHCLR  ",DMA_DMACHCLR,mmio_read_32(DMA_DMACHCLR),
-		"DMASAR    ",DMA_DMASAR,mmio_read_32(DMA_DMASAR),
-		"DMADAR    ",DMA_DMADAR,mmio_read_32(DMA_DMADAR),
-		"DMATCR    ",DMA_DMATCR,mmio_read_32(DMA_DMATCR),
-		"DMACHCR   ",DMA_DMACHCR,mmio_read_32(DMA_DMACHCR),
-		"DMAFIXDAR ",DMA_DMAFIXDAR,mmio_read_32(DMA_DMAFIXDAR)
-	);
-#endif
-}
 
 static void enableDMA(void)
 {
@@ -125,7 +92,6 @@ static void endDMA(void)
 		/* DMA channel control */
 		if ((mmio_read_32(DMA_DMACHCR) & 0x80000000U) != 0U) {
 			ERROR("BL2: DMA - Channel Address Error\n");
-			regdump();
 			panic();
 			break;
 		}
@@ -138,15 +104,6 @@ static void endDMA(void)
 	mmio_write_32(DMA_DMACHCLR,0x00000001U);
 	mmio_write_32(DMA_DMACHCLR,0x00000000U);
 }
-
-#if DEBUG
-static void disableDMA(void)
-{
-	/* Disable the clock supply to the CPG. */
-	cpg_write(CPG_SMSTPCR2,
-		mmio_read_32(CPG_SMSTPCR2) | SYS_DMAC_BIT);
-}
-#endif
 
 void initDMA(void)
 {
@@ -165,7 +122,7 @@ void execDMA(uintptr_t dst, uint32_t src, uint32_t len)
 
 	/* fail safe */
 	if (((src + len) < src) ||
-	    ((len == 0) && ((src + 0x40000000U) < src))) {
+	    ((len == 0U) && ((src + 0x40000000U) < src))) {
 		/* source address invalid */
 		if (len == 0U) {
 			len = 0x40000000U;
@@ -239,22 +196,7 @@ void execDMA(uintptr_t dst, uint32_t src, uint32_t len)
 	}
 	if (memlen != 0U) {
 		(void)memcpy((void*)dst,
-			(const void*)(uint64_t)src,
+			(const void*)((uintptr_t)src),
 				(size_t)memlen);
 	}
-	if (dmalen != 0U) {
-		INFO("BL2: DMA    len=%d(0x%x)\n",
-			dmalen, dmalen);
-	}
-	if (memlen != 0U) {
-		INFO("BL2: memcpy len=%d(0x%x)\n",
-			memlen, memlen);
-	}
 }
-
-#if DEBUG
-void termDMA(void)
-{
-	disableDMA();
-}
-#endif

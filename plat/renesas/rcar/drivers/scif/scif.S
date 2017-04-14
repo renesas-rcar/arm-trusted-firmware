@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2016, Renesas Electronics Corporation
+ * Copyright (c) 2015-2017, Renesas Electronics Corporation
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -123,6 +123,7 @@
 	.globl	console_core_putc
 	.globl	console_getc
 	.globl	console_finalize
+	.globl	micro_wait
 
 	/*
 	 *  The console base is in the data section and not in .bss
@@ -304,6 +305,12 @@ func console_finalize
 	cmp	w1, #0
 	bne	1b
 
+	mov x0, #100
+	mov x3, x30
+	bl micro_wait
+	mov x30, x3
+
+	ldr	x0, =SCIF2_BASE
 	ldrh	w1, [x0, #SCIF_SCSCR]
 	and	w1, w1, #~(SCSCR_TE_EN + SCSCR_RE_EN)	/* TE=0,RE=0 */
 	strh	w1, [x0, #SCIF_SCSCR]

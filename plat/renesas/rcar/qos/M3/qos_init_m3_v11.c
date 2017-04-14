@@ -33,7 +33,7 @@
 #include <debug.h>
 #include "qos_init_m3_v11.h"
 
-#define	RCAR_QOS_VERSION		"rev.0.10"
+#define	RCAR_QOS_VERSION		"rev.0.11"
 
 #define	RCAR_QOS_NONE			(3U)
 #define	RCAR_QOS_TYPE_DEFAULT		(0U)
@@ -158,7 +158,10 @@
 #define	RALLOC_FSS			(RALLOC_BASE + 0x0048U)
 #define	RALLOC_INSFC			(RALLOC_BASE + 0x0050U)
 #define	RALLOC_BERR			(RALLOC_BASE + 0x0054U)
+#define	RALLOC_EARLYR			(RALLOC_BASE + 0x0060U)
 #define	RALLOC_RACNT0			(RALLOC_BASE + 0x0080U)
+
+#define ACTIVE_OR			(0xFD812030U)
 
 /** macro **/
 
@@ -491,10 +494,10 @@ static void dbsc_setting(void)
 	//DBSC_DBSCHQOS_11_1 not set
 	//DBSC_DBSCHQOS_11_2 not set
 	//DBSC_DBSCHQOS_11_3 not set
-	//DBSC_DBSCHQOS_12_0 not set
-	//DBSC_DBSCHQOS_12_1 not set
-	//DBSC_DBSCHQOS_12_2 not set
-	//DBSC_DBSCHQOS_12_3 not set
+	io_write_32(DBSC_DBSCHQOS_12_0, 0x00000040);
+	io_write_32(DBSC_DBSCHQOS_12_1, 0x00000030);
+	io_write_32(DBSC_DBSCHQOS_12_2, 0x00000020);
+	io_write_32(DBSC_DBSCHQOS_12_3, 0x00000010);
 	io_write_32(DBSC_DBSCHQOS_13_0, 0x00000100);
 	io_write_32(DBSC_DBSCHQOS_13_1, 0x000000F0);
 	io_write_32(DBSC_DBSCHQOS_13_2, 0x000000A0);
@@ -541,17 +544,21 @@ void qos_init_m3_v11(void)
 #endif
 
 	/* Resource Alloc setting */
-	io_write_32(RALLOC_RAS,   0x00000040U);
+	io_write_32(RALLOC_RAS,   0x00000044U);
 	io_write_32(RALLOC_FIXTH, 0x000F0005U);
 	io_write_32(RALLOC_REGGD, 0x00000000U);
 	io_write_64(RALLOC_DANN,  0x0404020002020201U);
-	io_write_32(RALLOC_DANT,  0x00100804U);
+	io_write_32(RALLOC_DANT,  0x0020100AU);
 	io_write_32(RALLOC_EC,    0x00000000U);
 	io_write_64(RALLOC_EMS,   0x0000000000000000U);
 	io_write_32(RALLOC_FSS,   0x0000000AU);
 	io_write_32(RALLOC_INSFC, 0xC7840001U);
 	io_write_32(RALLOC_BERR,  0x00000000U);
-	io_write_32(RALLOC_RACNT0, 0x00010003U);
+	io_write_32(RALLOC_EARLYR, 0x00000000U);
+	io_write_32(RALLOC_RACNT0, 0x02010003U);	/* GPU Boost Mode ON */
+
+	/* GPU Boost Mode */
+	io_write_32(ACTIVE_OR,       0x00000000U); /* 0:enable, 1:disable */
 
 	/* MSTAT setting */
 	io_write_32(MSTAT_SL_INIT, 0x0305007DU);

@@ -221,7 +221,7 @@ static int32_t file_to_offset(const int32_t file, uintptr_t *offset,
 	int32_t i;
 	int32_t status = -EINVAL;
 	uint32_t is_calc_addr;
-	
+
 	assert(offset != NULL);
 	assert(cert_addr != NULL);
 	assert(is_noload != NULL);
@@ -397,6 +397,9 @@ static int32_t load_bl33x(void)
                                 	WARN("load_bl33x: check load area\n");
                                         result = IO_FAIL;
                                 }
+			}
+
+			if (IO_SUCCESS == result) {
 
 				result = io_read(backend_handle,
 					dest_addr,
@@ -518,7 +521,6 @@ static int32_t rcar_dev_init(io_dev_info_t *dev_info, const uintptr_t init_param
 
 	/* Obtain a reference to the image by querying the platform layer */
 	/* get rcar flash memory address... (certain BL2, BL31, BL32, BL33... max 64MB:RPC LBSC address) */
-	/* sakata check image number */
 	result = plat_get_drv_source(image_name, &backend_dev_handle,
 				       &backend_image_spec);
 	if (result != IO_SUCCESS) {
@@ -757,7 +759,7 @@ static int32_t rcar_file_read(io_entity_t *entity, uintptr_t buffer, size_t leng
 		/* set eMMC partition */
 		((io_drv_spec_t *)backend_image_spec)->partition =
 			(uint32_t)fp->partition;/* needs 32-bits only */
-			
+
 
 		/* Open the backend, attempt to access the blob image */
 		result = io_open(backend_dev_handle, backend_image_spec,

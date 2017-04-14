@@ -178,8 +178,6 @@ void bl2_avs_init(void)
 	uint32_t val;
 	uint32_t mstp;
 
-	INFO("BL2: AVS setting start. \n");
-
 	/* Initialize AVS status */
 	avs_status = avs_status_init;
 
@@ -214,8 +212,6 @@ void bl2_avs_init(void)
 	/* Set next status */
 	avs_status = avs_status_start_condition;
 
-	INFO("BL2: Read KSEN_ADJCNTS.VOLCOND=0x%x efuse_avs=%u\n",
-		val, efuse_avs);
 #endif	/* (PMIC_ON_BOARD==1) */
 #endif	/* (AVS_SETTING_ENABLE==1) */
 }
@@ -229,8 +225,6 @@ void bl2_avs_setting(void)
 #if (AVS_SETTING_ENABLE==1)
 #if (PMIC_ON_BOARD==1)
 	avs_error_t err;
-
-	INFO("BL2: bl2_avs_setting avs_status=%d\n", avs_status);
 
 	switch (avs_status) {
 	case avs_status_start_condition:
@@ -436,8 +430,6 @@ void bl2_avs_end(void)
 #if (PMIC_ON_BOARD==1)
 	uint32_t mstp;
 
-	INFO("BL2: bl2_avs_end avs_status=%d\n", avs_status);
-
 	/* While status is not completion, be repeated. */
 	while (avs_status != avs_status_complete) {
 		bl2_avs_setting();
@@ -472,8 +464,6 @@ void bl2_avs_end(void)
 static avs_error_t avs_check_error(void)
 {
 	avs_error_t ret;
-
-	INFO("BL2: avs_check_error avs_status=%d\n", avs_status);
 
 	if ((mmio_read_8(IIC_ICSR) & ICSR_AL) == ICSR_AL) {
 		NOTICE("BL2: Loss of arbitration is detected. "
@@ -551,8 +541,6 @@ static void avs_set_iic_clock(void)
 static uint8_t avs_read_pmic_reg(uint8_t addr)
 {
 	uint8_t reg;
-
-	INFO("BL2: Read PMIC register start.\n");
 
 	/* Set ICCR.ICE=1 to activate the I2C module. */
 	mmio_write_8(IIC_ICCR, mmio_read_8(IIC_ICCR) | ICCR_ENABLE);

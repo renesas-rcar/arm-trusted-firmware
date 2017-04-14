@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2016, Renesas Electronics Corporation
+ * Copyright (c) 2015-2017, Renesas Electronics Corporation
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -34,16 +34,7 @@
 
 #include <stdint.h>
 
-#if 0	/* for QAC */
-#ifndef DEBUG
-#define DEBUG 0
-#endif
-#endif	/* for QAC */
-
 void initDMA(void);
 void execDMA(uintptr_t dst, uint32_t src, uint32_t len);
-#if DEBUG
-void termDMA(void);
-#endif
 
 #endif	/* DMA_DRIVER_H__ */

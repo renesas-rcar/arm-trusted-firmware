@@ -87,8 +87,6 @@ int32_t dram_update_boot_status(uint32_t status)
 			ERROR("BKUP mode cnt READ ERROR.\n");
 			ret = DRAM_UPDATE_STATUS_ERR;
 		} else {
-			INFO("     BKUP mode cnt READ value = %d\n",
-				bkup_mode_cnt);
 			bkup_mode_cnt &= (uint8_t)~BIT_BKUP_CTRL_OUT;
 			i2c_dvfs_ret = rcar_iic_dvfs_send(PMIC_SLAVE_ADDR,
 					PMIC_BKUP_MODE_CNT, bkup_mode_cnt);
@@ -96,12 +94,6 @@ int32_t dram_update_boot_status(uint32_t status)
 				ERROR("BKUP mode cnt WRITE ERROR. "
 					"value = %d\n", bkup_mode_cnt);
 				ret = DRAM_UPDATE_STATUS_ERR;
-			} else {
-				INFO("BKUP_TRG = %s, BKUP_REQB = %s\n",
-					((mmio_read_32(GPIO_INDT1) &
-					((uint32_t)1U<<8)) != 0U) ? "1" : "0",
-					((mmio_read_32(GPIO_INDT1) &
-					((uint32_t)1U<<9)) != 0U) ? "1" : "0");
 			}
 		}
 #endif

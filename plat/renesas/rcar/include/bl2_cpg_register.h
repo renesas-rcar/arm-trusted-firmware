@@ -131,5 +131,31 @@
 /* Realtime Module Stop Control Register 11 */
 #define	RMSTPCR11	(CPG_BASE + 0x098CU)
 
+/* CPG (SYSTEM) registers */
+
+/* System Module Stop Control Register 0 */
+#define	SMSTPCR0	(CPG_BASE + 0x0130U)
+/* System Module Stop Control Register 1 */
+#define	SMSTPCR1	(CPG_BASE + 0x0134U)
+/* System Module Stop Control Register 2 */
+#define	SMSTPCR2	(CPG_BASE + 0x0138U)
+/* System Module Stop Control Register 3 */
+#define	SMSTPCR3	(CPG_BASE + 0x013CU)
+/* System Module Stop Control Register 4 */
+#define	SMSTPCR4	(CPG_BASE + 0x0140U)
+/* System Module Stop Control Register 5 */
+#define	SMSTPCR5	(CPG_BASE + 0x0144U)
+/* System Module Stop Control Register 6 */
+#define	SMSTPCR6	(CPG_BASE + 0x0148U)
+/* System Module Stop Control Register 7 */
+#define	SMSTPCR7	(CPG_BASE + 0x014CU)
+/* System Module Stop Control Register 8 */
+#define	SMSTPCR8	(CPG_BASE + 0x0990U)
+/* System Module Stop Control Register 9 */
+#define	SMSTPCR9	(CPG_BASE + 0x0994U)
+/* System Module Stop Control Register 10 */
+#define	SMSTPCR10	(CPG_BASE + 0x0998U)
+/* System Module Stop Control Register 11 */
+#define	SMSTPCR11	(CPG_BASE + 0x099CU)
 
 #endif	/* BL2_CPG_REGISTER_H__ */

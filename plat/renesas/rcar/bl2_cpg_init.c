@@ -102,7 +102,7 @@ static const reg_setting_t reg_setting_rt[] = {
 	/* Realtime Module Stop Control Register 1 */
 	{RMSTPCR1,		0xFFFFFFFFU},
 	/* Realtime Module Stop Control Register 2 */
-	{RMSTPCR2,		0x340E2FDCU},
+	{RMSTPCR2,		0x340E0FDCU},
 	/* Realtime Module Stop Control Register 3 */
 	{RMSTPCR3,		0xFFFFFFDFU},
 	/* Realtime Module Stop Control Register 4 */
@@ -120,7 +120,37 @@ static const reg_setting_t reg_setting_rt[] = {
 	/* Realtime Module Stop Control Register 10 */
 	{RMSTPCR10,		0xFFFEFFE0U},
 	/* Realtime Module Stop Control Register 11 */
-	{RMSTPCR11,		0x00000037U}
+	{RMSTPCR11,		0x000000B7U}
+};
+
+static const reg_setting_t reg_setting_system[] = {
+
+	/* CPG (SYSTEM) registers */
+
+	/* System Module Stop Control Register 0 */
+	{SMSTPCR0,		0x00210000U},
+	/* System Module Stop Control Register 1 */
+	{SMSTPCR1,		0xFFFFFFFFU},
+	/* System Module Stop Control Register 2 */
+	{SMSTPCR2,		0x340E2FDCU},
+	/* System Module Stop Control Register 3 */
+	{SMSTPCR3,		0xFFFFFBDFU},
+	/* System Module Stop Control Register 4 */
+	{SMSTPCR4,		0x80000004U},
+	/* System Module Stop Control Register 5 */
+	{SMSTPCR5,		0xC3FFFFFFU},
+	/* System Module Stop Control Register 6 */
+	{SMSTPCR6,		0xFFFFFFFFU},
+	/* System Module Stop Control Register 7 */
+	{SMSTPCR7,		0xFFFFFFFFU},
+	/* System Module Stop Control Register 8 */
+	{SMSTPCR8,		0x01F1FFF5U},
+	/* System Module Stop Control Register 9 */
+	{SMSTPCR9,		0xFFFFFFFEU},
+	/* System Module Stop Control Register 10 */
+	{SMSTPCR10,		0xFFFEFFE0U},
+	/* System Module Stop Control Register 11 */
+	{SMSTPCR11,		0x000000B7U}
 };
 
 void bl2_cpg_init(void)
@@ -129,6 +159,7 @@ void bl2_cpg_init(void)
 	uint32_t	ie;
 	uint32_t	modemr;
 
+	/* CPG (SECURITY) registers */
 	ie = (uint32_t)(sizeof(reg_setting) / sizeof(reg_setting_t));
 
 	for (i = 0U; i < ie; i++) {
@@ -138,7 +169,7 @@ void bl2_cpg_init(void)
 	modemr = mmio_read_32(RCAR_MODEMR);
 	modemr &= MODEMR_BOOT_CPU_MASK;
 
-
+	/* CPG (REALTIME) registers */
 	if((modemr == MODEMR_BOOT_CPU_CA57) ||
 	   (modemr == MODEMR_BOOT_CPU_CA53)) {
 		ie = (uint32_t)(sizeof(reg_setting_rt) / sizeof(reg_setting_t));
@@ -146,6 +177,19 @@ void bl2_cpg_init(void)
 		for (i = 0U; i < ie; i++) {
 			cpg_write(reg_setting_rt[i].adr, reg_setting_rt[i].val);
 		}
+	}
+}
+
+void bl2_system_cpg_init(void)
+{
+	uint32_t	i;
+	uint32_t	ie;
+
+	/* CPG (SYSTEM) registers */
+	ie = (uint32_t)(sizeof(reg_setting_system) / sizeof(reg_setting_t));
+
+	for (i = 0U; i < ie; i++) {
+		cpg_write(reg_setting_system[i].adr, reg_setting_system[i].val);
 	}
 }
 

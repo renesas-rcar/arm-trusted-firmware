@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2016, Renesas Electronics Corporation
+ * Copyright (c) 2015-2017, Renesas Electronics Corporation
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -32,15 +32,6 @@
 #ifndef RPC_DRIVER_H__
 #define RPC_DRIVER_H__
 
-#if 0	/* for QAC */
-#ifndef DEBUG
-#define DEBUG 0
-#endif
-#endif	/* for QAC */
-
 void initRPC(void);
-#if DEBUG
-void termRPC(void);
-#endif
 
 #endif	/* RPC_DRIVER_H__ */

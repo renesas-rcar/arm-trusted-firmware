@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2016, Renesas Electronics Corporation
+ * Copyright (c) 2015-2017, Renesas Electronics Corporation
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -29,7 +29,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-/** 
+/**
  * @file  emmc_cmd.c
  * @brief MMC card send command operation.
  *
@@ -68,7 +68,7 @@ static void cmdErrSdInfo2Log(void);
  *  * Clock to memory card IF is enabled.
  * - Post-conditions:<BR>
  * Requested command is executed successfully
- * 
+ *
  * @param[in] error_mask Errors to be checked (error values; HAL_MEMCARD_ERRORS)
  * @param[in,out] *response Response from the card  (virtual address)
  * @return eMMC error code.
@@ -394,7 +394,7 @@ EMMC_ERROR_CODE emmc_exec_cmd (
         ERROR("BL2: emmc exec_cmd:EMMC_ERR_FORCE_TERMINATE\n");
         emmc_softreset();
 
-        return EMMC_ERR_FORCE_TERMINATE;    /* error information has already been written. */ 
+        return EMMC_ERR_FORCE_TERMINATE;    /* error information has already been written. */
     }
 
     /* success */
@@ -404,7 +404,7 @@ EMMC_ERROR_CODE emmc_exec_cmd (
     return EMMC_SUCCESS;
 }
 
-/** @brief host controller softrest. 
+/** @brief host controller softreset.
  *
  * - Pre-conditions:<BR>
  * .
@@ -466,7 +466,7 @@ static void emmc_softreset(void)
  * Called from emmc_exec_cmd().
  * - Post-conditions:<BR>
  * .
- * 
+ *
  * @param[in,out] *response Response from the card
  * @return None.
  */
@@ -491,20 +491,20 @@ static void emmc_read_response(
         emmc_little_to_big(p+4	, ((GETR_32(SD_RSP54)<<8)|(GETR_32(SD_RSP32)>>24)));	/* [95:64]	*/
         emmc_little_to_big(p+8	, ((GETR_32(SD_RSP32)<<8)|(GETR_32(SD_RSP10)>>24)));	/* [63:32]	*/
         emmc_little_to_big(p+12	, (GETR_32(SD_RSP10)<<8));								/* [31:0]	*/
-    } 
+    }
     else
     {
         *response = GETR_32(SD_RSP10);  /* [39:8] */
     }
 }
 
-/** @brief response check 
+/** @brief response check
  *
  * - Pre-conditions:<BR>
  * Called from emmc_exec_cmd().
  * - Post-conditions:<BR>
  * .
- * 
+ *
  * @param[in] *response Response from the card
  * @param[in] error_mask  Errors to be checked (for R1/R1b response)
  * @return error code.
@@ -585,7 +585,7 @@ static void emmc_little_to_big(
 }
 
 /** @brief data transfer with DMA.
- * 
+ *
  * - Pre-conditions:<BR>
  * Called from emmc_exec_cmd().
  * - Post-conditions:<BR>
@@ -624,7 +624,7 @@ static void emmc_data_transfer_dma(void)
 }
 
 /** @brief wait cmd-cmd 8cycle
- * 
+ *
  * - Pre-conditions:<BR>
  *
  * - Post-conditions:<BR>
@@ -656,7 +656,7 @@ static void emmc_WaitCmd2Cmd_8Cycle(void)
 }
 
 /** @brief debug log SD_INFO2
- * 
+ *
  * - Pre-conditions:<BR>
  *
  * - Post-conditions:<BR>

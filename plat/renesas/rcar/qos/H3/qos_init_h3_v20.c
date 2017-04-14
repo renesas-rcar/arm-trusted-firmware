@@ -34,7 +34,7 @@
 #include "qos_init_h3_v20.h"
 
 
-#define	RCAR_QOS_VERSION		"rev.0.13"
+#define	RCAR_QOS_VERSION		"rev.0.14"
 
 #define	RCAR_QOS_NONE			(3U)
 #define	RCAR_QOS_TYPE_DEFAULT		(0U)
@@ -495,10 +495,10 @@ static void dbsc_setting(void)
 	//DBSC_DBSCHQOS_11_1 not set
 	//DBSC_DBSCHQOS_11_2 not set
 	//DBSC_DBSCHQOS_11_3 not set
-	//DBSC_DBSCHQOS_12_0 not set
-	//DBSC_DBSCHQOS_12_1 not set
-	//DBSC_DBSCHQOS_12_2 not set
-	//DBSC_DBSCHQOS_12_3 not set
+	io_write_32(DBSC_DBSCHQOS_12_0, 0x00000040U);
+	io_write_32(DBSC_DBSCHQOS_12_1, 0x00000030U);
+	io_write_32(DBSC_DBSCHQOS_12_2, 0x00000020U);
+	io_write_32(DBSC_DBSCHQOS_12_3, 0x00000010U);
 	io_write_32(DBSC_DBSCHQOS_13_0, 0x00000100U);
 	io_write_32(DBSC_DBSCHQOS_13_1, 0x000000F0U);
 	io_write_32(DBSC_DBSCHQOS_13_2, 0x000000A0U);
@@ -547,22 +547,22 @@ void qos_init_h3_v20(void)
 #endif
 
 	/* Resource Alloc setting */
-	io_write_32(RALLOC_RAS,   0x00000040U);
+	io_write_32(RALLOC_RAS,   0x00000044U);
 	io_write_32(RALLOC_FIXTH, 0x000F0005U);
 	io_write_32(RALLOC_REGGD, 0x00000000U);
-	io_write_64(RALLOC_DANN,  0x0404040102020201U);
-	io_write_32(RALLOC_DANT,  0x00100804U);
+	io_write_64(RALLOC_DANN,  0x0404010002020201U);
+	io_write_32(RALLOC_DANT,  0x0020100AU);
 	io_write_32(RALLOC_EC,    0x00000000U);
 	io_write_64(RALLOC_EMS,   0x0000000000000000U);
 	io_write_32(RALLOC_FSS,   0x000003e8U);
 	io_write_32(RALLOC_INSFC, 0xC7840001U);
 	io_write_32(RALLOC_BERR,  0x00000000U);
-	io_write_32(RALLOC_EARLYR, 0x00000001U);
+	io_write_32(RALLOC_EARLYR, 0x00000000U);
 	io_write_32(RALLOC_RACNT0, 0x00010003U);
 
 	/* GPU Boost Mode */
-	io_write_32(RALLOC_STATGEN0, 0x00000000U);
-	io_write_32(ACTIVE_OR,       0x00000001U); /* 0:enable, 1:disable */
+	io_write_32(RALLOC_STATGEN0, 0x00000001U);
+	io_write_32(ACTIVE_OR,       0x00000000U); /* 0:enable, 1:disable */
 
 	/* MSTAT setting */
 	io_write_32(MSTAT_SL_INIT, 0x0305007DU);

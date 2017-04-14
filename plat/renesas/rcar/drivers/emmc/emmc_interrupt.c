@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2016, Renesas Electronics Corporation
+ * Copyright (c) 2015-2017, Renesas Electronics Corporation
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -29,7 +29,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-/** 
+/**
  * @file  emmc_interrupt.c
  * @brief interrupt service for MMC boot driver.
  *
@@ -41,6 +41,9 @@
 #include "emmc_std.h"
 #include "emmc_registers.h"
 #include "emmc_def.h"
+#include <mmio.h>
+#include "rcar_def.h"
+
 /* ***************** MACROS, CONSTANTS, COMPILATION FLAGS ****************** */
 
 /* ********************** STRUCTURES, TYPE DEFINITIONS ********************* */
@@ -61,12 +64,35 @@ static EMMC_ERROR_CODE emmc_trans_sector (uint32_t *buff_address_virtual);
  * Must be block emmc driver state machine.
  * - Post-conditions:<BR>
  * unblocking emmc driver state machine.
- * 
+ *
  * @retval INT_SUCCESS
  */
 uint32_t emmc_interrupt(void)
 {
     EMMC_ERROR_CODE result;
+	uint32_t prr_data;
+	uint32_t cut_ver;
+	uint32_t end_bit;
+
+	prr_data = mmio_read_32((uintptr_t)RCAR_PRR);
+	cut_ver = prr_data & RCAR_CUT_MASK;
+	if ((prr_data & RCAR_PRODUCT_MASK) == RCAR_PRODUCT_H3) {
+		if (cut_ver == RCAR_CUT_ES10) {
+			end_bit = BIT17;
+		} else if (cut_ver == RCAR_CUT_ES11) {
+			end_bit = BIT17;
+		} else {
+			end_bit = BIT20;
+		}
+	} else if ((prr_data & RCAR_PRODUCT_MASK) == RCAR_PRODUCT_M3) {
+		if (cut_ver == RCAR_CUT_ES10) {
+			end_bit = BIT17;
+		} else {
+			end_bit = BIT20;
+		}
+	} else {
+		end_bit = BIT20;
+	}
 
 	/* SD_INFO */
 	mmc_drv_obj.error_info.info1 = GETR_32(SD_INFO1);
@@ -137,9 +163,9 @@ uint32_t emmc_interrupt(void)
     }
 
 /* DMA_TRANSFER */
-	/* DM_CM_INFO1: DMA-ch0 transfer complete or error occured */
+	/* DM_CM_INFO1: DMA-ch0 transfer complete or error occurred */
 	else if( (BIT16 & mmc_drv_obj.dm_event1) != 0 )
-	{  
+	{
 		SETR_32(DM_CM_INFO1, 0x00000000U);
 		SETR_32(DM_CM_INFO2, 0x00000000U);
 		SETR_32(SD_INFO2, (GETR_32(SD_INFO2) & ~SD_INFO2_BWE) );    /* interrupt clear */
@@ -156,7 +182,7 @@ uint32_t emmc_interrupt(void)
         mmc_drv_obj.state_machine_blocking = FALSE;		/* wait next interrupt */
 	}
 	/* DM_CM_INFO1: DMA-ch1 transfer complete or error occured */
-	else if( (BIT17 & mmc_drv_obj.dm_event1) != 0 )
+	else if( (end_bit & mmc_drv_obj.dm_event1) != 0U )
 	{
 		SETR_32(DM_CM_INFO1, 0x00000000U);
 		SETR_32(DM_CM_INFO2, 0x00000000U);
@@ -200,7 +226,7 @@ uint32_t emmc_interrupt(void)
  * Called from interrupt service.
  * - Post-conditions:<BR>
  * .
- * 
+ *
  * @param[in,out] buff_address_virtual Dest/Src buffer address(virtual).
  * @retval EMMC_SUCCESS successful.
  * @retval EMMC_ERR_PARAM parameter error.

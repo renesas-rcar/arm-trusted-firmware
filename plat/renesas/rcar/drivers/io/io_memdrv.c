@@ -144,7 +144,7 @@ static int32_t memdrv_block_open(io_dev_info_t *dev_info, const uintptr_t spec,
 		entity->info = (uintptr_t)&current_file;
 		result = IO_SUCCESS;
 	} else {
-		WARN("A memdrv device is already active. Close first.\n");
+		/* A memdrv device is already active. Close first. */
 		result = IO_RESOURCES_EXHAUSTED;
 	}
 

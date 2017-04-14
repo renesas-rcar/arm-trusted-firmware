@@ -150,7 +150,7 @@ static int32_t emmcdrv_block_open(io_dev_info_t *dev_info, const uintptr_t spec,
 				NOTICE("BL2: eMMC boot from partition %d\n",
 					emmcdrv_bootpartition);
 			} else {
-				WARN("BL2 :eMMC boot partition error.\n");
+				/* eMMC boot partition error */
 				result = IO_FAIL;
 			}
 		} else {
@@ -179,7 +179,7 @@ static int32_t emmcdrv_block_open(io_dev_info_t *dev_info, const uintptr_t spec,
 			entity->info = (uintptr_t)&current_file;
 		}
 	} else {
-		WARN("A emmcdrv device is already active. Close first.\n");
+		/* A emmcdrv device is already active. Close first. */
 		result = IO_RESOURCES_EXHAUSTED;
 	}
 

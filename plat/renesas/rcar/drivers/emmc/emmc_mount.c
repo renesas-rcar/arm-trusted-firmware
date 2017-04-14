@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2016, Renesas Electronics Corporation
+ * Copyright (c) 2015-2017, Renesas Electronics Corporation
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -72,12 +72,12 @@ static void emmc_set_bootpartition(void);
  * 1) Bus initialization (emmc_card_init())
  * 2) Switching to high speed mode. (emmc_high_speed())
  * 3) Changing the data bus width. (emmc_bus_width())
- * 
+ *
  * - Pre-conditions:<BR>
- * eMMC driver is initialized. The power supply of MMC IF must be turning on. 
+ * eMMC driver is initialized. The power supply of MMC IF must be turning on.
  * - Post-conditions:<BR>
  * MMC card state changes to transfer state.
- * 
+ *
  * @return eMMC error code.
  */
 EMMC_ERROR_CODE emmc_mount(void)
@@ -139,10 +139,10 @@ EMMC_ERROR_CODE emmc_mount(void)
 /** @brief Bus initialization function
  *
  * - Pre-conditions:<BR>
- * eMMC driver is initialized. The power supply of MMC IF must be turning on. 
+ * eMMC driver is initialized. The power supply of MMC IF must be turning on.
  * - Post-conditions:<BR>
  * MMC card state changes to transfer state.
- * 
+ *
  * @retval EMMC_SUCCESS successful.
  * @return eMMC error code.
  * @attention upper layer must be check pre-conditions.
@@ -290,7 +290,7 @@ static EMMC_ERROR_CODE emmc_card_init (void)
 	/* set read/write timeout */
 	mmc_drv_obj.data_timeout = emmc_set_timeout_register_value( freq );
 	SETR_32( SD_OPTION,((GETR_32(SD_OPTION) & ~(SD_OPTION_TIMEOUT_CNT_MASK)) | mmc_drv_obj.data_timeout));
-	
+
 	/* SET_BLOCKLEN(512byte) */
     /* CMD16 */
     emmc_make_nontrans_cmd(CMD16_SET_BLOCKLEN, EMMC_BLOCK_LENGTH);
@@ -324,14 +324,14 @@ static EMMC_ERROR_CODE emmc_card_init (void)
 }
 
 /** @brief Switching to high-speed mode
- * 
+ *
  * - Pre-conditions:<BR>
  * Executing Bus initializatin by emmc_card_init().
- * EXT_CSD data must be stored in mmc_drv_obj.ext_csd_data[]. 
- * 
+ * EXT_CSD data must be stored in mmc_drv_obj.ext_csd_data[].
+ *
  * - Post-conditions:<BR>
  * Change the clock frequency to 26MHz or 52MHz.
- * 
+ *
  * @retval EMMC_SUCCESS successful or aleady switching.
  * @retval EMMC_ERR_STATE state error.
  * @retval EMMC_ERR unknown error.
@@ -408,12 +408,12 @@ static EMMC_ERROR_CODE emmc_high_speed(void)
 
 /** @brief Changing the data bus width
  *
- * if chinging the data bus width failed, card is reset by CMD0.
+ * if changing the data bus width failed, card is reset by CMD0.
  * Please do Bus initialization over again.
- * 
+ *
  * - Pre-conditions:<BR>
  * Executing Bus initializatin by emmc_card_init().
- * 
+ *
  * - Post-conditions:<BR>
  * Change the data bus width to 8bit or 4bit.
  * mmc_drv_obj.ext_csd_data is updated.
@@ -499,10 +499,10 @@ EXIT:
 /** @brief select access partition
  *
  * This function write the EXT_CSD register(PARTITION_ACCESS: PARTITION_CONFIG[2:0]).
- * 
+ *
  * - Pre-conditions:<BR>
  * MMC card is mounted.
- * 
+ *
  * - Post-conditions:<BR>
  * selected partition can access.
  *
@@ -539,7 +539,7 @@ EMMC_ERROR_CODE emmc_select_partition(
 	if ((partition_config & PARTITION_ID_MASK) == id) {
 		result = EMMC_SUCCESS;
 	} else {
-	
+
 		partition_config = (uint32_t)((partition_config & ~PARTITION_ID_MASK) | id);
 		arg = EMMC_SWITCH_PARTITION_CONFIG | (partition_config<<8);
 
@@ -553,10 +553,10 @@ EMMC_ERROR_CODE emmc_select_partition(
  *
  * - Pre-conditions:<BR>
  * MMC card is mounted.
- * 
+ *
  * - Post-conditions:<BR>
  * mmc_drv_obj.ext_csd_data[] is updated.
- * 
+ *
  * @param[in] arg argument of CMD6
  * @return emmc error code.
  */
@@ -594,18 +594,18 @@ EMMC_ERROR_CODE emmc_set_ext_csd(
 }
 
 /** @brief set request MMC clock frequency.
- * 
+ *
  * Function returns EMMC_SUCCESS if clock is already running in the desired frequency.
  * EMMC_ERR is returned if the HW doesn't support requested clock frequency.
  * If matching frequence cannot be set the closest frequence below should be selected.
  * For example if 50MHz is requested, but HW supports only 48MHz then 48MHz should be returned in the freq parameter.
- * 
+ *
  * - Pre-conditions:<BR>
  * initialized eMMC driver with emmc_init().
  * Memory card and MMCSDIO host controller needs to be powered up beforehand.
- * 
+ *
  * - Post-conditions:<BR>
- * Desired clock frequency is set to memory card IF. 
+ * Desired clock frequency is set to memory card IF.
  *
  * @param[in] freq frequency [Hz]
  * @retval EMMC_SUCCESS successful.
@@ -653,7 +653,7 @@ EMMC_ERROR_CODE emmc_set_request_mmc_clock(
  *
  * - Pre-conditions:<BR>
  * CSD data must be stored in mmc_drv_obj.csd_data[].
- * 
+ *
  * - Post-conditions:<BR>
  * set mmc clock.
  *
@@ -684,16 +684,16 @@ static void set_sd_clk(uint32_t clkDiv)
 }
 
 
-/** @brief Enable/Disable MMC clock 
+/** @brief Enable/Disable MMC clock
  *
  * - Pre-conditions:<BR>
- * Before enabling the clock for the first time the desired clock frequency must be set with 
+ * Before enabling the clock for the first time the desired clock frequency must be set with
  * emmc_set_clock_freq().
  * Berore setting mmc_drv_obj.data_timeout with emmc_set_data_timeout().
- * 
+ *
  * - Post-conditions:<BR>
- * After this function is called, clock to memory card IF is on/off. 
- * 
+ * After this function is called, clock to memory card IF is on/off.
+ *
  * @param[in] mode TRUE = clock on, FALSE = clock off
  * @retval EMMC_SUCCESS succeeded
  * @retval EMMC_ERR     Busy
@@ -734,7 +734,7 @@ static EMMC_ERROR_CODE emmc_clock_ctrl(
  *
  * - Pre-conditions:<BR>
  * CSD data must be stored in mmc_drv_obj.csd_data[].
- * 
+ *
  * - Post-conditions:<BR>
  * None.
  * @return Frquency[Hz]
@@ -784,7 +784,7 @@ static uint32_t emmc_calc_tran_speed( uint32_t* freq )
  *
  * - Pre-conditions:<BR>
  * CSD data must be stored in mmc_drv_obj.csd_data[].
- * 
+ *
  * - Post-conditions:<BR>
  * set mmc clock.
  *

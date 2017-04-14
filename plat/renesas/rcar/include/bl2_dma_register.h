@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2016, Renesas Electronics Corporation
+ * Copyright (c) 2015-2017, Renesas Electronics Corporation
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -35,16 +35,16 @@
 #define	DMACH	0	/* DMA CH setting (0/16/32) */
 
 #if (DMACH==0)		/* SYS-DMAC0 (CH0) */
-#define SYS_DMAC_BIT	(1U << 19U)
+#define SYS_DMAC_BIT	((uint32_t)1U << 19U)
 #define DMA_BASE	(0xE6700000U)
 #elif (DMACH==16)	/* SYS-DMAC1 (CH16) */
-#define SYS_DMAC_BIT	(1U << 18U)
+#define SYS_DMAC_BIT	((uint32_t)1U << 18U)
 #define DMA_BASE	(0xE7300000U)
 #elif (DMACH==32)	/* SYS-DMAC2 (CH32) */
-#define SYS_DMAC_BIT	(1U << 17U)
+#define SYS_DMAC_BIT	((uint32_t)1U << 17U)
 #define DMA_BASE	(0xE7320000U)
 #else
-#define SYS_DMAC_BIT	(1U << 19U)
+#define SYS_DMAC_BIT	((uint32_t)1U << 19U)
 #define DMA_BASE	(0xE6700000U)
 #endif
 

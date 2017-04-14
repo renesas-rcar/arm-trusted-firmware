@@ -30,7 +30,6 @@
  */
 
 #include <arch_helpers.h>
-#include <assert.h>
 #include <bl_common.h>
 #include <bl1.h>
 #include <console.h>
@@ -227,11 +226,6 @@ bl31_params_t *bl2_plat_get_bl31_params(void)
  ******************************************************************************/
 struct entry_point_info *bl2_plat_get_bl31_ep_info(void)
 {
-#if 0
-#if DEBUG
-	bl31_ep_info->args.arg1 = RCAR_BL31_PLAT_PARAM_VAL;
-#endif
-#else
 	if (isDdrBackupMode() != 0U) {
 
 		NOTICE("BL2: Skip loading images. (SuspendToRAM)\n");
@@ -257,7 +251,6 @@ struct entry_point_info *bl2_plat_get_bl31_ep_info(void)
 	}
 
 	bl31_ep_info->args.arg1 = 0x00000000UL;	/* cold boot */
-#endif
 	return bl31_ep_info;
 }
 
@@ -293,7 +286,7 @@ struct entry_point_info *bl2_plat_get_bl31_ep_info(void)
 #define	LOSSY_FMT2				LOSSY_FMT_YUV422INTLV
 #define	LOSSY_ENA_DIS2			LOSSY_DISABLE
 
-static void bl2_lossy_setting(uint32_t no, uint64_t start_addr, 
+static void bl2_lossy_setting(uint32_t no, uint64_t start_addr,
 	uint64_t end_addr, uint32_t format, uint32_t enable);
 
 typedef struct bl2_lossy_info {
@@ -302,7 +295,7 @@ typedef struct bl2_lossy_info {
 	uint32_t b0;
 } bl2_lossy_info_t;
 
-static void bl2_lossy_setting(uint32_t no, uint64_t start_addr, 
+static void bl2_lossy_setting(uint32_t no, uint64_t start_addr,
 	uint64_t end_addr, uint32_t format, uint32_t enable)
 {
 	uint32_t reg;
@@ -350,6 +343,7 @@ void bl2_early_platform_setup(meminfo_t *mem_layout)
 	int32_t ret;
 	uint32_t board_type;
 	uint32_t board_rev;
+	uint32_t prr_val;
 	char msg[128];
 	const char *str;
 	const char *cpu_ca57        = "CA57";
@@ -403,7 +397,7 @@ void bl2_early_platform_setup(meminfo_t *mem_layout)
 
 	/* boot message */
 	reg = (uint32_t)read_midr();
-	switch (reg & (uint32_t)(MIDR_PN_MASK << MIDR_PN_SHIFT)) { 
+	switch (reg & (uint32_t)(MIDR_PN_MASK << MIDR_PN_SHIFT)) {
 	case MIDR_CA57:
 		str = cpu_ca57;
 		break;
@@ -423,20 +417,26 @@ void bl2_early_platform_setup(meminfo_t *mem_layout)
 
 	/* R-Car Gen3 product display & check */
 	reg = mmio_read_32(RCAR_PRR);
+	prr_val = reg;
 	switch (reg & RCAR_PRODUCT_MASK) {
 	case RCAR_PRODUCT_H3:
 		str = product_h3;
 		break;
 	case RCAR_PRODUCT_M3:
 		str = product_m3;
+		/* M3 Ver1.1 */
+		if(RCAR_PRODUCT_M3_CUT11 ==
+			(reg & (RCAR_PRODUCT_MASK | RCAR_CUT_MASK))) {
+			prr_val = 0x00000001U;
+		}
 		break;
 	default:
 		str = unknown;
 		break;
 	}
 	(void)sprintf(msg, "BL2: PRR is R-Car %s Ver%d.%d\n", str,
-		((reg & RCAR_MAJOR_MASK) >> RCAR_MAJOR_SHIFT)
-		 + RCAR_MAJOR_OFFSET, (reg & RCAR_MINOR_MASK));
+		((prr_val & RCAR_MAJOR_MASK) >> RCAR_MAJOR_SHIFT)
+		 + RCAR_MAJOR_OFFSET, (prr_val & RCAR_MINOR_MASK));
 	NOTICE("%s", msg);
 
 	/* Board ID detection */
@@ -461,12 +461,12 @@ void bl2_early_platform_setup(meminfo_t *mem_layout)
 
 #if RCAR_LSI != RCAR_AUTO
 	if((reg & RCAR_PRODUCT_MASK) != TARGET_PRODUCT) {
-		ERROR("BL2: This IPL has been built for the %s.\n", 
+		ERROR("BL2: This IPL has been built for the %s.\n",
 								TARGET_NAME);
 		ERROR("BL2: Please write the correct IPL to flash memory.\n");
 		panic();
 	}
-#endif /* RCAR_LSI != RCAR_AUTO */ 
+#endif /* RCAR_LSI != RCAR_AUTO */
 
 	/* Proceed with separated AVS processing */
 	bl2_avs_setting();
@@ -714,6 +714,9 @@ void bl2_plat_flush_bl31_params(void)
 
 	/* Finalize a console of provide early debug support */
 	console_finalize();
+
+	/* Initialize the System Module stop registers */
+	bl2_system_cpg_init();
 
 	/* Disable instruction cache */
 	val = (uint32_t)read_sctlr_el1();
