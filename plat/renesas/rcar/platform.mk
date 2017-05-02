@@ -237,8 +237,8 @@ ifndef RCAR_GEN3_ULCB
 RCAR_GEN3_ULCB := 0
 endif
 ifeq (${RCAR_GEN3_ULCB},1)
- BOARD_DEFAULT := 0x10
- $(eval $(call add_define,BOARD_DEFAULT))
+ BOARD_ID := 0x10
+ $(eval $(call add_define,BOARD_ID))
 endif
 $(eval $(call add_define,RCAR_GEN3_ULCB))
 
