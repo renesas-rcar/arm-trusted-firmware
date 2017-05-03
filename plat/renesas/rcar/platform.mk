@@ -232,16 +232,7 @@ PMIC_LEVEL_MODE := 1
 endif
 $(eval $(call add_define,PMIC_LEVEL_MODE))
 
-# Process RCAR_GEN3_ULCB flag
-ifndef RCAR_GEN3_ULCB
-RCAR_GEN3_ULCB := 0
-endif
-ifeq (${RCAR_GEN3_ULCB},1)
- BOARD_ID := 0x10
- $(eval $(call add_define,BOARD_ID))
-endif
-$(eval $(call add_define,RCAR_GEN3_ULCB))
-
+include plat/renesas/rcar/drivers/board/board.mk
 include plat/renesas/rcar/ddr/ddr.mk
 include plat/renesas/rcar/qos/qos.mk
 include plat/renesas/rcar/pfc/pfc.mk
