@@ -1830,7 +1830,6 @@ static void dbsc_regset(void)
 		mmio_write_32(DBSC_DBRNK(2+i), dataL2);
 	}
 	mmio_write_32(DBSC_DBADJ0, 0x00000000);
-	mmio_write_32(DBSC_DBADJ2, 0x00000000);
 
 	/***********************************************************************
 	timing registers for Scheduler
@@ -1858,14 +1857,11 @@ static void dbsc_regset(void)
 	mmio_write_32(DBSC_SCFCTST1, (tmp[3]<<24) | (tmp[2]<<16) | (tmp[1]<<8) | tmp[0]);
 
 	/* DBSCHRW1 */
-	/* DBSCHRW1 SCBADEC*/
-	tmp[2] = 1UL * js2[JS2_tRCpb] * 800 * ddr_mbpsdiv /ddr_mbps;
-	/* DBSCHRW1 SCTRFCPG*/
-	tmp[1] = 1UL * js2[JS2_tRFCpb] * 800 * ddr_mbpsdiv /ddr_mbps;
 	/* DBSCHRW1 SCTRFCAB*/
 	tmp[0] = 1UL * js2[JS2_tRFCab] * 800 * ddr_mbpsdiv /ddr_mbps;
-	mmio_write_32(DBSC_DBSCHRW1, (tmp[2]<<16) | (tmp[1]<<8) | tmp[0]);	/* 0x00180034 */
+	mmio_write_32(DBSC_DBSCHRW1, (tmp[0]));
 
+#ifdef ddr_qos_init_setting // only for non qos_init
 	/*wbkwait(0004), wbkmdhi(4,2),wbkmdlo(1,8) */
 	mmio_write_32(DBSC_DBCAM0CNF1, 0x00043218);
 	/*0(fillunit),8(dirtymax),4(dirtymin)*/
@@ -1874,8 +1870,8 @@ static void dbsc_regset(void)
 	mmio_write_32(DBSC_DBSCHRW0, 0x22421111);
 	/*rd-wr/wr-rd toggle priority*/
 	mmio_write_32(DBSC_SCFCTST2, 0x012F1123);
-	mmio_write_32(DBSC_DBSCHSZ0, 0x00000001);	/* 0x00000001 */
 	mmio_write_32(DBSC_DBSCHCNT0, 0x080F0037);
+#endif
 
 	/***********************************************************************
 	QOS and CAM
@@ -1921,7 +1917,7 @@ static void dbsc_regset_post(void)
 	}
 
 	mmio_write_32(DBSC_DBBUS0CNF1,0x00000010); 
-	mmio_write_32(DBSC_DBBUS0CNF0,0x00000000);
+
 	/*set DBI */
 	if(Boardcnf.dbi_en)
 		mmio_write_32(DBSC_DBDBICNT, 0x00000003);

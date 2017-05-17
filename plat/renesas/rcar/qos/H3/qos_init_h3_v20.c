@@ -34,7 +34,7 @@
 #include "qos_init_h3_v20.h"
 
 
-#define	RCAR_QOS_VERSION		"rev.0.14"
+#define	RCAR_QOS_VERSION		"rev.0.15"
 
 #define	RCAR_QOS_NONE			(3U)
 #define	RCAR_QOS_TYPE_DEFAULT		(0U)
@@ -49,7 +49,6 @@
 
 #define	DBSC_BASE			(0xE6790000U)
 #define	DBSC_DBDFIPMSTRCNF		(DBSC_BASE + 0x0520U)
-#define	DBSC_AXARB			(DBSC_BASE + 0x0800U)
 #define DBSC_DBCAM0CNF0			(DBSC_BASE + 0x0900U)
 #define DBSC_DBCAM0CNF1			(DBSC_BASE + 0x0904U)
 #define DBSC_DBCAM0CNF2			(DBSC_BASE + 0x0908U)
@@ -59,7 +58,6 @@
 #define DBSC_DBSCHCNT1			(DBSC_BASE + 0x1004U)
 #define DBSC_DBSCHSZ0			(DBSC_BASE + 0x1010U)
 #define DBSC_DBSCHRW0			(DBSC_BASE + 0x1020U)
-#define DBSC_DBSCHRW1			(DBSC_BASE + 0x1024U)
 #define DBSC_DBSCHQOS_0_0		(DBSC_BASE + 0x1030U)
 #define DBSC_DBSCHQOS_0_1		(DBSC_BASE + 0x1034U)
 #define DBSC_DBSCHQOS_0_2		(DBSC_BASE + 0x1038U)
@@ -423,7 +421,6 @@ static void dbsc_setting(void)
 	//DBSC_DBSCHCNT1 not set
 	io_write_32(DBSC_DBSCHSZ0,   0x00000001U);	//dbschsz0
 	io_write_32(DBSC_DBSCHRW0,   0x22421111U);	//dbschrw0
-	io_write_32(DBSC_DBSCHRW1,   0x00000034U);	//dbschrw1
 
 	md = (*((volatile uint32_t*)RST_MODEMR) & 0x000A0000) >> 17;
 
@@ -585,9 +582,6 @@ void qos_init_h3_v20(void)
 				mstat_be[i].value);
 	}
 	}
-
-	/* AXI-IF arbitration setting */
-	io_write_32(DBSC_AXARB, 0x00000000U);
 
 	/* 3DG bus Leaf setting */
 	io_write_32(0xFD820800U, 0x00000000U);

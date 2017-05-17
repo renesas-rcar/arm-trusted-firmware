@@ -85,10 +85,40 @@
 #define	MFISWPCNTR_PASSWORD	(0xACCE0000U)
 #define	MFISWPCNTR		(0xE6260900U)
 
-/* IPMMUregisters */
+/* IPMMU registers */
 #define IPMMU_MM_BASE		(0xE67B0000U)	/* IPMMU-MM */
 #define IPMMUMM_SYSCTRL		(IPMMU_MM_BASE + 0x0500U)
 #define IPMMUMM_SYSAUX		(IPMMU_MM_BASE + 0x0504U)
+
+#define IPMMU_VI0_BASE		(0xFEBD0000U)	/* IPMMU-VI0 */
+#define IPMMUVI0_SYSCTRL	(IPMMU_VI0_BASE + 0x0500U)
+
+#define IPMMU_VI1_BASE		(0xFEBE0000U)	/* IPMMU-VI1 */
+#define IPMMUVI1_SYSCTRL	(IPMMU_VI1_BASE + 0x0500U)
+
+#define IPMMU_PV0_BASE		(0xFD800000U)	/* IPMMU-PV0 */
+#define IPMMUPV0_SYSCTRL	(IPMMU_PV0_BASE + 0x0500U)
+
+#define IPMMU_PV2_BASE		(0xFD960000U)	/* IPMMU-PV2 */
+#define IPMMUPV2_SYSCTRL	(IPMMU_PV2_BASE + 0x0500U)
+
+#define IPMMU_PV3_BASE		(0xFD970000U)	/* IPMMU-PV3 */
+#define IPMMUPV3_SYSCTRL	(IPMMU_PV3_BASE + 0x0500U)
+
+#define IPMMU_HC_BASE		(0xE6570000U)	/* IPMMU-HC */
+#define IPMMUHC_SYSCTRL		(IPMMU_HC_BASE + 0x0500U)
+
+#define IPMMU_RT_BASE		(0xFFC80000U)	/* IPMMU-RT */
+#define IPMMURT_SYSCTRL		(IPMMU_RT_BASE + 0x0500U)
+
+#define IPMMU_MP_BASE		(0xEC670000U)	/* IPMMU-MP */
+#define IPMMUMP_SYSCTRL		(IPMMU_MP_BASE + 0x0500U)
+
+#define IPMMU_DS0_BASE		(0xE6740000U)	/* IPMMU-DS0 */
+#define IPMMUDS0_SYSCTRL	(IPMMU_DS0_BASE + 0x0500U)
+
+#define IPMMU_DS1_BASE		(0xE7740000U)	/* IPMMU-DS1 */
+#define IPMMUDS1_SYSCTRL	(IPMMU_DS1_BASE + 0x0500U)
 
 /* MIDR */
 #define MIDR_CA57		(0x0D07U << MIDR_PN_SHIFT)
@@ -674,26 +704,23 @@ void bl2_platform_setup(void)
 	 * other platforms might have more programmable security devices
 	 * present.
 	 */
-
-	/* IPMMU-MM setting for linux */
-	mmio_write_32(IPMMUMM_SYSCTRL, 0xC0000000U);
-	mmio_write_32(IPMMUMM_SYSAUX, 0x01000000U);
 }
 
 /* Flush the TF params and the TF plat params */
 void bl2_plat_flush_bl31_params(void)
 {
 	uint32_t val;
+	uint32_t modemr;
 	uint32_t modemr_boot_dev;
 
-	val = mmio_read_32(RCAR_MODEMR);
-	modemr_boot_dev = val & MODEMR_BOOT_DEV_MASK;
+	modemr = mmio_read_32(RCAR_MODEMR);
+	modemr_boot_dev = modemr & MODEMR_BOOT_DEV_MASK;
 	if((modemr_boot_dev == MODEMR_BOOT_DEV_EMMC_25X1) ||
 	   (modemr_boot_dev == MODEMR_BOOT_DEV_EMMC_50X8)) {
 		(void)emmc_terminate();
 	}
 
-	if((val & MODEMR_BOOT_CPU_MASK) != MODEMR_BOOT_CPU_CR7) {
+	if((modemr & MODEMR_BOOT_CPU_MASK) != MODEMR_BOOT_CPU_CR7) {
 		/* Initialize secure configuration */
 		bl2_secure_setting();
 	}
@@ -708,6 +735,29 @@ void bl2_plat_flush_bl31_params(void)
 		/* Disable MFIS write protection */
 		mmio_write_32(MFISWPCNTR, MFISWPCNTR_PASSWORD | 0x1U);
 	}
+
+	modemr &= MODEMR_BOOT_CPU_MASK;
+	if((modemr == MODEMR_BOOT_CPU_CA57) ||
+	   (modemr == MODEMR_BOOT_CPU_CA53)) {
+		val &= (RCAR_PRODUCT_MASK | RCAR_CUT_MASK);
+		if (val == RCAR_PRODUCT_H3_CUT20) {
+			/* Disable TLB function in each IPMMU cache */
+			mmio_write_32(IPMMUVI0_SYSCTRL, 0xE0000000U);
+			mmio_write_32(IPMMUVI1_SYSCTRL, 0xE0000000U);
+			mmio_write_32(IPMMUPV0_SYSCTRL, 0xE0000000U);
+			mmio_write_32(IPMMUPV2_SYSCTRL, 0xE0000000U);
+			mmio_write_32(IPMMUPV3_SYSCTRL, 0xE0000000U);
+			mmio_write_32(IPMMUHC_SYSCTRL, 0xE0000000U);
+			mmio_write_32(IPMMURT_SYSCTRL, 0xE0000000U);
+			mmio_write_32(IPMMUMP_SYSCTRL, 0xE0000000U);
+			mmio_write_32(IPMMUDS0_SYSCTRL, 0xE0000000U);
+			mmio_write_32(IPMMUDS1_SYSCTRL, 0xE0000000U);
+		}
+	}
+
+	/* IPMMU-MM setting for linux */
+	mmio_write_32(IPMMUMM_SYSCTRL, 0xC0000000U);
+	mmio_write_32(IPMMUMM_SYSAUX, 0x01000000U);
 
 	/* disable the System WDT, FIQ and GIC	*/
 	bl2_swdt_release();

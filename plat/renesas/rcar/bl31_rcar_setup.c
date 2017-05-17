@@ -232,3 +232,21 @@ int32_t bl31_plat_denied_cpu_off_chk(void)
 	return rc;
 }
 
+/*******************************************************************************
+ * Check boot_mpidr(CPU0).
+ * If the CPU is the same as CPU0, return RCAR_MPIDRCHK_BOOTCPU,
+ * otherwise it returns RCAR_MPIDRCHK_NOT_BOOTCPU.
+ ******************************************************************************/
+uint32_t bl31_plat_boot_mpidr_chk(void)
+{
+	uint32_t rc = RCAR_MPIDRCHK_NOT_BOOTCPU;
+	uint64_t tmp_mpidr;
+
+	tmp_mpidr = read_mpidr_el1() & 0x0000ffffU;
+
+	if (tmp_mpidr == rcar_boot_mpidr) {
+		rc = RCAR_MPIDRCHK_BOOTCPU;
+	}
+	return rc;
+}
+

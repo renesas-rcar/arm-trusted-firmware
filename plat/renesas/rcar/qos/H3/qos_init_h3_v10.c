@@ -34,7 +34,7 @@
 #include "qos_init_h3_v10.h"
 
 
-#define	RCAR_QOS_VERSION		"rev.0.34"
+#define	RCAR_QOS_VERSION		"rev.0.35"
 
 #define	RCAR_QOS_NONE			(3U)
 #define	RCAR_QOS_TYPE_DEFAULT		(0U)
@@ -43,9 +43,6 @@
 #define	RCAR_DRAM_SPLIT_4CH		(1U)
 #define	RCAR_DRAM_SPLIT_2CH		(2U)
 #define	RCAR_DRAM_SPLIT_AUTO		(3U)
-
-#define	DBSC_BASE			(0xE6790000U)
-#define	DBSC_AXARB			(DBSC_BASE + 0x0800U)
 
 #define	AXI_BASE			(0xE6784000U)
 #define	AXI_ADSPLCR0			(AXI_BASE + 0x0008U)
@@ -381,9 +378,6 @@ void qos_init_h3_v10(void)
 				mstat_be[i].value);
 	}
 	}
-
-	/* AXI-IF arbitration setting */
-	io_write_32(DBSC_AXARB, 0x18000000U);
 
 	/* 3DG bus Leaf setting */
 	io_write_32(0xFD820808U, 0x00001234U);

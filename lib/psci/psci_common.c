@@ -842,7 +842,17 @@ int psci_spd_migrate_info(u_register_t *mpidr)
 {
 	int rc;
 
+#if PLAT_rcar
 	rc = (int)bl31_plat_cpu_migrate_info(mpidr);
+#else
+	if (!psci_spd_pm || !psci_spd_pm->svc_migrate_info)
+		return PSCI_E_NOT_SUPPORTED;
+
+	rc = psci_spd_pm->svc_migrate_info(mpidr);
+
+	assert(rc == PSCI_TOS_UP_MIG_CAP || rc == PSCI_TOS_NOT_UP_MIG_CAP \
+		|| rc == PSCI_TOS_NOT_PRESENT_MP || rc == PSCI_E_NOT_SUPPORTED);
+#endif
 
 	return rc;
 }

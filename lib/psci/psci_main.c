@@ -173,6 +173,14 @@ int psci_system_suspend(uintptr_t entrypoint, u_register_t context_id)
 	int rc;
 	psci_power_state_t state_info;
 	entry_point_info_t ep;
+#if PLAT_rcar
+	uint32_t boot_mpidr_ret;
+
+	boot_mpidr_ret = bl31_plat_boot_mpidr_chk();
+	if(RCAR_MPIDRCHK_NOT_BOOTCPU == boot_mpidr_ret) {
+		return PSCI_E_DENIED;
+	}
+#endif
 
 	/* Check if the current CPU is the last ON CPU in the system */
 	if (!psci_is_last_on_cpu())
@@ -210,16 +218,20 @@ int psci_cpu_off(void)
 	int rc;
 	unsigned int target_pwrlvl = PLAT_MAX_PWR_LVL;
 
+#if PLAT_rcar
 	rc = (int)bl31_plat_denied_cpu_off_chk();
 
 	if(PSCI_E_SUCCESS == rc) {
+#endif
 		/*
 		 * Do what is needed to power off this CPU and possible higher power
 		 * levels if it able to do so. Upon success, enter the final wfi
 		 * which will power down this CPU.
 		 */
 		rc = psci_do_cpu_off(target_pwrlvl);
+#if PLAT_rcar
 	}
+#endif
 
 	/*
 	 * The only error cpu_off can return is E_DENIED. So check if that's
