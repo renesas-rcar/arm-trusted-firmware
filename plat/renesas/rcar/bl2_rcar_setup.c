@@ -371,8 +371,6 @@ void bl2_early_platform_setup(meminfo_t *mem_layout)
 	uint32_t modemr;
 	uint32_t modemr_boot_dev;
 	int32_t ret;
-	uint32_t board_type;
-	uint32_t board_rev;
 	uint32_t prr_val;
 	char msg[128];
 	const char *str;
@@ -469,24 +467,12 @@ void bl2_early_platform_setup(meminfo_t *mem_layout)
 		 + RCAR_MAJOR_OFFSET, (prr_val & RCAR_MINOR_MASK));
 	NOTICE("%s", msg);
 
-	/* Board ID detection */
-	(void)get_board_type(&board_type, &board_rev);
-	
-	switch (board_type) {
-	case BOARD_SALVATOR_X:
-	case BOARD_SALVATOR_XS:
-	case BOARD_KRIEK:
-	case BOARD_STARTER_KIT:
-		/* Do nothing. */
-		break;
-	default:
-		board_type = BOARD_UNKNOWN;
-		break;
-	}
-	
-	(void)sprintf(msg, "BL2: Board is %s Rev%d.%d\n",
-		GET_BOARD_NAME(board_type), GET_BOARD_MAJOR(board_rev),
-		GET_BOARD_MINOR(board_rev));
+	board_id_init();
+
+	(void)sprintf(msg, "BL2: Board %s Rev%d.%d\n",
+			get_board_name(),
+			get_board_rev_major(),
+			get_board_rev_minor());
 	NOTICE("%s", msg);
 
 #if RCAR_LSI != RCAR_AUTO
@@ -880,8 +866,9 @@ void bl2_init_generic_timer(void)
 				12500000U,	/* MD14/MD13 : 0b10 */
 				16666600U};	/* MD14/MD13 : 0b11 */
 	uint32_t reg_cntfid;
-	uint32_t board_type;
-	uint32_t board_rev;
+
+	/* board id initialization before bl2_early_platform_setup */
+	board_id_init();
 
 	modemr = mmio_read_32(RCAR_MODEMR);
 	modemr_pll = (modemr & MODEMR_BOOT_PLL_MASK);
@@ -891,10 +878,8 @@ void bl2_init_generic_timer(void)
 	reg = mmio_read_32(RCAR_PRR) & (RCAR_PRODUCT_MASK | RCAR_CUT_MASK);
 	switch (modemr_pll) {
 	case MD14_MD13_TYPE_0:
-		(void)get_board_type(&board_type, &board_rev);
-		if (BOARD_SALVATOR_XS == board_type) {
+		if (board_is(BOARD_SALVATOR_XS))
 			reg_cntfid = 8320000U;
-		}
 		break;
 	case MD14_MD13_TYPE_3:
 		if (RCAR_PRODUCT_H3_CUT10 == reg) {
@@ -912,5 +897,4 @@ void bl2_init_generic_timer(void)
 	mmio_setbits_32(RCAR_CNTC_BASE + (uintptr_t)CNTCR_OFF,
 		(uint32_t)CNTCR_EN);
 }
-
 
