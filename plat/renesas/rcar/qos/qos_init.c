@@ -33,6 +33,7 @@
 #include <debug.h>
 #include <mmio.h>
 #include "qos_init.h"
+#include "qos_common.h"
 #if RCAR_LSI == RCAR_AUTO
   #include "H3/qos_init_h3_v10.h"
   #include "H3/qos_init_h3_v11.h"
@@ -169,4 +170,7 @@ void qos_init(void)
 #endif
 }
 
-
+uint32_t get_refperiod(void)
+{
+	return QOSWT_WTSET0_CYCLE;
+}

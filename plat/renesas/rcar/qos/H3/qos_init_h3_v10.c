@@ -31,10 +31,11 @@
 
 #include <stdint.h>
 #include <debug.h>
+#include "../qos_common.h"
 #include "qos_init_h3_v10.h"
 
 
-#define	RCAR_QOS_VERSION		"rev.0.35"
+#define	RCAR_QOS_VERSION		"rev.0.36"
 
 #define	RCAR_QOS_NONE			(3U)
 #define	RCAR_QOS_TYPE_DEFAULT		(0U)
@@ -75,23 +76,6 @@
 #define	RALLOC_EMS			(RALLOC_BASE + 0x0040U)
 #define	RALLOC_INSFC			(RALLOC_BASE + 0x0050U)
 #define	RALLOC_BERR			(RALLOC_BASE + 0x0054U)
-
-#define ARRAY_SIZE(a)	(sizeof(a) / sizeof((a)[0]))
-
-static inline void io_write_32(uintptr_t addr, uint32_t value)
-{
-	*(volatile uint32_t*)addr = value;
-}
-
-static inline void io_write_64(uintptr_t addr, uint64_t value)
-{
-	*(volatile uint64_t*)addr = value;
-}
-
-typedef struct {
-	uintptr_t addr;
-	uint64_t value;
-} mstat_slot_t;
 
 
 #if RCAR_QOS_TYPE  == RCAR_QOS_TYPE_DEFAULT
@@ -358,7 +342,7 @@ void qos_init_h3_v10(void)
 	io_write_32(RALLOC_BERR,  0x00000000U);
 
 	/* MSTAT setting */
-	io_write_32(MSTAT_SL_INIT, 0x0305007DU);
+	io_write_32(MSTAT_SL_INIT, SL_INIT_REFFSSLOT | SL_INIT_SLOTSSLOT | SL_INIT_SSLOTCLK);
 	io_write_32(MSTAT_REF_ARS, 0x00330000U);
 
 	/* MSTAT SRAM setting */

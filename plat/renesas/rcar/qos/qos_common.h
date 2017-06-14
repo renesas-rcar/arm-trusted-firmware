@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2016, Renesas Electronics Corporation
+ * Copyright (c) 2017, Renesas Electronics Corporation
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -29,22 +29,39 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef MICRO_WAIT_H__
-#define MICRO_WAIT_H__
+#ifndef QOS_COMMON_H_
+#define QOS_COMMON_H_
 
-#define TMU3_MEASUREMENT	(0)	/* for time measurement */
+#define OPERATING_FREQ			(400U)		//MHz
+#define BASE_SUB_SLOT_NUM		(0x6U)
+#define SUB_SLOT_CYCLE			(0x7EU)		//126
 
-#ifndef __ASSEMBLY__
-void micro_wait(uint32_t count_us);
+#define QOSWT_WTSET0_CYCLE		((SUB_SLOT_CYCLE * BASE_SUB_SLOT_NUM * 1000U)/OPERATING_FREQ)	//unit:ns
 
-/* Time measurement function using the TMU ch3. */
-#if (TMU3_MEASUREMENT == 1)
-void init_TMU3(void);
-void start_TMU3(void);
-uint32_t snapshot_TCNT3(void);
-void stop_TMU3(void);
-#endif /* TMU3_MEASUREMENT */
+#define SL_INIT_REFFSSLOT		(0x3U << 24U)
+#define SL_INIT_SLOTSSLOT		((BASE_SUB_SLOT_NUM - 1U) << 16U)
+#define SL_INIT_SSLOTCLK		(SUB_SLOT_CYCLE -1U)
 
-#endif /* __ASSEMBLY__ */
+#define ARRAY_SIZE(a)	(sizeof(a) / sizeof((a)[0]))
 
-#endif /* MICRO_TWAIT_H__ */
+static inline void io_write_32(uintptr_t addr, uint32_t value)
+{
+	*(volatile uint32_t*)addr = value;
+}
+
+static inline uint32_t io_read_32(uintptr_t addr)
+{
+	return *(volatile uint32_t*)addr;
+}
+
+static inline void io_write_64(uintptr_t addr, uint64_t value)
+{
+	*(volatile uint64_t*)addr = value;
+}
+
+typedef struct {
+	uintptr_t addr;
+	uint64_t value;
+} mstat_slot_t;
+
+#endif /* QOS_COMMON_H_ */

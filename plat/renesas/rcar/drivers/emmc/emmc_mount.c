@@ -795,19 +795,20 @@ static uint32_t emmc_set_timeout_register_value(
     uint32_t freq
     )
 {
-	uint32_t timeoutCnt=0;	/* SD_OPTION   - Timeout Counter  */
+	uint32_t timeoutCnt;	/* SD_OPTION   - Timeout Counter  */
 
 	switch(freq){
-		case   1:	timeoutCnt = 0xB0U;  break;  /* SDCLK * 2^24 */
-		case   2:	timeoutCnt = 0xA0U;  break;  /* SDCLK * 2^23 */
-		case   4:	timeoutCnt = 0x90U;  break;  /* SDCLK * 2^22 */
-		case   8:	timeoutCnt = 0x80U;  break;  /* SDCLK * 2^21 */
-		case  16:	timeoutCnt = 0x70U;  break;  /* SDCLK * 2^20 */
-		case  32:	timeoutCnt = 0x60U;  break;  /* SDCLK * 2^19 */
-		case  64:	timeoutCnt = 0x50U;  break;  /* SDCLK * 2^18 */
-		case 128:	timeoutCnt = 0x40U;  break;  /* SDCLK * 2^17 */
-		case 256:	timeoutCnt = 0x30U;  break;  /* SDCLK * 2^16 */
-		case 512:	timeoutCnt = 0x30U;  break;  /* SDCLK * 2^16 */
+		case   1U:	timeoutCnt = 0xE0U;  break;  /* SDCLK * 2^27 */
+		case   2U:	timeoutCnt = 0xE0U;  break;  /* SDCLK * 2^27 */
+		case   4U:	timeoutCnt = 0xD0U;  break;  /* SDCLK * 2^26 */
+		case   8U:	timeoutCnt = 0xC0U;  break;  /* SDCLK * 2^25 */
+		case  16U:	timeoutCnt = 0xB0U;  break;  /* SDCLK * 2^24 */
+		case  32U:	timeoutCnt = 0xA0U;  break;  /* SDCLK * 2^23 */
+		case  64U:	timeoutCnt = 0x90U;  break;  /* SDCLK * 2^22 */
+		case 128U:	timeoutCnt = 0x80U;  break;  /* SDCLK * 2^21 */
+		case 256U:	timeoutCnt = 0x70U;  break;  /* SDCLK * 2^20 */
+		case 512U:	timeoutCnt = 0x70U;  break;  /* SDCLK * 2^20 */
+		default:	timeoutCnt = 0xE0U;  break;  /* SDCLK * 2^27 */
 	}
 
 	return timeoutCnt;

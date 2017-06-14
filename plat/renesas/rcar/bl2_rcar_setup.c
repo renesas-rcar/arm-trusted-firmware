@@ -419,12 +419,6 @@ void bl2_early_platform_setup(meminfo_t *mem_layout)
 	/* Enable FIQ interrupt		*/
 	write_daifclr(DAIF_FIQ_BIT);
 
-	/* Initialize AVS Settings */
-	bl2_avs_init();
-
-	/* Proceed with separated AVS processing */
-	bl2_avs_setting();
-
 	/* boot message */
 	reg = (uint32_t)read_midr();
 	switch (reg & (uint32_t)(MIDR_PN_MASK << MIDR_PN_SHIFT)) {
@@ -441,9 +435,6 @@ void bl2_early_platform_setup(meminfo_t *mem_layout)
 	(void)sprintf(msg, "BL2: R-Car Gen3 Initial Program Loader(%s) Rev.%s\n"
 						, str, version_of_renesas);
 	NOTICE("%s", msg);
-
-	/* Proceed with separated AVS processing */
-	bl2_avs_setting();
 
 	/* R-Car Gen3 product display & check */
 	reg = mmio_read_32(RCAR_PRR);
@@ -497,6 +488,9 @@ void bl2_early_platform_setup(meminfo_t *mem_layout)
 		panic();
 	}
 #endif /* RCAR_LSI != RCAR_AUTO */
+
+	/* Initialize AVS Settings */
+	bl2_avs_init();
 
 	/* Proceed with separated AVS processing */
 	bl2_avs_setting();
@@ -557,9 +551,6 @@ void bl2_early_platform_setup(meminfo_t *mem_layout)
 	}
 	(void)sprintf(msg, "BL2: LCM state is %s\n", str);
 	NOTICE("%s", msg);
-
-	/* Proceed with separated AVS processing */
-	bl2_avs_setting();
 
 	/* End of AVS Settings */
 	bl2_avs_end();

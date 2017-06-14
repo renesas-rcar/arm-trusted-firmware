@@ -34,19 +34,21 @@
 #include "micro_wait.h"
 
 
+/* Module stop registers */
 #define	CPG_BASE		(0xE6150000)
 #define CPG_SMSTPCR1		(0x0134)
 #define CPG_CPGWPR		(0x0900)
 
-#define MSTPCR1_TMU1		(1 << 24)
+#define MSTPCR1_TMU1		(1 << 24)	/* Module bit for TMU ch3-5 */
 
+/* TMU ch3 registers */
 #define TMU3_BASE		(0xE6FC0000)
 #define TMU_TSTR		(0x0004)
 #define TMU_TCOR		(0x0008)
 #define TMU_TCNT		(0x000C)
 #define TMU_TCR			(0x0010)
 
-#define TSTR1_TMU3		(1 << 0)
+#define TSTR1_TMU3		(1 << 0)	/* Start bit for TMU ch3 */
 
 #define MIDR_CA57		(0x0D07 << MIDR_PN_SHIFT)
 #define MIDR_CA53		(0x0D03 << MIDR_PN_SHIFT)
@@ -99,7 +101,7 @@ ca53_loop_2:
 endfunc micro_wait_ca53
 
 
-/* Time measurement function using the TMU3. */
+/* Time measurement function using the TMU ch3. */
 #if (TMU3_MEASUREMENT == 1)
 func init_TMU3
 	ldr	x0, =CPG_BASE

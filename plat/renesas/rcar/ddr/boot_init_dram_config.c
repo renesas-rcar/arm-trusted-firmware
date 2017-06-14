@@ -944,7 +944,7 @@ void boardcnf_get_ddr_mbps(uint32_t brd, uint32_t *mbps, uint32_t *div) {
  *	PLEASE DEFINE _def_REFPERIOD (in ns)
  ******************************************************************************/
 /* WARN: do not modify in this IPL version */
-#define _def_REFPERIOD  1890
+//#define _def_REFPERIOD  1890  // non used : parameter get from qos_init
 /*******************************************************************************
  *	PREDEFINED TERM CODE by chip id
  ******************************************************************************/

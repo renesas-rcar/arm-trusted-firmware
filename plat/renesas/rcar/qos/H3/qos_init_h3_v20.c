@@ -31,153 +31,12 @@
 
 #include <stdint.h>
 #include <debug.h>
+#include "../qos_common.h"
+#include "../qos_reg.h"
 #include "qos_init_h3_v20.h"
 
 
-#define	RCAR_QOS_VERSION		"rev.0.15"
-
-#define	RCAR_QOS_NONE			(3U)
-#define	RCAR_QOS_TYPE_DEFAULT		(0U)
-
-#define	RCAR_DRAM_SPLIT_LINEAR		(0U)
-#define	RCAR_DRAM_SPLIT_4CH		(1U)
-#define	RCAR_DRAM_SPLIT_2CH		(2U)
-#define	RCAR_DRAM_SPLIT_AUTO		(3U)
-
-#define	RST_BASE			(0xE6160000U)
-#define	RST_MODEMR			(RST_BASE + 0x0060U)
-
-#define	DBSC_BASE			(0xE6790000U)
-#define	DBSC_DBDFIPMSTRCNF		(DBSC_BASE + 0x0520U)
-#define DBSC_DBCAM0CNF0			(DBSC_BASE + 0x0900U)
-#define DBSC_DBCAM0CNF1			(DBSC_BASE + 0x0904U)
-#define DBSC_DBCAM0CNF2			(DBSC_BASE + 0x0908U)
-#define DBSC_DBCAM0CNF3			(DBSC_BASE + 0x090CU)
-#define DBSC_DBCAMDIS			(DBSC_BASE + 0x09fCU)
-#define DBSC_DBSCHCNT0			(DBSC_BASE + 0x1000U)
-#define DBSC_DBSCHCNT1			(DBSC_BASE + 0x1004U)
-#define DBSC_DBSCHSZ0			(DBSC_BASE + 0x1010U)
-#define DBSC_DBSCHRW0			(DBSC_BASE + 0x1020U)
-#define DBSC_DBSCHQOS_0_0		(DBSC_BASE + 0x1030U)
-#define DBSC_DBSCHQOS_0_1		(DBSC_BASE + 0x1034U)
-#define DBSC_DBSCHQOS_0_2		(DBSC_BASE + 0x1038U)
-#define DBSC_DBSCHQOS_0_3		(DBSC_BASE + 0x103CU)
-#define DBSC_DBSCHQOS_1_0		(DBSC_BASE + 0x1040U)
-#define DBSC_DBSCHQOS_1_1		(DBSC_BASE + 0x1044U)
-#define DBSC_DBSCHQOS_1_2		(DBSC_BASE + 0x1048U)
-#define DBSC_DBSCHQOS_1_3		(DBSC_BASE + 0x104CU)
-#define DBSC_DBSCHQOS_2_0		(DBSC_BASE + 0x1050U)
-#define DBSC_DBSCHQOS_2_1		(DBSC_BASE + 0x1054U)
-#define DBSC_DBSCHQOS_2_2		(DBSC_BASE + 0x1058U)
-#define DBSC_DBSCHQOS_2_3		(DBSC_BASE + 0x105CU)
-#define DBSC_DBSCHQOS_3_0		(DBSC_BASE + 0x1060U)
-#define DBSC_DBSCHQOS_3_1		(DBSC_BASE + 0x1064U)
-#define DBSC_DBSCHQOS_3_2		(DBSC_BASE + 0x1068U)
-#define DBSC_DBSCHQOS_3_3		(DBSC_BASE + 0x106CU)
-#define DBSC_DBSCHQOS_4_0		(DBSC_BASE + 0x1070U)
-#define DBSC_DBSCHQOS_4_1		(DBSC_BASE + 0x1074U)
-#define DBSC_DBSCHQOS_4_2		(DBSC_BASE + 0x1078U)
-#define DBSC_DBSCHQOS_4_3		(DBSC_BASE + 0x107CU)
-#define DBSC_DBSCHQOS_5_0		(DBSC_BASE + 0x1080U)
-#define DBSC_DBSCHQOS_5_1		(DBSC_BASE + 0x1084U)
-#define DBSC_DBSCHQOS_5_2		(DBSC_BASE + 0x1088U)
-#define DBSC_DBSCHQOS_5_3		(DBSC_BASE + 0x108CU)
-#define DBSC_DBSCHQOS_6_0		(DBSC_BASE + 0x1090U)
-#define DBSC_DBSCHQOS_6_1		(DBSC_BASE + 0x1094U)
-#define DBSC_DBSCHQOS_6_2		(DBSC_BASE + 0x1098U)
-#define DBSC_DBSCHQOS_6_3		(DBSC_BASE + 0x109CU)
-#define DBSC_DBSCHQOS_7_0		(DBSC_BASE + 0x10A0U)
-#define DBSC_DBSCHQOS_7_1		(DBSC_BASE + 0x10A4U)
-#define DBSC_DBSCHQOS_7_2		(DBSC_BASE + 0x10A8U)
-#define DBSC_DBSCHQOS_7_3		(DBSC_BASE + 0x10ACU)
-#define DBSC_DBSCHQOS_8_0		(DBSC_BASE + 0x10B0U)
-#define DBSC_DBSCHQOS_8_1		(DBSC_BASE + 0x10B4U)
-#define DBSC_DBSCHQOS_8_2		(DBSC_BASE + 0x10B8U)
-#define DBSC_DBSCHQOS_8_3		(DBSC_BASE + 0x10BCU)
-#define DBSC_DBSCHQOS_9_0		(DBSC_BASE + 0x10C0U)
-#define DBSC_DBSCHQOS_9_1		(DBSC_BASE + 0x10C4U)
-#define DBSC_DBSCHQOS_9_2		(DBSC_BASE + 0x10C8U)
-#define DBSC_DBSCHQOS_9_3		(DBSC_BASE + 0x10CCU)
-#define DBSC_DBSCHQOS_10_0		(DBSC_BASE + 0x10D0U)
-#define DBSC_DBSCHQOS_10_1		(DBSC_BASE + 0x10D4U)
-#define DBSC_DBSCHQOS_10_2		(DBSC_BASE + 0x10D8U)
-#define DBSC_DBSCHQOS_10_3		(DBSC_BASE + 0x10DCU)
-#define DBSC_DBSCHQOS_11_0		(DBSC_BASE + 0x10E0U)
-#define DBSC_DBSCHQOS_11_1		(DBSC_BASE + 0x10E4U)
-#define DBSC_DBSCHQOS_11_2		(DBSC_BASE + 0x10E8U)
-#define DBSC_DBSCHQOS_11_3		(DBSC_BASE + 0x10ECU)
-#define DBSC_DBSCHQOS_12_0		(DBSC_BASE + 0x10F0U)
-#define DBSC_DBSCHQOS_12_1		(DBSC_BASE + 0x10F4U)
-#define DBSC_DBSCHQOS_12_2		(DBSC_BASE + 0x10F8U)
-#define DBSC_DBSCHQOS_12_3		(DBSC_BASE + 0x10FCU)
-#define DBSC_DBSCHQOS_13_0		(DBSC_BASE + 0x1100U)
-#define DBSC_DBSCHQOS_13_1		(DBSC_BASE + 0x1104U)
-#define DBSC_DBSCHQOS_13_2		(DBSC_BASE + 0x1108U)
-#define DBSC_DBSCHQOS_13_3		(DBSC_BASE + 0x110CU)
-#define DBSC_DBSCHQOS_14_0		(DBSC_BASE + 0x1110U)
-#define DBSC_DBSCHQOS_14_1		(DBSC_BASE + 0x1114U)
-#define DBSC_DBSCHQOS_14_2		(DBSC_BASE + 0x1118U)
-#define DBSC_DBSCHQOS_14_3		(DBSC_BASE + 0x111CU)
-#define DBSC_DBSCHQOS_15_0		(DBSC_BASE + 0x1120U)
-#define DBSC_DBSCHQOS_15_1		(DBSC_BASE + 0x1124U)
-#define DBSC_DBSCHQOS_15_2		(DBSC_BASE + 0x1128U)
-#define DBSC_DBSCHQOS_15_3		(DBSC_BASE + 0x112CU)
-#define DBSC_SCFCTST2			(DBSC_BASE + 0x170CU)
-
-#define	AXI_BASE			(0xE6784000U)
-#define	AXI_ADSPLCR0			(AXI_BASE + 0x0008U)
-#define	AXI_ADSPLCR1			(AXI_BASE + 0x000CU)
-#define	AXI_ADSPLCR2			(AXI_BASE + 0x0010U)
-#define	AXI_ADSPLCR3			(AXI_BASE + 0x0014U)
-#define	ADSPLCR0_ADRMODE_DEFAULT	((uint32_t)0U << 31U)
-#define	ADSPLCR0_ADRMODE_GEN2		((uint32_t)1U << 31U)
-#define	ADSPLCR0_SPLITSEL(x)		((uint32_t)(x) << 16U)
-#define	ADSPLCR0_AREA(x)		((uint32_t)(x) <<  8U)
-#define	ADSPLCR0_SWP			(0x0CU)
-
-#define	MSTAT_BASE			(0xE67E0000U)
-#define	MSTAT_FIX_QOS_BANK0		(MSTAT_BASE + 0x0000U)
-#define	MSTAT_FIX_QOS_BANK1		(MSTAT_BASE + 0x1000U)
-#define	MSTAT_BE_QOS_BANK0		(MSTAT_BASE + 0x2000U)
-#define	MSTAT_BE_QOS_BANK1		(MSTAT_BASE + 0x3000U)
-#define	MSTAT_SL_INIT			(MSTAT_BASE + 0x8000U)
-#define	MSTAT_REF_ARS			(MSTAT_BASE + 0x8004U)
-#define	MSTAT_STATQC			(MSTAT_BASE + 0x8008U)
-
-#define	RALLOC_BASE			(0xE67F0000U)
-#define	RALLOC_RAS			(RALLOC_BASE + 0x0000U)
-#define	RALLOC_FIXTH			(RALLOC_BASE + 0x0004U)
-#define	RALLOC_RAEN			(RALLOC_BASE + 0x0018U)
-#define	RALLOC_REGGD			(RALLOC_BASE + 0x0020U)
-#define	RALLOC_DANN			(RALLOC_BASE + 0x0030U)
-#define	RALLOC_DANT			(RALLOC_BASE + 0x0038U)
-#define	RALLOC_EC			(RALLOC_BASE + 0x003CU)
-#define	RALLOC_EMS			(RALLOC_BASE + 0x0040U)
-#define	RALLOC_FSS			(RALLOC_BASE + 0x0048U)
-#define	RALLOC_INSFC			(RALLOC_BASE + 0x0050U)
-#define	RALLOC_BERR			(RALLOC_BASE + 0x0054U)
-#define	RALLOC_EARLYR			(RALLOC_BASE + 0x0060U)
-#define	RALLOC_RACNT0			(RALLOC_BASE + 0x0080U)
-#define	RALLOC_STATGEN0			(RALLOC_BASE + 0x0088U)
-
-#define ACTIVE_OR			(0xFD812030U)
-
-#define ARRAY_SIZE(a)	(sizeof(a) / sizeof((a)[0]))
-
-static inline void io_write_32(uintptr_t addr, uint32_t value)
-{
-	*(volatile uint32_t*)addr = value;
-}
-
-static inline void io_write_64(uintptr_t addr, uint64_t value)
-{
-	*(volatile uint64_t*)addr = value;
-}
-
-typedef struct {
-	uintptr_t addr;
-	uint64_t value;
-} mstat_slot_t;
+#define	RCAR_QOS_VERSION		"rev.0.16"
 
 
 #if RCAR_QOS_TYPE  == RCAR_QOS_TYPE_DEFAULT
@@ -413,12 +272,10 @@ static void dbsc_setting(void)
 	uint32_t md=0;
 
 	/* BUFCAM settings */
-	//DBSC_DBCAM0CNF0 not set
 	io_write_32(DBSC_DBCAM0CNF1, 0x00043218U);	//dbcam0cnf1
 	io_write_32(DBSC_DBCAM0CNF2, 0x000000F4U);	//dbcam0cnf2
 	io_write_32(DBSC_DBCAM0CNF3, 0x00000000U);	//dbcam0cnf3
 	io_write_32(DBSC_DBSCHCNT0,  0x000F0037U);	//dbschcnt0
-	//DBSC_DBSCHCNT1 not set
 	io_write_32(DBSC_DBSCHSZ0,   0x00000001U);	//dbschsz0
 	io_write_32(DBSC_DBSCHRW0,   0x22421111U);	//dbschrw0
 
@@ -444,70 +301,34 @@ static void dbsc_setting(void)
 	}
 
 	/* QoS Settings */
-	io_write_32(DBSC_DBSCHQOS_0_0,  0x00000F00U);
-	io_write_32(DBSC_DBSCHQOS_0_1,  0x00000B00U);
-	io_write_32(DBSC_DBSCHQOS_0_2,  0x00000000U);
-	io_write_32(DBSC_DBSCHQOS_0_3,  0x00000000U);
-	//DBSC_DBSCHQOS_1_0 not set
-	//DBSC_DBSCHQOS_1_1 not set
-	//DBSC_DBSCHQOS_1_2 not set
-	//DBSC_DBSCHQOS_1_3 not set
-	//DBSC_DBSCHQOS_2_0 not set
-	//DBSC_DBSCHQOS_2_1 not set
-	//DBSC_DBSCHQOS_2_2 not set
-	//DBSC_DBSCHQOS_2_3 not set
-	//DBSC_DBSCHQOS_3_0 not set
-	//DBSC_DBSCHQOS_3_1 not set
-	//DBSC_DBSCHQOS_3_2 not set
-	//DBSC_DBSCHQOS_3_3 not set
-	io_write_32(DBSC_DBSCHQOS_4_0,  0x00000300U);
-	io_write_32(DBSC_DBSCHQOS_4_1,  0x000002F0U);
-	io_write_32(DBSC_DBSCHQOS_4_2,  0x00000200U);
-	io_write_32(DBSC_DBSCHQOS_4_3,  0x00000100U);
-	//DBSC_DBSCHQOS_5_0 not set
-	//DBSC_DBSCHQOS_5_1 not set
-	//DBSC_DBSCHQOS_5_2 not set
-	//DBSC_DBSCHQOS_5_3 not set
-	//DBSC_DBSCHQOS_6_0 not set
-	//DBSC_DBSCHQOS_6_1 not set
-	//DBSC_DBSCHQOS_6_2 not set
-	//DBSC_DBSCHQOS_6_3 not set
-	//DBSC_DBSCHQOS_7_0 not set
-	//DBSC_DBSCHQOS_7_1 not set
-	//DBSC_DBSCHQOS_7_2 not set
-	//DBSC_DBSCHQOS_7_3 not set
-	//DBSC_DBSCHQOS_8_0 not set
-	//DBSC_DBSCHQOS_8_1 not set
-	//DBSC_DBSCHQOS_8_2 not set
-	//DBSC_DBSCHQOS_8_3 not set
-	io_write_32(DBSC_DBSCHQOS_9_0,  0x00000300U);
-	io_write_32(DBSC_DBSCHQOS_9_1,  0x000002F0U);
-	io_write_32(DBSC_DBSCHQOS_9_2,  0x00000200U);
-	io_write_32(DBSC_DBSCHQOS_9_3,  0x00000100U);
-	//DBSC_DBSCHQOS_10_0 not set
-	//DBSC_DBSCHQOS_10_1 not set
-	//DBSC_DBSCHQOS_10_2 not set
-	//DBSC_DBSCHQOS_10_3 not set
-	//DBSC_DBSCHQOS_11_0 not set
-	//DBSC_DBSCHQOS_11_1 not set
-	//DBSC_DBSCHQOS_11_2 not set
-	//DBSC_DBSCHQOS_11_3 not set
-	io_write_32(DBSC_DBSCHQOS_12_0, 0x00000040U);
-	io_write_32(DBSC_DBSCHQOS_12_1, 0x00000030U);
-	io_write_32(DBSC_DBSCHQOS_12_2, 0x00000020U);
-	io_write_32(DBSC_DBSCHQOS_12_3, 0x00000010U);
-	io_write_32(DBSC_DBSCHQOS_13_0, 0x00000100U);
-	io_write_32(DBSC_DBSCHQOS_13_1, 0x000000F0U);
-	io_write_32(DBSC_DBSCHQOS_13_2, 0x000000A0U);
-	io_write_32(DBSC_DBSCHQOS_13_3, 0x00000040U);
-	io_write_32(DBSC_DBSCHQOS_14_0, 0x000000C0U);
-	io_write_32(DBSC_DBSCHQOS_14_1, 0x000000B0U);
-	io_write_32(DBSC_DBSCHQOS_14_2, 0x00000080U);
-	io_write_32(DBSC_DBSCHQOS_14_3, 0x00000040U);
-	io_write_32(DBSC_DBSCHQOS_15_0, 0x00000040U);
-	io_write_32(DBSC_DBSCHQOS_15_1, 0x00000030U);
-	io_write_32(DBSC_DBSCHQOS_15_2, 0x00000020U);
-	io_write_32(DBSC_DBSCHQOS_15_3, 0x00000010U);
+	io_write_32(DBSC_DBSCHQOS00,  0x00000F00U);
+	io_write_32(DBSC_DBSCHQOS01,  0x00000B00U);
+	io_write_32(DBSC_DBSCHQOS02,  0x00000000U);
+	io_write_32(DBSC_DBSCHQOS03,  0x00000000U);
+	io_write_32(DBSC_DBSCHQOS40,  0x00000300U);
+	io_write_32(DBSC_DBSCHQOS41,  0x000002F0U);
+	io_write_32(DBSC_DBSCHQOS42,  0x00000200U);
+	io_write_32(DBSC_DBSCHQOS43,  0x00000100U);
+	io_write_32(DBSC_DBSCHQOS90,  0x00000300U);
+	io_write_32(DBSC_DBSCHQOS91,  0x000002F0U);
+	io_write_32(DBSC_DBSCHQOS92,  0x00000200U);
+	io_write_32(DBSC_DBSCHQOS93,  0x00000100U);
+	io_write_32(DBSC_DBSCHQOS120, 0x00000040U);
+	io_write_32(DBSC_DBSCHQOS121, 0x00000030U);
+	io_write_32(DBSC_DBSCHQOS122, 0x00000020U);
+	io_write_32(DBSC_DBSCHQOS123, 0x00000010U);
+	io_write_32(DBSC_DBSCHQOS130, 0x00000100U);
+	io_write_32(DBSC_DBSCHQOS131, 0x000000F0U);
+	io_write_32(DBSC_DBSCHQOS132, 0x000000A0U);
+	io_write_32(DBSC_DBSCHQOS133, 0x00000040U);
+	io_write_32(DBSC_DBSCHQOS140, 0x000000C0U);
+	io_write_32(DBSC_DBSCHQOS141, 0x000000B0U);
+	io_write_32(DBSC_DBSCHQOS142, 0x00000080U);
+	io_write_32(DBSC_DBSCHQOS143, 0x00000040U);
+	io_write_32(DBSC_DBSCHQOS150, 0x00000040U);
+	io_write_32(DBSC_DBSCHQOS151, 0x00000030U);
+	io_write_32(DBSC_DBSCHQOS152, 0x00000020U);
+	io_write_32(DBSC_DBSCHQOS153, 0x00000010U);
 }
 
 void qos_init_h3_v20(void)
@@ -543,101 +364,61 @@ void qos_init_h3_v20(void)
 	NOTICE("BL2: QoS is default setting(%s)\n", RCAR_QOS_VERSION);
 #endif
 
-	/* Resource Alloc setting */
-	io_write_32(RALLOC_RAS,   0x00000044U);
-	io_write_32(RALLOC_FIXTH, 0x000F0005U);
-	io_write_32(RALLOC_REGGD, 0x00000000U);
-	io_write_64(RALLOC_DANN,  0x0404010002020201U);
-	io_write_32(RALLOC_DANT,  0x0020100AU);
-	io_write_32(RALLOC_EC,    0x00000000U);
-	io_write_64(RALLOC_EMS,   0x0000000000000000U);
-	io_write_32(RALLOC_FSS,   0x000003e8U);
-	io_write_32(RALLOC_INSFC, 0xC7840001U);
-	io_write_32(RALLOC_BERR,  0x00000000U);
-	io_write_32(RALLOC_EARLYR, 0x00000000U);
-	io_write_32(RALLOC_RACNT0, 0x00010003U);
+	io_write_32(QOSCTRL_RAS,   0x00000044U);
+	io_write_64(QOSCTRL_DANN,  0x0404010002020201U);
+	io_write_32(QOSCTRL_DANT,  0x0020100AU);
+	io_write_32(QOSCTRL_INSFC, 0xC7840001U);
+	io_write_32(QOSCTRL_RACNT0, 0x00010003U);
 
 	/* GPU Boost Mode */
-	io_write_32(RALLOC_STATGEN0, 0x00000001U);
-	io_write_32(ACTIVE_OR,       0x00000000U); /* 0:enable, 1:disable */
+	io_write_32(QOSCTRL_STATGEN0, 0x00000001U);
 
-	/* MSTAT setting */
-	io_write_32(MSTAT_SL_INIT, 0x0305007DU);
-	io_write_32(MSTAT_REF_ARS, 0x00330000U);
+	io_write_32(QOSCTRL_SL_INIT, SL_INIT_REFFSSLOT | SL_INIT_SLOTSSLOT | SL_INIT_SSLOTCLK);
+	io_write_32(QOSCTRL_REF_ARS, 0x00330000U);
 
-	/* MSTAT SRAM setting */
 	{
 	uint32_t i;
 
 	for (i = 0U; i < ARRAY_SIZE(mstat_fix); i++) {
-		io_write_64(MSTAT_FIX_QOS_BANK0 + mstat_fix[i].addr,
+		io_write_64(QOSBW_FIX_QOS_BANK0 + mstat_fix[i].addr,
 				mstat_fix[i].value);
-		io_write_64(MSTAT_FIX_QOS_BANK1 + mstat_fix[i].addr,
+		io_write_64(QOSBW_FIX_QOS_BANK1 + mstat_fix[i].addr,
 				mstat_fix[i].value);
 	}
 	for (i = 0U; i < ARRAY_SIZE(mstat_be); i++) {
-		io_write_64(MSTAT_BE_QOS_BANK0 + mstat_be[i].addr,
+		io_write_64(QOSBW_BE_QOS_BANK0 + mstat_be[i].addr,
 				mstat_be[i].value);
-		io_write_64(MSTAT_BE_QOS_BANK1 + mstat_be[i].addr,
+		io_write_64(QOSBW_BE_QOS_BANK1 + mstat_be[i].addr,
 				mstat_be[i].value);
 	}
 	}
 
 	/* 3DG bus Leaf setting */
-	io_write_32(0xFD820800U, 0x00000000U);
-	io_write_32(0xFD821800U, 0x00000000U);
-	io_write_32(0xFD822800U, 0x00000000U);
-	io_write_32(0xFD823800U, 0x00000000U);
-	io_write_32(0xFD824800U, 0x00000000U);
-	io_write_32(0xFD825800U, 0x00000000U);
-	io_write_32(0xFD826800U, 0x00000000U);
-	io_write_32(0xFD827800U, 0x00000000U);
-
-	/* VIO bus Leaf setting */
-	io_write_32(0xFEB89800, 0x00000000U);
-	io_write_32(0xFEB8A800, 0x00000000U);
-	io_write_32(0xFEB8B800, 0x00000000U);
-	io_write_32(0xFEB8C800, 0x00000000U);
-
-	/* HSC bus Leaf setting */
-	io_write_32(0xE6430800, 0x00000000U);
-	io_write_32(0xE6431800, 0x00000000U);
-	io_write_32(0xE6432800, 0x00000000U);
-	io_write_32(0xE6433800, 0x00000000U);
-
-	/* MP bus Leaf setting */
-	io_write_32(0xEC620800, 0x00000000U);
-	io_write_32(0xEC621800, 0x00000000U);
-
-	/* PERIE bus Leaf setting */
-	io_write_32(0xE7760800, 0x00000000U);
-	io_write_32(0xE7768800, 0x00000000U);
-
-	/* PERIW bus Leaf setting */
-	io_write_32(0xE6760800, 0x00000000U);
-	io_write_32(0xE6768800, 0x00000000U);
+	io_write_32(GPU_ACT0, 0x00000000U);
+	io_write_32(GPU_ACT1, 0x00000000U);
+	io_write_32(GPU_ACT2, 0x00000000U);
+	io_write_32(GPU_ACT3, 0x00000000U);
+	io_write_32(GPU_ACT4, 0x00000000U);
+	io_write_32(GPU_ACT5, 0x00000000U);
+	io_write_32(GPU_ACT6, 0x00000000U);
+	io_write_32(GPU_ACT7, 0x00000000U);
 
 	/* RT bus Leaf setting */
-	io_write_32(0xFFC50800U, 0x00000000U);
-	io_write_32(0xFFC51800U, 0x00000000U);
+	io_write_32(RT_ACT0, 0x00000000U);
+	io_write_32(RT_ACT1, 0x00000000U);
 
 	/* CCI bus Leaf setting */
-	io_write_32(0xF1300800, 0x00000003U);
-	io_write_32(0xF1340800, 0x00000003U);
-	io_write_32(0xF1380800, 0x00000003U);
-	io_write_32(0xF13C0800, 0x00000003U);
+	io_write_32(CPU_ACT0, 0x00000003U);
+	io_write_32(CPU_ACT1, 0x00000003U);
+	io_write_32(CPU_ACT2, 0x00000003U);
+	io_write_32(CPU_ACT3, 0x00000003U);
 
-	/* Resource Alloc start */
-	io_write_32(RALLOC_RAEN,  0x00000001U);
+	io_write_32(QOSCTRL_RAEN,  0x00000001U);
 
-	/* MSTAT start */
-	io_write_32(MSTAT_STATQC, 0x00000001U);
+	io_write_32(QOSCTRL_STATQC, 0x00000001U);
 #else
 	NOTICE("BL2: QoS is None\n");
 
-	/* Resource Alloc setting */
-	io_write_32(RALLOC_EC,    0x00000000U);
-	/* Resource Alloc start */
-	io_write_32(RALLOC_RAEN,  0x00000001U);
+	io_write_32(QOSCTRL_RAEN,  0x00000001U);
 #endif /* !(RCAR_QOS_TYPE == RCAR_QOS_NONE) */
 }
