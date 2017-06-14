@@ -118,13 +118,13 @@
 #define EFUSE_AVS0			(0U)
 #define EFUSE_AVS_NUM			(7U)
 static const uint8_t pmic_setvid_reg[EFUSE_AVS_NUM] = {
-		0x52U, /* AVS0 0.82V */
+		0x53U, /* AVS0 0.83V */
 		0x52U, /* AVS1 0.82V */
-		0x52U, /* AVS2 0.82V */
-		0x4FU, /* AVS3 0.79V */
+		0x51U, /* AVS2 0.81V */
+		0x50U, /* AVS3 0.80V */
 		0x4FU, /* AVS4 0.79V */
-		0x4DU, /* AVS5 0.77V */
-		0x4BU  /* AVS6 0.75V */
+		0x4EU, /* AVS5 0.78V */
+		0x4DU  /* AVS6 0.77V */
 };
 
 /* Kind of AVS settings status */
