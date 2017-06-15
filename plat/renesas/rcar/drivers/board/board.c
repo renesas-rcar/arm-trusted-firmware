@@ -27,83 +27,104 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-
 #include <stdint.h>
 #include <iic_dvfs.h>
 #include "board.h"
 
+static uint8_t board_id = BOARD_ID_UNKNOWN;
 
-/************************************************************************
- * Defines
- ************************************************************************/
-#ifndef BOARD_DEFAULT
-#define BOARD_DEFAULT		(BOARD_SALVATOR_X << BOARD_CODE_SHIFT)
-#endif
-
-#define SLAVE_ADDR_EEPROM	(0x50U)
-#define	REG_ADDR_BOARD_ID	(0x70U)
-
-#define BOARD_CODE_MASK		(0xF8U)
-#define BOARD_REV_MASK		(0x07U)
-#define BOARD_CODE_SHIFT	(3U)
-
-#define BOARD_ID_UNKNOWN	(0xFFU)
-
-
-/************************************************************************
- * Global variables
- ************************************************************************/
-const char *g_board_tbl[] = {
-	[BOARD_SALVATOR_X]	= "Salvator-X",
-	[BOARD_SALVATOR_XS]	= "Salvator-XS",
-	[BOARD_KRIEK]		= "Kriek",
-	[BOARD_STARTER_KIT]	= "Starter Kit"
-};
-const char *g_board_unknown	= "unknown";
-
-
-int32_t get_board_type(uint32_t *type, uint32_t *rev)
+void board_id_init()
 {
-	int32_t ret = 0;
-	uint8_t read_rev;
-	static uint8_t g_board_id = BOARD_ID_UNKNOWN;
-	const uint8_t board_tbl[][8U] = {
-		[BOARD_SALVATOR_X]	= {0x10U, 0x11U, 0xFFU, 0xFFU,
-					   0xFFU, 0xFFU, 0xFFU, 0xFFU},
-		[BOARD_KRIEK]		= {0x10U, 0xFFU, 0xFFU, 0xFFU,
-					   0xFFU, 0xFFU, 0xFFU, 0xFFU},
-		[BOARD_STARTER_KIT]	= {0x10U, 0xFFU, 0xFFU, 0xFFU,
-					   0xFFU, 0xFFU, 0xFFU, 0xFFU},
-		[BOARD_SALVATOR_XS]	= {0x10U, 0xFFU, 0xFFU, 0xFFU,
-					   0xFFU, 0xFFU, 0xFFU, 0xFFU},
-	};
-
-	if (BOARD_ID_UNKNOWN == g_board_id) {
-#if PMIC_ON_BOARD
-		/* Board ID detection from EEPROM */
-		ret = rcar_iic_dvfs_recieve(SLAVE_ADDR_EEPROM,
-			REG_ADDR_BOARD_ID, &g_board_id);
-		if (0 != ret) {
-			g_board_id = BOARD_ID_UNKNOWN;
-		} else if (BOARD_ID_UNKNOWN == g_board_id) {
-			/* Can't recognize the board */
-			g_board_id = BOARD_DEFAULT;
-		} else {
-			/* none */
-		}
-#else
-		g_board_id = BOARD_DEFAULT;
+	uint8_t id = BOARD_ID_UNKNOWN;
+#if PMIC_ON_BOARD && !defined(BOARD_ID)
+	int ret;
 #endif
+
+	/* board detection and validation had been done already */
+	if (board_id != BOARD_ID_UNKNOWN)
+		return;
+
+#if PMIC_ON_BOARD && !defined(BOARD_ID)
+	/* Board ID detection from EEPROM */
+	ret = rcar_iic_dvfs_recieve(PMIC_EEPROM_SLAVE_ADDR,
+				PMIC_EEPROM_BOARD_ID_REG_ADDR, &id);
+	if (ret != 0)
+		id = BOARD_ID_UNKNOWN;
+#endif
+
+#ifdef BOARD_ID
+	id = BOARD_ID;
+#endif
+	if (id == BOARD_ID_UNKNOWN)
+		id = BOARD_ID_DEFAULT;
+
+	switch (id >> BOARD_ID_NAME_SHIFT) {
+	case BOARD_SALVATOR_X:
+	case BOARD_KRIEK:
+	case BOARD_STARTER_KIT:
+	case BOARD_SALVATOR_XS:
+		break;
+	default:
+		id = BOARD_ID_DEFAULT;
+		break;
 	}
 
-	*type = ((uint32_t)g_board_id & BOARD_CODE_MASK) >> BOARD_CODE_SHIFT;
-	if (*type < (sizeof(board_tbl) / sizeof(board_tbl[0]))) {
-		read_rev = (uint8_t)(g_board_id & BOARD_REV_MASK);
-		*rev = board_tbl[*type][read_rev];
-	} else {
-		/* If there is no revision information, set Rev0.0. */
-		*rev = 0x00U;
-	}
+	board_id = id;
+}
 
-	return ret;
+static const char *board_name[] = {
+	[BOARD_SALVATOR_X]	= "Salvator-X",
+	[BOARD_KRIEK]		= "Kriek",
+	[BOARD_STARTER_KIT]	= "Starter Kit",
+	[BOARD_SALVATOR_XS]	= "Salvator-XS"
+};
+
+int32_t get_board_id()
+{
+	return board_id;
+}
+
+const char *get_board_name()
+{
+	return board_name[board_id];
+}
+
+/* board rev ID is not linearly mapped to revision string
+ *   0 : rev1.0
+ *   1 : rev1.1
+ *   ...
+ *
+ * rev ID translation is done via lookup table as below
+ *
+ *  7      4 3      0
+ * +--------+--------+
+ * | major  | minor  |
+ * +--------+--------+
+ */
+static const uint8_t board_rev[] = {
+	/* 0     1      2      3 */
+	0x10U, 0x11U, 0xFFU, 0xFFU,
+	/* 4     5      6      7 */
+	0xFFU, 0xFFU, 0xFFU, 0xFFU
+};
+
+int32_t get_board_rev()
+{
+	int32_t rev = board_id & BOARD_ID_REV_MASK;
+
+	return board_rev[rev];
+}
+
+int32_t get_board_rev_major()
+{
+	int32_t rev = board_id & BOARD_ID_REV_MASK;
+
+	return board_rev[rev] >> 4;
+}
+
+int32_t get_board_rev_minor()
+{
+	int32_t rev = board_id & BOARD_ID_REV_MASK;
+
+	return board_rev[rev] & 0xFU;
 }

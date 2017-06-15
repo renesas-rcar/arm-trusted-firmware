@@ -27,38 +27,43 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
+#ifndef _RCAR_BOARD_H_
+#define _RCAR_BOARD_H_
 
-#ifndef BOARD_H_
-#define BOARD_H_
+/* board ID register in the EEPROM (e.g. BR24T01FVM-W)
+ *
+ *   7        3   2    0
+ * +------------+--------+
+ * |  name ID   | rev ID |
+ * +------------+--------+
+ */
+#define PMIC_EEPROM_SLAVE_ADDR		(0x50U)
+#define PMIC_EEPROM_BOARD_ID_REG_ADDR	(0x70U)
 
+/* board ID bit fields definition */
+#define BOARD_ID_NAME_MASK	(0xF8U)
+#define BOARD_ID_NAME_SHIFT 	(3U)
+#define BOARD_ID_REV_MASK	(0x07U)
 
-/************************************************************************
- * Board type
- ************************************************************************/
-#define BOARD_SALVATOR_X		(0x00U)
-#define BOARD_SALVATOR_XS		(0x04U)
-#define BOARD_KRIEK			(0x01U)
-#define BOARD_STARTER_KIT		(0x02U)
+/* board name ID */
+#define BOARD_SALVATOR_X	(0x00U)
+#define BOARD_KRIEK		(0x01U)
+#define BOARD_STARTER_KIT	(0x02U) /* i.e. ULCB */
+#define BOARD_SALVATOR_XS	(0x04U)
+#define BOARD_UNKNOWN		(0x1FU)
 
-#define BOARD_UNKNOWN			(0x1FU)
+/* If board ID is not specified during compiling, or board detection fails,
+ * then fallback to Salvator-X Rev1.0  */
+#define BOARD_ID_DEFAULT 	(BOARD_SALVATOR_X << BOARD_ID_NAME_SHIFT)
+#define BOARD_ID_UNKNOWN	(0xFFU)
 
-/************************************************************************
- * Board name
- ************************************************************************/
-extern const char *g_board_tbl[];
-extern const char *g_board_unknown;
+#define board_is(board) ((get_board_id() >> BOARD_ID_NAME_SHIFT) == board)
 
-/************************************************************************
- * Revisions are expressed in 8 bits.
- *  The upper 4 bits are major version.
- *  The lower 4 bits are minor version.
- ************************************************************************/
-#define GET_BOARD_MAJOR(a)	((uint32_t)(a) >> 4U)
-#define GET_BOARD_MINOR(a)	((uint32_t)(a) & 0xFU)
+void board_id_init();
+int32_t get_board_id();
+const char *get_board_name();
+int32_t get_board_name_id();
+int32_t get_board_rev_major();
+int32_t get_board_rev_minor();
 
-#define GET_BOARD_NAME(a)	((BOARD_UNKNOWN != (a)) ?\
-					g_board_tbl[(a)] : g_board_unknown)
-
-int32_t get_board_type(uint32_t *type, uint32_t *rev);
-
-#endif /* BOARD_H_ */
+#endif /* _RCAR_BOARD_H_ */
