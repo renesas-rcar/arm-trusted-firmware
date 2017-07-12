@@ -33,26 +33,27 @@
 #include <debug.h>
 #include "dram_sub_func.h"
 
-#if (PMIC_ON_BOARD==1)
+#if RCAR_SYSTEM_SUSPEND
 /* Local defines */
 #define DRAM_BACKUP_GPIO_USE	(0)
 #if DRAM_BACKUP_GPIO_USE==0
 #include "iic_dvfs.h"
 #endif
-
+#if PMIC_ROHM_BD9571
 #define	PMIC_SLAVE_ADDR		(0x30U)
 #define	PMIC_BKUP_MODE_CNT	(0x20U)
 #define	BIT_BKUP_CTRL_OUT	((uint8_t)(1U << 4))
+#endif /* PMIC_ROHM_BD9571 */
 
 #define GPIO_INDT1		(0xE605100CU)
 #if DRAM_BACKUP_GPIO_USE==1
 #define	GPIO_OUTDT1		(0xE6051008U)
 #endif
-#endif /* PMIC_ON_BOARD */
+#endif /* RCAR_SYSTEM_SUSPEND */
 
 void dram_get_boot_status(uint32_t *status)
 {
-#if (PMIC_ON_BOARD==1)
+#if RCAR_SYSTEM_SUSPEND
 
 	uint32_t reg_data;
 
@@ -62,19 +63,21 @@ void dram_get_boot_status(uint32_t *status)
 	} else {
 		*status = DRAM_BOOT_STATUS_COLD;
 	}
-#else	/* (PMIC_ON_BOARD==1) */
+#else	/* RCAR_SYSTEM_SUSPEND */
 	*status = DRAM_BOOT_STATUS_COLD;
-#endif	/* (PMIC_ON_BOARD==1) */
+#endif	/* RCAR_SYSTEM_SUSPEND */
 }
 
 int32_t dram_update_boot_status(uint32_t status)
 {
 	int32_t ret = 0;
-#if (PMIC_ON_BOARD==1)
+#if RCAR_SYSTEM_SUSPEND
 	uint32_t reg_data;
 #if DRAM_BACKUP_GPIO_USE==0
+#if PMIC_ROHM_BD9571
 	uint8_t bkup_mode_cnt = 0U;
 	int32_t i2c_dvfs_ret = -1;
+#endif /* PMIC_ROHM_BD9571 */
 #endif
 	uint32_t loop_count;
 
@@ -82,6 +85,7 @@ int32_t dram_update_boot_status(uint32_t status)
 #if DRAM_BACKUP_GPIO_USE==1
 		mmio_setbits_32(GPIO_OUTDT1, ((uint32_t)1U<<9));
 #else
+#if PMIC_ROHM_BD9571
 		/* Set BKUP_CRTL_OUT=High (BKUP mode cnt register) */
 		i2c_dvfs_ret = rcar_iic_dvfs_recieve(PMIC_SLAVE_ADDR,
 				PMIC_BKUP_MODE_CNT, &bkup_mode_cnt);
@@ -98,7 +102,8 @@ int32_t dram_update_boot_status(uint32_t status)
 				ret = DRAM_UPDATE_STATUS_ERR;
 			}
 		}
-#endif
+#endif /* PMIC_ROHM_BD9571 */
+#endif /* DRAM_BACKUP_GPIO_USE==1 */
 		/* Wait GP1_8(BKUP_TRG)=Low */
 		loop_count = 1000U;
 		while (0U < loop_count) {
@@ -117,6 +122,6 @@ int32_t dram_update_boot_status(uint32_t status)
 			ret = DRAM_UPDATE_STATUS_ERR;
 		}
 	}
-#endif	/* (PMIC_ON_BOARD==1) */
+#endif /* RCAR_SYSTEM_SUSPEND */
 	return ret;
 }

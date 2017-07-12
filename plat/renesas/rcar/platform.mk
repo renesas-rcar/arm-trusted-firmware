@@ -41,7 +41,9 @@ PLAT_INCLUDES		:=	-Iinclude/common/tbbr				\
 
 PLAT_BL_COMMON_SOURCES	:=	lib/xlat_tables/xlat_tables_common.c		\
 				lib/xlat_tables/aarch64/xlat_tables.c		\
-				plat/common/aarch64/plat_common.c
+				plat/common/aarch64/plat_common.c		\
+				plat/renesas/rcar/drivers/iic_dvfs/iic_dvfs.c
+				
 
 RCAR_GIC_SOURCES	:=	drivers/arm/gic/common/gic_common.c	\
 				drivers/arm/gic/v2/gicv2_main.c		\
@@ -216,15 +218,11 @@ LIFEC_DBSC_PROTECT_ENABLE := 1
 endif
 $(eval $(call add_define,LIFEC_DBSC_PROTECT_ENABLE))
 
-# Process PMIC_ON_BOARD flag
-ifndef PMIC_ON_BOARD
-PMIC_ON_BOARD := 1
+# Process PMIC_ROHM_BD9571 flag
+ifndef PMIC_ROHM_BD9571
+PMIC_ROHM_BD9571 := 1
 endif
-ifeq (${PMIC_ON_BOARD},1)
-BL2_SOURCES		+=	plat/renesas/rcar/drivers/iic_dvfs/iic_dvfs.c
-BL31_SOURCES		+=	plat/renesas/rcar/drivers/iic_dvfs/iic_dvfs.c
-endif
-$(eval $(call add_define,PMIC_ON_BOARD))
+$(eval $(call add_define,PMIC_ROHM_BD9571))
 
 # Process PMIC_LEVEL_MODE flag
 ifndef PMIC_LEVEL_MODE
@@ -241,6 +239,21 @@ ifeq (${RCAR_GEN3_ULCB},1)
  $(eval $(call add_define,BOARD_DEFAULT))
 endif
 $(eval $(call add_define,RCAR_GEN3_ULCB))
+
+# Process RCAR_SYSTEM_SUSPEND flag
+ifndef RCAR_SYSTEM_SUSPEND
+RCAR_SYSTEM_SUSPEND := 1
+endif
+$(eval $(call add_define,RCAR_SYSTEM_SUSPEND))
+
+# SYSTEM_SUSPEND requires power control of PMIC etc.
+# When executing SYSTEM_SUSPEND other than Salvator-X,
+# processing equivalent to that implemented in PMIC_ROHM_BD9571 is necessary.
+ifeq (${RCAR_SYSTEM_SUSPEND},1)
+  ifeq (${PMIC_ROHM_BD9571},0)
+    $(error "Error: When you want RCAR_SYSTEM_SUSPEND to be enable, please also set PMIC_ROHM_BD9571 to enable.")
+  endif
+endif
 
 include plat/renesas/rcar/ddr/ddr.mk
 include plat/renesas/rcar/qos/qos.mk

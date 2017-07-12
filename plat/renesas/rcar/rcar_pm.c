@@ -53,12 +53,8 @@ static void rcar_cpu_pwrdwn_common(void);
 static void rcar_cluster_pwrdwn_common(void);
 static void __dead2 rcar_system_off(void);
 static void __dead2 rcar_system_reset(void);
-
-#if !PMIC_ON_BOARD
-static int32_t cpu_on_check(uint64_t mpidr);
+static int32_t cpu_on_check(uint64_t mpidr) __unused;
 extern int32_t platform_is_primary_cpu(uint64_t mpidr);
-#endif
-
 extern void cpld_reset_cpu(void);
 
 #define	RCAR_GENERIC_TIMER_STACK	(0x300)
@@ -325,9 +321,9 @@ void rcar_affinst_suspend_finish(unsigned int afflvl, unsigned int state)
 		mmio_write_32((uintptr_t)(RCAR_CNTC_BASE+(uint32_t)CNTCR_OFF),
 					(uint32_t)(CNTCR_FCREQ(0)|CNTCR_EN));
 		rcar_pwrc_setup();
-#if PMIC_ON_BOARD
+#if RCAR_SYSTEM_SUSPEND
 		rcar_bl31_init_suspend_to_ram();
-#endif /* PMIC_ON_BOARD */
+#endif /* RCAR_SYSTEM_SUSPEND */
 	}
 
 	rcar_affinst_on_finish(afflvl, state);
@@ -339,7 +335,7 @@ void rcar_affinst_suspend_finish(unsigned int afflvl, unsigned int state)
  ******************************************************************************/
 static void __dead2 rcar_system_off(void)
 {
-#if PMIC_ON_BOARD
+#if PMIC_ROHM_BD9571
 #if PMIC_LEVEL_MODE
 	int32_t error;
 
@@ -365,7 +361,7 @@ static void __dead2 rcar_system_off(void)
 		ERROR("BL3-1:Failed the SYSTEM-RESET.\n");
 	}
 #endif
-#else /* not PMIC_ON_BOARD */
+#else /* PMIC_ROHM_BD9571 */
 	uint64_t my_cpu;
 	int32_t rtn_primary;
 	int32_t rtn_on;
@@ -379,7 +375,7 @@ static void __dead2 rcar_system_off(void)
 	} else {
 		panic();
 	}
-#endif
+#endif /* PMIC_ROHM_BD9571 */
 	wfi();
 	ERROR("RCAR System Off: operation not handled.\n");
 	panic();
@@ -387,7 +383,7 @@ static void __dead2 rcar_system_off(void)
 
 static void __dead2 rcar_system_reset(void)
 {
-#if PMIC_ON_BOARD
+#if PMIC_ROHM_BD9571
 #if PMIC_LEVEL_MODE
 	int32_t error;
 
@@ -406,15 +402,14 @@ static void __dead2 rcar_system_reset(void)
 		cpld_reset_cpu();
 	#endif
 #endif
-#else /* not PMIC_ON_BOARD */
+#else /* PMIC_ROHM_BD9571 */
 	rcar_pwrc_system_reset();
-#endif
+#endif /* PMIC_ROHM_BD9571 */
 	wfi();
 	ERROR("RCAR System Reset: operation not handled.\n");
 	panic();
 }
 
-#if !PMIC_ON_BOARD
 static int32_t cpu_on_check(uint64_t mpidr)
 {
 	uint64_t i;
@@ -451,7 +446,6 @@ static int32_t cpu_on_check(uint64_t mpidr)
 	return (rtn);
 
 }
-#endif
 
 /*******************************************************************************
  * RCAR handler called to check the validity of the power state parameter.
@@ -485,13 +479,13 @@ int rcar_validate_power_state(unsigned int power_state)
 
 	return PSCI_E_SUCCESS;
 }
-#if PMIC_ON_BOARD
+#if RCAR_SYSTEM_SUSPEND
 unsigned int rcar_get_sys_suspend_power_state(void)
 {
 	return psci_make_powerstate(0, PSTATE_TYPE_POWERDOWN,
 			PLATFORM_MAX_AFFLVL);
 }
-#endif /* PMIC_ON_BOARD */
+#endif /* RCAR_SYSTEM_SUSPEND */
 /*******************************************************************************
  * Export the platform handlers to enable psci to invoke them
  ******************************************************************************/
@@ -505,9 +499,9 @@ static const plat_pm_ops_t rcar_plat_pm_ops = {
 	.system_off = rcar_system_off,
 	.system_reset = rcar_system_reset,
 	.validate_power_state = rcar_validate_power_state,
-#if PMIC_ON_BOARD
+#if RCAR_SYSTEM_SUSPEND
 	.get_sys_suspend_power_state = rcar_get_sys_suspend_power_state
-#endif /* PMIC_ON_BOARD */
+#endif /* RCAR_SYSTEM_SUSPEND */
 };
 
 /*******************************************************************************
@@ -517,9 +511,9 @@ int platform_setup_pm(const plat_pm_ops_t **plat_ops)
 {
 	*plat_ops = &rcar_plat_pm_ops;
 
-#if PMIC_ON_BOARD
+#if RCAR_SYSTEM_SUSPEND
 	rcar_bl31_init_suspend_to_ram();
-#endif /* PMIC_ON_BOARD */
+#endif /* RCAR_SYSTEM_SUSPEND */
 
 	return 0;
 }

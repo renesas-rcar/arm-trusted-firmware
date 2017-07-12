@@ -100,14 +100,12 @@ SECTIONS
 
         __SRAM_COPY_START__ = .;
     } >RAM
-#if PMIC_ON_BOARD
     .system_ram : {
         __system_ram_start__ = .;
         *(.system_ram*)
         *(.rodata)
         __system_ram_end__ = .;
     } >SRAM AT> RAM
-#endif /* PMIC_ON_BOARD */
     . = BL31_BASE;
     . : {
 #endif

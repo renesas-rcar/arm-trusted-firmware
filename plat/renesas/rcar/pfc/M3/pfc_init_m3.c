@@ -826,9 +826,8 @@
 
 /* Realtime module stop control */
 #define	CPG_BASE		(0xE6150000U)
-#define CPG_MSTPSR0		(CPG_BASE + 0x0030U)
-#define CPG_RMSTPCR0		(CPG_BASE + 0x0110U)
-#define RMSTPCR0_RTDMAC		(0x00200000U)
+#define CPG_SCMSTPCR0		(CPG_BASE + 0x0B20U)
+#define SCMSTPCR0_RTDMAC	(0x00200000U)
 
 /* RT-DMAC Registers */
 #define RTDMAC_CH		(0U)		/* choose 0 to 15 */
@@ -870,10 +869,10 @@ static void StartRtDma0_Descriptor(void)
 	reg &= (RCAR_PRODUCT_MASK | RCAR_CUT_MASK);
 	if (reg == (RCAR_PRODUCT_M3_CUT10)) {
 		/* Module stop clear */
-		while((mmio_read_32(CPG_RMSTPCR0) & RMSTPCR0_RTDMAC) != 0U) {
-			reg = mmio_read_32(CPG_RMSTPCR0);
-			reg &= ~RMSTPCR0_RTDMAC;
-			cpg_write(CPG_RMSTPCR0, reg);
+		while((mmio_read_32(CPG_SCMSTPCR0) & SCMSTPCR0_RTDMAC) != 0U) {
+			reg = mmio_read_32(CPG_SCMSTPCR0);
+			reg &= ~SCMSTPCR0_RTDMAC;
+			cpg_write(CPG_SCMSTPCR0, reg);
 		}
 
 		/* Initialize ch0, Reset Descriptor */

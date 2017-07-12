@@ -667,7 +667,7 @@ void bl2_early_platform_setup(meminfo_t *mem_layout)
  ******************************************************************************/
 static uint32_t isDdrBackupMode(void)
 {
-#if (PMIC_ON_BOARD==1)
+#if RCAR_SYSTEM_SUSPEND
 	static uint32_t backupTriggerOnce = 1U;
 	static uint32_t backupTrigger = 0U;
 	if (backupTriggerOnce == 1U) {
@@ -678,9 +678,9 @@ static uint32_t isDdrBackupMode(void)
 		}
 	}
 	return backupTrigger;
-#else	/* (PMIC_ON_BOARD==1) */
+#else	/* RCAR_SYSTEM_SUSPEND */
 	return 0U;	/* Cold boot only */
-#endif	/* (PMIC_ON_BOARD==1) */
+#endif	/* RCAR_SYSTEM_SUSPEND */
 }
 
 /*******************************************************************************

@@ -150,11 +150,11 @@ void execDMA(uintptr_t dst, uint32_t src, uint32_t len)
 	}
 	if (((dst & 0x3FU) != 0U) || ((src & 0x3FU) != 0U) ||
 		((len & 0xC0000000U) != 0U)) {
-		/* dst or src are not 64-bit alignment. */
+		/* dst or src are not 64-byte alignment. */
 		dmalen = 0U;
 		memlen = len;
 	} else {
-		/* dst and src are 64-bit alignment. */
+		/* dst and src are 64-byte alignment. */
 		dmalen = len & 0x3FFFFFC0U;
 		memlen = len & 0x3FU;
 	}

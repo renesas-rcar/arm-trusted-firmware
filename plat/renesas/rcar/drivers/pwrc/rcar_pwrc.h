@@ -73,18 +73,18 @@ void rcar_pwrc_enable_interrupt_wakeup(uint64_t mpidr);
 void rcar_pwrc_disable_interrupt_wakeup(uint64_t mpidr);
 uint32_t rcar_pwrc_status(uint64_t mpidr);
 uint32_t rcar_pwrc_get_cpu_wkr(uint64_t mpidr);
-#if !PMIC_ON_BOARD
+#if !PMIC_ROHM_BD9571
 void rcar_pwrc_system_reset(void);
-#endif
+#endif /* PMIC_ROHM_BD9571 */
 void bl31_secondly_reset(void);
 
-#if PMIC_ON_BOARD
+#if RCAR_SYSTEM_SUSPEND
 /* for Suspend to RAM */
 void rcar_bl31_go_suspend_to_ram(void);
 void rcar_bl31_set_suspend_to_ram(void);
-void rcar_bl31_code_copy_to_system_ram(void);
 void rcar_bl31_init_suspend_to_ram(void);
-#endif /* PMIC_ON_BOARD */
+#endif /* RCAR_SYSTEM_SUSPEND */
+void rcar_bl31_code_copy_to_system_ram(void);
 
 extern uint32_t rcar_bl31_asm_switch_stack_pointer(uintptr_t jump, uintptr_t stack,
                 void *arg);

@@ -79,7 +79,7 @@ int32_t get_board_type(uint32_t *type, uint32_t *rev)
 	};
 
 	if (BOARD_ID_UNKNOWN == g_board_id) {
-#if PMIC_ON_BOARD
+#if PMIC_ROHM_BD9571
 		/* Board ID detection from EEPROM */
 		ret = rcar_iic_dvfs_recieve(SLAVE_ADDR_EEPROM,
 			REG_ADDR_BOARD_ID, &g_board_id);
@@ -91,9 +91,9 @@ int32_t get_board_type(uint32_t *type, uint32_t *rev)
 		} else {
 			/* none */
 		}
-#else
+#else	/* PMIC_ROHM_BD9571 */
 		g_board_id = BOARD_DEFAULT;
-#endif
+#endif	/* PMIC_ROHM_BD9571 */
 	}
 
 	*type = ((uint32_t)g_board_id & BOARD_CODE_MASK) >> BOARD_CODE_SHIFT;

@@ -86,20 +86,22 @@ RCAR_INSTANTIATE_LOCK
 #define	DBSC4_SET_DBCMD_ARG_ALL		(0x00000010U)
 #define	DBSC4_SET_DBCMD_ARG_ENTER	(0x00000000U)
 
+#if PMIC_ROHM_BD9571
 /* PMIC for BD9571MWV-M*/
 #define	PMIC_SLAVE_ADDR			(0x30U)
 #define	PMIC_BKUP_MODE_CNT		(0x20U)
 #define	BIT_BKUP_CTRL_OUT		((uint8_t)(1U << 4))
 
 #define	PMIC_RETRY_MAX			(100U)
+#endif /* PMIC_ROHM_BD9571 */
 
 /* sctlr_el3 M bit (for QAC) */
 #define	SCTLR_EL3_M_BIT			((uint32_t)1U << 0)
 
 /* prototype */
-#if PMIC_ON_BOARD
+#if RCAR_SYSTEM_SUSPEND
 static void rcar_bl31_set_self_refresh(void);
-#endif /* PMIC_ON_BOARD */
+#endif /* RCAR_SYSTEM_SUSPEND */
 static void SCU_power_up(uint64_t mpidr);
 
 uint32_t rcar_pwrc_status(uint64_t mpidr)
@@ -315,12 +317,12 @@ void rcar_pwrc_clusteroff(uint64_t mpidr)
 	rcar_lock_release();
 }
 
-#if !PMIC_ON_BOARD
+#if !PMIC_ROHM_BD9571
 void rcar_pwrc_system_reset(void)
 {
 	mmio_write_32(RCAR_SRESCR, (0x5AA50000U | BIT_SOFTRESET));
 }
-#endif
+#endif /* PMIC_ROHM_BD9571 */
 
 #define	RST_CA53CPU0BARH		(0xE6160080U)
 #define	RST_CA53CPU0BARL		(0xE6160084U)
@@ -351,15 +353,18 @@ void rcar_pwrc_setup(void)
 	rcar_lock_init();
 }
 
-#if PMIC_ON_BOARD
+#if RCAR_SYSTEM_SUSPEND
 void __attribute__ ((section (".system_ram"))) __attribute__ ((noinline)) rcar_bl31_go_suspend_to_ram(void)
 {
+#if PMIC_ROHM_BD9571
 	uint8_t		mode;
 	int32_t		ret = -1;
 	uint32_t	loop;
+#endif /* PMIC_ROHM_BD9571 */
 
 	rcar_bl31_set_self_refresh();	/* Self-Refresh	*/
 
+#if PMIC_ROHM_BD9571
 	/* Set trigger of power down to PMIV		*/
 	for(loop = 0U; (loop < PMIC_RETRY_MAX) && (0 != ret); loop++){
 		ret = rcar_iic_dvfs_recieve(PMIC_SLAVE_ADDR,
@@ -370,6 +375,7 @@ void __attribute__ ((section (".system_ram"))) __attribute__ ((noinline)) rcar_b
 					PMIC_BKUP_MODE_CNT, mode);
 		}
 	}
+#endif /* PMIC_ROHM_BD9571 */
 
 	wfi();
 
@@ -425,20 +431,6 @@ static void __attribute__ ((section (".system_ram")))  rcar_bl31_set_self_refres
 		/* The power except the DDR IO are removed. */
 }
 
-void rcar_bl31_code_copy_to_system_ram(void)
-{
-	(void)memcpy((void *)DEVICE_SRAM_SHADOW_BASE, &__SRAM_COPY_START__,
-			(size_t)((uint64_t)__system_ram_end__ - (uint64_t)__system_ram_start__));
-
-	flush_dcache_range((uint64_t)DEVICE_SRAM_SHADOW_BASE,
-			((uint64_t)__system_ram_end__ - (uint64_t)__system_ram_start__));
-
-	/* Invalidate instruction cache */
-	iciallu();
-	dsb();
-	isb();
-}
-
 void rcar_bl31_set_suspend_to_ram(void)
 {
 	uint32_t sctlr;
@@ -459,10 +451,13 @@ void rcar_bl31_set_suspend_to_ram(void)
 
 void rcar_bl31_init_suspend_to_ram(void)
 {
+#if PMIC_ROHM_BD9571
 	uint8_t		mode;
+#endif /* PMIC_ROHM_BD9571 */
 
 	rcar_bl31_code_copy_to_system_ram();
 
+#if PMIC_ROHM_BD9571
 	if (rcar_iic_dvfs_recieve(PMIC_SLAVE_ADDR, PMIC_BKUP_MODE_CNT, &mode) != 0){
 		panic();
 	}
@@ -470,5 +465,21 @@ void rcar_bl31_init_suspend_to_ram(void)
 	if (rcar_iic_dvfs_send(PMIC_SLAVE_ADDR, PMIC_BKUP_MODE_CNT, mode) != 0){
 		panic();
 	}
+#endif /* PMIC_ROHM_BD9571 */
 }
-#endif /* PMIC_ON_BOARD */
+#endif /* RCAR_SYSTEM_SUSPEND */
+
+
+void rcar_bl31_code_copy_to_system_ram(void)
+{
+	(void)memcpy((void *)DEVICE_SRAM_SHADOW_BASE, &__SRAM_COPY_START__,
+			(size_t)((uint64_t)__system_ram_end__ - (uint64_t)__system_ram_start__));
+
+	flush_dcache_range((uint64_t)DEVICE_SRAM_SHADOW_BASE,
+			((uint64_t)__system_ram_end__ - (uint64_t)__system_ram_start__));
+
+	/* Invalidate instruction cache */
+	iciallu();
+	dsb();
+	isb();
+}

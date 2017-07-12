@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2016, Renesas Electronics Corporation
+ * Copyright (c) 2015-2017, Renesas Electronics Corporation
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -37,30 +37,32 @@
 #include "rcar_def.h"
 
 #if (AVS_SETTING_ENABLE==1)
-#if (PMIC_ON_BOARD==1)
+#if PMIC_ROHM_BD9571
 /* Read PMIC register for debug. 1:enable / 0:disable */
 #define AVS_READ_PMIC_REG_ENABLE	0
 /* The re-try number of times of the AVS setting. */
 #define AVS_RETRY_NUM			(1U)
+#endif	/* PMIC_ROHM_BD9571 */
 
-/* Base address of ADVFS Module registers*/
-#define	ADVFS_BASE			(0xE60A0000U)
-/* Register address in eFuse indicates individual R-Car information */
-#define	ADVFS_KSEN_ADJCNTS		(ADVFS_BASE + 0x013CU)
+/* Base address of Adaptive Voltage Scaling module registers*/
+#define	AVS_BASE			(0xE60A0000U)
+/* Adaptive Dynamic Voltage ADJust Parameter2 registers */
+#define	ADVADJP2			(AVS_BASE + 0x013CU)
 
-/* Mask VOLCOND bit in KSEN_ADJCNTS registers */
-#define	KSEN_ADJCNTS_VOLCOND_MASK	(0x0000000FU)
-#define	VOLCOND_INVALID_VAL		(0x7U)	/* Invalid value */
-#define	VOLCOND_CANCEL_BIT		(0x8U)	/* Cancel bit */
+/* Mask VOLCOND bit in ADVADJP2 registers */
+#define	ADVADJP2_VOLCOND_MASK		(0x000001FFU)	/* VOLCOND[8:0] */
 
+#if PMIC_ROHM_BD9571
 /* Mode Monitor Register */
 #define	RCAR_MODEMR			(0xE6160060U)	/* Mode pin register */
 
 /* I2C for DVFS bit in CPG registers for module standby and software reset*/
 #define CPG_SYS_DVFS_BIT		(0x04000000U)
+#endif	/* PMIC_ROHM_BD9571 */
 /* ADVFS Module bit in CPG registers for module standby and software reset*/
 #define CPG_SYS_ADVFS_BIT		(0x02000000U)
 
+#if PMIC_ROHM_BD9571
 /* Base address of IICDVFS registers*/
 #define	IIC_DVFS_BASE			(0xE60B0000U)
 /* IIC bus data register */
@@ -110,23 +112,34 @@
 #define	ICCH_FREQ_12p5M			(0x03U)	/* for CP Phy 12.5MHz */
 #define	ICCH_FREQ_16p66M		(0x05U)	/* for CP Phy 16.6666MHz */
 
-#define	PMIC_W_SLAVE_ADDRESS		(0x60U)	/* PMIC slave address + (W) */
-#define	PMIC_R_SLAVE_ADDRESS		(0x61U)	/* PMIC slave address + (R) */
-#define	PMIC_DVFS_SETVID		(0x54U)	/* PMIC DVFS SetVID register */
+/* PMIC */
+#define	PMIC_W_SLAVE_ADDRESS		(0x60U)	/* ROHM BD9571 slave address + (W) */
+#define	PMIC_R_SLAVE_ADDRESS		(0x61U)	/* ROHM BD9571 slave address + (R) */
+#define	PMIC_DVFS_SETVID		(0x54U)	/* ROHM BD9571 DVFS SetVID register */
+#endif  /* PMIC_ROHM_BD9571  */
 
 /* Individual information */
 #define EFUSE_AVS0			(0U)
-#define EFUSE_AVS_NUM			(7U)
-static const uint8_t pmic_setvid_reg[EFUSE_AVS_NUM] = {
-		0x53U, /* AVS0 0.83V */
-		0x52U, /* AVS1 0.82V */
-		0x51U, /* AVS2 0.81V */
-		0x50U, /* AVS3 0.80V */
-		0x4FU, /* AVS4 0.79V */
-		0x4EU, /* AVS5 0.78V */
-		0x4DU  /* AVS6 0.77V */
+#define EFUSE_AVS_NUM			(sizeof(init_vol_tbl) / sizeof(init_vol_tbl[0]))
+
+typedef struct {
+	uint32_t	avs;		/* AVS code */
+	uint8_t		vol;		/* Voltage */
+} initial_voltage_t;
+
+static const initial_voltage_t init_vol_tbl[] = {
+	/*      AVS code,	RHOM BD9571 DVFS SetVID register */
+		{0x00U,		0x53U},	/* AVS0, 0.83V */
+		{0x01U,		0x52U},	/* AVS1, 0.82V */
+		{0x02U,		0x51U},	/* AVS2, 0.81V */
+		{0x04U,		0x50U},	/* AVS3, 0.80V */
+		{0x08U,		0x4FU},	/* AVS4, 0.79V */
+		{0x10U,		0x4EU},	/* AVS5, 0.78V */
+		{0x20U,		0x4DU},	/* AVS6, 0.77V */
+		{0x40U,		0x4CU}	/* AVS7, 0.76V */
 };
 
+#if PMIC_ROHM_BD9571
 /* Kind of AVS settings status */
 typedef enum
 {
@@ -156,8 +169,10 @@ typedef enum
 
 static avs_status_t avs_status = avs_status_none;
 static uint32_t avs_retry = 0U;
+#endif  /* PMIC_ROHM_BD9571  */
 static uint32_t efuse_avs = EFUSE_AVS0;
 
+#if PMIC_ROHM_BD9571
 /* prototype */
 static avs_error_t avs_check_error(void);
 static void avs_set_iic_clock(void);
@@ -165,7 +180,7 @@ static void avs_set_iic_clock(void);
 static uint8_t avs_read_pmic_reg(uint8_t addr);
 static void avs_poll(uint8_t bit_pos, uint8_t val);
 #endif
-#endif	/* (PMIC_ON_BOARD==1) */
+#endif	/* PMIC_ROHM_BD9571 */
 #endif	/* (AVS_SETTING_ENABLE==1) */
 
 /*
@@ -174,15 +189,41 @@ static void avs_poll(uint8_t bit_pos, uint8_t val);
 void bl2_avs_init(void)
 {
 #if (AVS_SETTING_ENABLE==1)
-#if (PMIC_ON_BOARD==1)
 	uint32_t val;
 	uint32_t mstp;
 
+#if PMIC_ROHM_BD9571
 	/* Initialize AVS status */
 	avs_status = avs_status_init;
+#endif	/* PMIC_ROHM_BD9571 */
 
 	/* Bit of the module which wants to enable clock supply. */
-	mstp = CPG_SYS_DVFS_BIT | CPG_SYS_ADVFS_BIT;
+	mstp = CPG_SYS_ADVFS_BIT;
+	/* Enables the clock supply to the CPG. */
+	cpg_write(CPG_SMSTPCR9, mmio_read_32(CPG_SMSTPCR9) & (~mstp));
+	/* Is the clock supply to the CPG disabled ? */
+	while((mmio_read_32(CPG_MSTPSR9) & mstp) != 0U) {
+		/* Enables the clock supply to the CPG. */
+		cpg_write(CPG_SMSTPCR9,
+				mmio_read_32(CPG_SMSTPCR9) & (~mstp));
+	}
+
+	/* Read AVS code (Initial values are derived from eFuse) */
+	val = mmio_read_32(ADVADJP2) & ADVADJP2_VOLCOND_MASK;
+
+	for ( efuse_avs = 0U; efuse_avs < EFUSE_AVS_NUM; efuse_avs++) {
+		if (val == init_vol_tbl[efuse_avs].avs) {
+			break;
+		}
+	}
+	
+	if (efuse_avs >= EFUSE_AVS_NUM) {
+		efuse_avs = EFUSE_AVS0;		/* Not applicable */
+	}
+
+#if PMIC_ROHM_BD9571
+	/* Bit of the module which wants to enable clock supply. */
+	mstp = CPG_SYS_DVFS_BIT;
 	/* Enables the clock supply to the CPG. */
 	cpg_write(CPG_SMSTPCR9, mmio_read_32(CPG_SMSTPCR9) & (~mstp));
 	/* Is the clock supply to the CPG disabled ? */
@@ -199,20 +240,10 @@ void bl2_avs_init(void)
 		mmio_write_8(IIC_ICCR, 0x00U);
 	}
 
-	/* Read eFuse indicates individual R-Car information */
-	val = mmio_read_32(ADVFS_KSEN_ADJCNTS) & KSEN_ADJCNTS_VOLCOND_MASK;
-
-	if ((val == VOLCOND_INVALID_VAL)
-			|| ((val & VOLCOND_CANCEL_BIT) == VOLCOND_CANCEL_BIT)) {
-		efuse_avs = EFUSE_AVS0;
-	} else {
-		efuse_avs = val;
-	}
-
 	/* Set next status */
 	avs_status = avs_status_start_condition;
 
-#endif	/* (PMIC_ON_BOARD==1) */
+#endif	/* PMIC_ROHM_BD9571 */
 #endif	/* (AVS_SETTING_ENABLE==1) */
 }
 
@@ -223,7 +254,7 @@ void bl2_avs_init(void)
 void bl2_avs_setting(void)
 {
 #if (AVS_SETTING_ENABLE==1)
-#if (PMIC_ON_BOARD==1)
+#if PMIC_ROHM_BD9571
 	avs_error_t err;
 
 	switch (avs_status) {
@@ -310,7 +341,7 @@ void bl2_avs_setting(void)
 				}
 				/* Write PMIC DVFS_SetVID value */
 				mmio_write_8(IIC_ICDR,
-						pmic_setvid_reg[efuse_avs]);
+					init_vol_tbl[efuse_avs].vol);
 				/* Clear ICSR.WAIT to exit from wait state. */
 				mmio_write_8(IIC_ICSR,
 					mmio_read_8(IIC_ICSR)
@@ -357,7 +388,7 @@ void bl2_avs_setting(void)
 				(mmio_read_8(IIC_ICSR)
 					& (uint8_t)(~ICSR_AL)));
 		/* Transmit a clock pulse */
-		mmio_write_8(IIC_ICDR, pmic_setvid_reg[EFUSE_AVS0]);
+		mmio_write_8(IIC_ICDR, init_vol_tbl[EFUSE_AVS0].vol);
 		/* Set next status */
 		avs_status = avs_status_error_stop;
 		break;
@@ -417,7 +448,7 @@ void bl2_avs_setting(void)
 		panic();
 		break;
 	}
-#endif	/* (PMIC_ON_BOARD==1) */
+#endif	/* PMIC_ROHM_BD9571 */
 #endif	/* (AVS_SETTING_ENABLE==1) */
 }
 
@@ -427,15 +458,15 @@ void bl2_avs_setting(void)
 void bl2_avs_end(void)
 {
 #if (AVS_SETTING_ENABLE==1)
-#if (PMIC_ON_BOARD==1)
 	uint32_t mstp;
 
+#if PMIC_ROHM_BD9571
 	/* While status is not completion, be repeated. */
 	while (avs_status != avs_status_complete) {
 		bl2_avs_setting();
 	}
 	NOTICE("BL2: AVS setting succeeded. DVFS_SetVID=0x%x\n",
-			pmic_setvid_reg[efuse_avs]);
+			init_vol_tbl[efuse_avs].vol);
 
 #if AVS_READ_PMIC_REG_ENABLE == 1
 	{
@@ -448,16 +479,23 @@ void bl2_avs_end(void)
 #endif
 
 	/* Bit of the module which wants to disable clock supply. */
-	mstp = CPG_SYS_DVFS_BIT | CPG_SYS_ADVFS_BIT;
+	mstp = CPG_SYS_DVFS_BIT;
 	/* Disables the supply of clock signal to a module. */
 	cpg_write(CPG_SMSTPCR9,
 			mmio_read_32(CPG_SMSTPCR9) | mstp);
-#endif	/* (PMIC_ON_BOARD==1) */
+#endif  /* PMIC_ROHM_BD9571 */
+
+	/* Bit of the module which wants to disable clock supply. */
+	mstp = CPG_SYS_ADVFS_BIT;
+	/* Disables the supply of clock signal to a module. */
+	cpg_write(CPG_SMSTPCR9,
+			mmio_read_32(CPG_SMSTPCR9) | mstp);
+
 #endif	/* (AVS_SETTING_ENABLE==1) */
 }
 
 #if (AVS_SETTING_ENABLE==1)
-#if (PMIC_ON_BOARD==1)
+#if PMIC_ROHM_BD9571
 /*
  * Check error and judge re-try.
  */
@@ -644,5 +682,5 @@ static void avs_poll(uint8_t bit_pos, uint8_t val)
 	}
 }
 #endif	/* AVS_READ_PMIC_REG_ENABLE */
-#endif	/* (PMIC_ON_BOARD==1) */
+#endif	/* PMIC_ROHM_BD9571 */
 #endif	/* (AVS_SETTING_ENABLE==1) */
