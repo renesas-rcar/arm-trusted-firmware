@@ -66,9 +66,6 @@
 
 
 	.global	bl2_reset
-	.global	bl2_secondly_reset
-	.global	bl2_init_secondly_reset
-	.global	bl2_init_generic_timer
 
 func bl2_reset
     mov x0,  #0

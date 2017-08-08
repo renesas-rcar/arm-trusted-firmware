@@ -123,7 +123,6 @@
 	.globl	console_core_putc
 	.globl	console_getc
 	.globl	console_finalize
-	.globl	micro_wait
 
 	/*
 	 *  The console base is in the data section and not in .bss
@@ -227,7 +226,7 @@ func console_core_init
 	ldrh	w1, [x0, #SCIF_SCSCR]
 	orr	w1, w1, #(SCSCR_TE_EN + SCSCR_RE_EN)	/* TE=1,RE=1 */
 	strh	w1, [x0, #SCIF_SCSCR]
-	mov	x1, #1
+	mov	x0, #1
 
 	ret
 endfunc console_core_init

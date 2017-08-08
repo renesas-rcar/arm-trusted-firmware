@@ -36,17 +36,18 @@
  * Board type
  ************************************************************************/
 #define BOARD_SALVATOR_X		(0x00U)
-#define BOARD_SALVATOR_XS		(0x04U)
 #define BOARD_KRIEK			(0x01U)
 #define BOARD_STARTER_KIT		(0x02U)
+#define BOARD_SALVATOR_XS		(0x04U)
+#define BOARD_STARTER_KIT_PRE		(0x0BU)
+#define BOARD_UNKNOWN			(BOARD_STARTER_KIT_PRE+1U)
 
-#define BOARD_UNKNOWN			(0x1FU)
+#define BOARD_REV_UNKNOWN		(0xFFU)
 
 /************************************************************************
  * Board name
  ************************************************************************/
 extern const char *g_board_tbl[];
-extern const char *g_board_unknown;
 
 /************************************************************************
  * Revisions are expressed in 8 bits.
@@ -56,8 +57,7 @@ extern const char *g_board_unknown;
 #define GET_BOARD_MAJOR(a)	((uint32_t)(a) >> 4U)
 #define GET_BOARD_MINOR(a)	((uint32_t)(a) & 0xFU)
 
-#define GET_BOARD_NAME(a)	((BOARD_UNKNOWN != (a)) ?\
-					g_board_tbl[(a)] : g_board_unknown)
+#define GET_BOARD_NAME(a)	(g_board_tbl[(a)])
 
 int32_t get_board_type(uint32_t *type, uint32_t *rev);
 

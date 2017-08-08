@@ -29,7 +29,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#define RCAR_DDR_VERSION        "rev.0.25"
+#define RCAR_DDR_VERSION        "rev.0.26"
 #define DRAM_CH_CNT		0x04
 #define SLICE_CNT		0x04
 #define CS_CNT			0x02

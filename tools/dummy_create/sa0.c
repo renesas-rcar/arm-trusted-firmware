@@ -31,14 +31,14 @@
 /* SA0 */
 /* 0x00000000 */
 const unsigned int __attribute__ ((section (".sa0_bootrom"))) bootrom_paramA = 0x00000100;
-/* 0x00000080 (New Map)*/
+/* 0x00000080 (Map Type 3 for eMMC Boot)*/
 /* 0x000001D4 */
-const unsigned int __attribute__ ((section (".sa0_bl2cert_addr0a"))) bl2cert_addr1a = 0xE6304000;
+const unsigned int __attribute__ ((section (".sa0_bl2dst_addr3"))) bl2dst_addr3 = 0xE6304000;
 /* 0x000002E4 */
-const unsigned int __attribute__ ((section (".sa0_bl2cert_size0a"))) bl2cert_size2a = 0x00008000;
-/* 0x00000C00 (Old Map)*/
+const unsigned int __attribute__ ((section (".sa0_bl2dst_size3"))) bl2dst_size3 = 0x00008000;
+/* 0x00000C00 (Map Type 1 for HyperFlash/QSPI Flash Boot)*/
 /* 0x00000D54 */
-const unsigned int __attribute__ ((section (".sa0_bl2cert_addr1a"))) bl2cert_addr = 0xE6304000;
+const unsigned int __attribute__ ((section (".sa0_bl2dst_addr1"))) bl2dst_addr1 = 0xE6304000;
 /* 0x00000E64 */
-const unsigned int __attribute__ ((section (".sa0_bl2cert_size1a"))) bl2cert_size = 0x00008000;
+const unsigned int __attribute__ ((section (".sa0_bl2dst_size1"))) bl2dst_size1 = 0x00008000;
 

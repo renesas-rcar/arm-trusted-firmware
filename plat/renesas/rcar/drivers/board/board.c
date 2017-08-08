@@ -55,11 +55,12 @@
  ************************************************************************/
 const char *g_board_tbl[] = {
 	[BOARD_SALVATOR_X]	= "Salvator-X",
-	[BOARD_SALVATOR_XS]	= "Salvator-XS",
 	[BOARD_KRIEK]		= "Kriek",
-	[BOARD_STARTER_KIT]	= "Starter Kit"
+	[BOARD_STARTER_KIT]	= "Starter Kit",
+	[BOARD_SALVATOR_XS]	= "Salvator-XS",
+	[BOARD_STARTER_KIT_PRE]	= "Starter Kit",
+	[BOARD_UNKNOWN]		= "unknown"
 };
-const char *g_board_unknown	= "unknown";
 
 
 int32_t get_board_type(uint32_t *type, uint32_t *rev)
@@ -75,6 +76,8 @@ int32_t get_board_type(uint32_t *type, uint32_t *rev)
 		[BOARD_STARTER_KIT]	= {0x10U, 0xFFU, 0xFFU, 0xFFU,
 					   0xFFU, 0xFFU, 0xFFU, 0xFFU},
 		[BOARD_SALVATOR_XS]	= {0x10U, 0xFFU, 0xFFU, 0xFFU,
+					   0xFFU, 0xFFU, 0xFFU, 0xFFU},
+		[BOARD_STARTER_KIT_PRE]	= {0x10U, 0x10U, 0xFFU, 0xFFU,
 					   0xFFU, 0xFFU, 0xFFU, 0xFFU},
 	};
 

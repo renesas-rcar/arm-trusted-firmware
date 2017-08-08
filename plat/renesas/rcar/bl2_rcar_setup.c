@@ -120,6 +120,10 @@
 #define IPMMU_DS1_BASE		(0xE7740000U)	/* IPMMU-DS1 */
 #define IPMMUDS1_SYSCTRL	(IPMMU_DS1_BASE + 0x0500U)
 
+/* ARMREG registers */
+#define	P_ARMREG_SEC_CTRL	(0xE62711F0U)
+#define	P_ARMREG_SEC_CTRL_PROT	(0x00000001U)
+
 /* MIDR */
 #define MIDR_CA57		(0x0D07U << MIDR_PN_SHIFT)
 #define MIDR_CA53		(0x0D03U << MIDR_PN_SHIFT)
@@ -465,9 +469,10 @@ void bl2_early_platform_setup(meminfo_t *mem_layout)
 	
 	switch (board_type) {
 	case BOARD_SALVATOR_X:
-	case BOARD_SALVATOR_XS:
 	case BOARD_KRIEK:
 	case BOARD_STARTER_KIT:
+	case BOARD_SALVATOR_XS:
+	case BOARD_STARTER_KIT_PRE:
 		/* Do nothing. */
 		break;
 	default:
@@ -475,9 +480,14 @@ void bl2_early_platform_setup(meminfo_t *mem_layout)
 		break;
 	}
 	
-	(void)sprintf(msg, "BL2: Board is %s Rev%d.%d\n",
-		GET_BOARD_NAME(board_type), GET_BOARD_MAJOR(board_rev),
-		GET_BOARD_MINOR(board_rev));
+	if ((board_type == BOARD_UNKNOWN) || (board_rev == BOARD_REV_UNKNOWN)) {
+		(void)sprintf(msg, "BL2: Board is %s Rev---\n",
+			GET_BOARD_NAME(board_type));
+	} else {
+		(void)sprintf(msg, "BL2: Board is %s Rev%d.%d\n",
+			GET_BOARD_NAME(board_type), GET_BOARD_MAJOR(board_rev),
+			GET_BOARD_MINOR(board_rev));
+	}
 	NOTICE("%s", msg);
 
 #if RCAR_LSI != RCAR_AUTO
@@ -703,6 +713,7 @@ void bl2_plat_flush_bl31_params(void)
 	uint32_t val;
 	uint32_t modemr;
 	uint32_t modemr_boot_dev;
+	uint32_t lcs;
 
 	modemr = mmio_read_32(RCAR_MODEMR);
 	modemr_boot_dev = modemr & MODEMR_BOOT_DEV_MASK;
@@ -749,6 +760,18 @@ void bl2_plat_flush_bl31_params(void)
 	/* IPMMU-MM setting for linux */
 	mmio_write_32(IPMMUMM_SYSCTRL, 0xC0000000U);
 	mmio_write_32(IPMMUMM_SYSAUX, 0x01000000U);
+
+	val = ROM_GetLcs(&lcs);
+	if (val != 0U) {
+		ERROR("BL2: Failed to get the LCS. (%d)\n", val);
+		panic();
+	}
+	if (lcs == LCS_SE) {
+		/* ARMREG setting */
+		mmio_write_32(P_ARMREG_SEC_CTRL, 
+			mmio_read_32(P_ARMREG_SEC_CTRL) & 
+				~((uint32_t)P_ARMREG_SEC_CTRL_PROT));
+	}
 
 	/* disable the System WDT, FIQ and GIC	*/
 	bl2_swdt_release();

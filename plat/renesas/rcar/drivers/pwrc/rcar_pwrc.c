@@ -302,19 +302,6 @@ void rcar_pwrc_disable_interrupt_wakeup(uint64_t mpidr)
 
 void rcar_pwrc_clusteroff(uint64_t mpidr)
 {
-	uint64_t target_core;
-	uintptr_t reg_CPUCMCR;
-
-	rcar_lock_get();
-	target_core = mpidr & ((uint64_t)MPIDR_CLUSTER_MASK);
-	if (target_core == 0U) {
-		reg_CPUCMCR = (uintptr_t)RCAR_CA57CPUCMCR;
-	} else {
-		reg_CPUCMCR = (uintptr_t)RCAR_CA53CPUCMCR;
-	}
-	/* all of the CPUs in the cluster is in the CoreStandby mode	*/
-	mmio_write_32(reg_CPUCMCR, (uint32_t)(STATUS_L2RST | MODE_L2_DOWN));
-	rcar_lock_release();
 }
 
 #if !PMIC_ROHM_BD9571
