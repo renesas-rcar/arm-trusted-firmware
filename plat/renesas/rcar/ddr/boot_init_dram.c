@@ -460,7 +460,7 @@ static uint32_t reg_ddrphy_read ( uint32_t phyno, uint32_t regadd)
 	if(Pll3Mode)
 		loop_max=2;
 	else
-		loop_max=3;
+		loop_max=8;
 
 	mmio_write_32(DBSC_DBPDRGA(phyno), regadd);
 	dsb_sev();
@@ -484,9 +484,9 @@ static void reg_ddrphy_write ( uint32_t phyno, uint32_t regadd, uint32_t regdata
 	uint32_t loop_max;
 
 	if(Pll3Mode)
-		loop_max=1;
+		loop_max=2;
 	else
-		loop_max=3;
+		loop_max=8;
 
 	mmio_write_32(DBSC_DBPDRGA(phyno), regadd);
 	dsb_sev();
@@ -512,9 +512,9 @@ static void reg_ddrphy_write_a ( uint32_t regadd, uint32_t regdata)
 	uint32_t ch;
 
 	if(Pll3Mode)
-		loop_max=1;
+		loop_max=2;
 	else
-		loop_max=3;
+		loop_max=8;
 
 	foreach_vch(ch) {
 		mmio_write_32(DBSC_DBPDRGA(ch), regadd);
@@ -624,7 +624,7 @@ static void ddr_setval_ach_s(uint32_t slice, uint32_t regdef, uint32_t val)
 	if(Pll3Mode)
 		loop_max=2;
 	else
-		loop_max=3;
+		loop_max=8;
 
 	_regdef = ddr_regdef(regdef);
 	adr = DDR_REGDEF_ADR(_regdef)+0x80*slice;

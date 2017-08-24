@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2014, ARM Limited and Contributors. All rights reserved.
- * Copyright (c) 2015-2016, Renesas Electronics Corporation. All rights reserved.
+ * Copyright (c) 2015-2017, Renesas Electronics Corporation. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -71,6 +71,7 @@ RCAR_INSTANTIATE_LOCK
 /* for suspend to ram	*/
 /* DBSC Defines */
 #define	DBSC4_REG_BASE			(0xE6790000U)
+#define	DBSC4_REG_DBSYSCNT0		(DBSC4_REG_BASE + 0x0100U)
 #define	DBSC4_REG_DBACEN		(DBSC4_REG_BASE + 0x0200U)
 #define	DBSC4_REG_DBCMD			(DBSC4_REG_BASE + 0x0208U)
 #define	DBSC4_REG_DBRFEN		(DBSC4_REG_BASE + 0x0204U)
@@ -85,6 +86,8 @@ RCAR_INSTANTIATE_LOCK
 #define	DBSC4_SET_DBCMD_RANK_ALL	(0x00040000U)
 #define	DBSC4_SET_DBCMD_ARG_ALL		(0x00000010U)
 #define	DBSC4_SET_DBCMD_ARG_ENTER	(0x00000000U)
+#define	DBSC4_SET_DBSYSCNT0_WRITE_ENABLE	(0x00001234U)
+#define	DBSC4_SET_DBSYSCNT0_WRITE_DISABLE	(0x00000000U)
 
 #if PMIC_ROHM_BD9571
 /* PMIC for BD9571MWV-M*/
@@ -374,6 +377,14 @@ static void __attribute__ ((section (".system_ram")))  rcar_bl31_set_self_refres
 {
 	uint32_t reg;
 	uint32_t i;
+	uint32_t lsi_product = mmio_read_32((uintptr_t)RCAR_PRR);
+	uint32_t lsi_cut = lsi_product & RCAR_CUT_MASK;
+
+	/* Write enable */
+	lsi_product &= RCAR_PRODUCT_MASK;
+	if ((lsi_product == RCAR_PRODUCT_H3) && (RCAR_CUT_ES20 <= lsi_cut)) {
+		mmio_write_32(DBSC4_REG_DBSYSCNT0, DBSC4_SET_DBSYSCNT0_WRITE_ENABLE);
+	}
 
 	/* Set the Self-Refresh mode	*/
 	mmio_write_32(DBSC4_REG_DBACEN, 0U);		/* Set the ACCEN bit to 0 in the DBACEN	*/
@@ -416,6 +427,11 @@ static void __attribute__ ((section (".system_ram")))  rcar_bl31_set_self_refres
 		/* DDR PHY must be entered "deep sleep" mode (details are T.B.D.). */
 		/* MxBKUP is set High Level. */
 		/* The power except the DDR IO are removed. */
+
+	/* Write disable */
+	if ((lsi_product == RCAR_PRODUCT_H3) && (RCAR_CUT_ES20 <= lsi_cut)) {
+		mmio_write_32(DBSC4_REG_DBSYSCNT0, DBSC4_SET_DBSYSCNT0_WRITE_DISABLE);
+	}
 }
 
 void rcar_bl31_set_suspend_to_ram(void)
