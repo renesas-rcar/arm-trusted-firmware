@@ -161,7 +161,7 @@
 #elif IMAGE_BL2
 #define MAX_XLAT_TABLES		U(5)
 #elif IMAGE_BL31
-#define MAX_XLAT_TABLES		U(4)
+#define MAX_XLAT_TABLES		U(5)
 #elif IMAGE_BL32
 #define MAX_XLAT_TABLES		U(3)
 #endif
