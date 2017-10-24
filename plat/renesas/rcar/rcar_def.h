@@ -53,8 +53,10 @@
  */
 #ifndef __LINKER__
   #define MAKE_ULL(x)			x##ull
+  #define MAKE_U(x)			x##u
 #else
   #define MAKE_ULL(x)			x
+  #define MAKE_U(x)			x
 #endif
 
 /*******************************************************************************
@@ -77,7 +79,7 @@
 #define DEVICE_RCAR_BASE	0xE6000000U
 #define DEVICE_RCAR_SIZE	0x00300000U
 
-#define DEVICE_RCAR_BASE2	0xE6360000U
+#define DEVICE_RCAR_BASE2	MAKE_U(0xE6360000)
 #define DEVICE_RCAR_SIZE2	0x19CA0000U
 
 #define DEVICE_SRAM_BASE	0xE6310000
@@ -253,6 +255,7 @@
 #define RCAR_CUT_MASK			(0x000000FFU)
 #define RCAR_PRODUCT_H3			(0x00004F00U)
 #define RCAR_PRODUCT_M3			(0x00005200U)
+#define RCAR_PRODUCT_M3N		(0x00005500U)
 #define RCAR_CUT_ES10			(0x00000000U)
 #define RCAR_CUT_ES11			(0x00000001U)
 #define RCAR_CUT_ES20			(0x00000010U)
@@ -267,6 +270,10 @@
 #define RCAR_PRODUCT_H3_CUT20		(RCAR_PRODUCT_H3 | 0x10U) /* H3 Ver2.0 */
 #define RCAR_PRODUCT_M3_CUT10		(RCAR_PRODUCT_M3 | 0x00U) /* M3 Ver1.0 */
 #define RCAR_PRODUCT_M3_CUT11		(RCAR_PRODUCT_M3 | 0x10U) /* M3 Ver1.1 */
+#define RCAR_CPU_MASK_CA57		(0x80000000U)
+#define RCAR_CPU_MASK_CA53		(0x04000000U)
+#define RCAR_CPU_HAVE_CA57		(0x00000000U)
+#define RCAR_CPU_HAVE_CA53		(0x00000000U)
 
 /*******************************************************************************
  *  RCAR MD pin information

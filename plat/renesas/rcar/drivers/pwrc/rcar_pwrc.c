@@ -101,6 +101,11 @@ RCAR_INSTANTIATE_LOCK
 /* sctlr_el3 M bit (for QAC) */
 #define	SCTLR_EL3_M_BIT			((uint32_t)1U << 0)
 
+
+#define	RCAR_CA53CPU_NUM_MAX		(4U)
+#define	RCAR_CA57CPU_NUM_MAX		(4U)
+
+
 /* prototype */
 #if RCAR_SYSTEM_SUSPEND
 static void rcar_bl31_set_self_refresh(void);
@@ -112,26 +117,34 @@ uint32_t rcar_pwrc_status(uint64_t mpidr)
 	uint32_t rc;
 	uint64_t cpu_no;
 	uint32_t prr_data;
+	uint32_t cluster_type;
 
 	rcar_lock_get();
-	prr_data = mmio_read_32((uintptr_t)RCAR_PRR);
-	cpu_no = mpidr & (uint64_t)MPIDR_CPU_MASK;
-	if ((mpidr & ((uint64_t)MPIDR_CLUSTER_MASK)) != 0U) {
-		/* A53 side				*/
-		if ((prr_data & ((uint32_t)1U << (STATE_CA53_CPU + cpu_no)))
-				== 0U) {
-			rc = 0U;
+	cluster_type = rcar_bl31_get_cluster();
+	if ((RCAR_CLUSTER_A53A57 == cluster_type) || ((mpidr & ((uint64_t)MPIDR_CLUSTER_MASK)) == 0U)) {
+		prr_data = mmio_read_32((uintptr_t)RCAR_PRR);
+		cpu_no = mpidr & (uint64_t)MPIDR_CPU_MASK;
+		cluster_type = rcar_bl31_get_mpidr_cluster(mpidr);
+		if (RCAR_CLUSTER_CA53 == cluster_type) {
+			/* A53 side				*/
+			if ((prr_data & ((uint32_t)1U << (STATE_CA53_CPU + cpu_no)))
+					== 0U) {
+				rc = 0U;
+			} else {
+				rc = RCAR_INVALID;
+			}
 		} else {
-			rc = RCAR_INVALID;
+			/* A57 side				*/
+			if ((prr_data & ((uint32_t)1U << (STATE_CA57_CPU + cpu_no)))
+					== 0U) {
+				rc = 0U;
+			} else {
+				rc = RCAR_INVALID;
+			}
 		}
 	} else {
-		/* A57 side				*/
-		if ((prr_data & ((uint32_t)1U << (STATE_CA57_CPU + cpu_no)))
-				== 0U) {
-			rc = 0U;
-		} else {
-			rc = RCAR_INVALID;
-		}
+		/* The cluster of mpdir is 1 although there is only one CPU. */
+		rc = RCAR_INVALID;
 	}
 	rcar_lock_release();
 
@@ -147,11 +160,13 @@ void rcar_pwrc_cpuon(uint64_t mpidr)
 	uint64_t cpu_no;
 	uint32_t upper_value;
 	uint32_t wup_data;
+	uint32_t cluster_type;
 
 	rcar_lock_get();
 
 	cpu_no = mpidr & (uint64_t)MPIDR_CPU_MASK;
-	if ((mpidr & ((uint64_t)MPIDR_CLUSTER_MASK)) != 0U) {
+	cluster_type = rcar_bl31_get_mpidr_cluster(mpidr);
+	if (RCAR_CLUSTER_CA53 == cluster_type) {
 		/* A53 side				*/
 		res_reg = (uintptr_t)RCAR_CA53RESCNT;
 		on_reg = (uintptr_t)RCAR_CA53WUPCR;
@@ -184,8 +199,10 @@ static void SCU_power_up(uint64_t mpidr)
 	volatile uintptr_t reg_SYSCSR = (volatile uintptr_t)RCAR_SYSCSR;
 	volatile uintptr_t reg_SYSCISR = (volatile uintptr_t)RCAR_SYSCISR;
 	volatile uintptr_t reg_SYSCISCR = (volatile uintptr_t)RCAR_SYSCISCR;
+	uint32_t cluster_type;
 
-	if ((mpidr & ((uint64_t)MPIDR_CLUSTER_MASK)) == 0U) {
+	cluster_type = rcar_bl31_get_mpidr_cluster(mpidr);
+	if (RCAR_CLUSTER_CA57 == cluster_type) {
 		/* CA57-SCU	*/
 		reg_SYSC_bit = (uint32_t)BIT_CA57_SCU;
 		reg_PWRONCR = (uintptr_t)RCAR_PWRONCR5;
@@ -237,10 +254,12 @@ void rcar_pwrc_cpuoff(uint64_t mpidr)
 {
 	uintptr_t off_reg;
 	uint64_t cpu_no;
+	uint32_t cluster_type;
 
 	rcar_lock_get();
 	cpu_no = mpidr & (uint64_t)MPIDR_CPU_MASK;
-	if ((mpidr & ((uint64_t)MPIDR_CLUSTER_MASK)) != 0U) {
+	cluster_type = rcar_bl31_get_mpidr_cluster(mpidr);
+	if (RCAR_CLUSTER_CA53 == cluster_type) {
 		/* A53 side				*/
 		off_reg = (uintptr_t)RCAR_CA53CPU0CR;
 	} else {
@@ -263,10 +282,12 @@ void rcar_pwrc_enable_interrupt_wakeup(uint64_t mpidr)
 	uint64_t cpu_no;
 	uint32_t shift_irq;
 	uint32_t shift_fiq;
+	uint32_t cluster_type;
 
 	rcar_lock_get();
 	cpu_no = mpidr & (uint64_t)MPIDR_CPU_MASK;
-	if ((mpidr & ((uint64_t)MPIDR_CLUSTER_MASK)) != 0U) {
+	cluster_type = rcar_bl31_get_mpidr_cluster(mpidr);
+	if (RCAR_CLUSTER_CA53 == cluster_type) {
 		/* A53 side				*/
 		reg = (uintptr_t)RCAR_WUPMSKCA53;
 	} else {
@@ -286,10 +307,12 @@ void rcar_pwrc_disable_interrupt_wakeup(uint64_t mpidr)
 	uint64_t cpu_no;
 	uint32_t shift_irq;
 	uint32_t shift_fiq;
+	uint32_t cluster_type;
 
 	rcar_lock_get();
 	cpu_no = mpidr & (uint64_t)MPIDR_CPU_MASK;
-	if ((mpidr & ((uint64_t)MPIDR_CLUSTER_MASK)) != 0U) {
+	cluster_type = rcar_bl31_get_mpidr_cluster(mpidr);
+	if (RCAR_CLUSTER_CA53 == cluster_type) {
 		/* A53 side				*/
 		reg = (uintptr_t)RCAR_WUPMSKCA53;
 	} else {
@@ -316,28 +339,44 @@ void rcar_pwrc_system_reset(void)
 
 #define	RST_CA53CPU0BARH		(0xE6160080U)
 #define	RST_CA53CPU0BARL		(0xE6160084U)
+#define	RST_CA57CPU0BARH		(0xE61600C0U)
+#define	RST_CA57CPU0BARL		(0xE61600C4U)
 
 /* Nothing else to do here apart from initializing the lock */
 void rcar_pwrc_setup(void)
 {
-	uint32_t product = mmio_read_32((uintptr_t)RCAR_PRR)
-			& RCAR_PRODUCT_MASK;
-	uintptr_t rst_CA5xCPUxBARH = RST_CA53CPU0BARH;
-	uintptr_t rst_CA5xCPUxBARL = RST_CA53CPU0BARL;
+	uintptr_t rst_CA5xCPUxBARH;
+	uintptr_t rst_CA5xCPUxBARL;
+	uint32_t i;
 	uint32_t loop;
-	uint32_t loop_max = 6U;
+	uint32_t loop_max;
 
-	if (RCAR_PRODUCT_H3 == product) {
-		loop_max = 8U;
-	}
+	const uint32_t cluster_type[PLATFORM_CLUSTER_COUNT] = {
+			RCAR_CLUSTER_CA53,
+			RCAR_CLUSTER_CA57
+	};
+	const uintptr_t registerBARH[PLATFORM_CLUSTER_COUNT] = {
+			RST_CA53CPU0BARH,
+			RST_CA57CPU0BARH
+	};
+	const uintptr_t registerBARL[PLATFORM_CLUSTER_COUNT] = {
+			RST_CA53CPU0BARL,
+			RST_CA57CPU0BARL
+	};
 
-	for (loop = 0U; loop < loop_max; loop ++) {
-		mmio_write_32(rst_CA5xCPUxBARH, 0U);
-		mmio_write_32(rst_CA5xCPUxBARL,
-				(uint32_t)((uint64_t)&bl31_secondly_reset
-					& 0xFFFFFFFFU));
-		rst_CA5xCPUxBARH += 0x10U;
-		rst_CA5xCPUxBARL += 0x10U;
+	for (i = 0U; i < PLATFORM_CLUSTER_COUNT; i ++) {
+		loop_max = rcar_bl31_get_cpu_num(cluster_type[i]);
+		rst_CA5xCPUxBARH = registerBARH[i];
+		rst_CA5xCPUxBARL = registerBARL[i];
+
+		for (loop = 0U; loop < loop_max; loop ++) {
+			mmio_write_32(rst_CA5xCPUxBARH, 0U);
+			mmio_write_32(rst_CA5xCPUxBARL,
+					(uint32_t)((uint64_t)&bl31_secondly_reset
+						& 0xFFFFFFFFU));
+			rst_CA5xCPUxBARH += 0x10U;
+			rst_CA5xCPUxBARL += 0x10U;
+		}
 	}
 
 	rcar_lock_init();
@@ -382,7 +421,8 @@ static void __attribute__ ((section (".system_ram")))  rcar_bl31_set_self_refres
 
 	/* Write enable */
 	lsi_product &= RCAR_PRODUCT_MASK;
-	if ((lsi_product == RCAR_PRODUCT_H3) && (RCAR_CUT_ES20 <= lsi_cut)) {
+	if (((lsi_product != RCAR_PRODUCT_M3) &&
+	      (!((lsi_product == RCAR_PRODUCT_H3) && (lsi_cut < RCAR_CUT_ES20))))) {
 		mmio_write_32(DBSC4_REG_DBSYSCNT0, DBSC4_SET_DBSYSCNT0_WRITE_ENABLE);
 	}
 
@@ -429,7 +469,8 @@ static void __attribute__ ((section (".system_ram")))  rcar_bl31_set_self_refres
 		/* The power except the DDR IO are removed. */
 
 	/* Write disable */
-	if ((lsi_product == RCAR_PRODUCT_H3) && (RCAR_CUT_ES20 <= lsi_cut)) {
+	if (((lsi_product != RCAR_PRODUCT_M3) &&
+	      (!((lsi_product == RCAR_PRODUCT_H3) && (lsi_cut < RCAR_CUT_ES20))))) {
 		mmio_write_32(DBSC4_REG_DBSYSCNT0, DBSC4_SET_DBSYSCNT0_WRITE_DISABLE);
 	}
 }
@@ -485,4 +526,75 @@ void rcar_bl31_code_copy_to_system_ram(void)
 	iciallu();
 	dsb();
 	isb();
+}
+
+uint32_t rcar_bl31_get_cluster(void)
+{
+	uint32_t prr_data;
+	uint32_t cluster_type;
+
+	prr_data = mmio_read_32((uintptr_t)RCAR_PRR);
+
+	/* CA53 CPU */
+	if ((prr_data & ((uint32_t)1U << (STATE_CA53_CPU + RCAR_CA53CPU_NUM_MAX))) == 0U) {
+		cluster_type = RCAR_CLUSTER_CA53;
+		/* CA57 CPU */
+		if ((prr_data & ((uint32_t)1U << (STATE_CA57_CPU + RCAR_CA57CPU_NUM_MAX))) == 0U) {
+			cluster_type = RCAR_CLUSTER_A53A57;
+		}
+	} else {
+		cluster_type = RCAR_CLUSTER_CA57;
+	}
+
+	return cluster_type;
+}
+
+uint32_t rcar_bl31_get_mpidr_cluster(uint64_t mpidr)
+{
+	uint32_t cluster_type;
+
+	cluster_type = rcar_bl31_get_cluster();
+
+	/* check CA53/CA57 */
+	if (RCAR_CLUSTER_A53A57 == cluster_type) {
+		if ((mpidr & ((uint64_t)MPIDR_CLUSTER_MASK)) != 0U) {
+			/* CA53 side */
+			cluster_type = RCAR_CLUSTER_CA53;
+		} else {
+			/* CA57 side */
+			cluster_type = RCAR_CLUSTER_CA57;
+		}
+	}
+
+	return cluster_type;
+}
+
+uint32_t rcar_bl31_get_cpu_num(uint32_t cluster_type)
+{
+	uint32_t num = 0U;
+	uint32_t loop;
+	uint32_t prr_data;
+
+	prr_data = mmio_read_32((uintptr_t)RCAR_PRR);
+
+	/* CA53 CPU */
+	if (((prr_data & ((uint32_t)1U << (STATE_CA53_CPU + RCAR_CA53CPU_NUM_MAX))) == 0U) &&
+	    ((RCAR_CLUSTER_A53A57 == cluster_type) || (RCAR_CLUSTER_CA53 == cluster_type))) {
+		for (loop = 0U; loop < RCAR_CA53CPU_NUM_MAX; loop ++) {
+			if((prr_data & ((uint32_t)1U << (STATE_CA53_CPU + loop))) == 0U) {
+				num++;
+			}
+		}
+	}
+
+	/* CA57 CPU */
+	if (((prr_data & ((uint32_t)1U << (STATE_CA57_CPU + RCAR_CA57CPU_NUM_MAX))) == 0U) &&
+	    ((RCAR_CLUSTER_A53A57 == cluster_type) || (RCAR_CLUSTER_CA57 == cluster_type))) {
+		for (loop = 0U; loop < RCAR_CA57CPU_NUM_MAX; loop ++) {
+			if((prr_data & ((uint32_t)1U << (STATE_CA57_CPU + loop))) == 0U) {
+				num++;
+			}
+		}
+	}
+	return num;
 }

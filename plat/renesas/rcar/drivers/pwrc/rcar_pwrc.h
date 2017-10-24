@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2014, ARM Limited and Contributors. All rights reserved.
- * Copyright (c) 2015-2016, Renesas Electronics Corporation. All rights reserved.
+ * Copyright (c) 2015-2017, Renesas Electronics Corporation. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -60,6 +60,10 @@
 #define	RCAR_INVALID		(0xffffffffU)
 #define PSYSR_INVALID		0xffffffff
 
+#define	RCAR_CLUSTER_A53A57	(0U)
+#define	RCAR_CLUSTER_CA53	(1U)
+#define	RCAR_CLUSTER_CA57	(2U)
+
 #ifndef __ASSEMBLY__
 
 /*******************************************************************************
@@ -85,6 +89,9 @@ void rcar_bl31_set_suspend_to_ram(void);
 void rcar_bl31_init_suspend_to_ram(void);
 #endif /* RCAR_SYSTEM_SUSPEND */
 void rcar_bl31_code_copy_to_system_ram(void);
+uint32_t rcar_bl31_get_cluster(void);
+uint32_t rcar_bl31_get_mpidr_cluster(uint64_t mpidr);
+uint32_t rcar_bl31_get_cpu_num(uint32_t cluster_type);
 
 extern uint32_t rcar_bl31_asm_switch_stack_pointer(uintptr_t jump, uintptr_t stack,
                 void *arg);

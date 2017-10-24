@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2014, ARM Limited and Contributors. All rights reserved.
- * Copyright (c) 2015-2016, Renesas Electronics Corporation. All rights reserved.
+ * Copyright (c) 2015-2017, Renesas Electronics Corporation. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -40,7 +40,11 @@ ENTRY(bl2_entrypoint)
 #endif
 
 MEMORY {
+#if PLAT_rcar
+    RAM (rwx): ORIGIN = BL2_BASE, LENGTH = DEVICE_RCAR_BASE2 - BL2_BASE
+#else
     RAM (rwx): ORIGIN = BL2_BASE, LENGTH = BL2_LIMIT - BL2_BASE
+#endif
 }
 
 
@@ -178,5 +182,9 @@ SECTIONS
         __COHERENT_RAM_END_UNALIGNED__ - __COHERENT_RAM_START__;
 #endif
 
+#if PLAT_rcar
+    ASSERT(__DATA_END__ < BL2_LIMIT, "BL2 image has exceeded its limit of image size.")
+#else
     ASSERT(. <= BL2_LIMIT, "BL2 image has exceeded its limit.")
+#endif
 }

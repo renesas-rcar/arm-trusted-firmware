@@ -1269,19 +1269,19 @@ void pfc_init_h3_v1(void)
 	reg = mmio_read_32(PFC_DRVCTRL14);
 	reg = ((reg & DRVCTRL14_MASK) | DRVCTRL14_SD1_CLK(7)
 				      | DRVCTRL14_SD1_CMD(7)
-				      | DRVCTRL14_SD1_DAT0(7)
-				      | DRVCTRL14_SD1_DAT1(7)
-				      | DRVCTRL14_SD1_DAT2(7)
-				      | DRVCTRL14_SD1_DAT3(7)
-				      | DRVCTRL14_SD2_CLK(7)
-				      | DRVCTRL14_SD2_CMD(7));
+				      | DRVCTRL14_SD1_DAT0(5)
+				      | DRVCTRL14_SD1_DAT1(5)
+				      | DRVCTRL14_SD1_DAT2(5)
+				      | DRVCTRL14_SD1_DAT3(5)
+				      | DRVCTRL14_SD2_CLK(5)
+				      | DRVCTRL14_SD2_CMD(5));
 	pfc_reg_write(PFC_DRVCTRL14, reg);
 	reg = mmio_read_32(PFC_DRVCTRL15);
-	reg = ((reg & DRVCTRL15_MASK) | DRVCTRL15_SD2_DAT0(7)
-				      | DRVCTRL15_SD2_DAT1(7)
-				      | DRVCTRL15_SD2_DAT2(7)
-				      | DRVCTRL15_SD2_DAT3(7)
-				      | DRVCTRL15_SD2_DS(7)
+	reg = ((reg & DRVCTRL15_MASK) | DRVCTRL15_SD2_DAT0(5)
+				      | DRVCTRL15_SD2_DAT1(5)
+				      | DRVCTRL15_SD2_DAT2(5)
+				      | DRVCTRL15_SD2_DAT3(5)
+				      | DRVCTRL15_SD2_DS(5)
 				      | DRVCTRL15_SD3_CLK(2)
 				      | DRVCTRL15_SD3_CMD(2)
 				      | DRVCTRL15_SD3_DAT0(2));

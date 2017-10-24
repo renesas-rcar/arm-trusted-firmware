@@ -100,10 +100,14 @@ static void rcar_cpu_pwrdwn_common(void)
  ******************************************************************************/
 static void rcar_cluster_pwrdwn_common(void)
 {
+	uint32_t cluster_type;
 	uint64_t mpidr = read_mpidr_el1();
 
-	/* Disable coherency if this cluster is to be turned off */
-	rcar_cci_disable();
+	cluster_type = rcar_bl31_get_cluster();
+	if (RCAR_CLUSTER_A53A57 == cluster_type) {
+		/* Disable coherency if this cluster is to be turned off */
+		rcar_cci_disable();
+	}
 
 	/* Program the power controller to turn the cluster off */
 	rcar_pwrc_clusteroff(mpidr);
@@ -270,6 +274,7 @@ void rcar_affinst_suspend(unsigned long sec_entrypoint, unsigned int afflvl,
  ******************************************************************************/
 void rcar_affinst_on_finish(unsigned int afflvl, unsigned int state)
 {
+	uint32_t cluster_type;
 	unsigned long mpidr;
 
 	/* Determine if any platform actions need to be executed. */
@@ -280,8 +285,10 @@ void rcar_affinst_on_finish(unsigned int afflvl, unsigned int state)
 	/* Get the mpidr for this cpu */
 	mpidr = read_mpidr_el1();
 
+	cluster_type = rcar_bl31_get_cluster();
+
 	/* Perform the common cluster specific operations */
-	if (afflvl != MPIDR_AFFLVL0) {
+	if ((afflvl != MPIDR_AFFLVL0) && (RCAR_CLUSTER_A53A57 == cluster_type)) {
 		/* Enable coherency if this cluster was off */
 		rcar_cci_enable();
 	}
@@ -310,10 +317,16 @@ void rcar_affinst_on_finish(unsigned int afflvl, unsigned int state)
  ******************************************************************************/
 void rcar_affinst_suspend_finish(unsigned int afflvl, unsigned int state)
 {
+	uint32_t cluster_type;
+
 	if ((uint32_t)afflvl >= (uint32_t)PLATFORM_MAX_AFFLVL) {
 		plat_arm_gic_driver_init();
 		plat_arm_gic_init();
-		rcar_cci_init();
+
+		cluster_type = rcar_bl31_get_cluster();
+		if (RCAR_CLUSTER_A53A57 == cluster_type) {
+			rcar_cci_init();
+		}
 		/* restore generic timer register */
 		rcar_bl31_restore_generic_timer(rcar_stack_generic_timer);
 		/* start generic timer */
@@ -419,23 +432,26 @@ static int32_t cpu_on_check(uint64_t mpidr)
 	uint32_t status;
 	uint64_t my_cpu;
 	int32_t rtn;
+	uint32_t my_cluster_type;
 
-	const uint64_t cpu_num_in_core[PLATFORM_CLUSTER_COUNT] = {
-			(uint64_t)PLATFORM_CLUSTER0_CORE_COUNT,
-			(uint64_t)PLATFORM_CLUSTER1_CORE_COUNT
+	const uint32_t cluster_type[PLATFORM_CLUSTER_COUNT] = {
+			RCAR_CLUSTER_CA53,
+			RCAR_CLUSTER_CA57
 	};
 	const uintptr_t registerPSTR[PLATFORM_CLUSTER_COUNT] = {
-			RCAR_CA57PSTR,
-			RCAR_CA53PSTR
+			RCAR_CA53PSTR,
+			RCAR_CA57PSTR
 	};
 
+	my_cluster_type = rcar_bl31_get_mpidr_cluster(mpidr);
+
 	rtn = 0;
-	my_cpu = mpidr & ((uint64_t)((MPIDR_CLUSTER_MASK) | (MPIDR_CPU_MASK)));
+	my_cpu = mpidr & ((uint64_t)(MPIDR_CPU_MASK));
 	for (i = 0U; i < ((uint64_t)(PLATFORM_CLUSTER_COUNT)); i++) {
-		cpu_count = cpu_num_in_core[i];
+		cpu_count = rcar_bl31_get_cpu_num(cluster_type[i]);
 		reg_PSTR = registerPSTR[i];
 		for (j = 0U; j < cpu_count; j++) {
-			if (my_cpu != ((i * 0x100U) + j)) {
+			if ((my_cluster_type != cluster_type[i]) || (my_cpu != j)) {
 				status = mmio_read_32(reg_PSTR) >> (j * 4U);
 				if ((status & 0x00000003U) == 0U) {
 					rtn--;

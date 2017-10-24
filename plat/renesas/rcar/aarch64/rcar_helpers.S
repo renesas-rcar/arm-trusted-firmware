@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2014, ARM Limited and Contributors. All rights reserved.
- * Copyright (c) 2015-2016, Renesas Electronics Corporation. All rights reserved.
+ * Copyright (c) 2015-2017, Renesas Electronics Corporation. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -364,7 +364,7 @@ endfunc plat_crash_console_putc
 	 * - Set the L2 Tag RAM latency to 2 (i.e. 3 cycles) for Cortex-A57
 	 * - Set the L2 Data setup latency to 1 (i.e. 1 cycles) for Cortex-A57
 	 * - Set the L2 Data RAM latency to 3 (i.e. 4 cycles) for Cortex-A57
-	 * For R-Car M3:
+	 * For R-Car M3/M3N:
 	 * - Set the L2 Tag RAM latency to 2 (i.e. 3 cycles) for Cortex-A57
 	 * - Set the L2 Data setup latency to 0 (i.e. 0 cycles) for Cortex-A57
 	 * - Set the L2 Data RAM latency to 3 (i.e. 4 cycles) for Cortex-A57
@@ -373,20 +373,20 @@ endfunc plat_crash_console_putc
 	 */
 func plat_reset_handler
 	/* --------------------------------------------------------------------
-	 * Determine whether this code is running on R-Car H3 or R-Car M3.
+	 * Determine whether this code is running on R-Car H3 or R-Car M3/M3N.
 	 * Keep this information in x2.
 	 * --------------------------------------------------------------------
 	 */
 	/*
-	 * On R-Car H3:  x2 := 0
-	 * On R-Car M3:  x2 := 1
+	 * On R-Car H3    :  x2 := 0
+	 * On R-Car M3/M3N:  x2 := 1
 	 */
 	ldr	x0, =0xFFF00044	/* read PRR */
 	ldr	w0, [x0]
 	ubfx	w0, w0, 8, 8
 	cmp	w0, #0x4F	/* H3? */
 	b.eq	H3
-	mov	x2, #1		/* set R-Car M3 */
+	mov	x2, #1		/* set R-Car M3/M3N */
 	b	CHK_A5x
 H3:
 	mov	x2, #0		/* set R-Car H3 */
@@ -408,23 +408,23 @@ A57:
 	 * Cortex-A57 specific settings
 	 * --------------------------------------------------------------------
 	 */
-	mrs	x0, L2CTLR_EL1		/* Get data from L2CTLR_EL1		*/
+	mrs	x0, L2CTLR_EL1		/* Get data from L2CTLR_EL1			*/
 	/*
-	 * On R-Car H3/M3
+	 * On R-Car H3/M3/M3N
 	 *
 	 * L2 Tag RAM latency is bit8-6 of L2CTLR_EL1
 	 * L2 Data RAM setup is bit5 of L2CTLR_EL1
 	 * L2 Data RAM latency is bit2-0 of L2CTLR_EL1
 	 */
-	mov	x1, #0x1e7		/* for clear bit of L2 RAM		*/
-	neg	x1, x1			/* ~(0x1e7) -> x1			*/
-	and	x0, x0, x1		/* clear bit of L2 RAM -> x0		*/
-	orr	x0, x0, #0x2 << 6  	/* L2 Tag RAM latency (3 cycles)	*/
-	cbnz	x2, M3_L2		/* If M3 then L2 Data RAM setup is 0	*/
-	orr	x0, x0, #0x1 << 5  	/* L2 Data RAM setup (1 cycle)		*/
+	mov	x1, #0x1e7		/* for clear bit of L2 RAM			*/
+	neg	x1, x1			/* ~(0x1e7) -> x1				*/
+	and	x0, x0, x1		/* clear bit of L2 RAM -> x0			*/
+	orr	x0, x0, #0x2 << 6  	/* L2 Tag RAM latency (3 cycles)		*/
+	cbnz	x2, M3_L2		/* If M3/M3N then L2 Data RAM setup is 0	*/
+	orr	x0, x0, #0x1 << 5  	/* L2 Data RAM setup (1 cycle)			*/
 M3_L2:
-	orr	x0, x0, #0x3       	/* L2 Data RAM latency (4 cycles)	*/
-	msr     L2CTLR_EL1, x0		/* Store data to L2CTLR_EL1		*/
+	orr	x0, x0, #0x3       	/* L2 Data RAM latency (4 cycles)		*/
+	msr     L2CTLR_EL1, x0		/* Store data to L2CTLR_EL1			*/
 
 apply_l2_ram_latencies:
 

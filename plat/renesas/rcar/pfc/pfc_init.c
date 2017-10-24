@@ -38,6 +38,7 @@
   #include "H3/pfc_init_h3_v1.h"
   #include "H3/pfc_init_h3_v2.h"
   #include "M3/pfc_init_m3.h"
+  #include "M3N/pfc_init_m3n.h"
 #endif
 #if RCAR_LSI == RCAR_H3	/* H3 */
   #include "H3/pfc_init_h3_v1.h"
@@ -46,6 +47,9 @@
 #if RCAR_LSI == RCAR_M3	/* M3 */
   #include "M3/pfc_init_m3.h"
 #endif
+#if RCAR_LSI == RCAR_M3N	/* M3N */
+  #include "M3N/pfc_init_m3n.h"
+#endif
 
  /* Product Register */
 #define PRR			(0xFFF00044U)
@@ -53,6 +57,7 @@
 #define PRR_CUT_MASK		(0x000000FFU)
 #define PRR_PRODUCT_H3		(0x00004F00U)           /* R-Car H3 */
 #define PRR_PRODUCT_M3		(0x00005200U)           /* R-Car M3 */
+#define PRR_PRODUCT_M3N		(0x00005500U)           /* R-Car M3N */
 #define PRR_PRODUCT_10		(0x00U)
 #define PRR_PRODUCT_11		(0x01U)
 #define PRR_PRODUCT_20		(0x10U)
@@ -95,10 +100,13 @@ void pfc_init(void)
 	case RCAR_PRODUCT_M3:
 		pfc_init_m3();
 		break;
+	case RCAR_PRODUCT_M3N:
+		pfc_init_m3n();
+		break;
 	default:
 		PRR_PRODUCT_ERR(reg);
 		break;
-	};
+	}
 
 #elif RCAR_LSI_CUT_COMPAT
 	switch (reg & PRR_PRODUCT_MASK) {
@@ -127,6 +135,13 @@ void pfc_init(void)
 		PRR_PRODUCT_ERR(reg);
 #else
 		pfc_init_m3();
+#endif
+		break;
+	case PRR_PRODUCT_M3N:
+#if RCAR_LSI != RCAR_M3N
+		PRR_PRODUCT_ERR(reg);
+#else
+		pfc_init_m3n();
 #endif
 		break;
 	default:
@@ -165,6 +180,11 @@ void pfc_init(void)
 		PRR_PRODUCT_ERR(reg);
 	}
 	pfc_init_m3();
+ #elif RCAR_LSI == RCAR_M3N	/* M3N */
+	if ((PRR_PRODUCT_M3N) != (reg & PRR_PRODUCT_MASK)) {
+		PRR_PRODUCT_ERR(reg);
+	}
+	pfc_init_m3n();
  #else
   #error "Don't have PFC initialize routine(unknown)."
  #endif

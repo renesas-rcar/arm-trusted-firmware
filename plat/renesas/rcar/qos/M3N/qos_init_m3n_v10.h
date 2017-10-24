@@ -29,46 +29,10 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef QOS_COMMON_H_
-#define QOS_COMMON_H_
+#ifndef QOS_INIT_H_M3N_V10__
+#define QOS_INIT_H_M3N_V10__
 
-#if (RCAR_LSI == RCAR_AUTO) || (RCAR_LSI == RCAR_M3N)
-/* define used for M3N */
-#define SUB_SLOT_CYCLE_M3N		(0x84U)		//132
-#define SL_INIT_SSLOTCLK_M3N		(SUB_SLOT_CYCLE_M3N -1U)
-#define QOSWT_WTSET0_CYCLE_M3N		((SUB_SLOT_CYCLE_M3N * BASE_SUB_SLOT_NUM * 1000U)/OPERATING_FREQ)	//unit:ns
-#endif
+void qos_init_m3n_v10(void);
 
-#define OPERATING_FREQ			(400U)		//MHz
-#define BASE_SUB_SLOT_NUM		(0x6U)
-#define SUB_SLOT_CYCLE			(0x7EU)		//126
 
-#define QOSWT_WTSET0_CYCLE		((SUB_SLOT_CYCLE * BASE_SUB_SLOT_NUM * 1000U)/OPERATING_FREQ)	//unit:ns
-
-#define SL_INIT_REFFSSLOT		(0x3U << 24U)
-#define SL_INIT_SLOTSSLOT		((BASE_SUB_SLOT_NUM - 1U) << 16U)
-#define SL_INIT_SSLOTCLK		(SUB_SLOT_CYCLE -1U)
-
-#define ARRAY_SIZE(a)	(sizeof(a) / sizeof((a)[0]))
-
-static inline void io_write_32(uintptr_t addr, uint32_t value)
-{
-	*(volatile uint32_t*)addr = value;
-}
-
-static inline uint32_t io_read_32(uintptr_t addr)
-{
-	return *(volatile uint32_t*)addr;
-}
-
-static inline void io_write_64(uintptr_t addr, uint64_t value)
-{
-	*(volatile uint64_t*)addr = value;
-}
-
-typedef struct {
-	uintptr_t addr;
-	uint64_t value;
-} mstat_slot_t;
-
-#endif /* QOS_COMMON_H_ */
+#endif	/* QOS_INIT_H_M3N_V10__ */

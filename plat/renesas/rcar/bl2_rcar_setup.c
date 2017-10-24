@@ -135,6 +135,9 @@
 #elif RCAR_LSI == RCAR_M3
 #define TARGET_PRODUCT		RCAR_PRODUCT_M3
 #define TARGET_NAME		"R-Car M3"
+#elif RCAR_LSI == RCAR_M3N
+#define TARGET_PRODUCT		RCAR_PRODUCT_M3N
+#define TARGET_NAME		"R-Car M3N"
 #endif
 
 /* for SuspendToRAM */
@@ -384,6 +387,7 @@ void bl2_early_platform_setup(meminfo_t *mem_layout)
 	const char *cpu_ca53        = "CA53";
 	const char *product_h3      = "H3";
 	const char *product_m3      = "M3";
+	const char *product_m3n     = "M3N";
 	const char *lcs_cm          = "CM";
 	const char *lcs_dm          = "DM";
 	const char *lcs_sd          = "SD";
@@ -454,6 +458,9 @@ void bl2_early_platform_setup(meminfo_t *mem_layout)
 			(reg & (RCAR_PRODUCT_MASK | RCAR_CUT_MASK))) {
 			prr_val = 0x00000001U;
 		}
+		break;
+	case RCAR_PRODUCT_M3N:
+		str = product_m3n;
 		break;
 	default:
 		str = unknown;
@@ -622,10 +629,15 @@ void bl2_early_platform_setup(meminfo_t *mem_layout)
 	mmio_write_32(CPG_CPGWPCR, CPGWPCR_PASSWORD);
 
 	/* CA5x debug resource control */
-	mmio_write_32(CPG_CA57DBGRCR,
-			DBGCPUPREN | mmio_read_32(CPG_CA57DBGRCR));
-	mmio_write_32(CPG_CA53DBGRCR,
-			DBGCPUPREN | mmio_read_32(CPG_CA53DBGRCR));
+	reg = mmio_read_32(RCAR_PRR);
+	if ((reg & RCAR_CPU_MASK_CA57) == RCAR_CPU_HAVE_CA57 ) {
+		mmio_write_32(CPG_CA57DBGRCR,
+				DBGCPUPREN | mmio_read_32(CPG_CA57DBGRCR));
+	}
+	if ((reg & RCAR_CPU_MASK_CA53) == RCAR_CPU_HAVE_CA53 ) {
+		mmio_write_32(CPG_CA53DBGRCR,
+				DBGCPUPREN | mmio_read_32(CPG_CA53DBGRCR));
+	}
 
 	/* STA restriction check for R-Car H3 WS1.0 */
 	reg = mmio_read_32(RCAR_PRR) & (RCAR_PRODUCT_MASK | RCAR_CUT_MASK);

@@ -59,7 +59,6 @@
 #define	SCIF_SCLSR		(0x24)		/* Line status register */
 #define	SCIF_DL			(0x30)		/* Frequency division register */
 #define	SCIF_CKS		(0x34)		/* Clock Select register */
-#define	SCIF_SCSMRIR		(0x40)		/* Serial mode register */
 
 
 #define	SCSMR_CA_MASK		(1 << 7)
@@ -171,8 +170,6 @@ func console_core_init
 	str	w1, [x0, #CPG_SMSTPCR3]
 
 	ldr	x0, =SCIF2_BASE
-	mov	w1, #0
-	strh	w1, [x0, #SCIF_SCSMRIR]
 	/* Clear bits TE and RE in SCSCR to 0 */
 	mov	w1, #(SCSCR_TE_DIS + SCSCR_RE_DIS)	/* TE=0,RE=0 */
 	strh	w1, [x0, #SCIF_SCSCR]
