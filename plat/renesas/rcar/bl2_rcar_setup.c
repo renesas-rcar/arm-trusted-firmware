@@ -865,6 +865,9 @@ void bl2_plat_set_bl33_ep_info(image_info_t *image,
 {
 	SET_SECURITY_STATE(bl33_ep_info->h.attr, NON_SECURE);
 	bl33_ep_info->spsr = rcar_get_spsr_for_bl33_entry();
+#ifdef RCAR_BL33_ARG0
+	bl33_ep_info->args.arg0 = RCAR_BL33_ARG0;
+#endif
 }
 
 

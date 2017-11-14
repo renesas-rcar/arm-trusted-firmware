@@ -270,6 +270,11 @@ ifeq (${RCAR_SYSTEM_SUSPEND},1)
   endif
 endif
 
+# Process RCAR_BL33_ARG0 flag
+ifdef RCAR_BL33_ARG0
+$(eval $(call add_define,RCAR_BL33_ARG0))
+endif
+
 include plat/renesas/rcar/ddr/ddr.mk
 include plat/renesas/rcar/qos/qos.mk
 include plat/renesas/rcar/pfc/pfc.mk

@@ -94,10 +94,8 @@ void qos_init(void)
 			qos_init_h3_v11();
 			break;
 		case PRR_PRODUCT_20:
-			qos_init_h3_v20();
-			break;
 		default:
-			PRR_CUT_ERR(reg);
+			qos_init_h3_v20();
 			break;
 		}
  #else
@@ -111,10 +109,8 @@ void qos_init(void)
 			qos_init_m3_v10();
 			break;
 		case PRR_PRODUCT_20: /* M3 Cut 11 */
-			qos_init_m3_v11();
-			break;
 		default:
-			PRR_CUT_ERR(reg);
+			qos_init_m3_v11();
 			break;
 		}
  #else
@@ -125,10 +121,8 @@ void qos_init(void)
  #if (RCAR_LSI == RCAR_AUTO) || (RCAR_LSI == RCAR_M3N)
 		switch (reg & PRR_CUT_MASK) {
 		case PRR_PRODUCT_10:
-			qos_init_m3n_v10();
-			break;
 		default:
-			PRR_CUT_ERR(reg);
+			qos_init_m3n_v10();
 			break;
 		}
  #else
@@ -155,15 +149,13 @@ void qos_init(void)
 		PRR_PRODUCT_ERR(reg);
 	}
 	qos_init_h3_v11();
-  #elif RCAR_LSI_CUT == RCAR_CUT_20
-	/* H3 Cut 20 */
-	if ((PRR_PRODUCT_H3 | PRR_PRODUCT_20)
-			!= (reg & (PRR_PRODUCT_MASK | PRR_CUT_MASK))) {
+  #else
+	/* H3 Cut 20 or later */
+	if ((PRR_PRODUCT_H3)
+			!= (reg & (PRR_PRODUCT_MASK))) {
 		PRR_PRODUCT_ERR(reg);
 	}
 	qos_init_h3_v20();
-  #else
-   #error "Don't have QoS initialize routine(H3)."
   #endif
  #elif RCAR_LSI == RCAR_M3	/* M3 */
   #if RCAR_LSI_CUT == RCAR_CUT_10
@@ -173,27 +165,21 @@ void qos_init(void)
 		PRR_PRODUCT_ERR(reg);
 	}
 	qos_init_m3_v10();
-  #elif RCAR_LSI_CUT == RCAR_CUT_11
-	/* M3 Cut 11 */
-	if ((PRR_PRODUCT_M3 | PRR_PRODUCT_20)
-			!= (reg & (PRR_PRODUCT_MASK | PRR_CUT_MASK))) {
+  #else
+	/* M3 Cut 11 or later */
+	if ((PRR_PRODUCT_M3)
+			!= (reg & (PRR_PRODUCT_MASK))) {
 		PRR_PRODUCT_ERR(reg);
 	}
 	qos_init_m3_v11();
-  #else
-   #error "Don't have QoS initialize routine(M3)."
   #endif
  #elif RCAR_LSI == RCAR_M3N	/* M3N */
-  #if RCAR_LSI_CUT == RCAR_CUT_10
-	/* M3N Cut 10 */
-	if ((PRR_PRODUCT_M3N | PRR_PRODUCT_10)
-			!= (reg & (PRR_PRODUCT_MASK | PRR_CUT_MASK))) {
+	/* M3N Cut 10 or later */
+	if ((PRR_PRODUCT_M3N)
+			!= (reg & (PRR_PRODUCT_MASK))) {
 		PRR_PRODUCT_ERR(reg);
 	}
 	qos_init_m3n_v10();
-  #else
-   #error "Don't have QoS initialize routine(M3N)."
-  #endif
  #else
   #error "Don't have QoS initialize routine(Unknown chip)."
  #endif
