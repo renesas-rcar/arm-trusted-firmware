@@ -1,31 +1,7 @@
 /*
- * Copyright (c) 2015, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2015-2017, ARM Limited and Contributors. All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- * Redistributions of source code must retain the above copyright notice, this
- * list of conditions and the following disclaimer.
- *
- * Redistributions in binary form must reproduce the above copyright notice,
- * this list of conditions and the following disclaimer in the documentation
- * and/or other materials provided with the distribution.
- *
- * Neither the name of ARM nor the names of its contributors may be used
- * to endorse or promote products derived from this software without specific
- * prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 
 #include <arch_helpers.h>
@@ -90,6 +66,22 @@ extern void *__PERCPU_BAKERY_LOCK_SIZE__;
 #define read_cache_op(addr, cached)	if (cached) \
 					    dccivac((uintptr_t)addr)
 
+/* Helper function to check if the lock is acquired */
+static inline int is_lock_acquired(const bakery_info_t *my_bakery_info,
+							int is_cached)
+{
+	/*
+	 * Even though lock data is updated only by the owning cpu and
+	 * appropriate cache maintenance operations are performed,
+	 * if the previous update was done when the cpu was not participating
+	 * in coherency, then there is a chance that cache maintenance
+	 * operations were not propagated to all the caches in the system.
+	 * Hence do a `read_cache_op()` prior to read.
+	 */
+	read_cache_op(my_bakery_info, is_cached);
+	return !!(bakery_ticket_number(my_bakery_info->lock_data));
+}
+
 static unsigned int bakery_get_ticket(bakery_lock_t *lock,
 						unsigned int me, int is_cached)
 {
@@ -104,12 +96,8 @@ static unsigned int bakery_get_ticket(bakery_lock_t *lock,
 	my_bakery_info = get_bakery_info(me, lock);
 	assert(my_bakery_info);
 
-	/*
-	 * Prevent recursive acquisition.
-	 * Since lock data is written to and cleaned by the owning cpu, it
-	 * doesn't require any cache operations prior to reading the lock data.
-	 */
-	assert(!bakery_ticket_number(my_bakery_info->lock_data));
+	/* Prevent recursive acquisition.*/
+	assert(!is_lock_acquired(my_bakery_info, is_cached));
 
 	/*
 	 * Tell other contenders that we are through the bakery doorway i.e.
@@ -166,8 +154,11 @@ void bakery_lock_get(bakery_lock_t *lock)
 	unsigned int their_bakery_data;
 
 	me = plat_my_core_pos();
-
+#ifdef AARCH32
+	is_cached = read_sctlr() & SCTLR_C_BIT;
+#else
 	is_cached = read_sctlr_el3() & SCTLR_C_BIT;
+#endif
 
 	/* Get a ticket */
 	my_ticket = bakery_get_ticket(lock, me, is_cached);
@@ -219,10 +210,15 @@ void bakery_lock_get(bakery_lock_t *lock)
 void bakery_lock_release(bakery_lock_t *lock)
 {
 	bakery_info_t *my_bakery_info;
+#ifdef AARCH32
+	unsigned int is_cached = read_sctlr() & SCTLR_C_BIT;
+#else
 	unsigned int is_cached = read_sctlr_el3() & SCTLR_C_BIT;
+#endif
 
 	my_bakery_info = get_bakery_info(plat_my_core_pos(), lock);
-	assert(bakery_ticket_number(my_bakery_info->lock_data));
+
+	assert(is_lock_acquired(my_bakery_info, is_cached));
 
 	my_bakery_info->lock_data = 0;
 	write_cache_op(my_bakery_info, is_cached);

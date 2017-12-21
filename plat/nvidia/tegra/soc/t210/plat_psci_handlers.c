@@ -1,31 +1,7 @@
 /*
- * Copyright (c) 2015, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2015-2016, ARM Limited and Contributors. All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- * Redistributions of source code must retain the above copyright notice, this
- * list of conditions and the following disclaimer.
- *
- * Redistributions in binary form must reproduce the above copyright notice,
- * this list of conditions and the following disclaimer in the documentation
- * and/or other materials provided with the distribution.
- *
- * Neither the name of ARM nor the names of its contributors may be used
- * to endorse or promote products derived from this software without specific
- * prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 
 #include <arch_helpers.h>
@@ -58,29 +34,7 @@ static int cpu_powergate_mask[PLATFORM_MAX_CPUS_PER_CLUSTER];
 int32_t tegra_soc_validate_power_state(unsigned int power_state,
 					psci_power_state_t *req_state)
 {
-	int pwr_lvl = psci_get_pstate_pwrlvl(power_state);
 	int state_id = psci_get_pstate_id(power_state);
-
-	if (pwr_lvl > PLAT_MAX_PWR_LVL) {
-		ERROR("%s: unsupported power_state (0x%x)\n", __func__,
-			power_state);
-		return PSCI_E_INVALID_PARAMS;
-	}
-
-	/* Sanity check the requested afflvl */
-	if (psci_get_pstate_type(power_state) == PSTATE_TYPE_STANDBY) {
-		/*
-		 * It's possible to enter standby only on affinity level 0 i.e.
-		 * a cpu on Tegra. Ignore any other affinity level.
-		 */
-		if (pwr_lvl != MPIDR_AFFLVL0)
-			return PSCI_E_INVALID_PARAMS;
-
-		/* power domain in standby state */
-		req_state->pwr_domain_state[pwr_lvl] = PLAT_MAX_RET_STATE;
-
-		return PSCI_E_SUCCESS;
-	}
 
 	/* Sanity check the requested state id */
 	switch (state_id) {
@@ -88,9 +42,6 @@ int32_t tegra_soc_validate_power_state(unsigned int power_state,
 		/*
 		 * Core powerdown request only for afflvl 0
 		 */
-		if (pwr_lvl != MPIDR_AFFLVL0)
-			goto error;
-
 		req_state->pwr_domain_state[MPIDR_AFFLVL0] = state_id & 0xff;
 
 		break;
@@ -100,11 +51,8 @@ int32_t tegra_soc_validate_power_state(unsigned int power_state,
 		/*
 		 * Cluster powerdown/idle request only for afflvl 1
 		 */
-		if (pwr_lvl != MPIDR_AFFLVL1)
-			goto error;
-
 		req_state->pwr_domain_state[MPIDR_AFFLVL1] = state_id;
-		req_state->pwr_domain_state[MPIDR_AFFLVL0] = PLAT_MAX_OFF_STATE;
+		req_state->pwr_domain_state[MPIDR_AFFLVL0] = state_id;
 
 		break;
 
@@ -112,10 +60,7 @@ int32_t tegra_soc_validate_power_state(unsigned int power_state,
 		/*
 		 * System powerdown request only for afflvl 2
 		 */
-		if (pwr_lvl != PLAT_MAX_PWR_LVL)
-			goto error;
-
-		for (int i = MPIDR_AFFLVL0; i < PLAT_MAX_PWR_LVL; i++)
+		for (uint32_t i = MPIDR_AFFLVL0; i < PLAT_MAX_PWR_LVL; i++)
 			req_state->pwr_domain_state[i] = PLAT_MAX_OFF_STATE;
 
 		req_state->pwr_domain_state[PLAT_MAX_PWR_LVL] =
@@ -129,10 +74,39 @@ int32_t tegra_soc_validate_power_state(unsigned int power_state,
 	}
 
 	return PSCI_E_SUCCESS;
+}
 
-error:
-	ERROR("%s: unsupported state id (%d)\n", __func__, state_id);
-	return PSCI_E_INVALID_PARAMS;
+/*******************************************************************************
+ * Platform handler to calculate the proper target power level at the
+ * specified affinity level
+ ******************************************************************************/
+plat_local_state_t tegra_soc_get_target_pwr_state(unsigned int lvl,
+					     const plat_local_state_t *states,
+					     unsigned int ncpu)
+{
+	plat_local_state_t target = *states;
+	int cpu = plat_my_core_pos();
+	int core_pos = read_mpidr() & MPIDR_CPU_MASK;
+
+	/* get the power state at this level */
+	if (lvl == MPIDR_AFFLVL1)
+		target = *(states + core_pos);
+	if (lvl == MPIDR_AFFLVL2)
+		target = *(states + cpu);
+
+	/* Cluster idle/power-down */
+	if ((lvl == MPIDR_AFFLVL1) && ((target == PSTATE_ID_CLUSTER_IDLE) ||
+	    (target == PSTATE_ID_CLUSTER_POWERDN))) {
+		return target;
+	}
+
+	/* System Suspend */
+	if (((lvl == MPIDR_AFFLVL2) || (lvl == MPIDR_AFFLVL1)) &&
+	    (target == PSTATE_ID_SOC_POWERDN))
+		return PSTATE_ID_SOC_POWERDN;
+
+	/* default state */
+	return PSCI_LOCAL_STATE_RUN;
 }
 
 int tegra_soc_pwr_domain_suspend(const psci_power_state_t *target_state)
@@ -146,22 +120,24 @@ int tegra_soc_pwr_domain_suspend(const psci_power_state_t *target_state)
 
 	if (stateid_afflvl2 == PSTATE_ID_SOC_POWERDN) {
 
-		assert(stateid_afflvl0 == PLAT_MAX_OFF_STATE);
-		assert(stateid_afflvl1 == PLAT_MAX_OFF_STATE);
+		assert((stateid_afflvl0 == PLAT_MAX_OFF_STATE) ||
+		       (stateid_afflvl0 == PSTATE_ID_SOC_POWERDN));
+		assert((stateid_afflvl1 == PLAT_MAX_OFF_STATE) ||
+		       (stateid_afflvl1 == PSTATE_ID_SOC_POWERDN));
 
 		/* suspend the entire soc */
 		tegra_fc_soc_powerdn(mpidr);
 
 	} else if (stateid_afflvl1 == PSTATE_ID_CLUSTER_IDLE) {
 
-		assert(stateid_afflvl0 == PLAT_MAX_OFF_STATE);
+		assert(stateid_afflvl0 == PSTATE_ID_CLUSTER_IDLE);
 
 		/* Prepare for cluster idle */
 		tegra_fc_cluster_idle(mpidr);
 
 	} else if (stateid_afflvl1 == PSTATE_ID_CLUSTER_POWERDN) {
 
-		assert(stateid_afflvl0 == PLAT_MAX_OFF_STATE);
+		assert(stateid_afflvl0 == PSTATE_ID_CLUSTER_POWERDN);
 
 		/* Prepare for cluster powerdn */
 		tegra_fc_cluster_powerdn(mpidr);
@@ -188,6 +164,11 @@ int tegra_soc_pwr_domain_on_finish(const psci_power_state_t *target_state)
 	 */
 	if (target_state->pwr_domain_state[PLAT_MAX_PWR_LVL] ==
 			PLAT_SYS_SUSPEND_STATE_ID) {
+
+		/*
+		 * Lock scratch registers which hold the CPU vectors
+		 */
+		tegra_pmc_lock_cpu_vectors();
 
 		/*
 		 * Enable WRAP to INCR burst type conversions for

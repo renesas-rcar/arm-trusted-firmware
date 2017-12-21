@@ -1,32 +1,8 @@
 #
-# Copyright (c) 2015-2016, ARM Limited and Contributors. All rights reserved.
-# Copyright (c) 2015-2016, Renesas Electronics Corporation. All rights reserved.
+# Copyright (c) 2015-2017, ARM Limited and Contributors. All rights reserved.
+# Copyright (c) 2015-2017, Renesas Electronics Corporation. All rights reserved.
 #
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions are met:
-#
-# Redistributions of source code must retain the above copyright notice, this
-# list of conditions and the following disclaimer.
-#
-# Redistributions in binary form must reproduce the above copyright notice,
-# this list of conditions and the following disclaimer in the documentation
-# and/or other materials provided with the distribution.
-#
-# Neither the name of ARM nor the names of its contributors may be used
-# to endorse or promote products derived from this software without specific
-# prior written permission.
-#
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
-# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
-# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
-# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
-# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
-# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
-# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-# POSSIBILITY OF SUCH DAMAGE.
+# SPDX-License-Identifier: BSD-3-Clause
 #
 
 # Report an error if the eval make function is not available.
@@ -79,7 +55,17 @@ endef
 # Convenience function for verifying option has a boolean value
 # $(eval $(call assert_boolean,FOO)) will assert FOO is 0 or 1
 define assert_boolean
-    $(and $(patsubst 0,,$(value $(1))),$(patsubst 1,,$(value $(1))),$(error $(1) must be boolean))
+    $(if $(filter-out 0 1,$($1)),$(error $1 must be boolean))
+endef
+
+0-9 := 0 1 2 3 4 5 6 7 8 9
+
+# Function to verify that a given option $(1) contains a numeric value
+define assert_numeric
+$(if $($(1)),,$(error $(1) must not be empty))
+$(eval __numeric := $($(1)))
+$(foreach d,$(0-9),$(eval __numeric := $(subst $(d),,$(__numeric))))
+$(if $(__numeric),$(error $(1) must be numeric))
 endef
 
 # IMG_LINKERFILE defines the linker script corresponding to a BL stage
@@ -191,24 +177,7 @@ endef
 # Auxiliary macros to build TF images from sources
 ################################################################################
 
-# If no goal is specified in the command line, .DEFAULT_GOAL is used.
-# .DEFAULT_GOAL is defined in the main Makefile before including this file.
-ifeq ($(MAKECMDGOALS),)
-MAKECMDGOALS := $(.DEFAULT_GOAL)
-endif
-
-define match_goals
-$(strip $(foreach goal,$(1),$(filter $(goal),$(MAKECMDGOALS))))
-endef
-
-# List of rules that involve building things
-BUILD_TARGETS := all bl1 bl2 bl2u bl31 bl32 certificates fip
-
-# Does the list of goals specified on the command line include a build target?
-ifneq ($(call match_goals,${BUILD_TARGETS}),)
-IS_ANYTHING_TO_BUILD := 1
-endif
-
+MAKE_DEP = -Wp,-MD,$(DEP) -MT $$@ -MP
 
 # MAKE_C builds a C source file and generates the dependency file
 #   $(1) = output directory
@@ -217,20 +186,14 @@ endif
 define MAKE_C
 
 $(eval OBJ := $(1)/$(patsubst %.c,%.o,$(notdir $(2))))
-$(eval PREREQUISITES := $(patsubst %.o,%.d,$(OBJ)))
+$(eval DEP := $(patsubst %.o,%.d,$(OBJ)))
 $(eval IMAGE := IMAGE_BL$(call uppercase,$(3)))
 
-$(OBJ): $(2)
+$(OBJ): $(2) | bl$(3)_dirs
 	@echo "  CC      $$<"
-	$$(Q)$$(CC) $$(TF_CFLAGS) $$(CFLAGS) -D$(IMAGE) -c $$< -o $$@
+	$$(Q)$$(CC) $$(TF_CFLAGS) $$(CFLAGS) -D$(IMAGE) $(MAKE_DEP) -c $$< -o $$@
 
-$(PREREQUISITES): $(2) | bl$(3)_dirs
-	@echo "  DEPS    $$@"
-	$$(Q)$$(CC) $$(TF_CFLAGS) $$(CFLAGS) -M -MT $(OBJ) -MF $$@ $$<
-
-ifdef IS_ANYTHING_TO_BUILD
--include $(PREREQUISITES)
-endif
+-include $(DEP)
 
 endef
 
@@ -242,20 +205,14 @@ endef
 define MAKE_S
 
 $(eval OBJ := $(1)/$(patsubst %.S,%.o,$(notdir $(2))))
-$(eval PREREQUISITES := $(patsubst %.o,%.d,$(OBJ)))
+$(eval DEP := $(patsubst %.o,%.d,$(OBJ)))
 $(eval IMAGE := IMAGE_BL$(call uppercase,$(3)))
 
-$(OBJ): $(2)
+$(OBJ): $(2) | bl$(3)_dirs
 	@echo "  AS      $$<"
-	$$(Q)$$(AS) $$(ASFLAGS) -D$(IMAGE) -c $$< -o $$@
+	$$(Q)$$(AS) $$(ASFLAGS) -D$(IMAGE) $(MAKE_DEP) -c $$< -o $$@
 
-$(PREREQUISITES): $(2) | bl$(3)_dirs
-	@echo "  DEPS    $$@"
-	$$(Q)$$(AS) $$(ASFLAGS) -M -MT $(OBJ) -MF $$@ $$<
-
-ifdef IS_ANYTHING_TO_BUILD
--include $(PREREQUISITES)
-endif
+-include $(DEP)
 
 endef
 
@@ -263,21 +220,16 @@ endef
 # MAKE_LD generate the linker script using the C preprocessor
 #   $(1) = output linker script
 #   $(2) = input template
+#   $(3) = BL stage (2, 2u, 30, 31, 32, 33)
 define MAKE_LD
 
-$(eval PREREQUISITES := $(1).d)
+$(eval DEP := $(1).d)
 
-$(1): $(2)
+$(1): $(2) | bl$(3)_dirs
 	@echo "  PP      $$<"
-	$$(Q)$$(AS) $$(ASFLAGS) -P -E -D__LINKER__ -o $$@ $$<
+	$$(Q)$$(CPP) $$(CPPFLAGS) -P -D__ASSEMBLY__ -D__LINKER__ $(MAKE_DEP) -o $$@ $$<
 
-$(PREREQUISITES): $(2) | $(dir ${1})
-	@echo "  DEPS    $$@"
-	$$(Q)$$(AS) $$(ASFLAGS) -M -MT $(1) -MF $$@ $$<
-
-ifdef IS_ANYTHING_TO_BUILD
--include $(PREREQUISITES)
-endif
+-include $(DEP)
 
 endef
 
@@ -340,15 +292,16 @@ define MAKE_BL
         $(eval BL_LINKERFILE := $(BL$(call uppercase,$(1))_LINKERFILE))
         # We use sort only to get a list of unique object directory names.
         # ordering is not relevant but sort removes duplicates.
-        $(eval TEMP_OBJ_DIRS := $(sort $(BUILD_DIR)/ $(dir ${OBJS})))
+        $(eval TEMP_OBJ_DIRS := $(sort $(dir ${OBJS} ${LINKERFILE})))
         # The $(dir ) function leaves a trailing / on the directory names
-        # We append a . then strip /. from each, to remove the trailing / characters
-        # This gives names suitable for use as make rule targets.
-        $(eval OBJ_DIRS   := $(subst /.,,$(addsuffix .,$(TEMP_OBJ_DIRS))))
+        # Rip off the / to match directory names with make rule targets.
+        $(eval OBJ_DIRS   := $(patsubst %/,%,$(TEMP_OBJ_DIRS)))
 
 # Create generators for object directory structure
 
-$(eval $(foreach objd,${OBJ_DIRS},$(call MAKE_PREREQ_DIR,${objd},)))
+$(eval $(call MAKE_PREREQ_DIR,${BUILD_DIR},))
+
+$(eval $(foreach objd,${OBJ_DIRS},$(call MAKE_PREREQ_DIR,${objd},${BUILD_DIR})))
 
 .PHONY : bl${1}_dirs
 
@@ -357,7 +310,7 @@ $(eval $(foreach objd,${OBJ_DIRS},$(call MAKE_PREREQ_DIR,${objd},)))
 bl${1}_dirs: | ${OBJ_DIRS}
 
 $(eval $(call MAKE_OBJS,$(BUILD_DIR),$(SOURCES),$(1)))
-$(eval $(call MAKE_LD,$(LINKERFILE),$(BL_LINKERFILE)))
+$(eval $(call MAKE_LD,$(LINKERFILE),$(BL_LINKERFILE),$(1)))
 
 $(ELF): $(OBJS) $(LINKERFILE) | bl$(1)_dirs
 	@echo "  LD      $$@"
@@ -366,10 +319,10 @@ ifdef MAKE_BUILD_STRINGS
 else
 	@echo 'const char build_message[] = "Built : "$(BUILD_MESSAGE_TIMESTAMP); \
 	       const char version_string[] = "${VERSION_STRING}";' | \
-		$$(CC) $$(TF_CFLAGS) $$(CFLAGS) -xc - -o $(BUILD_DIR)/build_message.o
+		$$(CC) $$(TF_CFLAGS) $$(CFLAGS) -xc -c - -o $(BUILD_DIR)/build_message.o
 endif
-	$$(Q)$$(LD) -o $$@ $$(LDFLAGS) -Map=$(MAPFILE) --script $(LINKERFILE) \
-					$(BUILD_DIR)/build_message.o $(OBJS)
+	$$(Q)$$(LD) -o $$@ $$(TF_LDFLAGS) $$(LDFLAGS) -Map=$(MAPFILE) \
+		--script $(LINKERFILE) $(BUILD_DIR)/build_message.o $(OBJS) $(LDLIBS)
 
 $(DUMP): $(ELF)
 	@echo "  OD      $$@"
@@ -378,9 +331,9 @@ $(DUMP): $(ELF)
 $(BIN): $(ELF)
 	@echo "  BIN     $$@"
 	$$(Q)$$(OC) -O binary $$< $$@
-	@echo
+	@${ECHO_BLANK_LINE}
 	@echo "Built $$@ successfully"
-	@echo
+	@${ECHO_BLANK_LINE}
 
 $(SREC): $(ELF)
 	@echo "  SREC    $$@"

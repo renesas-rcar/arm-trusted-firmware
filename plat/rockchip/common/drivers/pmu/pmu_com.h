@@ -1,32 +1,15 @@
 /*
  * Copyright (c) 2016, ARM Limited and Contributors. All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- * Redistributions of source code must retain the above copyright notice, this
- * list of conditions and the following disclaimer.
- *
- * Redistributions in binary form must reproduce the above copyright notice,
- * this list of conditions and the following disclaimer in the documentation
- * and/or other materials provided with the distribution.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 
 #ifndef __PMU_COM_H__
 #define __PMU_COM_H__
 
+#ifndef CHECK_CPU_WFIE_BASE
+#define CHECK_CPU_WFIE_BASE (PMU_BASE + PMU_CORE_PWR_ST)
+#endif
 /*
  * Use this macro to instantiate lock before it is used in below
  * rockchip_pd_lock_xxx() macros
@@ -110,13 +93,13 @@ static int check_cpu_wfie(uint32_t cpu_id, uint32_t wfie_msk)
 	else
 		wfie_msk <<= (clstl_cpu_wfe + cpu_id);
 
-	while (!(mmio_read_32(PMU_BASE + PMU_CORE_PWR_ST) & wfie_msk) &&
+	while (!(mmio_read_32(CHECK_CPU_WFIE_BASE) & wfie_msk) &&
 	       (loop < CHK_CPU_LOOP)) {
 		udelay(1);
 		loop++;
 	}
 
-	if ((mmio_read_32(PMU_BASE + PMU_CORE_PWR_ST) & wfie_msk) == 0) {
+	if ((mmio_read_32(CHECK_CPU_WFIE_BASE) & wfie_msk) == 0) {
 		WARN("%s: %d, %d, %d, error!\n", __func__,
 		     cluster_id, cpu_id, wfie_msk);
 		return -EINVAL;

@@ -1,31 +1,7 @@
 /*
  * Copyright (c) 2016, ARM Limited and Contributors. All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- * Redistributions of source code must retain the above copyright notice, this
- * list of conditions and the following disclaimer.
- *
- * Redistributions in binary form must reproduce the above copyright notice,
- * this list of conditions and the following disclaimer in the documentation
- * and/or other materials provided with the distribution.
- *
- * Neither the name of ARM nor the names of its contributors may be used
- * to endorse or promote products derived from this software without specific
- * prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 
 #include <arch_helpers.h>
@@ -35,6 +11,7 @@
 #include <debug.h>
 #include <platform.h>
 #include <smcc_helpers.h>
+#include "../bl1_private.h"
 
 /*
  * Following arrays will be used for context management.
@@ -50,13 +27,13 @@ static void *bl1_next_cpu_context_ptr;
 static void *bl1_next_smc_context_ptr;
 
 /* Following functions are used for SMC context handling */
-void *smc_get_ctx(int security_state)
+void *smc_get_ctx(unsigned int security_state)
 {
 	assert(sec_state_is_valid(security_state));
 	return &bl1_smc_context[security_state];
 }
 
-void smc_set_next_ctx(int security_state)
+void smc_set_next_ctx(unsigned int security_state)
 {
 	assert(sec_state_is_valid(security_state));
 	bl1_next_smc_context_ptr = &bl1_smc_context[security_state];
@@ -98,6 +75,7 @@ static void copy_cpu_ctx_to_smc_ctx(const regs_t *cpu_reg_ctx,
 	next_smc_ctx->r3 = read_ctx_reg(cpu_reg_ctx, CTX_GPREG_R3);
 	next_smc_ctx->lr_mon = read_ctx_reg(cpu_reg_ctx, CTX_LR);
 	next_smc_ctx->spsr_mon = read_ctx_reg(cpu_reg_ctx, CTX_SPSR);
+	next_smc_ctx->scr = read_ctx_reg(cpu_reg_ctx, CTX_SCR);
 }
 
 /*******************************************************************************
@@ -163,6 +141,28 @@ void bl1_prepare_next_image(unsigned int image_id)
 	smc_set_next_ctx(security_state);
 	copy_cpu_ctx_to_smc_ctx(get_regs_ctx(cm_get_next_context()),
 		smc_get_next_ctx());
+
+	/*
+	 * If the next image is non-secure, then we need to program the banked
+	 * non secure sctlr. This is not required when the next image is secure
+	 * because in AArch32, we expect the secure world to have the same
+	 * SCTLR settings.
+	 */
+	if (security_state == NON_SECURE) {
+		cpu_context_t *ctx = cm_get_context(security_state);
+		u_register_t ns_sctlr;
+
+		/* Temporarily set the NS bit to access NS SCTLR */
+		write_scr(read_scr() | SCR_NS_BIT);
+		isb();
+
+		ns_sctlr = read_ctx_reg(get_regs_ctx(ctx), CTX_NS_SCTLR);
+		write_sctlr(ns_sctlr);
+		isb();
+
+		write_scr(read_scr() & ~SCR_NS_BIT);
+		isb();
+	}
 
 	/*
 	 * Flush the SMC & CPU context and the (next)pointers,

@@ -1,31 +1,7 @@
 /*
- * Copyright (c) 2016, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2016-2017, ARM Limited and Contributors. All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- * Redistributions of source code must retain the above copyright notice, this
- * list of conditions and the following disclaimer.
- *
- * Redistributions in binary form must reproduce the above copyright notice,
- * this list of conditions and the following disclaimer in the documentation
- * and/or other materials provided with the distribution.
- *
- * Neither the name of ARM nor the names of its contributors may be used
- * to endorse or promote products derived from this software without specific
- * prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 
 #ifndef __ARCH_HELPERS_H__
@@ -33,7 +9,7 @@
 
 #include <arch.h>	/* for additional register definitions */
 #include <stdint.h>
-#include <types.h>
+#include <sys/types.h>
 
 /**********************************************************************
  * Macros which create inline functions to read or write CPU system
@@ -60,8 +36,8 @@ static inline u_register_t read_ ## _name(void)				\
  *  systems for GCC versions < 4.6. Above GCC 4.6, both Little Endian and
  *  Big Endian systems generate the right instruction encoding.
  */
-#if !(__GNUC__ > (4) || __GNUC__ == (4) && __GNUC_MINOR__ >= (6))
-#error "GCC 4.6 or above is required to build AArch32 Trusted Firmware"
+#if !(__clang__ || __GNUC__ > (4) || __GNUC__ == (4) && __GNUC_MINOR__ >= (6))
+#error "clang or GCC 4.6 or above is required to build AArch32 Trusted Firmware"
 #endif
 
 #define _DEFINE_COPROCR_WRITE_FUNC_64(_name, coproc, opc1, CRm)		\
@@ -124,6 +100,28 @@ static inline void write_ ## _name(const u_register_t v)		\
  * Macros to create inline functions for tlbi operations
  *********************************************************************/
 
+#if ERRATA_A57_813419
+/*
+ * Define function for TLBI instruction with type specifier that
+ * implements the workaround for errata 813419 of Cortex-A57
+ */
+#define _DEFINE_TLBIOP_FUNC(_op, coproc, opc1, CRn, CRm, opc2)		\
+static inline void tlbi##_op(void)					\
+{									\
+	u_register_t v = 0;						\
+	__asm__ volatile ("mcr "#coproc","#opc1",%0,"#CRn","#CRm","#opc2 : : "r" (v));\
+	__asm__ volatile ("dsb ish");\
+	__asm__ volatile ("mcr "#coproc","#opc1",%0,"#CRn","#CRm","#opc2 : : "r" (v));\
+}
+
+#define _DEFINE_TLBIOP_PARAM_FUNC(_op, coproc, opc1, CRn, CRm, opc2)	\
+static inline void tlbi##_op(u_register_t v)				\
+{									\
+	__asm__ volatile ("mcr "#coproc","#opc1",%0,"#CRn","#CRm","#opc2 : : "r" (v));\
+	__asm__ volatile ("dsb ish");\
+	__asm__ volatile ("mcr "#coproc","#opc1",%0,"#CRn","#CRm","#opc2 : : "r" (v));\
+}
+#else
 #define _DEFINE_TLBIOP_FUNC(_op, coproc, opc1, CRn, CRm, opc2)		\
 static inline void tlbi##_op(void)					\
 {									\
@@ -136,6 +134,14 @@ static inline void tlbi##_op(u_register_t v)				\
 {									\
 	__asm__ volatile ("mcr "#coproc","#opc1",%0,"#CRn","#CRm","#opc2 : : "r" (v));\
 }
+#endif /* ERRATA_A57_813419 */
+
+#define _DEFINE_BPIOP_FUNC(_op, coproc, opc1, CRn, CRm, opc2)		\
+static inline void bpi##_op(void)					\
+{									\
+	u_register_t v = 0;						\
+	__asm__ volatile ("mcr "#coproc","#opc1",%0,"#CRn","#CRm","#opc2 : : "r" (v));\
+}
 
 /* Define function for simple TLBI operation */
 #define DEFINE_TLBIOP_FUNC(_op, ...)					\
@@ -144,6 +150,10 @@ static inline void tlbi##_op(u_register_t v)				\
 /* Define function for TLBI operation with register parameter */
 #define DEFINE_TLBIOP_PARAM_FUNC(_op, ...)				\
 	_DEFINE_TLBIOP_PARAM_FUNC(_op, __VA_ARGS__)
+
+/* Define function for simple BPI operation */
+#define DEFINE_BPIOP_FUNC(_op, ...)					\
+	_DEFINE_BPIOP_FUNC(_op, __VA_ARGS__)
 
 /**********************************************************************
  * Macros to create inline functions for DC operations
@@ -187,6 +197,9 @@ void flush_dcache_range(uintptr_t addr, size_t size);
 void clean_dcache_range(uintptr_t addr, size_t size);
 void inv_dcache_range(uintptr_t addr, size_t size);
 
+void dcsw_op_louis(u_register_t op_type);
+void dcsw_op_all(u_register_t op_type);
+
 void disable_mmu_secure(void);
 void disable_mmu_icache_secure(void);
 
@@ -195,7 +208,10 @@ DEFINE_SYSOP_FUNC(wfe)
 DEFINE_SYSOP_FUNC(sev)
 DEFINE_SYSOP_TYPE_FUNC(dsb, sy)
 DEFINE_SYSOP_TYPE_FUNC(dmb, sy)
+DEFINE_SYSOP_TYPE_FUNC(dmb, st)
+DEFINE_SYSOP_TYPE_FUNC(dmb, ld)
 DEFINE_SYSOP_TYPE_FUNC(dsb, ish)
+DEFINE_SYSOP_TYPE_FUNC(dsb, ishst)
 DEFINE_SYSOP_TYPE_FUNC(dmb, ish)
 DEFINE_SYSOP_FUNC(isb)
 
@@ -235,6 +251,7 @@ DEFINE_COPROCR_RW_FUNCS_64(vttbr, VTTBR_64)
 DEFINE_COPROCR_RW_FUNCS_64(ttbr1, TTBR1_64)
 DEFINE_COPROCR_RW_FUNCS_64(cntvoff, CNTVOFF_64)
 DEFINE_COPROCR_RW_FUNCS(csselr, CSSELR)
+DEFINE_COPROCR_RW_FUNCS(hstr, HSTR)
 
 DEFINE_COPROCR_RW_FUNCS(icc_sre_el1, ICC_SRE)
 DEFINE_COPROCR_RW_FUNCS(icc_sre_el2, ICC_HSRE)
@@ -249,6 +266,10 @@ DEFINE_COPROCR_RW_FUNCS(icc_iar1_el1, ICC_IAR1)
 DEFINE_COPROCR_RW_FUNCS(icc_eoir0_el1, ICC_EOIR0)
 DEFINE_COPROCR_RW_FUNCS(icc_eoir1_el1, ICC_EOIR1)
 
+DEFINE_COPROCR_RW_FUNCS(hdcr, HDCR)
+DEFINE_COPROCR_RW_FUNCS(cnthp_ctl, CNTHP_CTL)
+DEFINE_COPROCR_READ_FUNC(pmcr, PMCR)
+
 /*
  * TLBI operation prototypes
  */
@@ -256,6 +277,12 @@ DEFINE_TLBIOP_FUNC(all, TLBIALL)
 DEFINE_TLBIOP_FUNC(allis, TLBIALLIS)
 DEFINE_TLBIOP_PARAM_FUNC(mva, TLBIMVA)
 DEFINE_TLBIOP_PARAM_FUNC(mvaa, TLBIMVAA)
+DEFINE_TLBIOP_PARAM_FUNC(mvaais, TLBIMVAAIS)
+
+/*
+ * BPI operation prototypes.
+ */
+DEFINE_BPIOP_FUNC(allis, BPIALLIS)
 
 /*
  * DC operation prototypes

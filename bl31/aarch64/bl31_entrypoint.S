@@ -1,38 +1,16 @@
 /*
- * Copyright (c) 2013-2016, ARM Limited and Contributors. All rights reserved.
- * Copyright (c) 2015-2016, Renesas Electronics Corporation. All rights reserved.
+ * Copyright (c) 2013-2017, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2015-2017, Renesas Electronics Corporation. All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- * Redistributions of source code must retain the above copyright notice, this
- * list of conditions and the following disclaimer.
- *
- * Redistributions in binary form must reproduce the above copyright notice,
- * this list of conditions and the following disclaimer in the documentation
- * and/or other materials provided with the distribution.
- *
- * Neither the name of ARM nor the names of its contributors may be used
- * to endorse or promote products derived from this software without specific
- * prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 
 #include <arch.h>
 #include <bl_common.h>
 #include <el3_common_macros.S>
-#include <xlat_tables.h>
+#include <pmf_asm_macros.S>
+#include <runtime_instr.h>
+#include <xlat_tables_defs.h>
 
 	.globl	bl31_entrypoint
 	.globl	bl31_warm_entrypoint
@@ -59,13 +37,13 @@ func bl31_entrypoint
 	 * bl31_entrypoint() during the cold boot flow, so the cold/warm boot
 	 * and primary/secondary CPU logic should not be executed in this case.
 	 *
-	 * Also, assume that the previous bootloader has already set up the CPU
-	 * endianness and has initialised the memory.
+	 * Also, assume that the previous bootloader has already initialised the
+	 * SCTLR_EL3, including the endianness, and has initialised the memory.
 	 * ---------------------------------------------------------------------
 	 */
 #if PLAT_rcar
 	el3_entrypoint_common					\
-		_set_endian=0					\
+		_init_sctlr=0					\
 		_warm_boot_mailbox=1				\
 		_secondary_cold_boot=1				\
 		_init_memory=1					\
@@ -73,7 +51,7 @@ func bl31_entrypoint
 		_exception_vectors=runtime_exceptions
 #else
 	el3_entrypoint_common					\
-		_set_endian=0					\
+		_init_sctlr=0					\
 		_warm_boot_mailbox=0				\
 		_secondary_cold_boot=0				\
 		_init_memory=0					\
@@ -95,7 +73,7 @@ func bl31_entrypoint
 	 * ---------------------------------------------------------------------
 	 */
 	el3_entrypoint_common					\
-		_set_endian=1					\
+		_init_sctlr=1					\
 		_warm_boot_mailbox=!PROGRAMMABLE_RESET_ADDRESS	\
 		_secondary_cold_boot=!COLD_BOOT_SINGLE_CPU	\
 		_init_memory=1					\
@@ -152,12 +130,24 @@ endfunc bl31_entrypoint
 	 * --------------------------------------------------------------------
 	 */
 func bl31_warm_entrypoint
+#if ENABLE_RUNTIME_INSTRUMENTATION
+
+	/*
+	 * This timestamp update happens with cache off.  The next
+	 * timestamp collection will need to do cache maintenance prior
+	 * to timestamp update.
+	 */
+	pmf_calc_timestamp_addr rt_instr_svc RT_INSTR_EXIT_HW_LOW_PWR
+	mrs	x1, cntpct_el0
+	str	x1, [x0]
+#endif
+
 	/*
 	 * On the warm boot path, most of the EL3 initialisations performed by
 	 * 'el3_entrypoint_common' must be skipped:
 	 *
 	 *  - Only when the platform bypasses the BL1/BL31 entrypoint by
-	 *    programming the reset address do we need to set the CPU endianness.
+	 *    programming the reset address do we need to initialise SCTLR_EL3.
 	 *    In other cases, we assume this has been taken care by the
 	 *    entrypoint code.
 	 *
@@ -170,34 +160,58 @@ func bl31_warm_entrypoint
 	 *    it has been done once and for all on the cold boot path.
 	 */
 	el3_entrypoint_common					\
-		_set_endian=PROGRAMMABLE_RESET_ADDRESS		\
+		_init_sctlr=PROGRAMMABLE_RESET_ADDRESS		\
 		_warm_boot_mailbox=0				\
 		_secondary_cold_boot=0				\
 		_init_memory=0					\
 		_init_c_runtime=0				\
 		_exception_vectors=runtime_exceptions
 
-	/* --------------------------------------------
-	 * Enable the MMU with the DCache disabled. It
-	 * is safe to use stacks allocated in normal
-	 * memory as a result. All memory accesses are
-	 * marked nGnRnE when the MMU is disabled. So
-	 * all the stack writes will make it to memory.
-	 * All memory accesses are marked Non-cacheable
-	 * when the MMU is enabled but D$ is disabled.
-	 * So used stack memory is guaranteed to be
-	 * visible immediately after the MMU is enabled
-	 * Enabling the DCache at the same time as the
-	 * MMU can lead to speculatively fetched and
-	 * possibly stale stack memory being read from
-	 * other caches. This can lead to coherency
-	 * issues.
-	 * --------------------------------------------
+	/*
+	 * We're about to enable MMU and participate in PSCI state coordination.
+	 *
+	 * The PSCI implementation invokes platform routines that enable CPUs to
+	 * participate in coherency. On a system where CPUs are not
+	 * cache-coherent without appropriate platform specific programming,
+	 * having caches enabled until such time might lead to coherency issues
+	 * (resulting from stale data getting speculatively fetched, among
+	 * others). Therefore we keep data caches disabled even after enabling
+	 * the MMU for such platforms.
+	 *
+	 * On systems with hardware-assisted coherency, or on single cluster
+	 * platforms, such platform specific programming is not required to
+	 * enter coherency (as CPUs already are); and there's no reason to have
+	 * caches disabled either.
 	 */
 	mov	x0, #DISABLE_DCACHE
 	bl	bl31_plat_enable_mmu
 
+#if HW_ASSISTED_COHERENCY || WARMBOOT_ENABLE_DCACHE_EARLY
+	mrs	x0, sctlr_el3
+	orr	x0, x0, #SCTLR_C_BIT
+	msr	sctlr_el3, x0
+	isb
+#endif
+
 	bl	psci_warmboot_entrypoint
 
+#if ENABLE_RUNTIME_INSTRUMENTATION
+	pmf_calc_timestamp_addr rt_instr_svc RT_INSTR_EXIT_PSCI
+	mov	x19, x0
+
+	/*
+	 * Invalidate before updating timestamp to ensure previous timestamp
+	 * updates on the same cache line with caches disabled are properly
+	 * seen by the same core. Without the cache invalidate, the core might
+	 * write into a stale cache line.
+	 */
+	mov	x1, #PMF_TS_SIZE
+	mov	x20, x30
+	bl	inv_dcache_range
+	mov	x30, x20
+
+	mrs	x0, cntpct_el0
+	str	x0, [x19]
+#endif
 	b	el3_exit
 endfunc bl31_warm_entrypoint

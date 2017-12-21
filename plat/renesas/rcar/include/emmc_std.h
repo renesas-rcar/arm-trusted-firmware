@@ -1,32 +1,7 @@
 /*
- * Copyright (c) 2015-2016, Renesas Electronics Corporation
- * All rights reserved.
+ * Copyright (c) 2015-2017, Renesas Electronics Corporation. All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- *   - Redistributions of source code must retain the above copyright notice,
- *     this list of conditions and the following disclaimer.
- *
- *   - Redistributions in binary form must reproduce the above copyright
- *     notice, this list of conditions and the following disclaimer in the
- *     documentation and/or other materials provided with the distribution.
- *
- *   - Neither the name of Renesas nor the names of its contributors may be
- *     used to endorse or promote products derived from this software without
- *     specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 
 /**
@@ -72,7 +47,6 @@
  */
 #define EMMC_GET_CID(x,y)               (emmc_bit_field(mmc_drv_obj.cid_data, (x), (y)))
 
-#if 0
 #define EMMC_CID_MID()					(EMMC_GET_CID(127,120))
 #define EMMC_CID_CBX()					(EMMC_GET_CID(113,112))
 #define EMMC_CID_OID()					(EMMC_GET_CID(111,104))
@@ -82,16 +56,12 @@
 #define EMMC_CID_PSN()					(EMMC_GET_CID(47,16))
 #define EMMC_CID_MDT()					(EMMC_GET_CID(15,8))
 #define EMMC_CID_CRC()					(EMMC_GET_CID(7,1))
-#endif
 
 
 /** @brief CSD register Macros
  */
 #define EMMC_GET_CSD(x,y)               (emmc_bit_field(mmc_drv_obj.csd_data, (x), (y)))
-#define EMMC_CSD_SPEC_VARS()            (EMMC_GET_CSD(125,122))
-#define EMMC_CSD_TRAN_SPEED()           (EMMC_GET_CSD(103,96))
 
-#if 0
 #define EMMC_CSD_CSD_STRUCTURE()        (EMMC_GET_CSD(127,126))
 #define EMMC_CSD_SPEC_VARS()            (EMMC_GET_CSD(125,122))
 #define EMMC_CSD_TAAC()                 (EMMC_GET_CSD(119,112))
@@ -125,12 +95,11 @@
 #define EMMC_CSD_FILE_FORMAT()          (EMMC_GET_CSD(11,10))
 #define EMMC_CSD_ECC()                  (EMMC_GET_CSD(9,8))
 #define EMMC_CSD_CRC()                  (EMMC_GET_CSD(7,1))
-#endif
 
 /** @brief for sector access 
  */
 #define EMMC_4B_BOUNDARY_CHECK_MASK         0x00000003  /* 4Bytes boundary check mask */
-#define EMMC_SECTOR_SIZE_SHIFT              9           /* 512 = 2^9 */
+#define EMMC_SECTOR_SIZE_SHIFT              9U          /* 512 = 2^9 */
 #define EMMC_SECTOR_SIZE                    512
 #define EMMC_BLOCK_LENGTH                   512
 #define EMMC_BLOCK_LENGTH_DW                128

@@ -1,31 +1,7 @@
 /*
- * Copyright (c) 2016, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2016-2017, ARM Limited and Contributors. All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- * Redistributions of source code must retain the above copyright notice, this
- * list of conditions and the following disclaimer.
- *
- * Redistributions in binary form must reproduce the above copyright notice,
- * this list of conditions and the following disclaimer in the documentation
- * and/or other materials provided with the distribution.
- *
- * Neither the name of ARM nor the names of its contributors may be used
- * to endorse or promote products derived from this software without specific
- * prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 
 #include <arch.h>
@@ -68,7 +44,7 @@ func bl1_entrypoint
 * ---------------------------------------------------------------------
 */
 	el3_entrypoint_common					\
-		_set_endian=1					\
+		_init_sctlr=1					\
 		_warm_boot_mailbox=!PROGRAMMABLE_RESET_ADDRESS	\
 		_secondary_cold_boot=!COLD_BOOT_SINGLE_CPU	\
 		_init_memory=1					\
@@ -95,9 +71,21 @@ func bl1_entrypoint
 	 */
 
 	/*
-	 * MMU needs to be disabled because both BL1 and BL2 execute
+	 * Get the smc_context for next BL image,
+	 * program the gp/system registers and save it in `r4`.
+	 */
+	bl	smc_get_next_ctx
+	mov	r4, r0
+
+	/* Only turn-off MMU if going to secure world */
+	ldr	r5, [r4, #SMC_CTX_SCR]
+	tst	r5, #SCR_NS_BIT
+	bne	skip_mmu_off
+
+	/*
+	 * MMU needs to be disabled because both BL1 and BL2/BL2U execute
 	 * in PL1, and therefore share the same address space.
-	 * BL2 will initialize the address space according to its
+	 * BL2/BL2U will initialize the address space according to its
 	 * own requirement.
 	 */
 	bl	disable_mmu_icache_secure
@@ -105,20 +93,8 @@ func bl1_entrypoint
 	dsb	sy
 	isb
 
-	/* Get the cpu_context for next BL image */
-	bl	cm_get_next_context
-
-	/* Restore the SCR */
-	ldr	r2, [r0, #CTX_REGS_OFFSET + CTX_SCR]
-	stcopr	r2, SCR
-	isb
-
-	/*
-	 * Get the smc_context for next BL image,
-	 * program the gp/system registers and exit
-	 * secure monitor mode
-	 */
-	bl	smc_get_next_ctx
-	smcc_restore_gp_mode_regs
-	eret
+skip_mmu_off:
+	/* Restore smc_context from `r4` and exit secure monitor mode. */
+	mov	r0, r4
+	monitor_exit
 endfunc bl1_entrypoint

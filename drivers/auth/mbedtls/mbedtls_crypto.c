@@ -1,31 +1,7 @@
 /*
  * Copyright (c) 2015, ARM Limited and Contributors. All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- * Redistributions of source code must retain the above copyright notice, this
- * list of conditions and the following disclaimer.
- *
- * Redistributions in binary form must reproduce the above copyright notice,
- * this list of conditions and the following disclaimer in the documentation
- * and/or other materials provided with the distribution.
- *
- * Neither the name of ARM nor the names of its contributors may be used
- * to endorse or promote products derived from this software without specific
- * prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 
 
@@ -84,7 +60,7 @@ static int verify_signature(void *data_ptr, unsigned int data_len,
 	mbedtls_asn1_buf signature;
 	mbedtls_md_type_t md_alg;
 	mbedtls_pk_type_t pk_alg;
-	mbedtls_pk_context pk;
+	mbedtls_pk_context pk = {0};
 	int rc;
 	void *sig_opts = NULL;
 	const mbedtls_md_info_t *md_info;
@@ -100,7 +76,7 @@ static int verify_signature(void *data_ptr, unsigned int data_len,
 	}
 
 	/* Get the actual signature algorithm (MD + PK) */
-	rc = mbedtls_oid_get_sig_alg(&sig_oid, &md_alg, &pk_alg);
+	rc = mbedtls_x509_get_sig_alg(&sig_oid, &sig_params, &md_alg, &pk_alg, &sig_opts);
 	if (rc != 0) {
 		return CRYPTO_ERR_SIGNATURE;
 	}
@@ -111,7 +87,8 @@ static int verify_signature(void *data_ptr, unsigned int data_len,
 	end = (unsigned char *)(p + pk_len);
 	rc = mbedtls_pk_parse_subpubkey(&p, end, &pk);
 	if (rc != 0) {
-		return CRYPTO_ERR_SIGNATURE;
+		rc = CRYPTO_ERR_SIGNATURE;
+		goto end2;
 	}
 
 	/* Get the signature (bitstring) */
@@ -121,7 +98,7 @@ static int verify_signature(void *data_ptr, unsigned int data_len,
 	rc = mbedtls_asn1_get_bitstring_null(&p, end, &signature.len);
 	if (rc != 0) {
 		rc = CRYPTO_ERR_SIGNATURE;
-		goto end;
+		goto end1;
 	}
 	signature.p = p;
 
@@ -129,13 +106,13 @@ static int verify_signature(void *data_ptr, unsigned int data_len,
 	md_info = mbedtls_md_info_from_type(md_alg);
 	if (md_info == NULL) {
 		rc = CRYPTO_ERR_SIGNATURE;
-		goto end;
+		goto end1;
 	}
 	p = (unsigned char *)data_ptr;
 	rc = mbedtls_md(md_info, p, data_len, hash);
 	if (rc != 0) {
 		rc = CRYPTO_ERR_SIGNATURE;
-		goto end;
+		goto end1;
 	}
 
 	/* Verify the signature */
@@ -144,14 +121,16 @@ static int verify_signature(void *data_ptr, unsigned int data_len,
 			signature.p, signature.len);
 	if (rc != 0) {
 		rc = CRYPTO_ERR_SIGNATURE;
-		goto end;
+		goto end1;
 	}
 
 	/* Signature verification success */
 	rc = CRYPTO_SUCCESS;
 
-end:
+end1:
 	mbedtls_pk_free(&pk);
+end2:
+	mbedtls_free(sig_opts);
 	return rc;
 }
 

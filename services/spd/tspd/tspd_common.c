@@ -1,38 +1,17 @@
 /*
- * Copyright (c) 2013-2014, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2013-2017, ARM Limited and Contributors. All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- * Redistributions of source code must retain the above copyright notice, this
- * list of conditions and the following disclaimer.
- *
- * Redistributions in binary form must reproduce the above copyright notice,
- * this list of conditions and the following disclaimer in the documentation
- * and/or other materials provided with the distribution.
- *
- * Neither the name of ARM nor the names of its contributors may be used
- * to endorse or promote products derived from this software without specific
- * prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 
 #include <arch_helpers.h>
 #include <assert.h>
 #include <bl_common.h>
 #include <context_mgmt.h>
+#include <debug.h>
 #include <string.h>
+#include <tsp.h>
+#include <utils.h>
 #include "tspd_private.h"
 
 /*******************************************************************************
@@ -62,7 +41,7 @@ void tspd_init_tsp_ep_state(struct entry_point_info *tsp_entry_point,
 	tsp_ctx->mpidr = read_mpidr_el1();
 	tsp_ctx->state = 0;
 	set_tsp_pstate(tsp_ctx->state, TSP_PSTATE_OFF);
-	clr_std_smc_active_flag(tsp_ctx->state);
+	clr_yield_smc_active_flag(tsp_ctx->state);
 
 	cm_set_context(&tsp_ctx->cpu_ctx, SECURE);
 
@@ -76,7 +55,7 @@ void tspd_init_tsp_ep_state(struct entry_point_info *tsp_entry_point,
 	tsp_entry_point->spsr = SPSR_64(MODE_EL1,
 					MODE_SP_ELX,
 					DISABLE_ALL_EXCEPTIONS);
-	memset(&tsp_entry_point->args, 0, sizeof(tsp_entry_point->args));
+	zeromem(&tsp_entry_point->args, sizeof(tsp_entry_point->args));
 }
 
 /*******************************************************************************
@@ -129,3 +108,31 @@ void tspd_synchronous_sp_exit(tsp_context_t *tsp_ctx, uint64_t ret)
 	/* Should never reach here */
 	assert(0);
 }
+
+/*******************************************************************************
+ * This function takes an SP context pointer and abort any preempted SMC
+ * request.
+ * Return 1 if there was a preempted SMC request, 0 otherwise.
+ ******************************************************************************/
+int tspd_abort_preempted_smc(tsp_context_t *tsp_ctx)
+{
+	if (!get_yield_smc_active_flag(tsp_ctx->state))
+		return 0;
+
+	/* Abort any preempted SMC request */
+	clr_yield_smc_active_flag(tsp_ctx->state);
+
+	/*
+	 * Arrange for an entry into the test secure payload. It will
+	 * be returned via TSP_ABORT_DONE case in tspd_smc_handler.
+	 */
+	cm_set_elr_el3(SECURE,
+		       (uint64_t) &tsp_vectors->abort_yield_smc_entry);
+	uint64_t rc = tspd_synchronous_sp_entry(tsp_ctx);
+
+	if (rc != 0)
+		panic();
+
+	return 1;
+}
+

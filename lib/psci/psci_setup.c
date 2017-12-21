@@ -1,31 +1,7 @@
 /*
- * Copyright (c) 2013-2016, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2013-2017, ARM Limited and Contributors. All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- * Redistributions of source code must retain the above copyright notice, this
- * list of conditions and the following disclaimer.
- *
- * Redistributions in binary form must reproduce the above copyright notice,
- * this list of conditions and the following disclaimer in the documentation
- * and/or other materials provided with the distribution.
- *
- * Neither the name of ARM nor the names of its contributors may be used
- * to endorse or promote products derived from this software without specific
- * prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 
 #include <arch.h>
@@ -34,6 +10,7 @@
 #include <bl_common.h>
 #include <context.h>
 #include <context_mgmt.h>
+#include <errata_report.h>
 #include <platform.h>
 #include <stddef.h>
 #include "psci_private.h"
@@ -85,7 +62,7 @@ static void psci_init_pwr_domain_node(unsigned int node_idx,
 		/* Set the power state to OFF state */
 		svc_cpu_data->local_state = PLAT_MAX_OFF_STATE;
 
-		flush_dcache_range((uintptr_t)svc_cpu_data,
+		psci_flush_dcache_range((uintptr_t)svc_cpu_data,
 						 sizeof(*svc_cpu_data));
 
 		cm_set_context_by_index(node_idx,
@@ -241,9 +218,9 @@ int psci_setup(const psci_lib_args_t *lib_args)
 
 	/*
 	 * Flush `psci_plat_pm_ops` as it will be accessed by secondary CPUs
-	 * during warm boot before data cache is enabled.
+	 * during warm boot, possibly before data cache is enabled.
 	 */
-	flush_dcache_range((uintptr_t)&psci_plat_pm_ops,
+	psci_flush_dcache_range((uintptr_t)&psci_plat_pm_ops,
 					sizeof(psci_plat_pm_ops));
 
 	/* Initialize the psci capability */
@@ -287,6 +264,9 @@ void psci_arch_setup(void)
 
 	/* Initialize the cpu_ops pointer. */
 	init_cpu_ops();
+
+	/* Having initialized cpu_ops, we can now print errata status */
+	print_errata_status();
 }
 
 /******************************************************************************

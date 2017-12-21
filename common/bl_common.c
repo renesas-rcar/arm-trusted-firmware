@@ -1,31 +1,7 @@
 /*
- * Copyright (c) 2013-2016, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2013-2017, ARM Limited and Contributors. All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- * Redistributions of source code must retain the above copyright notice, this
- * list of conditions and the following disclaimer.
- *
- * Redistributions in binary form must reproduce the above copyright notice,
- * this list of conditions and the following disclaimer in the documentation
- * and/or other materials provided with the distribution.
- *
- * Neither the name of ARM nor the names of its contributors may be used
- * to endorse or promote products derived from this software without specific
- * prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 
 #include <arch.h>
@@ -39,7 +15,7 @@
 #include <platform.h>
 #include <string.h>
 #include <utils.h>
-#include <xlat_tables.h>
+#include <xlat_tables_defs.h>
 
 uintptr_t page_align(uintptr_t value, unsigned dir)
 {
@@ -53,14 +29,13 @@ uintptr_t page_align(uintptr_t value, unsigned dir)
 	return value;
 }
 
-#if !LOAD_IMAGE_V2
 /******************************************************************************
  * Determine whether the memory region delimited by 'addr' and 'size' is free,
  * given the extents of free memory.
  * Return 1 if it is free, 0 if it is not free or if the input values are
  * invalid.
  *****************************************************************************/
-static int is_mem_free(uintptr_t free_base, size_t free_size,
+int is_mem_free(uintptr_t free_base, size_t free_size,
 		uintptr_t addr, size_t size)
 {
 	uintptr_t free_end, requested_end;
@@ -97,6 +72,7 @@ static int is_mem_free(uintptr_t free_base, size_t free_size,
 	return (addr >= free_base) && (requested_end <= free_end);
 }
 
+#if !LOAD_IMAGE_V2
 /******************************************************************************
  * Inside a given memory region, determine whether a sub-region of memory is
  * closer from the top or the bottom of the encompassing region. Return the
@@ -315,14 +291,9 @@ exit:
 	return io_result;
 }
 
-/*******************************************************************************
- * Generic function to load and authenticate an image. The image is actually
- * loaded by calling the 'load_image()' function. Therefore, it returns the
- * same error codes if the loading operation failed, or -EAUTH if the
- * authentication failed. In addition, this function uses recursion to
- * authenticate the parent images up to the root of trust.
- ******************************************************************************/
-int load_auth_image(unsigned int image_id, image_info_t *image_data)
+static int load_auth_image_internal(unsigned int image_id,
+				    image_info_t *image_data,
+				    int is_parent_image)
 {
 	int rc;
 
@@ -332,7 +303,7 @@ int load_auth_image(unsigned int image_id, image_info_t *image_data)
 	/* Use recursion to authenticate parent images */
 	rc = auth_mod_get_parent_id(image_id, &parent_id);
 	if (rc == 0) {
-		rc = load_auth_image(parent_id, image_data);
+		rc = load_auth_image_internal(parent_id, image_data, 1);
 		if (rc != 0) {
 			return rc;
 		}
@@ -351,7 +322,8 @@ int load_auth_image(unsigned int image_id, image_info_t *image_data)
 				 (void *)image_data->image_base,
 				 image_data->image_size);
 	if (rc != 0) {
-		memset((void *)image_data->image_base, 0x00,
+		/* Authentication error, zero memory and flush it right away. */
+		zero_normalmem((void *)image_data->image_base,
 		       image_data->image_size);
 		flush_dcache_range(image_data->image_base,
 				   image_data->image_size);
@@ -362,11 +334,27 @@ int load_auth_image(unsigned int image_id, image_info_t *image_data)
 	 * File has been successfully loaded and authenticated.
 	 * Flush the image to main memory so that it can be executed later by
 	 * any CPU, regardless of cache and MMU state.
+	 * Do it only for child images, not for the parents (certificates).
 	 */
-	flush_dcache_range(image_data->image_base, image_data->image_size);
+	if (!is_parent_image) {
+		flush_dcache_range(image_data->image_base,
+				   image_data->image_size);
+	}
 #endif /* TRUSTED_BOARD_BOOT */
 
 	return 0;
+}
+
+/*******************************************************************************
+ * Generic function to load and authenticate an image. The image is actually
+ * loaded by calling the 'load_image()' function. Therefore, it returns the
+ * same error codes if the loading operation failed, or -EAUTH if the
+ * authentication failed. In addition, this function uses recursion to
+ * authenticate the parent images up to the root of trust.
+ ******************************************************************************/
+int load_auth_image(unsigned int image_id, image_info_t *image_data)
+{
+	return load_auth_image_internal(image_id, image_data, 0);
 }
 
 #else /* LOAD_IMAGE_V2 */
@@ -494,18 +482,12 @@ exit:
 	return io_result;
 }
 
-/*******************************************************************************
- * Generic function to load and authenticate an image. The image is actually
- * loaded by calling the 'load_image()' function. Therefore, it returns the
- * same error codes if the loading operation failed, or -EAUTH if the
- * authentication failed. In addition, this function uses recursion to
- * authenticate the parent images up to the root of trust.
- ******************************************************************************/
-int load_auth_image(meminfo_t *mem_layout,
-		    unsigned int image_id,
-		    uintptr_t image_base,
-		    image_info_t *image_data,
-		    entry_point_info_t *entry_point_info)
+static int load_auth_image_internal(meminfo_t *mem_layout,
+				    unsigned int image_id,
+				    uintptr_t image_base,
+				    image_info_t *image_data,
+				    entry_point_info_t *entry_point_info,
+				    int is_parent_image)
 {
 	int rc;
 
@@ -515,8 +497,8 @@ int load_auth_image(meminfo_t *mem_layout,
 	/* Use recursion to authenticate parent images */
 	rc = auth_mod_get_parent_id(image_id, &parent_id);
 	if (rc == 0) {
-		rc = load_auth_image(mem_layout, parent_id, image_base,
-				     image_data, NULL);
+		rc = load_auth_image_internal(mem_layout, parent_id, image_base,
+				     image_data, NULL, 1);
 		if (rc != 0) {
 			return rc;
 		}
@@ -536,7 +518,8 @@ int load_auth_image(meminfo_t *mem_layout,
 				 (void *)image_data->image_base,
 				 image_data->image_size);
 	if (rc != 0) {
-		memset((void *)image_data->image_base, 0x00,
+		/* Authentication error, zero memory and flush it right away. */
+		zero_normalmem((void *)image_data->image_base,
 		       image_data->image_size);
 		flush_dcache_range(image_data->image_base,
 				   image_data->image_size);
@@ -546,11 +529,32 @@ int load_auth_image(meminfo_t *mem_layout,
 	 * File has been successfully loaded and authenticated.
 	 * Flush the image to main memory so that it can be executed later by
 	 * any CPU, regardless of cache and MMU state.
+	 * Do it only for child images, not for the parents (certificates).
 	 */
-	flush_dcache_range(image_data->image_base, image_data->image_size);
+	if (!is_parent_image) {
+		flush_dcache_range(image_data->image_base,
+				   image_data->image_size);
+	}
 #endif /* TRUSTED_BOARD_BOOT */
 
 	return 0;
+}
+
+/*******************************************************************************
+ * Generic function to load and authenticate an image. The image is actually
+ * loaded by calling the 'load_image()' function. Therefore, it returns the
+ * same error codes if the loading operation failed, or -EAUTH if the
+ * authentication failed. In addition, this function uses recursion to
+ * authenticate the parent images up to the root of trust.
+ ******************************************************************************/
+int load_auth_image(meminfo_t *mem_layout,
+		    unsigned int image_id,
+		    uintptr_t image_base,
+		    image_info_t *image_data,
+		    entry_point_info_t *entry_point_info)
+{
+	return load_auth_image_internal(mem_layout, image_id, image_base,
+					image_data, entry_point_info, 0);
 }
 
 #endif /* LOAD_IMAGE_V2 */

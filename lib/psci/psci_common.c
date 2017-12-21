@@ -1,32 +1,8 @@
 /*
- * Copyright (c) 2013-2016, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2013-2017, ARM Limited and Contributors. All rights reserved.
  * Copyright (c) 2015-2017, Renesas Electronics Corporation. All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- * Redistributions of source code must retain the above copyright notice, this
- * list of conditions and the following disclaimer.
- *
- * Redistributions in binary form must reproduce the above copyright notice,
- * this list of conditions and the following disclaimer in the documentation
- * and/or other materials provided with the distribution.
- *
- * Neither the name of ARM nor the names of its contributors may be used
- * to endorse or promote products derived from this software without specific
- * prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 
 #include <arch.h>
@@ -38,6 +14,7 @@
 #include <debug.h>
 #include <platform.h>
 #include <string.h>
+#include <utils.h>
 #include "psci_private.h"
 
 /*
@@ -79,7 +56,8 @@ __section("tzfw_coherent_mem")
 #endif
 ;
 
-DEFINE_BAKERY_LOCK(psci_locks[PSCI_NUM_NON_CPU_PWR_DOMAINS]);
+/* Lock for PSCI state coordination */
+DEFINE_PSCI_LOCK(psci_locks[PSCI_NUM_NON_CPU_PWR_DOMAINS]);
 
 cpu_pd_node_t psci_cpu_pd_nodes[PLATFORM_CORE_COUNT];
 
@@ -247,6 +225,50 @@ static plat_local_state_t *psci_get_req_local_pwr_states(unsigned int pwrlvl,
 	return &psci_req_local_pwr_states[pwrlvl - 1][cpu_idx];
 }
 
+/*
+ * psci_non_cpu_pd_nodes can be placed either in normal memory or coherent
+ * memory.
+ *
+ * With !USE_COHERENT_MEM, psci_non_cpu_pd_nodes is placed in normal memory,
+ * it's accessed by both cached and non-cached participants. To serve the common
+ * minimum, perform a cache flush before read and after write so that non-cached
+ * participants operate on latest data in main memory.
+ *
+ * When USE_COHERENT_MEM is used, psci_non_cpu_pd_nodes is placed in coherent
+ * memory. With HW_ASSISTED_COHERENCY, all PSCI participants are cache-coherent.
+ * In both cases, no cache operations are required.
+ */
+
+/*
+ * Retrieve local state of non-CPU power domain node from a non-cached CPU,
+ * after any required cache maintenance operation.
+ */
+static plat_local_state_t get_non_cpu_pd_node_local_state(
+		unsigned int parent_idx)
+{
+#if !USE_COHERENT_MEM || !HW_ASSISTED_COHERENCY
+	flush_dcache_range(
+			(uintptr_t) &psci_non_cpu_pd_nodes[parent_idx],
+			sizeof(psci_non_cpu_pd_nodes[parent_idx]));
+#endif
+	return psci_non_cpu_pd_nodes[parent_idx].local_state;
+}
+
+/*
+ * Update local state of non-CPU power domain node from a cached CPU; perform
+ * any required cache maintenance operation afterwards.
+ */
+static void set_non_cpu_pd_node_local_state(unsigned int parent_idx,
+		plat_local_state_t state)
+{
+	psci_non_cpu_pd_nodes[parent_idx].local_state = state;
+#if !USE_COHERENT_MEM || !HW_ASSISTED_COHERENCY
+	flush_dcache_range(
+			(uintptr_t) &psci_non_cpu_pd_nodes[parent_idx],
+			sizeof(psci_non_cpu_pd_nodes[parent_idx]));
+#endif
+}
+
 /******************************************************************************
  * Helper function to return the current local power state of each power domain
  * from the current cpu power domain to its ancestor at the 'end_pwrlvl'. This
@@ -264,18 +286,7 @@ void psci_get_target_local_pwr_states(unsigned int end_pwrlvl,
 
 	/* Copy the local power state from node to state_info */
 	for (lvl = PSCI_CPU_PWR_LVL + 1; lvl <= end_pwrlvl; lvl++) {
-#if !USE_COHERENT_MEM
-		/*
-		 * If using normal memory for psci_non_cpu_pd_nodes, we need
-		 * to flush before reading the local power state as another
-		 * cpu in the same power domain could have updated it and this
-		 * code runs before caches are enabled.
-		 */
-		flush_dcache_range(
-				(uintptr_t) &psci_non_cpu_pd_nodes[parent_idx],
-				sizeof(psci_non_cpu_pd_nodes[parent_idx]));
-#endif
-		pd_state[lvl] =	psci_non_cpu_pd_nodes[parent_idx].local_state;
+		pd_state[lvl] = get_non_cpu_pd_node_local_state(parent_idx);
 		parent_idx = psci_non_cpu_pd_nodes[parent_idx].parent_node;
 	}
 
@@ -299,21 +310,16 @@ static void psci_set_target_local_pwr_states(unsigned int end_pwrlvl,
 	psci_set_cpu_local_state(pd_state[PSCI_CPU_PWR_LVL]);
 
 	/*
-	 * Need to flush as local_state will be accessed with Data Cache
+	 * Need to flush as local_state might be accessed with Data Cache
 	 * disabled during power on
 	 */
-	flush_cpu_data(psci_svc_cpu_data.local_state);
+	psci_flush_cpu_data(psci_svc_cpu_data.local_state);
 
 	parent_idx = psci_cpu_pd_nodes[plat_my_core_pos()].parent_node;
 
 	/* Copy the local_state from state_info */
 	for (lvl = 1; lvl <= end_pwrlvl; lvl++) {
-		psci_non_cpu_pd_nodes[parent_idx].local_state =	pd_state[lvl];
-#if !USE_COHERENT_MEM
-		flush_dcache_range(
-				(uintptr_t)&psci_non_cpu_pd_nodes[parent_idx],
-				sizeof(psci_non_cpu_pd_nodes[parent_idx]));
-#endif
+		set_non_cpu_pd_node_local_state(parent_idx, pd_state[lvl]);
 		parent_idx = psci_non_cpu_pd_nodes[parent_idx].parent_node;
 	}
 }
@@ -327,7 +333,7 @@ void psci_get_parent_pwr_domain_nodes(unsigned int cpu_idx,
 				      unsigned int node_index[])
 {
 	unsigned int parent_node = psci_cpu_pd_nodes[cpu_idx].parent_node;
-	int i;
+	unsigned int i;
 
 	for (i = PSCI_CPU_PWR_LVL + 1; i <= end_lvl; i++) {
 		*node_index++ = parent_node;
@@ -347,13 +353,8 @@ void psci_set_pwr_domains_to_run(unsigned int end_pwrlvl)
 
 	/* Reset the local_state to RUN for the non cpu power domains. */
 	for (lvl = PSCI_CPU_PWR_LVL + 1; lvl <= end_pwrlvl; lvl++) {
-		psci_non_cpu_pd_nodes[parent_idx].local_state =
-				PSCI_LOCAL_STATE_RUN;
-#if !USE_COHERENT_MEM
-		flush_dcache_range(
-				(uintptr_t) &psci_non_cpu_pd_nodes[parent_idx],
-				sizeof(psci_non_cpu_pd_nodes[parent_idx]));
-#endif
+		set_non_cpu_pd_node_local_state(parent_idx,
+				PSCI_LOCAL_STATE_RUN);
 		psci_set_req_local_pwr_state(lvl,
 					     cpu_idx,
 					     PSCI_LOCAL_STATE_RUN);
@@ -364,7 +365,7 @@ void psci_set_pwr_domains_to_run(unsigned int end_pwrlvl)
 	psci_set_aff_info_state(AFF_STATE_ON);
 
 	psci_set_cpu_local_state(PSCI_LOCAL_STATE_RUN);
-	flush_cpu_data(psci_svc_cpu_data);
+	psci_flush_cpu_data(psci_svc_cpu_data);
 }
 
 /******************************************************************************
@@ -623,7 +624,7 @@ static int psci_get_ns_ep_info(entry_point_info_t *ep,
 	SET_PARAM_HEAD(ep, PARAM_EP, VERSION_1, ep_attr);
 
 	ep->pc = entrypoint;
-	memset(&ep->args, 0, sizeof(ep->args));
+	zeromem(&ep->args, sizeof(ep->args));
 	ep->args.arg0 = context_id;
 
 	mode = scr & SCR_HCE_BIT ? MODE32_hyp : MODE32_svc;
@@ -660,7 +661,7 @@ static int psci_get_ns_ep_info(entry_point_info_t *ep,
 	SET_PARAM_HEAD(ep, PARAM_EP, VERSION_1, ep_attr);
 
 	ep->pc = entrypoint;
-	memset(&ep->args, 0, sizeof(ep->args));
+	zeromem(&ep->args, sizeof(ep->args));
 	ep->args.arg0 = context_id;
 
 	/*
@@ -761,13 +762,7 @@ void psci_warmboot_entrypoint(void)
 				      cpu_idx);
 
 #if ENABLE_PSCI_STAT
-	/*
-	 * Capture power up time-stamp.
-	 * No cache maintenance is required as caches are off
-	 * and writes are direct to the main memory.
-	 */
-	PMF_CAPTURE_TIMESTAMP(psci_svc, PSCI_STAT_ID_EXIT_LOW_PWR,
-		PMF_NO_CACHE_MAINT);
+	plat_psci_stat_accounting_stop(&state_info);
 #endif
 
 	psci_get_target_local_pwr_states(end_pwrlvl, &state_info);
@@ -802,7 +797,7 @@ void psci_warmboot_entrypoint(void)
 	 * Since caches are now enabled, it's necessary to do cache
 	 * maintenance before reading that same data.
 	 */
-	psci_stats_update_pwr_up(end_pwrlvl, &state_info, PMF_CACHE_MAINT);
+	psci_stats_update_pwr_up(end_pwrlvl, &state_info);
 #endif
 
 	/*
@@ -902,6 +897,27 @@ void psci_print_power_domain_map(void)
 #endif
 }
 
+/******************************************************************************
+ * Return whether any secondaries were powered up with CPU_ON call. A CPU that
+ * have ever been powered up would have set its MPDIR value to something other
+ * than PSCI_INVALID_MPIDR. Note that MPDIR isn't reset back to
+ * PSCI_INVALID_MPIDR when a CPU is powered down later, so the return value is
+ * meaningful only when called on the primary CPU during early boot.
+ *****************************************************************************/
+int psci_secondaries_brought_up(void)
+{
+	unsigned int idx, n_valid = 0;
+
+	for (idx = 0; idx < ARRAY_SIZE(psci_cpu_pd_nodes); idx++) {
+		if (psci_cpu_pd_nodes[idx].mpidr != PSCI_INVALID_MPIDR)
+			n_valid++;
+	}
+
+	assert(n_valid);
+
+	return (n_valid > 1);
+}
+
 #if ENABLE_PLAT_COMPAT
 /*******************************************************************************
  * PSCI Compatibility helper function to return the 'power_state' parameter of
@@ -962,7 +978,7 @@ unsigned int psci_get_max_phys_off_afflvl(void)
 {
 	psci_power_state_t state_info;
 
-	memset(&state_info, 0, sizeof(state_info));
+	zeromem(&state_info, sizeof(state_info));
 	psci_get_target_local_pwr_states(PLAT_MAX_PWR_LVL, &state_info);
 
 	return psci_find_target_suspend_lvl(&state_info);
@@ -979,3 +995,33 @@ int psci_get_suspend_afflvl(void)
 }
 
 #endif
+
+/*******************************************************************************
+ * Initiate power down sequence, by calling power down operations registered for
+ * this CPU.
+ ******************************************************************************/
+void psci_do_pwrdown_sequence(unsigned int power_level)
+{
+#if HW_ASSISTED_COHERENCY
+	/*
+	 * With hardware-assisted coherency, the CPU drivers only initiate the
+	 * power down sequence, without performing cache-maintenance operations
+	 * in software. Data caches and MMU remain enabled both before and after
+	 * this call.
+	 */
+	prepare_cpu_pwr_dwn(power_level);
+#else
+	/*
+	 * Without hardware-assisted coherency, the CPU drivers disable data
+	 * caches and MMU, then perform cache-maintenance operations in
+	 * software.
+	 *
+	 * We ought to call prepare_cpu_pwr_dwn() to initiate power down
+	 * sequence. We currently have data caches and MMU enabled, but the
+	 * function will return with data caches and MMU disabled. We must
+	 * ensure that the stack memory is flushed out to memory before we start
+	 * popping from it again.
+	 */
+	psci_do_pwrdown_cache_maintenance(power_level);
+#endif
+}

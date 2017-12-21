@@ -1,32 +1,7 @@
 /*
- * Copyright (c) 2015-2017, Renesas Electronics Corporation
- * All rights reserved.
+ * Copyright (c) 2015-2017, Renesas Electronics Corporation. All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- *   - Redistributions of source code must retain the above copyright notice,
- *     this list of conditions and the following disclaimer.
- *
- *   - Redistributions in binary form must reproduce the above copyright
- *     notice, this list of conditions and the following disclaimer in the
- *     documentation and/or other materials provided with the distribution.
- *
- *   - Neither the name of Renesas nor the names of its contributors may be
- *     used to endorse or promote products derived from this software without
- *     specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 
 /*******************************************************************************
@@ -62,7 +37,7 @@ struct _boardcnf_ch {
 	 *0x06...32Gbit/die
 	 *0xff...NO_MEMORY
 	*/
-	uint8_t	 ddr_density[CS_CNT];
+	uint8_t ddr_density[CS_CNT];
 	/*SoC caX([5][4][3][2][1][0]) -> MEM caY: */
 	uint32_t ca_swap;
 	/*SoC dqsX([3][2][1][0]) -> MEM dqsY: */
@@ -120,7 +95,7 @@ struct _boardcnf {
 
 static const struct _boardcnf boardcnfs[BOARDNUM] = {
 /*
- * boardcnf[0] RENESAS SALVATOR-X board w M3SIP
+ * boardcnf[0] RENESAS SALVATOR-X board with M3SIP
  */
 {
 	0x03,		/* phyvalid */
@@ -173,7 +148,7 @@ static const struct _boardcnf boardcnfs[BOARDNUM] = {
 	}
 },
 /*
- * boardcnf[1] RENESAS KRIEK board w M3PKG
+ * boardcnf[1] RENESAS KRIEK board with M3PKG
  */
 {
 	0x03,		/* phyvalid */
@@ -226,7 +201,7 @@ static const struct _boardcnf boardcnfs[BOARDNUM] = {
 	}
 },
 /*
- * boardcnf[2] RENESAS SALVATOR-X board w H3SIP-1rank
+ * boardcnf[2] RENESAS SALVATOR-X board with H3SIP-1rank
  */
 {
 	0x0f,		/* phyvalid */
@@ -319,7 +294,7 @@ static const struct _boardcnf boardcnfs[BOARDNUM] = {
 	}
 },
 /*
- * boardcnf[3] RENESAS Starter Kit board w M3SIP(1RANK)
+ * boardcnf[3] RENESAS Starter Kit board with M3SIP(1RANK)
  */
 {
 	0x03,		/* phyvalid */
@@ -372,7 +347,7 @@ static const struct _boardcnf boardcnfs[BOARDNUM] = {
 	}
 },
 /*
- * boardcnf[4] RENESAS SALVATOR-M(1rank) board w H3SoC
+ * boardcnf[4] RENESAS SALVATOR-M(1rank) board with H3SoC
  */
 {
 	0x0f,		/* phyvalid */
@@ -465,7 +440,7 @@ static const struct _boardcnf boardcnfs[BOARDNUM] = {
 	}
 },
 /*
- * boardcnf[5] RENESAS KRIEK-1rank board w M3PKG
+ * boardcnf[5] RENESAS KRIEK-1rank board with M3PKG
  */
 {
 	0x03,		/* phyvalid */
@@ -518,7 +493,7 @@ static const struct _boardcnf boardcnfs[BOARDNUM] = {
 	}
 },
 /*
- * boardcnf[6] RENESAS SALVATOR-X board w H3SIP-2rank
+ * boardcnf[6] RENESAS SALVATOR-X board with H3SIP-2rank
  */
 {
 	0x0f,		/* phyvalid */
@@ -611,7 +586,7 @@ static const struct _boardcnf boardcnfs[BOARDNUM] = {
 	}
 },
 /*
- * boardcnf[7] RENESAS SALVATOR-X board w H3SIP_ver2.0-1rank
+ * boardcnf[7] RENESAS SALVATOR-X board with H3SIP_ver2.0-1rank
  */
 {
 	0x0f,		/* phyvalid */
@@ -704,7 +679,7 @@ static const struct _boardcnf boardcnfs[BOARDNUM] = {
 	}
 },
 /*
- * boardcnf[8] RENESAS SALVATOR-X board w H3SIP_ver2.0-2rank
+ * boardcnf[8] RENESAS SALVATOR-X board with H3SIP_ver2.0-2rank
  */
 {
 	0x0f,		/* phyvalid */
@@ -797,7 +772,7 @@ static const struct _boardcnf boardcnfs[BOARDNUM] = {
 	}
 },
 /*
- * boardcnf[9] RENESAS SALVATOR-MS(1rank) board w H3SoC_VER2.0
+ * boardcnf[9] RENESAS SALVATOR-MS(1rank) board with H3SoC_VER2.0
  */
 {
 	0x0f,		/* phyvalid */
@@ -893,7 +868,7 @@ static const struct _boardcnf boardcnfs[BOARDNUM] = {
 	}
 },
 /*
- * boardcnf[10] RENESAS Kriek(2rank) board w M3N
+ * boardcnf[10] RENESAS Kriek(2rank) board with M3N
  */
 {
 	0x01,		/* phyvalid */
@@ -927,7 +902,7 @@ static const struct _boardcnf boardcnfs[BOARDNUM] = {
 	}
 },
 /*
- * boardcnf[11] RENESAS SALVATOR-X board w M3N SiP-2rank
+ * boardcnf[11] RENESAS SALVATOR-X board with M3N SiP-2rank
  */
 {
 	0x01,		/* phyvalid */
@@ -960,7 +935,7 @@ static const struct _boardcnf boardcnfs[BOARDNUM] = {
 	}
 },
 /*
- * boardcnf[12] RENESAS CONDOR board w V3H
+ * boardcnf[12] RENESAS CONDOR board with V3H
  */
 {
 	0x01,		/* phyvalid */
@@ -993,7 +968,7 @@ static const struct _boardcnf boardcnfs[BOARDNUM] = {
 	}
 },
 /*
- * boardcnf[13] RENESAS KRIEK board w PM3
+ * boardcnf[13] RENESAS KRIEK board with PM3
  */
 {
 	0x05,		/* phyvalid */
@@ -1180,7 +1155,7 @@ static const uint32_t TermcodeBySample[20][3]= {
 /* R/W  32      LSI pin pull-up/down control register 6 */
 #define    PFC_PUD6   0xE6060458U
 /* R    32      General input register 5 */
-#define	   GPIO_INDT5 0xE605500CU
+#define    GPIO_INDT5 0xE605500CU
 /* R    32      General input register 6 */
 #define    GPIO_INDT6 0xE605540CU
 
@@ -1190,8 +1165,6 @@ static const uint32_t TermcodeBySample[20][3]= {
 #define BIT0  (1)
 #define    GPIO_GPSR6 0xE6060118U
 
-
-//#ifdef DEBUG_ENV
 #if (RCAR_GEN3_ULCB==0)
 static void pfc_write_and_poll(uint32_t a, uint32_t v)
 {
@@ -1202,7 +1175,6 @@ static void pfc_write_and_poll(uint32_t a, uint32_t v)
 	dsb_sev();
 }
 #endif
-//#endif//DEBUG_ENV
 
 #ifndef RCAR_GEN3_ULCB
 #define RCAR_GEN3_ULCB		0
@@ -1295,25 +1267,25 @@ static uint32_t _board_judge(void) {
 	}
 	else if(usb2_ovc_open) {
 		if(PRR_PRODUCT_M3N == Prr_Product) {
-			/* RENESAS Kriek board (M3N)*/
+			/* RENESAS Kriek board with M3N */
 			brd = 10;
 		} else if(PRR_PRODUCT_M3 == Prr_Product) {
-			/* RENESAS Kriek board (M3)*/
+			/* RENESAS Kriek board with M3 */
 			brd = 1;
 		} else {
-			/* RENESAS Kriek board (PM3)*/
+			/* RENESAS Kriek board with PM3 */
 			brd = 13;
 		}
 	} else {
 		if(PRR_PRODUCT_H3 == Prr_Product) {
 		  if (PRR_PRODUCT_11>=Prr_Cut) {
-			/* RENESAS SALVATOR-X (H3-SIP) */
+			/* RENESAS SALVATOR-X (H3-SIP_VER1.x) */
 			brd = 2;
 		  } else {
-			/* RENESAS SALVATOR-X (H3SIP_VER2.0) */
+			/* RENESAS SALVATOR-X (H3-SIP_VER2.0) */
 			brd = 7;
 		  }
-		} else 	if(PRR_PRODUCT_M3N == Prr_Product) {
+		} else if(PRR_PRODUCT_M3N == Prr_Product) {
 			/* RENESAS SALVATOR-X (M3N-SIP) */
 			brd = 11;
 		} else {

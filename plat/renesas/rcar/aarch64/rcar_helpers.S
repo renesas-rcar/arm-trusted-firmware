@@ -2,31 +2,7 @@
  * Copyright (c) 2013-2014, ARM Limited and Contributors. All rights reserved.
  * Copyright (c) 2015-2017, Renesas Electronics Corporation. All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- * Redistributions of source code must retain the above copyright notice, this
- * list of conditions and the following disclaimer.
- *
- * Redistributions in binary form must reproduce the above copyright notice,
- * this list of conditions and the following disclaimer in the documentation
- * and/or other materials provided with the distribution.
- *
- * Neither the name of ARM nor the names of its contributors may be used
- * to endorse or promote products derived from this software without specific
- * prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 
 #include <arch.h>
@@ -223,7 +199,7 @@ rep_exec_fiq_elx:
 	bl	gicv2_acknowledge_interrupt
 	mov	x2, #INT_ID_MASK
 	and	x0, x0, x2
-	mov	x1, #ARM_IRQ_SEC_WDT_A
+	mov	x1, #ARM_IRQ_SEC_WDT
 	cmp	x0, x1
 	bne	rep_exec_panic_id
 	mrs	x0, ELR_EL1
@@ -256,7 +232,7 @@ func platform_is_primary_cpu
 	/*
 	 * Get MD6 and MD7 of MODEMR, then move MD6 to bit0 and move MD7 to bit1 of x1
 	 */
-	ldr	x1, =RCAR_MODEMR_A		/* x1 <- address of MODEMR register	*/
+	ldr	x1, =RCAR_MODEMR		/* x1 <- address of MODEMR register	*/
 	ldr	x2, [x1]			/* Get the data of MODEMR -> x2		*/
 	mov	x1, #0x00c0			/* move MD6(0x0040) and MD7(0x0080)	*/
 	and	x1, x2, x1			/* Get MD6 and MD7 information -> x1	*/
@@ -408,13 +384,13 @@ A57:
 	 * Cortex-A57 specific settings
 	 * --------------------------------------------------------------------
 	 */
-	mrs	x0, L2CTLR_EL1		/* Get data from L2CTLR_EL1			*/
+	mrs	x0, CORTEX_A57_L2CTLR_EL1		/* Get data from CORTEX_A57_L2CTLR_EL1		*/
 	/*
 	 * On R-Car H3/M3/M3N
 	 *
-	 * L2 Tag RAM latency is bit8-6 of L2CTLR_EL1
-	 * L2 Data RAM setup is bit5 of L2CTLR_EL1
-	 * L2 Data RAM latency is bit2-0 of L2CTLR_EL1
+	 * L2 Tag RAM latency is bit8-6 of CORTEX_A57_L2CTLR_EL1
+	 * L2 Data RAM setup is bit5 of CORTEX_A57_L2CTLR_EL1
+	 * L2 Data RAM latency is bit2-0 of CORTEX_A57_L2CTLR_EL1
 	 */
 	mov	x1, #0x1e7		/* for clear bit of L2 RAM			*/
 	neg	x1, x1			/* ~(0x1e7) -> x1				*/
@@ -423,8 +399,8 @@ A57:
 	cbnz	x2, M3_L2		/* If M3/M3N then L2 Data RAM setup is 0	*/
 	orr	x0, x0, #0x1 << 5  	/* L2 Data RAM setup (1 cycle)			*/
 M3_L2:
-	orr	x0, x0, #0x3       	/* L2 Data RAM latency (4 cycles)		*/
-	msr     L2CTLR_EL1, x0		/* Store data to L2CTLR_EL1			*/
+	orr	x0, x0, #0x3       		/* L2 Data RAM latency (4 cycles)	*/
+	msr	CORTEX_A57_L2CTLR_EL1, x0	/* Store data to L2CTLR_EL1		*/
 
 apply_l2_ram_latencies:
 

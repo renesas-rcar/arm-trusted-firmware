@@ -1,31 +1,7 @@
 /*
- * Copyright (c) 2016, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2016-2017, ARM Limited and Contributors. All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- * Redistributions of source code must retain the above copyright notice, this
- * list of conditions and the following disclaimer.
- *
- * Redistributions in binary form must reproduce the above copyright notice,
- * this list of conditions and the following disclaimer in the documentation
- * and/or other materials provided with the distribution.
- *
- * Neither the name of ARM nor the names of its contributors may be used
- * to endorse or promote products derived from this software without specific
- * prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 
 #include <arch.h>
@@ -38,6 +14,7 @@
 #include <platform_def.h>
 #include <smcc_helpers.h>
 #include <string.h>
+#include <utils.h>
 
 /*******************************************************************************
  * Context management library initialisation routine. This library is used by
@@ -84,7 +61,7 @@ static void cm_init_context_common(cpu_context_t *ctx, const entry_point_info_t 
 	security_state = GET_SECURITY_STATE(ep->h.attr);
 
 	/* Clear any residual register values from the context */
-	memset(ctx, 0, sizeof(*ctx));
+	zeromem(ctx, sizeof(*ctx));
 
 	reg_ctx = get_regs_ctx(ctx);
 
@@ -98,31 +75,44 @@ static void cm_init_context_common(cpu_context_t *ctx, const entry_point_info_t 
 	if (security_state != SECURE)
 		scr |= SCR_NS_BIT;
 
-	/*
-	 * Set up SCTLR for the Non Secure context.
-	 * EE bit is taken from the entrypoint attributes
-	 * M, C and I bits must be zero (as required by PSCI specification)
-	 *
-	 * The target exception level is based on the spsr mode requested.
-	 * If execution is requested to hyp mode, HVC is enabled
-	 * via SCR.HCE.
-	 *
-	 * Always compute the SCTLR_EL1 value and save in the cpu_context
-	 * - the HYP registers are set up by cm_preapre_ns_entry() as they
-	 * are not part of the stored cpu_context
-	 *
-	 * TODO: In debug builds the spsr should be validated and checked
-	 * against the CPU support, security state, endianness and pc
-	 */
 	if (security_state != SECURE) {
+		/*
+		 * Set up SCTLR for the Non-secure context.
+		 *
+		 * SCTLR.EE: Endianness is taken from the entrypoint attributes.
+		 *
+		 * SCTLR.M, SCTLR.C and SCTLR.I: These fields must be zero (as
+		 *  required by PSCI specification)
+		 *
+		 * Set remaining SCTLR fields to their architecturally defined
+		 * values. Some fields reset to an IMPLEMENTATION DEFINED value:
+		 *
+		 * SCTLR.TE: Set to zero so that exceptions to an Exception
+		 *  Level executing at PL1 are taken to A32 state.
+		 *
+		 * SCTLR.V: Set to zero to select the normal exception vectors
+		 *  with base address held in VBAR.
+		 */
+		assert(((ep->spsr >> SPSR_E_SHIFT) & SPSR_E_MASK) ==
+			(EP_GET_EE(ep->h.attr) >> EP_EE_SHIFT));
+
 		sctlr = EP_GET_EE(ep->h.attr) ? SCTLR_EE_BIT : 0;
-		sctlr |= SCTLR_RES1;
+		sctlr |= (SCTLR_RESET_VAL & ~(SCTLR_TE_BIT | SCTLR_V_BIT));
 		write_ctx_reg(reg_ctx, CTX_NS_SCTLR, sctlr);
 	}
 
+	/*
+	 * The target exception level is based on the spsr mode requested. If
+	 * execution is requested to hyp mode, HVC is enabled via SCR.HCE.
+	 */
 	if (GET_M32(ep->spsr) == MODE32_hyp)
 		scr |= SCR_HCE_BIT;
 
+	/*
+	 * Store the initialised values for SCTLR and SCR in the cpu_context.
+	 * The Hyp mode registers are not part of the saved context and are
+	 * set-up in cm_prepare_el3_exit().
+	 */
 	write_ctx_reg(reg_ctx, CTX_SCR, scr);
 	write_ctx_reg(reg_ctx, CTX_LR, ep->pc);
 	write_ctx_reg(reg_ctx, CTX_SPSR, ep->spsr);
@@ -169,7 +159,7 @@ void cm_init_my_context(const entry_point_info_t *ep)
  ******************************************************************************/
 void cm_prepare_el3_exit(uint32_t security_state)
 {
-	uint32_t sctlr, scr, hcptr;
+	uint32_t hsctlr, scr;
 	cpu_context_t *ctx = cm_get_context(security_state);
 
 	assert(ctx);
@@ -178,9 +168,9 @@ void cm_prepare_el3_exit(uint32_t security_state)
 		scr = read_ctx_reg(get_regs_ctx(ctx), CTX_SCR);
 		if (scr & SCR_HCE_BIT) {
 			/* Use SCTLR value to initialize HSCTLR */
-			sctlr = read_ctx_reg(get_regs_ctx(ctx),
+			hsctlr = read_ctx_reg(get_regs_ctx(ctx),
 						 CTX_NS_SCTLR);
-			sctlr |= HSCTLR_RES1;
+			hsctlr |= HSCTLR_RES1;
 			/* Temporarily set the NS bit to access HSCTLR */
 			write_scr(read_scr() | SCR_NS_BIT);
 			/*
@@ -188,44 +178,106 @@ void cm_prepare_el3_exit(uint32_t security_state)
 			 * we can access HSCTLR
 			 */
 			isb();
-			write_hsctlr(sctlr);
+			write_hsctlr(hsctlr);
 			isb();
 
 			write_scr(read_scr() & ~SCR_NS_BIT);
 			isb();
 		} else if (read_id_pfr1() &
 			(ID_PFR1_VIRTEXT_MASK << ID_PFR1_VIRTEXT_SHIFT)) {
-			/* Set the NS bit to access HCR, HCPTR, CNTHCTL, VPIDR, VMPIDR */
+			/*
+			 * Set the NS bit to access NS copies of certain banked
+			 * registers
+			 */
 			write_scr(read_scr() | SCR_NS_BIT);
 			isb();
 
-			/* PL2 present but unused, need to disable safely */
-			write_hcr(0);
+			/*
+			 * Hyp / PL2 present but unused, need to disable safely.
+			 * HSCTLR can be ignored in this case.
+			 *
+			 * Set HCR to its architectural reset value so that
+			 * Non-secure operations do not trap to Hyp mode.
+			 */
+			write_hcr(HCR_RESET_VAL);
 
-			/* HSCTLR : can be ignored when bypassing */
+			/*
+			 * Set HCPTR to its architectural reset value so that
+			 * Non-secure access from EL1 or EL0 to trace and to
+			 * Advanced SIMD and floating point functionality does
+			 * not trap to Hyp mode.
+			 */
+			write_hcptr(HCPTR_RESET_VAL);
 
-			/* HCPTR : disable all traps TCPAC, TTA, TCP */
-			hcptr = read_hcptr();
-			hcptr &= ~(TCPAC_BIT | TTA_BIT | TCP11_BIT | TCP10_BIT);
-			write_hcptr(hcptr);
+			/*
+			 * Initialise CNTHCTL. All fields are architecturally
+			 * UNKNOWN on reset and are set to zero except for
+			 * field(s) listed below.
+			 *
+			 * CNTHCTL.PL1PCEN: Disable traps to Hyp mode of
+			 *  Non-secure EL0 and EL1 accessed to the physical
+			 *  timer registers.
+			 *
+			 * CNTHCTL.PL1PCTEN: Disable traps to Hyp mode of
+			 *  Non-secure EL0 and EL1 accessed to the physical
+			 *  counter registers.
+			 */
+			write_cnthctl(CNTHCTL_RESET_VAL |
+					PL1PCEN_BIT | PL1PCTEN_BIT);
 
-			/* Enable EL1 access to timer */
-			write_cnthctl(PL1PCEN_BIT | PL1PCTEN_BIT);
-
-			/* Reset CNTVOFF_EL2 */
+			/*
+			 * Initialise CNTVOFF to zero as it resets to an
+			 * IMPLEMENTATION DEFINED value.
+			 */
 			write64_cntvoff(0);
 
-			/* Set VPIDR, VMPIDR to match MIDR, MPIDR */
+			/*
+			 * Set VPIDR and VMPIDR to match MIDR_EL1 and MPIDR
+			 * respectively.
+			 */
 			write_vpidr(read_midr());
 			write_vmpidr(read_mpidr());
 
 			/*
-			 * Reset VTTBR.
-			 * Needed because cache maintenance operations depend on
-			 * the VMID even when non-secure EL1&0 stage 2 address
-			 * translation are disabled.
+			 * Initialise VTTBR, setting all fields rather than
+			 * relying on the hw. Some fields are architecturally
+			 * UNKNOWN at reset.
+			 *
+			 * VTTBR.VMID: Set to zero which is the architecturally
+			 *  defined reset value. Even though EL1&0 stage 2
+			 *  address translation is disabled, cache maintenance
+			 *  operations depend on the VMID.
+			 *
+			 * VTTBR.BADDR: Set to zero as EL1&0 stage 2 address
+			 *  translation is disabled.
 			 */
-			write64_vttbr(0);
+			write64_vttbr(VTTBR_RESET_VAL &
+				~((VTTBR_VMID_MASK << VTTBR_VMID_SHIFT)
+				| (VTTBR_BADDR_MASK << VTTBR_BADDR_SHIFT)));
+
+			/*
+			 * Initialise HDCR, setting all the fields rather than
+			 * relying on hw.
+			 *
+			 * HDCR.HPMN: Set to value of PMCR.N which is the
+			 *  architecturally-defined reset value.
+			 */
+			write_hdcr(HDCR_RESET_VAL |
+				((read_pmcr() & PMCR_N_BITS) >> PMCR_N_SHIFT));
+
+			/*
+			 * Set HSTR to its architectural reset value so that
+			 * access to system registers in the cproc=1111
+			 * encoding space do not trap to Hyp mode.
+			 */
+			write_hstr(HSTR_RESET_VAL);
+			/*
+			 * Set CNTHP_CTL to its architectural reset value to
+			 * disable the EL2 physical timer and prevent timer
+			 * interrupts. Some fields are architecturally UNKNOWN
+			 * on reset and are set to zero.
+			 */
+			write_cnthp_ctl(CNTHP_CTL_RESET_VAL);
 			isb();
 
 			write_scr(read_scr() & ~SCR_NS_BIT);

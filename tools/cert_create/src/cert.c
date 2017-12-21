@@ -1,31 +1,7 @@
 /*
- * Copyright (c) 2015, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2015-2017, ARM Limited and Contributors. All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- * Redistributions of source code must retain the above copyright notice, this
- * list of conditions and the following disclaimer.
- *
- * Redistributions in binary form must reproduce the above copyright notice,
- * this list of conditions and the following disclaimer in the documentation
- * and/or other materials provided with the distribution.
- *
- * Neither the name of ARM nor the names of its contributors may be used
- * to endorse or promote products derived from this software without specific
- * prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 
 #include <stdio.h>
@@ -34,18 +10,25 @@
 
 #include <openssl/conf.h>
 #include <openssl/err.h>
+#include <openssl/opensslv.h>
 #include <openssl/pem.h>
 #include <openssl/sha.h>
 #include <openssl/x509v3.h>
+
+#if USE_TBBR_DEFS
+#include <tbbr_oid.h>
+#else
+#include <platform_oid.h>
+#endif
 
 #include "cert.h"
 #include "cmd_opt.h"
 #include "debug.h"
 #include "key.h"
-#include "platform_oid.h"
 #include "sha.h"
 
 #define SERIAL_RAND_BITS	64
+#define RSA_SALT_LEN		32
 
 int rand_serial(BIGNUM *b, ASN1_INTEGER *ai)
 {
@@ -96,18 +79,19 @@ int cert_add_ext(X509 *issuer, X509 *subject, int nid, char *value)
 	return 1;
 }
 
-
 int cert_new(cert_t *cert, int days, int ca, STACK_OF(X509_EXTENSION) * sk)
 {
 	EVP_PKEY *pkey = keys[cert->key].key;
 	cert_t *issuer_cert = &certs[cert->issuer];
 	EVP_PKEY *ikey = keys[issuer_cert->key].key;
 	X509 *issuer = issuer_cert->x;
-	X509 *x = NULL;
-	X509_EXTENSION *ex = NULL;
-	X509_NAME *name = NULL;
-	ASN1_INTEGER *sno = NULL;
-	int i, num;
+	X509 *x;
+	X509_EXTENSION *ex;
+	X509_NAME *name;
+	ASN1_INTEGER *sno;
+	int i, num, rc = 0;
+	EVP_MD_CTX  mdCtx;
+	EVP_PKEY_CTX *pKeyCtx = NULL;
 
 	/* Create the certificate structure */
 	x = X509_new();
@@ -125,6 +109,27 @@ int cert_new(cert_t *cert, int days, int ca, STACK_OF(X509_EXTENSION) * sk)
 	 * will become self signed) */
 	if (!issuer) {
 		issuer = x;
+	}
+
+	EVP_MD_CTX_init(&mdCtx);
+	if (!EVP_DigestSignInit(&mdCtx, &pKeyCtx, EVP_sha256(), NULL, ikey)) {
+		ERR_print_errors_fp(stdout);
+		goto END;
+	}
+
+	if (!EVP_PKEY_CTX_set_rsa_padding(pKeyCtx, RSA_PKCS1_PSS_PADDING)) {
+		ERR_print_errors_fp(stdout);
+		goto END;
+	}
+
+	if (!EVP_PKEY_CTX_set_rsa_pss_saltlen(pKeyCtx, RSA_SALT_LEN)) {
+		ERR_print_errors_fp(stdout);
+		goto END;
+	}
+
+	if (!EVP_PKEY_CTX_set_rsa_mgf1_md(pKeyCtx, EVP_sha256())) {
+		ERR_print_errors_fp(stdout);
+		goto END;
 	}
 
 	/* x509.v3 */
@@ -171,14 +176,18 @@ int cert_new(cert_t *cert, int days, int ca, STACK_OF(X509_EXTENSION) * sk)
 		}
 	}
 
-	/* Sign the certificate with the issuer key */
-	if (!X509_sign(x, ikey, EVP_sha256())) {
+	if (!X509_sign_ctx(x, &mdCtx)) {
 		ERR_print_errors_fp(stdout);
-		return 0;
+		goto END;
 	}
 
+	/* X509 certificate signed successfully */
+	rc = 1;
 	cert->x = x;
-	return 1;
+
+END:
+	EVP_MD_CTX_cleanup(&mdCtx);
+	return rc;
 }
 
 int cert_init(void)
@@ -202,7 +211,7 @@ int cert_init(void)
 
 cert_t *cert_get_by_opt(const char *opt)
 {
-	cert_t *cert = NULL;
+	cert_t *cert;
 	unsigned int i;
 
 	for (i = 0; i < num_certs; i++) {

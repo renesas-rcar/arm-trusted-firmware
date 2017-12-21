@@ -1,31 +1,7 @@
 /*
  * Copyright (c) 2013-2016, ARM Limited and Contributors. All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- * Redistributions of source code must retain the above copyright notice, this
- * list of conditions and the following disclaimer.
- *
- * Redistributions in binary form must reproduce the above copyright notice,
- * this list of conditions and the following disclaimer in the documentation
- * and/or other materials provided with the distribution.
- *
- * Neither the name of ARM nor the names of its contributors may be used
- * to endorse or promote products derived from this software without specific
- * prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 
 #include <debug.h>
@@ -49,11 +25,14 @@ const mmap_region_t plat_arm_mmap[] = {
 
 static unsigned int zynqmp_get_silicon_ver(void)
 {
-	unsigned int ver;
+	static unsigned int ver;
 
-	ver = mmio_read_32(ZYNQMP_CSU_BASEADDR + ZYNQMP_CSU_VERSION_OFFSET);
-	ver &= ZYNQMP_SILICON_VER_MASK;
-	ver >>= ZYNQMP_SILICON_VER_SHIFT;
+	if (!ver) {
+		ver = mmio_read_32(ZYNQMP_CSU_BASEADDR +
+				   ZYNQMP_CSU_VERSION_OFFSET);
+		ver &= ZYNQMP_SILICON_VER_MASK;
+		ver >>= ZYNQMP_SILICON_VER_SHIFT;
+	}
 
 	return ver;
 }
@@ -72,34 +51,6 @@ unsigned int zynqmp_get_uart_clk(void)
 	}
 
 	return 100000000;
-}
-
-static unsigned int zynqmp_get_system_timer_freq(void)
-{
-	unsigned int ver = zynqmp_get_silicon_ver();
-
-	switch (ver) {
-	case ZYNQMP_CSU_VERSION_VELOCE:
-		return 10000;
-	case ZYNQMP_CSU_VERSION_EP108:
-		return 4000000;
-	case ZYNQMP_CSU_VERSION_QEMU:
-		return 50000000;
-	}
-
-	return 100000000;
-}
-
-unsigned int zynqmp_get_silicon_id(void)
-{
-	uint32_t id;
-
-	id = mmio_read_32(ZYNQMP_CSU_BASEADDR + ZYNQMP_CSU_IDCODE_OFFSET);
-
-	id &= ZYNQMP_CSU_IDCODE_DEVICE_CODE_MASK | ZYNQMP_CSU_IDCODE_SVD_MASK;
-	id >>= ZYNQMP_CSU_IDCODE_SVD_SHIFT;
-
-	return id;
 }
 
 #if LOG_LEVEL >= LOG_LEVEL_NOTICE
@@ -152,6 +103,18 @@ static const struct {
 		.name = "17EG",
 	},
 };
+
+static unsigned int zynqmp_get_silicon_id(void)
+{
+	uint32_t id;
+
+	id = mmio_read_32(ZYNQMP_CSU_BASEADDR + ZYNQMP_CSU_IDCODE_OFFSET);
+
+	id &= ZYNQMP_CSU_IDCODE_DEVICE_CODE_MASK | ZYNQMP_CSU_IDCODE_SVD_MASK;
+	id >>= ZYNQMP_CSU_IDCODE_SVD_SHIFT;
+
+	return id;
+}
 
 static char *zynqmp_get_silicon_idcode_name(void)
 {
@@ -281,25 +244,21 @@ void zynqmp_config_setup(void)
 {
 	zynqmp_discover_pmufw();
 	zynqmp_print_platform_name();
-
-	/* Global timer init - Program time stamp reference clk */
-	uint32_t val = mmio_read_32(CRL_APB_TIMESTAMP_REF_CTRL);
-	val |= CRL_APB_TIMESTAMP_REF_CTRL_CLKACT_BIT;
-	mmio_write_32(CRL_APB_TIMESTAMP_REF_CTRL, val);
-
-	/* Program freq register in System counter and enable system counter. */
-	mmio_write_32(IOU_SCNTRS_BASEFREQ, zynqmp_get_system_timer_freq());
-	mmio_write_32(IOU_SCNTRS_CONTROL, IOU_SCNTRS_CONTROL_EN);
-
 	generic_delay_timer_init();
 }
 
 unsigned int plat_get_syscnt_freq2(void)
 {
-	unsigned int counter_base_frequency;
+	unsigned int ver = zynqmp_get_silicon_ver();
 
-	/* FIXME: Read the frequency from Frequency modes table */
-	counter_base_frequency = zynqmp_get_system_timer_freq();
+	switch (ver) {
+	case ZYNQMP_CSU_VERSION_VELOCE:
+		return 10000;
+	case ZYNQMP_CSU_VERSION_EP108:
+		return 4000000;
+	case ZYNQMP_CSU_VERSION_QEMU:
+		return 50000000;
+	}
 
-	return counter_base_frequency;
+	return mmio_read_32(IOU_SCNTRS_BASEFREQ);
 }

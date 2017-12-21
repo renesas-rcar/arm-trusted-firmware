@@ -1,31 +1,7 @@
 /*
  * Copyright (c) 2015, ARM Limited and Contributors. All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- * Redistributions of source code must retain the above copyright notice, this
- * list of conditions and the following disclaimer.
- *
- * Redistributions in binary form must reproduce the above copyright notice,
- * this list of conditions and the following disclaimer in the documentation
- * and/or other materials provided with the distribution.
- *
- * Neither the name of ARM nor the names of its contributors may be used
- * to endorse or promote products derived from this software without specific
- * prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 #include <arch.h>
 #include <asm_macros.S>
@@ -33,7 +9,24 @@
 #include <cpu_macros.S>
 #include <cortex_a57.h>
 #include <cortex_a53.h>
+#include <platform_def.h>
 #include <tegra_def.h>
+
+#define MIDR_PN_CORTEX_A57		0xD07
+
+/*******************************************************************************
+ * Implementation defined ACTLR_EL3 bit definitions
+ ******************************************************************************/
+#define ACTLR_EL3_L2ACTLR_BIT		(1 << 6)
+#define ACTLR_EL3_L2ECTLR_BIT		(1 << 5)
+#define ACTLR_EL3_L2CTLR_BIT		(1 << 4)
+#define ACTLR_EL3_CPUECTLR_BIT		(1 << 1)
+#define ACTLR_EL3_CPUACTLR_BIT		(1 << 0)
+#define ACTLR_EL3_ENABLE_ALL_ACCESS	(ACTLR_EL3_L2ACTLR_BIT | \
+					 ACTLR_EL3_L2ECTLR_BIT | \
+					 ACTLR_EL3_L2CTLR_BIT | \
+					 ACTLR_EL3_CPUECTLR_BIT | \
+					 ACTLR_EL3_CPUACTLR_BIT)
 
 	/* Global functions */
 	.globl	plat_is_my_cpu_primary
@@ -50,6 +43,8 @@
 	.globl	tegra_sec_entry_point
 	.globl	ns_image_entrypoint
 	.globl	tegra_bl31_phys_base
+	.globl	tegra_console_base
+	.globl	tegra_enable_l2_ecc_parity_prot
 
 	/* ---------------------
 	 * Common CPU init code
@@ -57,44 +52,64 @@
 	 */
 .macro	cpu_init_common
 
-#if ENABLE_L2_DYNAMIC_RETENTION
+	/* ------------------------------------------------
+	 * We enable procesor retention, L2/CPUECTLR NS
+	 * access and ECC/Parity protection for A57 CPUs
+	 * ------------------------------------------------
+	 */
+	mrs	x0, midr_el1
+	mov	x1, #(MIDR_PN_MASK << MIDR_PN_SHIFT)
+	and	x0, x0, x1
+	lsr	x0, x0, #MIDR_PN_SHIFT
+	cmp	x0, #MIDR_PN_CORTEX_A57
+	b.ne	1f
+
 	/* ---------------------------
 	 * Enable processor retention
 	 * ---------------------------
-	*/
-	mrs	x0, L2ECTLR_EL1
-	mov	x1, #RETENTION_ENTRY_TICKS_512 << L2ECTLR_RET_CTRL_SHIFT
-	bic	x0, x0, #L2ECTLR_RET_CTRL_MASK
+	 */
+	mrs	x0, CORTEX_A57_L2ECTLR_EL1
+	mov	x1, #RETENTION_ENTRY_TICKS_512
+	bic	x0, x0, #CORTEX_A57_L2ECTLR_RET_CTRL_MASK
 	orr	x0, x0, x1
-	msr	L2ECTLR_EL1, x0
+	msr	CORTEX_A57_L2ECTLR_EL1, x0
 	isb
-#endif
 
-#if ENABLE_CPU_DYNAMIC_RETENTION
-	mrs	x0, CPUECTLR_EL1
-	mov	x1, #RETENTION_ENTRY_TICKS_512 << CPUECTLR_CPU_RET_CTRL_SHIFT
-	bic	x0, x0, #CPUECTLR_CPU_RET_CTRL_MASK
+	mrs	x0, CORTEX_A57_ECTLR_EL1
+	mov	x1, #RETENTION_ENTRY_TICKS_512
+	bic	x0, x0, #CORTEX_A57_ECTLR_CPU_RET_CTRL_MASK
 	orr	x0, x0, x1
-	msr	CPUECTLR_EL1, x0
+	msr	CORTEX_A57_ECTLR_EL1, x0
 	isb
-#endif
 
-#if ENABLE_NS_L2_CPUECTRL_RW_ACCESS
 	/* -------------------------------------------------------
 	 * Enable L2 and CPU ECTLR RW access from non-secure world
 	 * -------------------------------------------------------
-	*/
+	 */
 	mov	x0, #ACTLR_EL3_ENABLE_ALL_ACCESS
 	msr	actlr_el3, x0
 	msr	actlr_el2, x0
 	isb
-#endif
+
+	/* -------------------------------------------------------
+	 * Enable L2 ECC and Parity Protection
+	 * -------------------------------------------------------
+	 */
+	adr	x0, tegra_enable_l2_ecc_parity_prot
+	ldr	x0, [x0]
+	cbz	x0, 1f
+	mrs	x0, CORTEX_A57_L2CTLR_EL1
+	and	x1, x0, #CORTEX_A57_L2_ECC_PARITY_PROTECTION_BIT
+	cbnz	x1, 1f
+	orr	x0, x0, #CORTEX_A57_L2_ECC_PARITY_PROTECTION_BIT
+	msr	CORTEX_A57_L2CTLR_EL1, x0
+	isb
 
 	/* --------------------------------
 	 * Enable the cycle count register
 	 * --------------------------------
 	 */
-	mrs	x0, pmcr_el0
+1:	mrs	x0, pmcr_el0
 	ubfx	x0, x0, #11, #5		// read PMCR.N field
 	mov	x1, #1
 	lsl	x0, x1, x0
@@ -158,6 +173,20 @@ func plat_get_my_entrypoint
 endfunc plat_get_my_entrypoint
 
 	/* -----------------------------------------------------
+	 * int platform_get_core_pos(int mpidr);
+	 *
+	 * With this function: CorePos = (ClusterId * 4) +
+	 *                                CoreId
+	 * -----------------------------------------------------
+	 */
+func platform_get_core_pos
+	and	x1, x0, #MPIDR_CPU_MASK
+	and	x0, x0, #MPIDR_CLUSTER_MASK
+	add	x0, x1, x0, LSR #6
+	ret
+endfunc platform_get_core_pos
+
+	/* -----------------------------------------------------
 	 * void plat_secondary_cold_boot_setup (void);
 	 *
 	 * This function performs any platform specific actions
@@ -190,10 +219,12 @@ endfunc platform_mem_init
 	 * ---------------------------------------------
 	 */
 func plat_crash_console_init
-	mov_imm	x0, TEGRA_BOOT_UART_BASE
-	mov_imm	x1, TEGRA_BOOT_UART_CLK_IN_HZ
-	mov_imm	x2, TEGRA_CONSOLE_BAUDRATE
-	b	console_core_init
+	mov	x0, #0
+	adr	x1, tegra_console_base
+	ldr	x1, [x1]
+	cbz	x1, 1f
+	mov	w0, #1
+1:	ret
 endfunc plat_crash_console_init
 
 	/* ---------------------------------------------
@@ -204,7 +235,8 @@ endfunc plat_crash_console_init
 	 * ---------------------------------------------
 	 */
 func plat_crash_console_putc
-	mov_imm	x1, TEGRA_BOOT_UART_BASE
+	adr	x1, tegra_console_base
+	ldr	x1, [x1]
 	b	console_core_putc
 endfunc plat_crash_console_putc
 
@@ -214,6 +246,47 @@ endfunc plat_crash_console_putc
 	 * ---------------------------------------------------
 	 */
 func plat_reset_handler
+
+	/* ----------------------------------------------------
+	 * Verify if we are running from BL31_BASE address
+	 * ----------------------------------------------------
+	 */
+	adr	x18, bl31_entrypoint
+	mov	x17, #BL31_BASE
+	cmp	x18, x17
+	b.eq	1f
+
+	/* ----------------------------------------------------
+	 * Copy the entire BL31 code to BL31_BASE if we are not
+	 * running from it already
+	 * ----------------------------------------------------
+	 */
+	mov	x0, x17
+	mov	x1, x18
+	mov	x2, #BL31_SIZE
+_loop16:
+	cmp	x2, #16
+	b.lo	_loop1
+	ldp	x3, x4, [x1], #16
+	stp	x3, x4, [x0], #16
+	sub	x2, x2, #16
+	b	_loop16
+	/* copy byte per byte */
+_loop1:
+	cbz	x2, _end
+	ldrb	w3, [x1], #1
+	strb	w3, [x0], #1
+	subs	x2, x2, #1
+	b.ne	_loop1
+
+	/* ----------------------------------------------------
+	 * Jump to BL31_BASE and start execution again
+	 * ----------------------------------------------------
+	 */
+_end:	mov	x0, x20
+	mov	x1, x21
+	br	x17
+1:
 
 	/* -----------------------------------
 	 * derive and save the phys_base addr
@@ -244,18 +317,18 @@ func tegra_secure_entrypoint
 	 * entries from the branch predictor array.
 	 * -------------------------------------------------------
 	 */
-	mrs	x0, CPUACTLR_EL1
+	mrs	x0, CORTEX_A57_ACTLR_EL1
 	orr	x0, x0, #1
-	msr	CPUACTLR_EL1, x0	/* invalidate BTB and I$ together */
+	msr	CORTEX_A57_ACTLR_EL1, x0	/* invalidate BTB and I$ together */
 	dsb	sy
 	isb
 	ic	iallu			/* actual invalidate */
 	dsb	sy
 	isb
 
-	mrs	x0, CPUACTLR_EL1
+	mrs	x0, CORTEX_A57_ACTLR_EL1
 	bic	x0, x0, #1
-	msr	CPUACTLR_EL1, X0	/* restore original CPUACTLR_EL1 */
+	msr	CORTEX_A57_ACTLR_EL1, X0	/* restore original CPUACTLR_EL1 */
 	dsb	sy
 	isb
 
@@ -279,7 +352,7 @@ func tegra_secure_entrypoint
 	msr	oslar_el1, x0		/* os lock stays 0 across warm reset */
 	mov	x3, #3
 	movz	x4, #0x8000, lsl #48
-	msr	CPUACTLR_EL1, x4	/* turn off RCG */
+	msr	CORTEX_A57_ACTLR_EL1, x4	/* turn off RCG */
 	isb
 	msr	rmr_el3, x3		/* request warm reset */
 	isb
@@ -365,4 +438,18 @@ ns_image_entrypoint:
 	 * --------------------------------------------------
 	 */
 tegra_bl31_phys_base:
+	.quad	0
+
+	/* --------------------------------------------------
+	 * UART controller base for console init
+	 * --------------------------------------------------
+	 */
+tegra_console_base:
+	.quad	0
+
+	/* --------------------------------------------------
+	 * Enable L2 ECC and Parity Protection
+	 * --------------------------------------------------
+	 */
+tegra_enable_l2_ecc_parity_prot:
 	.quad	0

@@ -1,31 +1,7 @@
 /*
  * Copyright (c) 2014-2016, ARM Limited and Contributors. All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- * Redistributions of source code must retain the above copyright notice, this
- * list of conditions and the following disclaimer.
- *
- * Redistributions in binary form must reproduce the above copyright notice,
- * this list of conditions and the following disclaimer in the documentation
- * and/or other materials provided with the distribution.
- *
- * Neither the name of ARM nor the names of its contributors may be used
- * to endorse or promote products derived from this software without specific
- * prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 
 #ifndef __PLATFORM_DEF_H__
@@ -49,6 +25,9 @@
 					PLATFORM_CORE_COUNT)
 #define PLATFORM_CORE_COUNT		(JUNO_CLUSTER0_CORE_COUNT + \
 					JUNO_CLUSTER1_CORE_COUNT)
+
+/* Cryptocell HW Base address */
+#define PLAT_CRYPTOCELL_BASE		0x60050000
 
 /*
  * Other platform porting definitions are provided by included headers
@@ -82,29 +61,34 @@
  * PLAT_ARM_MMAP_ENTRIES depends on the number of entries in the
  * plat_arm_mmap array defined for each BL stage.
  */
-#if IMAGE_BL1
+#ifdef IMAGE_BL1
 # define PLAT_ARM_MMAP_ENTRIES		7
 # define MAX_XLAT_TABLES		4
 #endif
 
-#if IMAGE_BL2
+#ifdef IMAGE_BL2
 # define PLAT_ARM_MMAP_ENTRIES		8
 # define MAX_XLAT_TABLES		3
 #endif
 
-#if IMAGE_BL2U
+#ifdef IMAGE_BL2U
 # define PLAT_ARM_MMAP_ENTRIES		4
 # define MAX_XLAT_TABLES		3
 #endif
 
-#if IMAGE_BL31
+#ifdef IMAGE_BL31
+# if CSS_USE_SCMI_DRIVER
+#  define PLAT_ARM_MMAP_ENTRIES		6
+#  define MAX_XLAT_TABLES		3
+# else
+#  define PLAT_ARM_MMAP_ENTRIES		5
+#  define MAX_XLAT_TABLES		2
+# endif
+#endif
+
+#ifdef IMAGE_BL32
 # define PLAT_ARM_MMAP_ENTRIES		5
-# define MAX_XLAT_TABLES		2
-#endif
-
-#if IMAGE_BL32
-# define PLAT_ARM_MMAP_ENTRIES		4
-# define MAX_XLAT_TABLES		3
+# define MAX_XLAT_TABLES		4
 #endif
 
 /*
@@ -189,6 +173,12 @@
  * SCP_BL2 size plus a little space for growth.
  */
 #define PLAT_CSS_MAX_SCP_BL2_SIZE	0x1D000
+
+/*
+ * PLAT_CSS_MAX_SCP_BL2U_SIZE is calculated using the current
+ * SCP_BL2U size plus a little space for growth.
+ */
+#define PLAT_CSS_MAX_SCP_BL2U_SIZE	0x1D000
 
 /*
  * Define a list of Group 1 Secure and Group 0 interrupts as per GICv3

@@ -1,38 +1,15 @@
 /*
- * Copyright (c) 2016, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2016-2017, ARM Limited and Contributors. All rights reserved.
  * Copyright (c) 2015-2017, Renesas Electronics Corporation. All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- * Redistributions of source code must retain the above copyright notice, this
- * list of conditions and the following disclaimer.
- *
- * Redistributions in binary form must reproduce the above copyright notice,
- * this list of conditions and the following disclaimer in the documentation
- * and/or other materials provided with the distribution.
- *
- * Neither the name of ARM nor the names of its contributors may be used
- * to endorse or promote products derived from this software without specific
- * prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 
 #include <arch.h>
 #include <arch_helpers.h>
 #include <assert.h>
 #include <cassert.h>
+#include <common_def.h>
 #include <debug.h>
 #include <platform_def.h>
 #include <string.h>
@@ -40,6 +17,7 @@
 #include <utils.h>
 #include <xlat_tables.h>
 #include <platform.h>
+#include "xlat_tables_private.h"
 
 #if LOG_LEVEL >= LOG_LEVEL_VERBOSE
 #define LVL0_SPACER ""
@@ -47,9 +25,9 @@
 #define LVL2_SPACER "    "
 #define LVL3_SPACER "      "
 #define get_level_spacer(level)		\
-			(((level) == 0) ? LVL0_SPACER : \
-			(((level) == 1) ? LVL1_SPACER : \
-			(((level) == 2) ? LVL2_SPACER : LVL3_SPACER)))
+			(((level) == U(0)) ? LVL0_SPACER : \
+			(((level) == U(1)) ? LVL1_SPACER : \
+			(((level) == U(2)) ? LVL2_SPACER : LVL3_SPACER)))
 #define debug_print(...) tf_printf(__VA_ARGS__)
 #else
 #define debug_print(...) ((void)0)
@@ -60,9 +38,11 @@
 static uint64_t xlat_tables[MAX_XLAT_TABLES][XLAT_TABLE_ENTRIES]
 			__aligned(XLAT_TABLE_SIZE) __section("xlat_table");
 
-static unsigned next_xlat;
+static unsigned int next_xlat;
 static unsigned long long xlat_max_pa;
 static uintptr_t xlat_max_va;
+
+static uint64_t execute_never_mask;
 
 /*
  * Array of all memory regions stored in order of ascending base address.
@@ -87,7 +67,7 @@ void print_mmap(void)
 }
 
 void mmap_add_region(unsigned long long base_pa, uintptr_t base_va,
-			size_t size, unsigned int attr)
+			size_t size, mmap_attr_t attr)
 {
 	mmap_region_t *mm = mmap;
 	mmap_region_t *mm_last = mm + ARRAY_SIZE(mmap) - 1;
@@ -104,7 +84,12 @@ void mmap_add_region(unsigned long long base_pa, uintptr_t base_va,
 	assert(base_pa < end_pa); /* Check for overflows */
 	assert(base_va < end_va);
 
-#if DEBUG
+	assert((base_va + (uintptr_t)size - (uintptr_t)1) <=
+					(PLAT_VIRT_ADDR_SPACE_SIZE - 1));
+	assert((base_pa + (unsigned long long)size - 1ULL) <=
+					(PLAT_PHY_ADDR_SPACE_SIZE - 1));
+
+#if ENABLE_ASSERTIONS
 
 	/* Check for PAs and VAs overlaps with all other regions */
 	for (mm = mmap; mm->size; ++mm) {
@@ -152,7 +137,7 @@ void mmap_add_region(unsigned long long base_pa, uintptr_t base_va,
 
 	mm = mmap; /* Restore pointer to the start of the array */
 
-#endif /* DEBUG */
+#endif /* ENABLE_ASSERTIONS */
 
 	/* Find correct place in mmap to insert new region */
 	while (mm->base_va < base_va && mm->size)
@@ -197,11 +182,14 @@ void mmap_add(const mmap_region_t *mm)
 	}
 }
 
-static uint64_t mmap_desc(unsigned attr, unsigned long long addr_pa,
-							int level)
+static uint64_t mmap_desc(mmap_attr_t attr, unsigned long long addr_pa,
+							unsigned int level)
 {
 	uint64_t desc;
 	int mem_type;
+
+	/* Make sure that the granularity is fine enough to map this address. */
+	assert((addr_pa & XLAT_BLOCK_MASK(level)) == 0);
 
 	desc = addr_pa;
 	/*
@@ -232,7 +220,8 @@ static uint64_t mmap_desc(unsigned attr, unsigned long long addr_pa,
 		 * fetch, which could be an issue if this memory region
 		 * corresponds to a read-sensitive peripheral.
 		 */
-		desc |= UPPER_ATTRS(XN);
+		desc |= execute_never_mask;
+
 	} else { /* Normal memory */
 		/*
 		 * Always map read-write normal memory as execute-never.
@@ -240,7 +229,7 @@ static uint64_t mmap_desc(unsigned attr, unsigned long long addr_pa,
 		 * R/W memory is reserved for data storage, which must not be
 		 * executable.)
 		 * Note that setting the XN bit here is for consistency only.
-		 * The enable_mmu_elx() function sets the SCTLR_EL3.WXN bit,
+		 * The function that enables the MMU sets the SCTLR_ELx.WXN bit,
 		 * which makes any writable memory region to be treated as
 		 * execute-never, regardless of the value of the XN bit in the
 		 * translation table.
@@ -248,8 +237,9 @@ static uint64_t mmap_desc(unsigned attr, unsigned long long addr_pa,
 		 * For read-only memory, rely on the MT_EXECUTE/MT_EXECUTE_NEVER
 		 * attribute to figure out the value of the XN bit.
 		 */
-		if ((attr & MT_RW) || (attr & MT_EXECUTE_NEVER))
-			desc |= UPPER_ATTRS(XN);
+		if ((attr & MT_RW) || (attr & MT_EXECUTE_NEVER)) {
+			desc |= execute_never_mask;
+		}
 
 		if (mem_type == MT_MEMORY) {
 			desc |= LOWER_ATTRS(ATTR_IWBWA_OWBWA_NTR_INDEX | ISH);
@@ -268,15 +258,19 @@ static uint64_t mmap_desc(unsigned attr, unsigned long long addr_pa,
 }
 
 /*
- * Returns attributes of area at `base_va` with size `size`. It returns the
- * attributes of the innermost region that contains it. If there are partial
- * overlaps, it returns -1, as a smaller size is needed.
+ * Look for the innermost region that contains the area at `base_va` with size
+ * `size`. Populate *attr with the attributes of this region.
+ *
+ * On success, this function returns 0.
+ * If there are partial overlaps (meaning that a smaller size is needed) or if
+ * the region can't be found in the given area, it returns -1. In this case the
+ * value pointed by attr should be ignored by the caller.
  */
 static int mmap_region_attr(mmap_region_t *mm, uintptr_t base_va,
-					size_t size)
+					size_t size, mmap_attr_t *attr)
 {
 	/* Don't assume that the area is contained in the first region */
-	int attr = -1;
+	int ret = -1;
 
 	/*
 	 * Get attributes from last (innermost) region that contains the
@@ -296,29 +290,31 @@ static int mmap_region_attr(mmap_region_t *mm, uintptr_t base_va,
 	for (;; ++mm) {
 
 		if (!mm->size)
-			return attr; /* Reached end of list */
+			return ret; /* Reached end of list */
 
 		if (mm->base_va > base_va + size - 1)
-			return attr; /* Next region is after area so end */
+			return ret; /* Next region is after area so end */
 
 		if (mm->base_va + mm->size - 1 < base_va)
 			continue; /* Next region has already been overtaken */
 
-		if (mm->attr == attr)
+		if (!ret && mm->attr == *attr)
 			continue; /* Region doesn't override attribs so skip */
 
 		if (mm->base_va > base_va ||
 			mm->base_va + mm->size - 1 < base_va + size - 1)
 			return -1; /* Region doesn't fully cover our area */
 
-		attr = mm->attr;
+		*attr = mm->attr;
+		ret = 0;
 	}
+	return ret;
 }
 
 static mmap_region_t *init_xlation_table_inner(mmap_region_t *mm,
 					uintptr_t base_va,
 					uint64_t *table,
-					int level)
+					unsigned int level)
 {
 	assert(level >= XLAT_TABLE_LEVEL_MIN && level <= XLAT_TABLE_LEVEL_MAX);
 
@@ -348,14 +344,17 @@ static mmap_region_t *init_xlation_table_inner(mmap_region_t *mm,
 		if (mm->base_va > base_va + level_size - 1) {
 			/* Next region is after this area. Nothing to map yet */
 			desc = INVALID_DESC;
-		} else {
+		/* Make sure that the current level allows block descriptors */
+		} else if (level >= XLAT_BLOCK_LEVEL_MIN) {
 			/*
 			 * Try to get attributes of this area. It will fail if
 			 * there are partially overlapping regions. On success,
 			 * it will return the innermost region's attributes.
 			 */
-			int attr = mmap_region_attr(mm, base_va, level_size);
-			if (attr >= 0) {
+			mmap_attr_t attr;
+			int r = mmap_region_attr(mm, base_va, level_size, &attr);
+
+			if (!r) {
 				desc = mmap_desc(attr,
 					base_va - mm->base_va + mm->base_pa,
 					level);
@@ -377,16 +376,17 @@ static mmap_region_t *init_xlation_table_inner(mmap_region_t *mm,
 
 		*table++ = desc;
 		base_va += level_size;
-	} while ((base_va & level_index_mask) && (base_va - 1 < ADDR_SPACE_SIZE - 1));
+	} while ((base_va & level_index_mask) &&
+		 (base_va - 1 < PLAT_VIRT_ADDR_SPACE_SIZE - 1));
 
 	return mm;
 }
 
 void init_xlation_table(uintptr_t base_va, uint64_t *table,
-			int level, uintptr_t *max_va,
+			unsigned int level, uintptr_t *max_va,
 			unsigned long long *max_pa)
 {
-
+	execute_never_mask = xlat_arch_get_xn_desc(xlat_arch_current_el());
 	init_xlation_table_inner(mmap, base_va, table, level);
 	*max_va = xlat_max_va;
 	*max_pa = xlat_max_pa;

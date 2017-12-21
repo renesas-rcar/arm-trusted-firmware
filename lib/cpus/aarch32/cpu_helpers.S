@@ -1,31 +1,7 @@
 /*
- * Copyright (c) 2016, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2016-2017, ARM Limited and Contributors. All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- * Redistributions of source code must retain the above copyright notice, this
- * list of conditions and the following disclaimer.
- *
- * Redistributions in binary form must reproduce the above copyright notice,
- * this list of conditions and the following disclaimer in the documentation
- * and/or other materials provided with the distribution.
- *
- * Neither the name of ARM nor the names of its contributors may be used
- * to endorse or promote products derived from this software without specific
- * prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 
 #include <arch.h>
@@ -34,7 +10,7 @@
 #include <cpu_data.h>
 #include <cpu_macros.S>
 
-#if IMAGE_BL1 || IMAGE_BL32
+#if defined(IMAGE_BL1) || defined(IMAGE_BL32)
 	/*
 	 * The reset handler common to all platforms.  After a matching
 	 * cpu_ops structure entry is found, the correponding reset_handler
@@ -53,7 +29,7 @@ func reset_handler
 	/* Get the matching cpu_ops pointer (clobbers: r0 - r5) */
 	bl	get_cpu_ops_ptr
 
-#if ASM_ASSERTION
+#if ENABLE_ASSERTIONS
 	cmp	r0, #0
 	ASM_ASSERT(ne)
 #endif
@@ -68,50 +44,41 @@ endfunc reset_handler
 
 #endif /* IMAGE_BL1 || IMAGE_BL32 */
 
-#if IMAGE_BL32 /* The power down core and cluster is needed only in  BL32 */
+#ifdef IMAGE_BL32 /* The power down core and cluster is needed only in  BL32 */
 	/*
-	 * The prepare core power down function for all platforms.  After
-	 * the cpu_ops pointer is retrieved from cpu_data, the corresponding
-	 * pwr_dwn_core in the cpu_ops is invoked. Follows AAPCS.
+	 * void prepare_cpu_pwr_dwn(unsigned int power_level)
+	 *
+	 * Prepare CPU power down function for all platforms. The function takes
+	 * a domain level to be powered down as its parameter. After the cpu_ops
+	 * pointer is retrieved from cpu_data, the handler for requested power
+	 * level is called.
 	 */
-	.globl	prepare_core_pwr_dwn
-func prepare_core_pwr_dwn
-	push	{lr}
-	bl	_cpu_data
-	pop	{lr}
+	.globl	prepare_cpu_pwr_dwn
+func prepare_cpu_pwr_dwn
+	/*
+	 * If the given power level exceeds CPU_MAX_PWR_DWN_OPS, we call the
+	 * power down handler for the last power level
+	 */
+	mov	r2, #(CPU_MAX_PWR_DWN_OPS - 1)
+	cmp	r0, r2
+	movhi	r0, r2
 
-	ldr	r1, [r0, #CPU_DATA_CPU_OPS_PTR]
-#if ASM_ASSERTION
-	cmp	r1, #0
+	push	{r0, lr}
+	bl	_cpu_data
+	pop	{r2, lr}
+
+	ldr	r0, [r0, #CPU_DATA_CPU_OPS_PTR]
+#if ENABLE_ASSERTIONS
+	cmp	r0, #0
 	ASM_ASSERT(ne)
 #endif
 
-	/* Get the cpu_ops core_pwr_dwn handler */
-	ldr	r0, [r1, #CPU_PWR_DWN_CORE]
-	bx	r0
-endfunc prepare_core_pwr_dwn
-
-	/*
-	 * The prepare cluster power down function for all platforms.  After
-	 * the cpu_ops pointer is retrieved from cpu_data, the corresponding
-	 * pwr_dwn_cluster in the cpu_ops is invoked. Follows AAPCS.
-	 */
-	.globl	prepare_cluster_pwr_dwn
-func prepare_cluster_pwr_dwn
-	push	{lr}
-	bl	_cpu_data
-	pop	{lr}
-
-	ldr	r1, [r0, #CPU_DATA_CPU_OPS_PTR]
-#if ASM_ASSERTION
-	cmp	r1, #0
-	ASM_ASSERT(ne)
-#endif
-
-	/* Get the cpu_ops cluster_pwr_dwn handler */
-	ldr	r0, [r1, #CPU_PWR_DWN_CLUSTER]
-	bx	r0
-endfunc prepare_cluster_pwr_dwn
+	/* Get the appropriate power down handler */
+	mov	r1, #CPU_PWR_DWN_OPS
+	add	r1, r1, r2, lsl #2
+	ldr	r1, [r0, r1]
+	bx	r1
+endfunc prepare_cpu_pwr_dwn
 
 	/*
 	 * Initializes the cpu_ops_ptr if not already initialized
@@ -127,7 +94,7 @@ func init_cpu_ops
 	cmp	r1, #0
 	bne	1f
 	bl	get_cpu_ops_ptr
-#if ASM_ASSERTION
+#if ENABLE_ASSERTIONS
 	cmp	r0, #0
 	ASM_ASSERT(ne)
 #endif
@@ -166,7 +133,7 @@ func get_cpu_ops_ptr
 1:
 	/* Check if we have reached end of list */
 	cmp	r4, r5
-	bge	error_exit
+	bhs	error_exit
 
 	/* load the midr from the cpu_ops */
 	ldr	r1, [r4], #CPU_OPS_SIZE
@@ -181,3 +148,99 @@ func get_cpu_ops_ptr
 error_exit:
 	bx	lr
 endfunc get_cpu_ops_ptr
+
+/*
+ * Extract CPU revision and variant, and combine them into a single numeric for
+ * easier comparison.
+ */
+	.globl	cpu_get_rev_var
+func cpu_get_rev_var
+	ldcopr	r1, MIDR
+
+	/*
+	 * Extract the variant[23:20] and revision[3:0] from r1 and pack it in
+	 * r0[0:7] as variant[7:4] and revision[3:0]:
+	 *
+	 * First extract r1[23:16] to r0[7:0] and zero fill the rest. Then
+	 * extract r1[3:0] into r0[3:0] retaining other bits.
+	 */
+	ubfx	r0, r1, #(MIDR_VAR_SHIFT - MIDR_REV_BITS), #(MIDR_REV_BITS + MIDR_VAR_BITS)
+	bfi	r0, r1, #MIDR_REV_SHIFT, #MIDR_REV_BITS
+	bx	lr
+endfunc cpu_get_rev_var
+
+/*
+ * Compare the CPU's revision-variant (r0) with a given value (r1), for errata
+ * application purposes. If the revision-variant is less than or same as a given
+ * value, indicates that errata applies; otherwise not.
+ */
+	.globl	cpu_rev_var_ls
+func cpu_rev_var_ls
+	cmp	r0, r1
+	movls	r0, #ERRATA_APPLIES
+	movhi	r0, #ERRATA_NOT_APPLIES
+	bx	lr
+endfunc cpu_rev_var_ls
+
+/*
+ * Compare the CPU's revision-variant (r0) with a given value (r1), for errata
+ * application purposes. If the revision-variant is higher than or same as a
+ * given value, indicates that errata applies; otherwise not.
+ */
+	.globl	cpu_rev_var_hs
+func cpu_rev_var_hs
+	cmp	r0, r1
+	movge	r0, #ERRATA_APPLIES
+	movlt	r0, #ERRATA_NOT_APPLIES
+	bx	lr
+endfunc cpu_rev_var_hs
+
+#if REPORT_ERRATA
+/*
+ * void print_errata_status(void);
+ *
+ * Function to print errata status for CPUs of its class. Must be called only:
+ *
+ *   - with MMU and data caches are enabled;
+ *   - after cpu_ops have been initialized in per-CPU data.
+ */
+	.globl print_errata_status
+func print_errata_status
+	push	{r4, lr}
+#ifdef IMAGE_BL1
+	/*
+	 * BL1 doesn't have per-CPU data. So retrieve the CPU operations
+	 * directly.
+	 */
+	bl	get_cpu_ops_ptr
+	ldr	r0, [r0, #CPU_ERRATA_FUNC]
+	cmp	r0, #0
+	blxne	r0
+#else
+	/*
+	 * Retrieve pointer to cpu_ops, and further, the errata printing
+	 * function. If it's non-NULL, jump to the function in turn.
+	 */
+	bl	_cpu_data
+	ldr	r1, [r0, #CPU_DATA_CPU_OPS_PTR]
+	ldr	r0, [r1, #CPU_ERRATA_FUNC]
+	cmp	r0, #0
+	beq	1f
+
+	mov	r4, r0
+
+	/*
+	 * Load pointers to errata lock and printed flag. Call
+	 * errata_needs_reporting to check whether this CPU needs to report
+	 * errata status pertaining to its class.
+	 */
+	ldr	r0, [r1, #CPU_ERRATA_LOCK]
+	ldr	r1, [r1, #CPU_ERRATA_PRINTED]
+	bl	errata_needs_reporting
+	cmp	r0, #0
+	blxne	r4
+1:
+#endif
+	pop	{r4, pc}
+endfunc print_errata_status
+#endif

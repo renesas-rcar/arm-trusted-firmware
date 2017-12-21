@@ -1,31 +1,7 @@
 /*
- * Copyright (c) 2015-2016, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2015-2017, ARM Limited and Contributors. All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- * Redistributions of source code must retain the above copyright notice, this
- * list of conditions and the following disclaimer.
- *
- * Redistributions in binary form must reproduce the above copyright notice,
- * this list of conditions and the following disclaimer in the documentation
- * and/or other materials provided with the distribution.
- *
- * Neither the name of ARM nor the names of its contributors may be used
- * to endorse or promote products derived from this software without specific
- * prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 #ifndef __ARM_DEF_H__
 #define __ARM_DEF_H__
@@ -34,7 +10,8 @@
 #include <common_def.h>
 #include <platform_def.h>
 #include <tbbr_img_def.h>
-#include <xlat_tables.h>
+#include <utils_def.h>
+#include <xlat_tables_defs.h>
 
 
 /******************************************************************************
@@ -89,7 +66,7 @@
  *   - SCP TZC DRAM: If present, DRAM reserved for SCP use
  *   - AP TZC DRAM: The remaining TZC secured DRAM reserved for AP use
  */
-#define ARM_TZC_DRAM1_SIZE		MAKE_ULL(0x01000000)
+#define ARM_TZC_DRAM1_SIZE		ULL(0x01000000)
 
 #define ARM_SCP_TZC_DRAM1_BASE		(ARM_DRAM1_BASE +		\
 					 ARM_DRAM1_SIZE -		\
@@ -106,6 +83,18 @@
 #define ARM_AP_TZC_DRAM1_END		(ARM_AP_TZC_DRAM1_BASE +	\
 					 ARM_AP_TZC_DRAM1_SIZE - 1)
 
+/* Define the Access permissions for Secure peripherals to NS_DRAM */
+#if ARM_CRYPTOCELL_INTEG
+/*
+ * Allow Secure peripheral to read NS DRAM when integrated with CryptoCell.
+ * This is required by CryptoCell to authenticate BL33 which is loaded
+ * into the Non Secure DDR.
+ */
+#define ARM_TZC_NS_DRAM_S_ACCESS	TZC_REGION_S_RD
+#else
+#define ARM_TZC_NS_DRAM_S_ACCESS	TZC_REGION_S_NONE
+#endif
+
 
 #define ARM_NS_DRAM1_BASE		ARM_DRAM1_BASE
 #define ARM_NS_DRAM1_SIZE		(ARM_DRAM1_SIZE -		\
@@ -113,12 +102,12 @@
 #define ARM_NS_DRAM1_END		(ARM_NS_DRAM1_BASE +		\
 					 ARM_NS_DRAM1_SIZE - 1)
 
-#define ARM_DRAM1_BASE			MAKE_ULL(0x80000000)
-#define ARM_DRAM1_SIZE			MAKE_ULL(0x80000000)
+#define ARM_DRAM1_BASE			ULL(0x80000000)
+#define ARM_DRAM1_SIZE			ULL(0x80000000)
 #define ARM_DRAM1_END			(ARM_DRAM1_BASE +		\
 					 ARM_DRAM1_SIZE - 1)
 
-#define ARM_DRAM2_BASE			MAKE_ULL(0x880000000)
+#define ARM_DRAM2_BASE			ULL(0x880000000)
 #define ARM_DRAM2_SIZE			PLAT_ARM_DRAM2_SIZE
 #define ARM_DRAM2_END			(ARM_DRAM2_BASE +		\
 					 ARM_DRAM2_SIZE - 1)
@@ -205,7 +194,8 @@
  * Required platform porting definitions common to all ARM standard platforms
  *****************************************************************************/
 
-#define ADDR_SPACE_SIZE			(1ull << 32)
+#define PLAT_PHY_ADDR_SPACE_SIZE			(1ull << 32)
+#define PLAT_VIRT_ADDR_SPACE_SIZE			(1ull << 32)
 
 /*
  * This macro defines the deepest retention state possible. A higher state
@@ -246,9 +236,10 @@
 /*******************************************************************************
  * BL2 specific defines.
  ******************************************************************************/
-#if ARM_BL31_IN_DRAM
+#if ARM_BL31_IN_DRAM || defined(AARCH32)
 /*
- * BL31 is loaded in the DRAM.
+ * For AArch32 BL31 is not applicable.
+ * For AArch64 BL31 is loaded in the DRAM.
  * Put BL2 just below BL1.
  */
 #define BL2_BASE			(BL1_RW_BASE - PLAT_ARM_MAX_BL2_SIZE)
@@ -332,9 +323,15 @@
  * FWU Images: NS_BL1U, BL2U & NS_BL2U defines.
  ******************************************************************************/
 #define BL2U_BASE			BL2_BASE
-#if ARM_BL31_IN_DRAM
+#if ARM_BL31_IN_DRAM || defined(AARCH32)
+/*
+ * For AArch32 BL31 is not applicable.
+ * For AArch64 BL31 is loaded in the DRAM.
+ * BL2U extends up to BL1.
+ */
 #define BL2U_LIMIT			BL1_RW_BASE
 #else
+/* BL2U extends up to BL31. */
 #define BL2U_LIMIT			BL31_BASE
 #endif
 #define NS_BL2U_BASE			ARM_NS_DRAM1_BASE

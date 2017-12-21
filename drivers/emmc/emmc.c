@@ -1,31 +1,7 @@
 /*
- * Copyright (c) 2016, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2016-2017, ARM Limited and Contributors. All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- * Redistributions of source code must retain the above copyright notice, this
- * list of conditions and the following disclaimer.
- *
- * Redistributions in binary form must reproduce the above copyright notice,
- * this list of conditions and the following disclaimer in the documentation
- * and/or other materials provided with the distribution.
- *
- * Neither the name of ARM nor the names of its contributors may be used
- * to endorse or promote products derived from this software without specific
- * prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
+ * SPDX-License-Identifier: BSD-3-Clause
  *
  * Defines a simple and generic interface to access eMMC device.
  */
@@ -36,6 +12,7 @@
 #include <emmc.h>
 #include <errno.h>
 #include <string.h>
+#include <utils.h>
 
 static const emmc_ops_t *ops;
 static unsigned int emmc_ocr_value;
@@ -53,7 +30,7 @@ static int emmc_device_state(void)
 	int ret;
 
 	do {
-		memset(&cmd, 0, sizeof(emmc_cmd_t));
+		zeromem(&cmd, sizeof(emmc_cmd_t));
 		cmd.cmd_idx = EMMC_CMD13;
 		cmd.cmd_arg = EMMC_FIX_RCA << RCA_SHIFT_OFFSET;
 		cmd.resp_type = EMMC_RESPONSE_R1;
@@ -71,7 +48,7 @@ static void emmc_set_ext_csd(unsigned int ext_cmd, unsigned int value)
 	emmc_cmd_t cmd;
 	int ret, state;
 
-	memset(&cmd, 0, sizeof(emmc_cmd_t));
+	zeromem(&cmd, sizeof(emmc_cmd_t));
 	cmd.cmd_idx = EMMC_CMD6;
 	cmd.cmd_arg = EXTCSD_WRITE_BYTES | EXTCSD_CMD(ext_cmd) |
 		      EXTCSD_VALUE(value) | 1;
@@ -107,14 +84,14 @@ static int emmc_enumerate(int clk, int bus_width)
 	ops->init();
 
 	/* CMD0: reset to IDLE */
-	memset(&cmd, 0, sizeof(emmc_cmd_t));
+	zeromem(&cmd, sizeof(emmc_cmd_t));
 	cmd.cmd_idx = EMMC_CMD0;
 	ret = ops->send_cmd(&cmd);
 	assert(ret == 0);
 
 	while (1) {
 		/* CMD1: get OCR register */
-		memset(&cmd, 0, sizeof(emmc_cmd_t));
+		zeromem(&cmd, sizeof(emmc_cmd_t));
 		cmd.cmd_idx = EMMC_CMD1;
 		cmd.cmd_arg = OCR_SECTOR_MODE | OCR_VDD_MIN_2V7 |
 			      OCR_VDD_MIN_1V7;
@@ -127,14 +104,14 @@ static int emmc_enumerate(int clk, int bus_width)
 	}
 
 	/* CMD2: Card Identification */
-	memset(&cmd, 0, sizeof(emmc_cmd_t));
+	zeromem(&cmd, sizeof(emmc_cmd_t));
 	cmd.cmd_idx = EMMC_CMD2;
 	cmd.resp_type = EMMC_RESPONSE_R2;
 	ret = ops->send_cmd(&cmd);
 	assert(ret == 0);
 
 	/* CMD3: Set Relative Address */
-	memset(&cmd, 0, sizeof(emmc_cmd_t));
+	zeromem(&cmd, sizeof(emmc_cmd_t));
 	cmd.cmd_idx = EMMC_CMD3;
 	cmd.cmd_arg = EMMC_FIX_RCA << RCA_SHIFT_OFFSET;
 	cmd.resp_type = EMMC_RESPONSE_R1;
@@ -142,7 +119,7 @@ static int emmc_enumerate(int clk, int bus_width)
 	assert(ret == 0);
 
 	/* CMD9: CSD Register */
-	memset(&cmd, 0, sizeof(emmc_cmd_t));
+	zeromem(&cmd, sizeof(emmc_cmd_t));
 	cmd.cmd_idx = EMMC_CMD9;
 	cmd.cmd_arg = EMMC_FIX_RCA << RCA_SHIFT_OFFSET;
 	cmd.resp_type = EMMC_RESPONSE_R2;
@@ -151,7 +128,7 @@ static int emmc_enumerate(int clk, int bus_width)
 	memcpy(&emmc_csd, &cmd.resp_data, sizeof(cmd.resp_data));
 
 	/* CMD7: Select Card */
-	memset(&cmd, 0, sizeof(emmc_cmd_t));
+	zeromem(&cmd, sizeof(emmc_cmd_t));
 	cmd.cmd_idx = EMMC_CMD7;
 	cmd.cmd_arg = EMMC_FIX_RCA << RCA_SHIFT_OFFSET;
 	cmd.resp_type = EMMC_RESPONSE_R1;
@@ -181,7 +158,7 @@ size_t emmc_read_blocks(int lba, uintptr_t buf, size_t size)
 	assert(ret == 0);
 
 	if (is_cmd23_enabled()) {
-		memset(&cmd, 0, sizeof(emmc_cmd_t));
+		zeromem(&cmd, sizeof(emmc_cmd_t));
 		/* set block count */
 		cmd.cmd_idx = EMMC_CMD23;
 		cmd.cmd_arg = size / EMMC_BLOCK_SIZE;
@@ -189,7 +166,7 @@ size_t emmc_read_blocks(int lba, uintptr_t buf, size_t size)
 		ret = ops->send_cmd(&cmd);
 		assert(ret == 0);
 
-		memset(&cmd, 0, sizeof(emmc_cmd_t));
+		zeromem(&cmd, sizeof(emmc_cmd_t));
 		cmd.cmd_idx = EMMC_CMD18;
 	} else {
 		if (size > EMMC_BLOCK_SIZE)
@@ -213,7 +190,7 @@ size_t emmc_read_blocks(int lba, uintptr_t buf, size_t size)
 
 	if (is_cmd23_enabled() == 0) {
 		if (size > EMMC_BLOCK_SIZE) {
-			memset(&cmd, 0, sizeof(emmc_cmd_t));
+			zeromem(&cmd, sizeof(emmc_cmd_t));
 			cmd.cmd_idx = EMMC_CMD12;
 			ret = ops->send_cmd(&cmd);
 			assert(ret == 0);
@@ -240,17 +217,17 @@ size_t emmc_write_blocks(int lba, const uintptr_t buf, size_t size)
 
 	if (is_cmd23_enabled()) {
 		/* set block count */
-		memset(&cmd, 0, sizeof(emmc_cmd_t));
+		zeromem(&cmd, sizeof(emmc_cmd_t));
 		cmd.cmd_idx = EMMC_CMD23;
 		cmd.cmd_arg = size / EMMC_BLOCK_SIZE;
 		cmd.resp_type = EMMC_RESPONSE_R1;
 		ret = ops->send_cmd(&cmd);
 		assert(ret == 0);
 
-		memset(&cmd, 0, sizeof(emmc_cmd_t));
+		zeromem(&cmd, sizeof(emmc_cmd_t));
 		cmd.cmd_idx = EMMC_CMD25;
 	} else {
-		memset(&cmd, 0, sizeof(emmc_cmd_t));
+		zeromem(&cmd, sizeof(emmc_cmd_t));
 		if (size > EMMC_BLOCK_SIZE)
 			cmd.cmd_idx = EMMC_CMD25;
 		else
@@ -272,7 +249,7 @@ size_t emmc_write_blocks(int lba, const uintptr_t buf, size_t size)
 
 	if (is_cmd23_enabled() == 0) {
 		if (size > EMMC_BLOCK_SIZE) {
-			memset(&cmd, 0, sizeof(emmc_cmd_t));
+			zeromem(&cmd, sizeof(emmc_cmd_t));
 			cmd.cmd_idx = EMMC_CMD12;
 			ret = ops->send_cmd(&cmd);
 			assert(ret == 0);
@@ -291,21 +268,21 @@ size_t emmc_erase_blocks(int lba, size_t size)
 	assert(ops != 0);
 	assert((size != 0) && ((size % EMMC_BLOCK_SIZE) == 0));
 
-	memset(&cmd, 0, sizeof(emmc_cmd_t));
+	zeromem(&cmd, sizeof(emmc_cmd_t));
 	cmd.cmd_idx = EMMC_CMD35;
 	cmd.cmd_arg = lba;
 	cmd.resp_type = EMMC_RESPONSE_R1;
 	ret = ops->send_cmd(&cmd);
 	assert(ret == 0);
 
-	memset(&cmd, 0, sizeof(emmc_cmd_t));
+	zeromem(&cmd, sizeof(emmc_cmd_t));
 	cmd.cmd_idx = EMMC_CMD36;
 	cmd.cmd_arg = lba + (size / EMMC_BLOCK_SIZE) - 1;
 	cmd.resp_type = EMMC_RESPONSE_R1;
 	ret = ops->send_cmd(&cmd);
 	assert(ret == 0);
 
-	memset(&cmd, 0, sizeof(emmc_cmd_t));
+	zeromem(&cmd, sizeof(emmc_cmd_t));
 	cmd.cmd_idx = EMMC_CMD38;
 	cmd.resp_type = EMMC_RESPONSE_R1B;
 	ret = ops->send_cmd(&cmd);

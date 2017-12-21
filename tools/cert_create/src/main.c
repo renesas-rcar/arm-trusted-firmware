@@ -1,31 +1,7 @@
 /*
- * Copyright (c) 2015, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2015-2017, ARM Limited and Contributors. All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- * Redistributions of source code must retain the above copyright notice, this
- * list of conditions and the following disclaimer.
- *
- * Redistributions in binary form must reproduce the above copyright notice,
- * this list of conditions and the following disclaimer in the documentation
- * and/or other materials provided with the distribution.
- *
- * Neither the name of ARM nor the names of its contributors may be used
- * to endorse or promote products derived from this software without specific
- * prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 
 #include <assert.h>
@@ -42,12 +18,17 @@
 #include <openssl/sha.h>
 #include <openssl/x509v3.h>
 
+#if USE_TBBR_DEFS
+#include <tbbr_oid.h>
+#else
+#include <platform_oid.h>
+#endif
+
 #include "cert.h"
 #include "cmd_opt.h"
 #include "debug.h"
 #include "ext.h"
 #include "key.h"
-#include "platform_oid.h"
 #include "sha.h"
 #include "tbbr/tbb_ext.h"
 #include "tbbr/tbb_cert.h"
@@ -134,7 +115,6 @@ static void print_help(const char *cmd, const struct option *long_opt)
 	printf("\t%s [OPTIONS]\n\n", cmd);
 
 	printf("Available options:\n");
-	i = 0;
 	opt = long_opt;
 	while (opt->name) {
 		p = line;
@@ -261,12 +241,12 @@ static const cmd_opt_t common_cmd_opt[] = {
 
 int main(int argc, char *argv[])
 {
-	STACK_OF(X509_EXTENSION) * sk = NULL;
-	X509_EXTENSION *cert_ext = NULL;
-	ext_t *ext = NULL;
-	key_t *key = NULL;
-	cert_t *cert = NULL;
-	FILE *file = NULL;
+	STACK_OF(X509_EXTENSION) * sk;
+	X509_EXTENSION *cert_ext;
+	ext_t *ext;
+	key_t *key;
+	cert_t *cert;
+	FILE *file;
 	int i, j, ext_nid, nvctr;
 	int c, opt_idx = 0;
 	const struct option *cmd_opt;
@@ -367,6 +347,11 @@ int main(int argc, char *argv[])
 
 	/* Load private keys from files (or generate new ones) */
 	for (i = 0 ; i < num_keys ; i++) {
+		if (!key_new(&keys[i])) {
+			ERROR("Failed to allocate key container\n");
+			exit(1);
+		}
+
 		/* First try to load the key from disk */
 		if (key_load(&keys[i], &err_code)) {
 			/* Key loaded successfully */
@@ -374,11 +359,7 @@ int main(int argc, char *argv[])
 		}
 
 		/* Key not loaded. Check the error code */
-		if (err_code == KEY_ERR_MALLOC) {
-			/* Cannot allocate memory. Abort. */
-			ERROR("Malloc error while loading '%s'\n", keys[i].fn);
-			exit(1);
-		} else if (err_code == KEY_ERR_LOAD) {
+		if (err_code == KEY_ERR_LOAD) {
 			/* File exists, but it does not contain a valid private
 			 * key. Abort. */
 			ERROR("Error loading '%s'\n", keys[i].fn);

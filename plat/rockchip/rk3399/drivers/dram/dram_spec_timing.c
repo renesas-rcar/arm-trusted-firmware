@@ -1,35 +1,13 @@
 /*
- * Copyright (c) 2016, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2016-2017, ARM Limited and Contributors. All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- * Redistributions of source code must retain the above copyright notice, this
- * list of conditions and the following disclaimer.
- *
- * Redistributions in binary form must reproduce the above copyright notice,
- * this list of conditions and the following disclaimer in the documentation
- * and/or other materials provided with the distribution.
- *
- * Neither the name of ARM nor the names of its contributors may be used
- * to endorse or promote products derived from this software without specific
- * prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 
 #include <string.h>
 #include <stdint.h>
+#include <dram.h>
+#include <utils.h>
 #include "dram_spec_timing.h"
 
 static const uint8_t ddr3_cl_cwl[][7] = {
@@ -227,7 +205,7 @@ static void ddr3_get_parameter(struct timing_related_config *timing_config,
 	uint32_t ddr_capability_per_die = get_max_die_capability(timing_config);
 	uint32_t tmp;
 
-	memset((void *)pdram_timing, 0, sizeof(struct dram_timing_t));
+	zeromem((void *)pdram_timing, sizeof(struct dram_timing_t));
 	pdram_timing->mhz = nmhz;
 	pdram_timing->al = 0;
 	pdram_timing->bl = timing_config->bl;
@@ -265,21 +243,24 @@ static void ddr3_get_parameter(struct timing_related_config *timing_config,
 		break;
 	}
 
-	switch (timing_config->dramodt) {
-	case 60:
-		pdram_timing->mr[1] = tmp | DDR3_RTT_NOM_60;
-		break;
-	case 40:
-		pdram_timing->mr[1] = tmp | DDR3_RTT_NOM_40;
-		break;
-	case 120:
-		pdram_timing->mr[1] = tmp | DDR3_RTT_NOM_120;
-		break;
-	case 0:
-	default:
+	if (timing_config->odt)
+		switch (timing_config->dramodt) {
+		case 60:
+			pdram_timing->mr[1] = tmp | DDR3_RTT_NOM_60;
+			break;
+		case 40:
+			pdram_timing->mr[1] = tmp | DDR3_RTT_NOM_40;
+			break;
+		case 120:
+			pdram_timing->mr[1] = tmp | DDR3_RTT_NOM_120;
+			break;
+		case 0:
+		default:
+			pdram_timing->mr[1] = tmp | DDR3_RTT_NOM_DIS;
+			break;
+		}
+	else
 		pdram_timing->mr[1] = tmp | DDR3_RTT_NOM_DIS;
-		break;
-	}
 
 	pdram_timing->mr[2] = DDR3_MR2_CWL(pdram_timing->cwl);
 	pdram_timing->mr[3] = 0;
@@ -440,7 +421,7 @@ static void lpddr2_get_parameter(struct timing_related_config *timing_config,
 	uint32_t ddr_capability_per_die = get_max_die_capability(timing_config);
 	uint32_t tmp, trp_tmp, trppb_tmp, tras_tmp, twr_tmp, bl_tmp;
 
-	memset((void *)pdram_timing, 0, sizeof(struct dram_timing_t));
+	zeromem((void *)pdram_timing, sizeof(struct dram_timing_t));
 	pdram_timing->mhz = nmhz;
 	pdram_timing->al = 0;
 	pdram_timing->bl = timing_config->bl;
@@ -662,6 +643,9 @@ static void lpddr2_get_parameter(struct timing_related_config *timing_config,
 #define LPDDR3_TADR	(20) /* ns */
 #define LPDDR3_TMRZ	(3) /* ns */
 
+/* FSP */
+#define LPDDR3_TFC_LONG	(250) /* ns */
+
 /*
  * Description: depend on input parameter "timing_config",
  *		and calculate all lpddr3
@@ -677,7 +661,7 @@ static void lpddr3_get_parameter(struct timing_related_config *timing_config,
 	uint32_t ddr_capability_per_die = get_max_die_capability(timing_config);
 	uint32_t tmp, trp_tmp, trppb_tmp, tras_tmp, twr_tmp, bl_tmp;
 
-	memset((void *)pdram_timing, 0, sizeof(struct dram_timing_t));
+	zeromem((void *)pdram_timing, sizeof(struct dram_timing_t));
 	pdram_timing->mhz = nmhz;
 	pdram_timing->al = 0;
 	pdram_timing->bl = timing_config->bl;
@@ -749,18 +733,21 @@ static void lpddr3_get_parameter(struct timing_related_config *timing_config,
 		break;
 	}
 	pdram_timing->mr[0] = 0;
-	switch (timing_config->dramodt) {
-	case 60:
-		pdram_timing->mr11 = LPDDR3_ODT_60;
-		break;
-	case 120:
-		pdram_timing->mr11 = LPDDR3_ODT_120;
-		break;
-	case 240:
-	default:
-		pdram_timing->mr11 = LPDDR3_ODT_240;
-		break;
-	}
+	if (timing_config->odt)
+		switch (timing_config->dramodt) {
+		case 60:
+			pdram_timing->mr11 = LPDDR3_ODT_60;
+			break;
+		case 120:
+			pdram_timing->mr11 = LPDDR3_ODT_120;
+			break;
+		case 240:
+		default:
+			pdram_timing->mr11 = LPDDR3_ODT_240;
+			break;
+		}
+	else
+		pdram_timing->mr11 = LPDDR3_ODT_DIS;
 
 	pdram_timing->tinit1 = (LPDDR3_TINIT1 * nmhz + 999) / 1000;
 	pdram_timing->tinit2 = LPDDR3_TINIT2;
@@ -872,6 +859,9 @@ static void lpddr3_get_parameter(struct timing_related_config *timing_config,
 	pdram_timing->tadr = (LPDDR3_TADR * nmhz + 999) / 1000;
 	pdram_timing->tmrz = (LPDDR3_TMRZ * nmhz + 999) / 1000;
 	pdram_timing->tcacd = pdram_timing->tadr + 2;
+
+	/* FSP */
+	pdram_timing->tfc_long = (LPDDR3_TFC_LONG * nmhz + 999) / 1000;
 }
 
 #define LPDDR4_TINIT1	(200000) /* 200us */
@@ -967,7 +957,7 @@ static void lpddr4_get_parameter(struct timing_related_config *timing_config,
 	uint32_t ddr_capability_per_die = get_max_die_capability(timing_config);
 	uint32_t tmp, trp_tmp, trppb_tmp, tras_tmp;
 
-	memset((void *)pdram_timing, 0, sizeof(struct dram_timing_t));
+	zeromem((void *)pdram_timing, sizeof(struct dram_timing_t));
 	pdram_timing->mhz = nmhz;
 	pdram_timing->al = 0;
 	pdram_timing->bl = timing_config->bl;
@@ -1111,47 +1101,52 @@ static void lpddr4_get_parameter(struct timing_related_config *timing_config,
 		break;
 	}
 	pdram_timing->mr[0] = 0;
-	switch (timing_config->dramodt) {
-	case 240:
-		tmp = LPDDR4_DQODT_240;
-		break;
-	case 120:
-		tmp = LPDDR4_DQODT_120;
-		break;
-	case 80:
-		tmp = LPDDR4_DQODT_80;
-		break;
-	case 60:
-		tmp = LPDDR4_DQODT_60;
-		break;
-	case 48:
-		tmp = LPDDR4_DQODT_48;
-		break;
-	case 40:
-	default:
-		tmp = LPDDR4_DQODT_40;
-		break;
-	}
-	switch (timing_config->caodt) {
-	case 240:
-		pdram_timing->mr11 = LPDDR4_CAODT_240 | tmp;
-		break;
-	case 120:
-		pdram_timing->mr11 = LPDDR4_CAODT_120 | tmp;
-		break;
-	case 80:
-		pdram_timing->mr11 = LPDDR4_CAODT_80 | tmp;
-		break;
-	case 60:
-		pdram_timing->mr11 = LPDDR4_CAODT_60 | tmp;
-		break;
-	case 48:
-		pdram_timing->mr11 = LPDDR4_CAODT_48 | tmp;
-		break;
-	case 40:
-	default:
-		pdram_timing->mr11 = LPDDR4_CAODT_40 | tmp;
-		break;
+	if (timing_config->odt) {
+		switch (timing_config->dramodt) {
+		case 240:
+			tmp = LPDDR4_DQODT_240;
+			break;
+		case 120:
+			tmp = LPDDR4_DQODT_120;
+			break;
+		case 80:
+			tmp = LPDDR4_DQODT_80;
+			break;
+		case 60:
+			tmp = LPDDR4_DQODT_60;
+			break;
+		case 48:
+			tmp = LPDDR4_DQODT_48;
+			break;
+		case 40:
+		default:
+			tmp = LPDDR4_DQODT_40;
+			break;
+		}
+
+		switch (timing_config->caodt) {
+		case 240:
+			pdram_timing->mr11 = LPDDR4_CAODT_240 | tmp;
+			break;
+		case 120:
+			pdram_timing->mr11 = LPDDR4_CAODT_120 | tmp;
+			break;
+		case 80:
+			pdram_timing->mr11 = LPDDR4_CAODT_80 | tmp;
+			break;
+		case 60:
+			pdram_timing->mr11 = LPDDR4_CAODT_60 | tmp;
+			break;
+		case 48:
+			pdram_timing->mr11 = LPDDR4_CAODT_48 | tmp;
+			break;
+		case 40:
+		default:
+			pdram_timing->mr11 = LPDDR4_CAODT_40 | tmp;
+			break;
+		}
+	} else {
+		pdram_timing->mr11 = LPDDR4_CAODT_DIS | tmp;
 	}
 
 	pdram_timing->tinit1 = (LPDDR4_TINIT1 * nmhz + 999) / 1000;

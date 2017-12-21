@@ -1,32 +1,7 @@
 /*
- * Copyright (c) 2015-2017, Renesas Electronics Corporation
- * All rights reserved.
+ * Copyright (c) 2015-2017, Renesas Electronics Corporation. All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- *   - Redistributions of source code must retain the above copyright notice,
- *     this list of conditions and the following disclaimer.
- *
- *   - Redistributions in binary form must reproduce the above copyright
- *     notice, this list of conditions and the following disclaimer in the
- *     documentation and/or other materials provided with the distribution.
- *
- *   - Neither the name of Renesas nor the names of its contributors may be
- *     used to endorse or promote products derived from this software without
- *     specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 
 #include <stdint.h>
@@ -195,6 +170,31 @@ uint32_t get_refperiod(void)
 
 	reg = mmio_read_32(PRR);
 	switch (reg & PRR_PRODUCT_MASK) {
+ #if (RCAR_LSI == RCAR_AUTO) || (RCAR_LSI == RCAR_H3)
+	case PRR_PRODUCT_H3:
+		switch (reg & PRR_CUT_MASK) {
+		case PRR_PRODUCT_10:
+		case PRR_PRODUCT_11:
+			break;
+		case PRR_PRODUCT_20:
+		default:
+			refperiod = QOSWT_WTSET0_CYCLE_H3_20;
+			break;
+		}
+		break;
+ #endif
+ #if (RCAR_LSI == RCAR_AUTO) || (RCAR_LSI == RCAR_M3)
+	case PRR_PRODUCT_M3:
+		switch (reg & PRR_CUT_MASK) {
+		case PRR_PRODUCT_10:
+			break;
+		case PRR_PRODUCT_20: /* M3 Cut 11 */
+		default:
+			refperiod = QOSWT_WTSET0_CYCLE_M3_11;
+			break;
+		}
+		break;
+ #endif
  #if (RCAR_LSI == RCAR_AUTO) || (RCAR_LSI == RCAR_M3N)
 	case PRR_PRODUCT_M3N:
 		refperiod = QOSWT_WTSET0_CYCLE_M3N;
@@ -203,6 +203,22 @@ uint32_t get_refperiod(void)
 	default:
 		break;
 	}
+#elif RCAR_LSI == RCAR_H3
+ #if RCAR_LSI_CUT == RCAR_CUT_10
+	/* H3 Cut 10 */
+ #elif RCAR_LSI_CUT == RCAR_CUT_11
+	/* H3 Cut 11 */
+ #else
+	/* H3 Cut 20 or later */
+	refperiod = QOSWT_WTSET0_CYCLE_H3_20;
+ #endif
+#elif RCAR_LSI == RCAR_M3
+ #if RCAR_LSI_CUT == RCAR_CUT_10
+	/* M3 Cut 10 */
+ #else
+	/* M3 Cut 11 or later */
+	refperiod = QOSWT_WTSET0_CYCLE_M3_11;
+ #endif
 #elif RCAR_LSI == RCAR_M3N	/* for M3N */
 	refperiod = QOSWT_WTSET0_CYCLE_M3N;
 #endif

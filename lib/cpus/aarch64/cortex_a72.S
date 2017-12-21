@@ -1,31 +1,7 @@
 /*
  * Copyright (c) 2015, ARM Limited and Contributors. All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- * Redistributions of source code must retain the above copyright notice, this
- * list of conditions and the following disclaimer.
- *
- * Redistributions in binary form must reproduce the above copyright notice,
- * this list of conditions and the following disclaimer in the documentation
- * and/or other materials provided with the distribution.
- *
- * Neither the name of ARM nor the names of its contributors may be used
- * to endorse or promote products derived from this software without specific
- * prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 #include <arch.h>
 #include <asm_macros.S>
@@ -51,12 +27,12 @@ endfunc cortex_a72_disable_dcache
 	 * ---------------------------------------------
 	 */
 func cortex_a72_disable_l2_prefetch
-	mrs	x0, CPUECTLR_EL1
-	orr	x0, x0, #CPUECTLR_DIS_TWD_ACC_PFTCH_BIT
-	mov	x1, #CPUECTLR_L2_IPFTCH_DIST_MASK
-	orr	x1, x1, #CPUECTLR_L2_DPFTCH_DIST_MASK
+	mrs	x0, CORTEX_A72_ECTLR_EL1
+	orr	x0, x0, #CORTEX_A72_ECTLR_DIS_TWD_ACC_PFTCH_BIT
+	mov	x1, #CORTEX_A72_ECTLR_L2_IPFTCH_DIST_MASK
+	orr	x1, x1, #CORTEX_A72_ECTLR_L2_DPFTCH_DIST_MASK
 	bic	x0, x0, x1
-	msr	CPUECTLR_EL1, x0
+	msr	CORTEX_A72_ECTLR_EL1, x0
 	isb
 	ret
 endfunc cortex_a72_disable_l2_prefetch
@@ -66,9 +42,9 @@ endfunc cortex_a72_disable_l2_prefetch
 	 * ---------------------------------------------
 	 */
 func cortex_a72_disable_hw_prefetcher
-	mrs	x0, CPUACTLR_EL1
-	orr	x0, x0, #CPUACTLR_DISABLE_L1_DCACHE_HW_PFTCH
-	msr	CPUACTLR_EL1, x0
+	mrs	x0, CORTEX_A72_ACTLR_EL1
+	orr	x0, x0, #CORTEX_A72_ACTLR_DISABLE_L1_DCACHE_HW_PFTCH
+	msr	CORTEX_A72_ACTLR_EL1, x0
 	isb
 	dsb	ish
 	ret
@@ -79,9 +55,9 @@ endfunc cortex_a72_disable_hw_prefetcher
 	 * ---------------------------------------------
 	 */
 func cortex_a72_disable_smp
-	mrs	x0, CPUECTLR_EL1
-	bic	x0, x0, #CPUECTLR_SMP_BIT
-	msr	CPUECTLR_EL1, x0
+	mrs	x0, CORTEX_A72_ECTLR_EL1
+	bic	x0, x0, #CORTEX_A72_ECTLR_SMP_BIT
+	msr	CORTEX_A72_ECTLR_EL1, x0
 	ret
 endfunc cortex_a72_disable_smp
 
@@ -106,9 +82,9 @@ func cortex_a72_reset_func
 	 * As a bare minimum enable the SMP bit.
 	 * ---------------------------------------------
 	 */
-	mrs	x0, CPUECTLR_EL1
-	orr	x0, x0, #CPUECTLR_SMP_BIT
-	msr	CPUECTLR_EL1, x0
+	mrs	x0, CORTEX_A72_ECTLR_EL1
+	orr	x0, x0, #CORTEX_A72_ECTLR_SMP_BIT
+	msr	CORTEX_A72_ECTLR_EL1, x0
 	isb
 	ret
 endfunc cortex_a72_reset_func
@@ -235,11 +211,14 @@ cortex_a72_regs:  /* The ascii list of register names to be reported */
 
 func cortex_a72_cpu_reg_dump
 	adr	x6, cortex_a72_regs
-	mrs	x8, CPUECTLR_EL1
-	mrs	x9, CPUMERRSR_EL1
-	mrs	x10, L2MERRSR_EL1
+	mrs	x8, CORTEX_A72_ECTLR_EL1
+	mrs	x9, CORTEX_A72_MERRSR_EL1
+	mrs	x10, CORTEX_A72_L2MERRSR_EL1
 	ret
 endfunc cortex_a72_cpu_reg_dump
 
 
-declare_cpu_ops cortex_a72, CORTEX_A72_MIDR
+declare_cpu_ops cortex_a72, CORTEX_A72_MIDR, \
+	cortex_a72_reset_func, \
+	cortex_a72_core_pwr_dwn, \
+	cortex_a72_cluster_pwr_dwn

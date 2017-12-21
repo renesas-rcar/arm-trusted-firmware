@@ -1,31 +1,7 @@
 /*
- * Copyright (c) 2015-2016, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2015-2017, ARM Limited and Contributors. All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- * Redistributions of source code must retain the above copyright notice, this
- * list of conditions and the following disclaimer.
- *
- * Redistributions in binary form must reproduce the above copyright notice,
- * this list of conditions and the following disclaimer in the documentation
- * and/or other materials provided with the distribution.
- *
- * Neither the name of ARM nor the names of its contributors may be used
- * to endorse or promote products derived from this software without specific
- * prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 #include <arch_helpers.h>
 #include <bl_common.h>
@@ -35,7 +11,7 @@
 #include <platform_def.h>
 #include "qemu_private.h"
 #include <string.h>
-
+#include <utils.h>
 
 /*
  * The next 2 constants identify the extents of the code & RO data region.
@@ -45,16 +21,6 @@
  */
 #define BL2_RO_BASE (unsigned long)(&__RO_START__)
 #define BL2_RO_LIMIT (unsigned long)(&__RO_END__)
-
-/*
- * The next 2 constants identify the extents of the coherent memory region.
- * These addresses are used by the MMU setup code and therefore they must be
- * page-aligned.  It is the responsibility of the linker script to ensure that
- * __COHERENT_RAM_START__ and __COHERENT_RAM_END__ linker symbols refer to
- * page-aligned addresses.
- */
-#define BL2_COHERENT_RAM_BASE (unsigned long)(&__COHERENT_RAM_START__)
-#define BL2_COHERENT_RAM_LIMIT (unsigned long)(&__COHERENT_RAM_END__)
 
 /*******************************************************************************
  * This structure represents the superset of information that is passed to
@@ -101,7 +67,7 @@ bl31_params_t *bl2_plat_get_bl31_params(void)
 	 * Initialise the memory for all the arguments that needs to
 	 * be passed to BL3-1
 	 */
-	memset(&bl31_params_mem, 0, sizeof(bl2_to_bl31_params_mem_t));
+	zeromem(&bl31_params_mem, sizeof(bl2_to_bl31_params_mem_t));
 
 	/* Assign memory for TF related information */
 	bl2_to_bl31_params = &bl31_params_mem.bl31_params;
@@ -216,7 +182,7 @@ void bl2_plat_arch_setup(void)
 	qemu_configure_mmu_el1(bl2_tzram_layout.total_base,
 			      bl2_tzram_layout.total_size,
 			      BL2_RO_BASE, BL2_RO_LIMIT,
-			      BL2_COHERENT_RAM_BASE, BL2_COHERENT_RAM_LIMIT);
+			      BL_COHERENT_RAM_BASE, BL_COHERENT_RAM_END);
 }
 
 /*******************************************************************************
@@ -236,15 +202,11 @@ static uint32_t qemu_get_spsr_for_bl32_entry(void)
  ******************************************************************************/
 static uint32_t qemu_get_spsr_for_bl33_entry(void)
 {
-	unsigned long el_status;
 	unsigned int mode;
 	uint32_t spsr;
 
 	/* Figure out what mode we enter the non-secure world in */
-	el_status = read_id_aa64pfr0_el1() >> ID_AA64PFR0_EL2_SHIFT;
-	el_status &= ID_AA64PFR0_ELX_MASK;
-
-	mode = (el_status) ? MODE_EL2 : MODE_EL1;
+	mode = EL_IMPLEMENTED(2) ? MODE_EL2 : MODE_EL1;
 
 	/*
 	 * TODO: Consider the possibility of specifying the SPSR in

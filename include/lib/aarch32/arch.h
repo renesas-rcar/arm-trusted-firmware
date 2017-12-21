@@ -1,31 +1,7 @@
 /*
- * Copyright (c) 2016, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2016-2017, ARM Limited and Contributors. All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- * Redistributions of source code must retain the above copyright notice, this
- * list of conditions and the following disclaimer.
- *
- * Redistributions in binary form must reproduce the above copyright notice,
- * this list of conditions and the following disclaimer in the documentation
- * and/or other materials provided with the distribution.
- *
- * Neither the name of ARM nor the names of its contributors may be used
- * to endorse or promote products derived from this software without specific
- * prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 
 #ifndef __ARCH_H__
@@ -46,6 +22,7 @@
 /*******************************************************************************
  * MPIDR macros
  ******************************************************************************/
+#define MPIDR_MT_MASK		(1 << 24)
 #define MPIDR_CPU_MASK		MPIDR_AFFLVL_MASK
 #define MPIDR_CLUSTER_MASK	(MPIDR_AFFLVL_MASK << MPIDR_AFFINITY_BITS)
 #define MPIDR_AFFINITY_BITS	8
@@ -108,7 +85,7 @@
 
 /* SCTLR definitions */
 #define SCTLR_RES1	((1 << 23) | (1 << 22) | (1 << 11) | (1 << 4) | \
-			(1 << 3) | SCTLR_CP15BEN_BIT | SCTLR_NTWI_BIT | SCTLR_NTWE_BIT)
+			(1 << 3))
 #define SCTLR_M_BIT		(1 << 0)
 #define SCTLR_A_BIT		(1 << 1)
 #define SCTLR_C_BIT		(1 << 2)
@@ -124,11 +101,24 @@
 #define SCTLR_TRE_BIT		(1 << 28)
 #define SCTLR_AFE_BIT		(1 << 29)
 #define SCTLR_TE_BIT		(1 << 30)
+#define SCTLR_RESET_VAL         (SCTLR_RES1 | SCTLR_NTWE_BIT |		\
+				SCTLR_NTWI_BIT | SCTLR_CP15BEN_BIT)
+
+/* SDCR definitions */
+#define SDCR_SPD(x)		((x) << 14)
+#define SDCR_SPD_LEGACY		0x0
+#define SDCR_SPD_DISABLE	0x2
+#define SDCR_SPD_ENABLE		0x3
+#define SDCR_RESET_VAL		0x0
+
+#if !ERROR_DEPRECATED
+#define SDCR_DEF_VAL		SDCR_SPD(SDCR_SPD_DISABLE)
+#endif
 
 /* HSCTLR definitions */
 #define HSCTLR_RES1 	((1 << 29) | (1 << 28) | (1 << 23) | (1 << 22)	\
 			| (1 << 18) | (1 << 16) | (1 << 11) | (1 << 4)	\
-			| (1 << 3) | HSCTLR_CP15BEN_BIT)
+			| (1 << 3))
 #define HSCTLR_M_BIT		(1 << 0)
 #define HSCTLR_A_BIT		(1 << 1)
 #define HSCTLR_C_BIT		(1 << 2)
@@ -160,6 +150,7 @@
 #define SCR_IRQ_BIT		(1 << 1)
 #define SCR_NS_BIT		(1 << 0)
 #define SCR_VALID_BIT_MASK	0x33ff
+#define SCR_RESET_VAL		0x0
 
 #define GET_NS_BIT(scr)		((scr) & SCR_NS_BIT)
 
@@ -167,9 +158,10 @@
 #define HCR_AMO_BIT		(1 << 5)
 #define HCR_IMO_BIT		(1 << 4)
 #define HCR_FMO_BIT		(1 << 3)
+#define HCR_RESET_VAL		0x0
 
 /* CNTHCTL definitions */
-#define EVNTEN_BIT		(1 << 2)
+#define CNTHCTL_RESET_VAL	0x0
 #define PL1PCEN_BIT		(1 << 1)
 #define PL1PCTEN_BIT		(1 << 0)
 
@@ -184,16 +176,42 @@
 #define EVNTI_MASK		0xf
 
 /* HCPTR definitions */
+#define HCPTR_RES1		((1 << 13) | (1<<12) | 0x3ff)
 #define TCPAC_BIT		(1 << 31)
 #define TTA_BIT			(1 << 20)
 #define TCP11_BIT		(1 << 10)
 #define TCP10_BIT		(1 << 10)
+#define HCPTR_RESET_VAL		HCPTR_RES1
+
+/* VTTBR defintions */
+#define VTTBR_RESET_VAL		ULL(0x0)
+#define VTTBR_VMID_MASK		ULL(0xff)
+#define VTTBR_VMID_SHIFT	48
+#define VTTBR_BADDR_MASK	0xffffffffffff
+#define VTTBR_BADDR_SHIFT	0
+
+/* HDCR definitions */
+#define HDCR_RESET_VAL		0x0
+
+/* HSTR definitions */
+#define HSTR_RESET_VAL		0x0
+
+/* CNTHP_CTL definitions */
+#define CNTHP_CTL_RESET_VAL	0x0
 
 /* NASCR definitions */
 #define NSASEDIS_BIT		(1 << 15)
 #define NSTRCDIS_BIT		(1 << 20)
+/* NOTE: correct typo in the definitions */
+#if !ERROR_DEPRECATED
 #define NASCR_CP11_BIT		(1 << 11)
 #define NASCR_CP10_BIT		(1 << 10)
+#endif
+#define NSACR_CP11_BIT		(1 << 11)
+#define NSACR_CP10_BIT		(1 << 10)
+#define NSACR_IMP_DEF_MASK	(0x7 << 16)
+#define NSACR_ENABLE_FP_ACCESS	(NSACR_CP11_BIT | NSACR_CP10_BIT)
+#define NSACR_RESET_VAL		0x0
 
 /* CPACR definitions */
 #define ASEDIS_BIT		(1 << 31)
@@ -202,9 +220,12 @@
 #define CPACR_CP10_SHIFT	20
 #define CPACR_ENABLE_FP_ACCESS	(0x3 << CPACR_CP11_SHIFT |\
 					0x3 << CPACR_CP10_SHIFT)
+#define CPACR_RESET_VAL         0x0
 
 /* FPEXC definitions */
+#define FPEXC_RES1		((1 << 10) | (1 << 9) | (1 << 8))
 #define FPEXC_EN_BIT		(1 << 30)
+#define FPEXC_RESET_VAL		FPEXC_RES1
 
 /* SPSR/CPSR definitions */
 #define SPSR_FIQ_BIT		(1 << 0)
@@ -318,6 +339,20 @@
 
 #define MAX_CACHE_LINE_SIZE	0x800 /* 2KB */
 
+/* PMCR definitions */
+#define PMCR_N_SHIFT		11
+#define PMCR_N_MASK		0x1f
+#define PMCR_N_BITS		(PMCR_N_MASK << PMCR_N_SHIFT)
+
+/*******************************************************************************
+ * Definitions of register offsets, fields and macros for CPU system
+ * instructions.
+ ******************************************************************************/
+
+#define TLBI_ADDR_SHIFT		0
+#define TLBI_ADDR_MASK		0xFFFFF000
+#define TLBI_ADDR(x)		(((x) >> TLBI_ADDR_SHIFT) & TLBI_ADDR_MASK)
+
 /*******************************************************************************
  * Definitions of register offsets and fields in the CNTCTLBase Frame of the
  * system level implementation of the Generic Timer.
@@ -340,6 +375,7 @@
 /* System register defines The format is: coproc, opt1, CRn, CRm, opt2 */
 #define SCR		p15, 0, c1, c1, 0
 #define SCTLR		p15, 0, c1, c0, 0
+#define SDCR		p15, 0, c1, c3, 1
 #define MPIDR		p15, 0, c0, c0, 5
 #define MIDR		p15, 0, c0, c0, 0
 #define VBAR		p15, 0, c12, c0, 0
@@ -364,16 +400,26 @@
 #define TLBIALLIS	p15, 0, c8, c3, 0
 #define TLBIMVA		p15, 0, c8, c7, 1
 #define TLBIMVAA	p15, 0, c8, c7, 3
+#define TLBIMVAAIS	p15, 0, c8, c3, 3
+#define BPIALLIS	p15, 0, c7, c1, 6
 #define HSCTLR		p15, 4, c1, c0, 0
 #define HCR		p15, 4, c1, c1, 0
 #define HCPTR		p15, 4, c1, c1, 2
+#define HSTR		p15, 4, c1, c1, 3
 #define CNTHCTL		p15, 4, c14, c1, 0
+#define CNTKCTL		p15, 0, c14, c1, 0
 #define VPIDR		p15, 4, c0, c0, 0
 #define VMPIDR		p15, 4, c0, c0, 5
 #define ISR		p15, 0, c12, c1, 0
 #define CLIDR		p15, 1, c0, c0, 1
 #define CSSELR		p15, 2, c0, c0, 0
 #define CCSIDR		p15, 1, c0, c0, 0
+#define DBGOSDLR	p14, 0, c1, c3, 4
+
+/* Debug register defines. The format is: coproc, opt1, CRn, CRm, opt2 */
+#define HDCR		p15, 4, c1, c1, 1
+#define PMCR		p15, 0, c9, c12, 0
+#define CNTHP_CTL	p15, 4, c14, c2, 1
 
 /* GICv3 CPU Interface system register defines. The format is: coproc, opt1, CRn, CRm, opt2 */
 #define ICC_IAR1	p15, 0, c12, c12, 0

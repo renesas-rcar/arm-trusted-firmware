@@ -1,31 +1,7 @@
 #
-# Copyright (c) 2013-2016, ARM Limited and Contributors. All rights reserved.
+# Copyright (c) 2013-2017, ARM Limited and Contributors. All rights reserved.
 #
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions are met:
-#
-# Redistributions of source code must retain the above copyright notice, this
-# list of conditions and the following disclaimer.
-#
-# Redistributions in binary form must reproduce the above copyright notice,
-# this list of conditions and the following disclaimer in the documentation
-# and/or other materials provided with the distribution.
-#
-# Neither the name of ARM nor the names of its contributors may be used
-# to endorse or promote products derived from this software without specific
-# prior written permission.
-#
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
-# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
-# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
-# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
-# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
-# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
-# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-# POSSIBILITY OF SUCH DAMAGE.
+# SPDX-License-Identifier: BSD-3-Clause
 #
 
 # Use the GICv3 driver on the FVP by default
@@ -55,13 +31,18 @@ endif
 
 $(eval $(call add_define,FVP_INTERCONNECT_DRIVER))
 
-# Choose the GIC sources depending upon the how the FVP will be invoked
-ifeq (${FVP_USE_GIC_DRIVER}, FVP_GICV3)
-FVP_GIC_SOURCES		:=	drivers/arm/gic/common/gic_common.c	\
+FVP_GICV3_SOURCES	:=	drivers/arm/gic/common/gic_common.c	\
 				drivers/arm/gic/v3/gicv3_main.c		\
 				drivers/arm/gic/v3/gicv3_helpers.c	\
 				plat/common/plat_gicv3.c		\
 				plat/arm/common/arm_gicv3.c
+
+# Choose the GIC sources depending upon the how the FVP will be invoked
+ifeq (${FVP_USE_GIC_DRIVER}, FVP_GICV3)
+FVP_GIC_SOURCES		:=	${FVP_GICV3_SOURCES}
+else ifeq (${FVP_USE_GIC_DRIVER},FVP_GIC600)
+FVP_GIC_SOURCES		:=	${FVP_GICV3_SOURCES}			\
+				drivers/arm/gic/v3/gic600.c
 else ifeq (${FVP_USE_GIC_DRIVER}, FVP_GICV2)
 FVP_GIC_SOURCES		:=	drivers/arm/gic/common/gic_common.c	\
 				drivers/arm/gic/v2/gicv2_main.c		\
@@ -106,9 +87,11 @@ FVP_CPU_LIBS		:=	lib/cpus/${ARCH}/aem_generic.S
 ifeq (${ARCH}, aarch64)
 FVP_CPU_LIBS		+=	lib/cpus/aarch64/cortex_a35.S			\
 				lib/cpus/aarch64/cortex_a53.S			\
+				lib/cpus/aarch64/cortex_a55.S			\
 				lib/cpus/aarch64/cortex_a57.S			\
 				lib/cpus/aarch64/cortex_a72.S			\
-				lib/cpus/aarch64/cortex_a73.S
+				lib/cpus/aarch64/cortex_a73.S			\
+				lib/cpus/aarch64/cortex_a75.S
 else
 FVP_CPU_LIBS		+=	lib/cpus/aarch32/cortex_a32.S
 endif
@@ -156,6 +139,14 @@ BL31_SOURCES		+=	plat/arm/board/fvp/fvp_bl31_setup.c		\
 
 # Disable the PSCI platform compatibility layer
 ENABLE_PLAT_COMPAT	:= 	0
+
+ifneq (${ENABLE_STACK_PROTECTOR},0)
+PLAT_BL_COMMON_SOURCES	+=	plat/arm/board/fvp/fvp_stack_protector.c
+endif
+
+ifeq (${ARCH},aarch32)
+    NEED_BL32 := yes
+endif
 
 include plat/arm/board/common/board_common.mk
 include plat/arm/common/arm_common.mk

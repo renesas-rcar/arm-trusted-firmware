@@ -1,31 +1,7 @@
 /*
  * Copyright (c) 2016, ARM Limited and Contributors. All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- * Redistributions of source code must retain the above copyright notice, this
- * list of conditions and the following disclaimer.
- *
- * Redistributions in binary form must reproduce the above copyright notice,
- * this list of conditions and the following disclaimer in the documentation
- * and/or other materials provided with the distribution.
- *
- * Neither the name of ARM nor the names of its contributors may be used
- * to endorse or promote products derived from this software without specific
- * prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 
 #ifndef __SMCC_HELPERS_H__
@@ -39,10 +15,13 @@
 #define SMC_CTX_GPREG_R2	0x8
 #define SMC_CTX_GPREG_R3	0xC
 #define SMC_CTX_GPREG_R4	0x10
+#define SMC_CTX_GPREG_R5	0x14
 #define SMC_CTX_SP_USR		0x34
 #define SMC_CTX_SPSR_MON	0x78
-#define SMC_CTX_LR_MON		0x7C
-#define SMC_CTX_SIZE		0x80
+#define SMC_CTX_SP_MON		0x7C
+#define SMC_CTX_LR_MON		0x80
+#define SMC_CTX_SCR		0x84
+#define SMC_CTX_SIZE		0x88
 
 #ifndef __ASSEMBLY__
 #include <cassert.h>
@@ -86,8 +65,14 @@ typedef struct smc_ctx {
 	u_register_t sp_und;
 	u_register_t lr_und;
 	u_register_t spsr_mon;
-	/* No need to save 'sp_mon' because we are already in monitor mode */
+	/*
+	 * `sp_mon` will point to the C runtime stack in monitor mode. But prior
+	 * to exit from SMC, this will point to the `smc_ctx_t` so that
+	 * on next entry due to SMC, the `smc_ctx_t` can be easily accessed.
+	 */
+	u_register_t sp_mon;
 	u_register_t lr_mon;
+	u_register_t scr;
 } smc_ctx_t;
 
 /*
@@ -159,10 +144,10 @@ CASSERT(SMC_CTX_SIZE == sizeof(smc_ctx_t), assert_smc_ctx_size_mismatch);
  */
 
 /* Get the pointer to `smc_ctx_t` corresponding to the security state. */
-void *smc_get_ctx(int security_state);
+void *smc_get_ctx(unsigned int security_state);
 
 /* Set the next `smc_ctx_t` corresponding to the security state. */
-void smc_set_next_ctx(int security_state);
+void smc_set_next_ctx(unsigned int security_state);
 
 /* Get the pointer to next `smc_ctx_t` already set by `smc_set_next_ctx()`. */
 void *smc_get_next_ctx(void);

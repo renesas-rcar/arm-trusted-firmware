@@ -1,37 +1,16 @@
 /*
- * Copyright (c) 2016, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2016-2017, ARM Limited and Contributors. All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- * Redistributions of source code must retain the above copyright notice, this
- * list of conditions and the following disclaimer.
- *
- * Redistributions in binary form must reproduce the above copyright notice,
- * this list of conditions and the following disclaimer in the documentation
- * and/or other materials provided with the distribution.
- *
- * Neither the name of ARM nor the names of its contributors may be used
- * to endorse or promote products derived from this software without specific
- * prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 #include <asm_macros.S>
 #include <platform_def.h>
 
 	.weak	plat_arm_calc_core_pos
 	.weak	plat_my_core_pos
+	.globl	plat_crash_console_init
+	.globl	plat_crash_console_putc
+	.globl	plat_crash_console_flush
 
 	/* -----------------------------------------------------
 	 *  unsigned int plat_my_core_pos(void)
@@ -57,3 +36,42 @@ func plat_arm_calc_core_pos
 	add	r0, r1, r0, LSR #6
 	bx	lr
 endfunc plat_arm_calc_core_pos
+
+	/* ---------------------------------------------
+	 * int plat_crash_console_init(void)
+	 * Function to initialize the crash console
+	 * without a C Runtime to print crash report.
+	 * Clobber list : r0 - r3
+	 * ---------------------------------------------
+	 */
+func plat_crash_console_init
+	ldr	r0, =PLAT_ARM_CRASH_UART_BASE
+	ldr	r1, =PLAT_ARM_CRASH_UART_CLK_IN_HZ
+	ldr	r2, =ARM_CONSOLE_BAUDRATE
+	b	console_core_init
+endfunc plat_crash_console_init
+
+	/* ---------------------------------------------
+	 * int plat_crash_console_putc(int c)
+	 * Function to print a character on the crash
+	 * console without a C Runtime.
+	 * Clobber list : r1 - r2
+	 * ---------------------------------------------
+	 */
+func plat_crash_console_putc
+	ldr	r1, =PLAT_ARM_CRASH_UART_BASE
+	b	console_core_putc
+endfunc plat_crash_console_putc
+
+	/* ---------------------------------------------
+	 * int plat_crash_console_flush()
+	 * Function to force a write of all buffered
+	 * data that hasn't been output.
+	 * Out : return -1 on error else return 0.
+	 * Clobber list : r0 - r1
+	 * ---------------------------------------------
+	 */
+func plat_crash_console_flush
+	ldr	r1, =PLAT_ARM_CRASH_UART_BASE
+	b	console_core_flush
+endfunc plat_crash_console_flush

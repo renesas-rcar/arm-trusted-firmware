@@ -1,36 +1,12 @@
 /*
- * Copyright (c) 2015-2017, Renesas Electronics Corporation
- * All rights reserved.
+ * Copyright (c) 2015-2017, Renesas Electronics Corporation. All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- *   - Redistributions of source code must retain the above copyright notice,
- *     this list of conditions and the following disclaimer.
- *
- *   - Redistributions in binary form must reproduce the above copyright
- *     notice, this list of conditions and the following disclaimer in the
- *     documentation and/or other materials provided with the distribution.
- *
- *   - Neither the name of Renesas nor the names of its contributors may be
- *     used to endorse or promote products derived from this software without
- *     specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 
 #include <stddef.h>
 
+#include <arch_helpers.h>
 #include <auth_mod.h>
 #include <debug.h>
 #include <platform.h>
@@ -47,6 +23,10 @@
 #define	RST_BASE		(0xE6160000U)
 #define	RST_MODEMR		(RST_BASE + 0x0060U)
 #define	MFISSOFTMDR		(0xE6260600U)		/* SOFTMD register */
+#define	MODEMR_MD5_MASK		(0x00000020U)
+#define	MODEMR_MD5_SHIFT	(5U)
+#define	SOFTMD_BOOTMODE_MASK	(0x00000001U)
+#define	SOFTMD_NORMALBOOT	(0x1U)
 
 static SECURE_BOOT_API	sbrom_SecureBootAPI;
 
@@ -181,6 +161,10 @@ int auth_mod_verify_img(unsigned int img_id, void *img_ptr,
 				break;
 			}
 			if (0 == ret) {
+#if RCAR_BL2_DCACHE == 1	/* clean and disable D-Cache */
+				write_sctlr_el1(read_sctlr_el1() & ~SCTLR_C_BIT);
+				dcsw_op_all(DCCISW);
+#endif /* RCAR_BL2_DCACHE == 1 */
 				if (RCAR_CERT_MAGIC_NUM ==
 					mmio_read_32((uint64_t)RCAR_BOOT_KEY_CERT_NEW)) {
 					ret = sbrom_SecureBootAPI(
@@ -191,6 +175,9 @@ int auth_mod_verify_img(unsigned int img_id, void *img_ptr,
 						RCAR_BOOT_KEY_CERT,
 						cert_addr, NULL);
 				}
+#if RCAR_BL2_DCACHE == 1	/* enable D-Cache */
+				write_sctlr_el1(read_sctlr_el1() | SCTLR_C_BIT);
+#endif /* RCAR_BL2_DCACHE == 1 */
 				if (0 != ret) {
 					ERROR(
 					"Verification Failed!!! 0x%x -> %s\n",
@@ -221,8 +208,9 @@ void auth_mod_init(void)
 {
 #if RCAR_SECURE_BOOT
 	uint32_t lcs;
-	uint32_t md = (mmio_read_32(RST_MODEMR) & 0x00000020U) >> 5;
-	uint32_t softmd = (mmio_read_32(MFISSOFTMDR) & 0x00000001U);
+	uint32_t md = (mmio_read_32(RST_MODEMR) & MODEMR_MD5_MASK)
+							>> MODEMR_MD5_SHIFT;
+	uint32_t softmd = (mmio_read_32(MFISSOFTMDR) & SOFTMD_BOOTMODE_MASK);
 	uint32_t ret;
 
 	/* default is Secure boot */
@@ -235,7 +223,7 @@ void auth_mod_init(void)
 	}
 	if (lcs == LCS_SE) {
 		/* LCS=Secure */
-		if (softmd == 0x1U) {
+		if (softmd == SOFTMD_NORMALBOOT) {
 			/* LCS=Secure + Normal boot (temp setting) */
 			sbrom_SecureBootAPI = &local_verify;
 		}

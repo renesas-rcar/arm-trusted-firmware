@@ -1,41 +1,17 @@
 /*
- * Copyright (c) 2015-2016, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2015-2017, ARM Limited and Contributors. All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- * Redistributions of source code must retain the above copyright notice, this
- * list of conditions and the following disclaimer.
- *
- * Redistributions in binary form must reproduce the above copyright notice,
- * this list of conditions and the following disclaimer in the documentation
- * and/or other materials provided with the distribution.
- *
- * Neither the name of ARM nor the names of its contributors may be used
- * to endorse or promote products derived from this software without specific
- * prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 #ifndef __PLAT_ARM_H__
 #define __PLAT_ARM_H__
 
+#include <arm_xlat_tables.h>
 #include <bakery_lock.h>
 #include <cassert.h>
 #include <cpu_data.h>
 #include <stdint.h>
-#include <utils.h>
-#include <xlat_tables.h>
+#include <utils_def.h>
 
 /*******************************************************************************
  * Forward declarations
@@ -64,13 +40,13 @@ void arm_setup_page_tables(uintptr_t total_base,
 #endif
 );
 
-#if IMAGE_BL31
+#if defined(IMAGE_BL31) || (defined(AARCH32) && defined(IMAGE_BL32))
 /*
  * Use this macro to instantiate lock before it is used in below
  * arm_lock_xxx() macros
  */
 #define ARM_INSTANTIATE_LOCK	DEFINE_BAKERY_LOCK(arm_lock);
-
+#define ARM_LOCK_GET_INSTANCE	(&arm_lock)
 /*
  * These are wrapper macros to the Coherent Memory Bakery Lock API.
  */
@@ -81,14 +57,15 @@ void arm_setup_page_tables(uintptr_t total_base,
 #else
 
 /*
- * Empty macros for all other BL stages other than BL31
+ * Empty macros for all other BL stages other than BL31 and BL32
  */
 #define ARM_INSTANTIATE_LOCK
+#define ARM_LOCK_GET_INSTANCE	0
 #define arm_lock_init()
 #define arm_lock_get()
 #define arm_lock_release()
 
-#endif /* IMAGE_BL31 */
+#endif /* defined(IMAGE_BL31) || (defined(AARCH32) && defined(IMAGE_BL32)) */
 
 #if ARM_RECOM_STATE_ID_ENC
 /*
@@ -124,6 +101,9 @@ void arm_setup_page_tables(uintptr_t total_base,
 
 #endif /* __ARM_RECOM_STATE_ID_ENC__ */
 
+/* ARM State switch error codes */
+#define STATE_SW_E_PARAM		(-2)
+#define STATE_SW_E_DENIED		(-3)
 
 /* IO storage utility functions */
 void arm_io_setup(void);
@@ -157,6 +137,7 @@ void arm_bl2_platform_setup(void);
 void arm_bl2_plat_arch_setup(void);
 uint32_t arm_get_spsr_for_bl32_entry(void);
 uint32_t arm_get_spsr_for_bl33_entry(void);
+int arm_bl2_handle_post_image_load(unsigned int image_id);
 
 /* BL2U utility functions */
 void arm_bl2u_early_platform_setup(struct meminfo *mem_layout,
@@ -182,6 +163,7 @@ void arm_tsp_early_platform_setup(void);
 /* SP_MIN utility functions */
 void arm_sp_min_early_platform_setup(void *from_bl2,
 		void *plat_params_from_bl2);
+void arm_sp_min_plat_runtime_setup(void);
 
 /* FIP TOC validity check */
 int arm_io_is_toc_valid(void);
@@ -194,12 +176,18 @@ void plat_arm_gic_driver_init(void);
 void plat_arm_gic_init(void);
 void plat_arm_gic_cpuif_enable(void);
 void plat_arm_gic_cpuif_disable(void);
+void plat_arm_gic_redistif_on(void);
+void plat_arm_gic_redistif_off(void);
 void plat_arm_gic_pcpu_init(void);
 void plat_arm_security_setup(void);
 void plat_arm_pwrc_setup(void);
 void plat_arm_interconnect_init(void);
 void plat_arm_interconnect_enter_coherency(void);
 void plat_arm_interconnect_exit_coherency(void);
+
+#if ARM_PLAT_MT
+unsigned int plat_arm_get_cpu_pe_count(u_register_t mpidr);
+#endif
 
 #if LOAD_IMAGE_V2
 /*
@@ -219,5 +207,19 @@ int plat_arm_get_alt_image_source(
 	uintptr_t *image_spec);
 unsigned int plat_arm_calc_core_pos(u_register_t mpidr);
 const mmap_region_t *plat_arm_get_mmap(void);
+
+/* Allow platform to override psci_pm_ops during runtime */
+const plat_psci_ops_t *plat_arm_psci_override_pm_ops(plat_psci_ops_t *ops);
+
+/* Execution state switch in ARM platforms */
+int arm_execution_state_switch(unsigned int smc_fid,
+		uint32_t pc_hi,
+		uint32_t pc_lo,
+		uint32_t cookie_hi,
+		uint32_t cookie_lo,
+		void *handle);
+
+/* Disable Statistical Profiling Extensions helper */
+void arm_disable_spe(void);
 
 #endif /* __PLAT_ARM_H__ */

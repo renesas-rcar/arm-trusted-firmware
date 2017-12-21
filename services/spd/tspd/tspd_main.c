@@ -1,31 +1,7 @@
 /*
- * Copyright (c) 2013-2015, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2013-2017, ARM Limited and Contributors. All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- * Redistributions of source code must retain the above copyright notice, this
- * list of conditions and the following disclaimer.
- *
- * Redistributions in binary form must reproduce the above copyright notice,
- * this list of conditions and the following disclaimer in the documentation
- * and/or other materials provided with the distribution.
- *
- * Neither the name of ARM nor the names of its contributors may be used
- * to endorse or promote products derived from this software without specific
- * prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 
 
@@ -102,7 +78,7 @@ uint64_t tspd_handle_sp_preemption(void *handle)
 	cm_set_next_eret_context(NON_SECURE);
 
 	/*
-	 * The TSP was preempted during STD SMC execution.
+	 * The TSP was preempted during execution of a Yielding SMC Call.
 	 * Return back to the normal world with SMC_PREEMPTED as error
 	 * code in x0.
 	 */
@@ -146,7 +122,7 @@ static uint64_t tspd_sel1_interrupt_handler(uint32_t id,
 	 * context since the TSP is supposed to preserve it during S-EL1
 	 * interrupt handling.
 	 */
-	if (get_std_smc_active_flag(tsp_ctx->state)) {
+	if (get_yield_smc_active_flag(tsp_ctx->state)) {
 		tsp_ctx->saved_spsr_el3 = SMC_GET_EL3(&tsp_ctx->cpu_ctx,
 						      CTX_SPSR_EL3);
 		tsp_ctx->saved_elr_el3 = SMC_GET_EL3(&tsp_ctx->cpu_ctx,
@@ -345,7 +321,7 @@ uint64_t tspd_smc_handler(uint32_t smc_fid,
 		 * Restore the relevant EL3 state which saved to service
 		 * this SMC.
 		 */
-		if (get_std_smc_active_flag(tsp_ctx->state)) {
+		if (get_yield_smc_active_flag(tsp_ctx->state)) {
 			SMC_SET_EL3(&tsp_ctx->cpu_ctx,
 				    CTX_SPSR_EL3,
 				    tsp_ctx->saved_spsr_el3);
@@ -459,6 +435,11 @@ uint64_t tspd_smc_handler(uint32_t smc_fid,
 		 */
 		tspd_synchronous_sp_exit(tsp_ctx, x1);
 #endif
+	/*
+	 * This function ID is used only by the SP to indicate it has finished
+	 * aborting a preempted Yielding SMC Call.
+	 */
+	case TSP_ABORT_DONE:
 
 	/*
 	 * These function IDs are used only by the SP to indicate it has
@@ -504,10 +485,10 @@ uint64_t tspd_smc_handler(uint32_t smc_fid,
 	case TSP_FAST_FID(TSP_MUL):
 	case TSP_FAST_FID(TSP_DIV):
 
-	case TSP_STD_FID(TSP_ADD):
-	case TSP_STD_FID(TSP_SUB):
-	case TSP_STD_FID(TSP_MUL):
-	case TSP_STD_FID(TSP_DIV):
+	case TSP_YIELD_FID(TSP_ADD):
+	case TSP_YIELD_FID(TSP_SUB):
+	case TSP_YIELD_FID(TSP_MUL):
+	case TSP_YIELD_FID(TSP_DIV):
 		if (ns) {
 			/*
 			 * This is a fresh request from the non-secure client.
@@ -518,7 +499,7 @@ uint64_t tspd_smc_handler(uint32_t smc_fid,
 			assert(handle == cm_get_context(NON_SECURE));
 
 			/* Check if we are already preempted */
-			if (get_std_smc_active_flag(tsp_ctx->state))
+			if (get_yield_smc_active_flag(tsp_ctx->state))
 				SMC_RET1(handle, SMC_UNK);
 
 			cm_el1_sysregs_context_save(NON_SECURE);
@@ -548,13 +529,14 @@ uint64_t tspd_smc_handler(uint32_t smc_fid,
 				cm_set_elr_el3(SECURE, (uint64_t)
 						&tsp_vectors->fast_smc_entry);
 			} else {
-				set_std_smc_active_flag(tsp_ctx->state);
+				set_yield_smc_active_flag(tsp_ctx->state);
 				cm_set_elr_el3(SECURE, (uint64_t)
-						&tsp_vectors->std_smc_entry);
+						&tsp_vectors->yield_smc_entry);
 #if TSP_NS_INTR_ASYNC_PREEMPT
 				/*
 				 * Enable the routing of NS interrupts to EL3
-				 * during STD SMC processing on this core.
+				 * during processing of a Yielding SMC Call on
+				 * this core.
 				 */
 				enable_intr_rm_local(INTR_TYPE_NS, SECURE);
 #endif
@@ -580,13 +562,13 @@ uint64_t tspd_smc_handler(uint32_t smc_fid,
 			/* Restore non-secure state */
 			cm_el1_sysregs_context_restore(NON_SECURE);
 			cm_set_next_eret_context(NON_SECURE);
-			if (GET_SMC_TYPE(smc_fid) == SMC_TYPE_STD) {
-				clr_std_smc_active_flag(tsp_ctx->state);
+			if (GET_SMC_TYPE(smc_fid) == SMC_TYPE_YIELD) {
+				clr_yield_smc_active_flag(tsp_ctx->state);
 #if TSP_NS_INTR_ASYNC_PREEMPT
 				/*
 				 * Disable the routing of NS interrupts to EL3
-				 * after STD SMC processing is finished on this
-				 * core.
+				 * after processing of a Yielding SMC Call on
+				 * this core is finished.
 				 */
 				disable_intr_rm_local(INTR_TYPE_NS, SECURE);
 #endif
@@ -596,10 +578,41 @@ uint64_t tspd_smc_handler(uint32_t smc_fid,
 		}
 
 		break;
+	/*
+	 * Request from the non-secure world to abort a preempted Yielding SMC
+	 * Call.
+	 */
+	case TSP_FID_ABORT:
+		/* ABORT should only be invoked by normal world */
+		if (!ns) {
+			assert(0);
+			break;
+		}
+
+		assert(handle == cm_get_context(NON_SECURE));
+		cm_el1_sysregs_context_save(NON_SECURE);
+
+		/* Abort the preempted SMC request */
+		if (!tspd_abort_preempted_smc(tsp_ctx)) {
+			/*
+			 * If there was no preempted SMC to abort, return
+			 * SMC_UNK.
+			 *
+			 * Restoring the NON_SECURE context is not necessary as
+			 * the synchronous entry did not take place if the
+			 * return code of tspd_abort_preempted_smc is zero.
+			 */
+			cm_set_next_eret_context(NON_SECURE);
+			break;
+		}
+
+		cm_el1_sysregs_context_restore(NON_SECURE);
+		cm_set_next_eret_context(NON_SECURE);
+		SMC_RET1(handle, SMC_OK);
 
 		/*
 		 * Request from non secure world to resume the preempted
-		 * Standard SMC call.
+		 * Yielding SMC Call.
 		 */
 	case TSP_FID_RESUME:
 		/* RESUME should be invoked only by normal world */
@@ -616,7 +629,7 @@ uint64_t tspd_smc_handler(uint32_t smc_fid,
 		assert(handle == cm_get_context(NON_SECURE));
 
 		/* Check if we are already preempted before resume */
-		if (!get_std_smc_active_flag(tsp_ctx->state))
+		if (!get_yield_smc_active_flag(tsp_ctx->state))
 			SMC_RET1(handle, SMC_UNK);
 
 		cm_el1_sysregs_context_save(NON_SECURE);
@@ -628,7 +641,7 @@ uint64_t tspd_smc_handler(uint32_t smc_fid,
 #if TSP_NS_INTR_ASYNC_PREEMPT
 		/*
 		 * Enable the routing of NS interrupts to EL3 during resumption
-		 * of STD SMC call on this core.
+		 * of a Yielding SMC Call on this core.
 		 */
 		enable_intr_rm_local(INTR_TYPE_NS, SECURE);
 #endif
@@ -688,13 +701,13 @@ DECLARE_RT_SVC(
 	tspd_smc_handler
 );
 
-/* Define a SPD runtime service descriptor for standard SMC calls */
+/* Define a SPD runtime service descriptor for Yielding SMC Calls */
 DECLARE_RT_SVC(
 	tspd_std,
 
 	OEN_TOS_START,
 	OEN_TOS_END,
-	SMC_TYPE_STD,
+	SMC_TYPE_YIELD,
 	NULL,
 	tspd_smc_handler
 );

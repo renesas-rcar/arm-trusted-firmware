@@ -1,31 +1,7 @@
 /*
  * Copyright (c) 2015, ARM Limited and Contributors. All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- * Redistributions of source code must retain the above copyright notice, this
- * list of conditions and the following disclaimer.
- *
- * Redistributions in binary form must reproduce the above copyright notice,
- * this list of conditions and the following disclaimer in the documentation
- * and/or other materials provided with the distribution.
- *
- * Neither the name of ARM nor the names of its contributors may be used
- * to endorse or promote products derived from this software without specific
- * prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 
 #include <stddef.h>
@@ -181,13 +157,13 @@ X509_EXTENSION *ext_new(int nid, int crit, unsigned char *data, int len)
 X509_EXTENSION *ext_new_hash(int nid, int crit, const EVP_MD *md,
 		unsigned char *buf, size_t len)
 {
-	X509_EXTENSION *ex = NULL;
-	ASN1_OCTET_STRING *octet = NULL;
-	HASH *hash = NULL;
-	ASN1_OBJECT *algorithm = NULL;
-	X509_ALGOR *x509_algor = NULL;
+	X509_EXTENSION *ex;
+	ASN1_OCTET_STRING *octet;
+	HASH *hash;
+	ASN1_OBJECT *algorithm;
+	X509_ALGOR *x509_algor;
 	unsigned char *p = NULL;
-	int sz = -1;
+	int sz;
 
 	/* OBJECT_IDENTIFIER with hash algorithm */
 	algorithm = OBJ_nid2obj(md->type);
@@ -254,16 +230,15 @@ X509_EXTENSION *ext_new_hash(int nid, int crit, const EVP_MD *md,
  */
 X509_EXTENSION *ext_new_nvcounter(int nid, int crit, int value)
 {
-	X509_EXTENSION *ex = NULL;
-	ASN1_INTEGER *counter = NULL;
+	X509_EXTENSION *ex;
+	ASN1_INTEGER *counter;
 	unsigned char *p = NULL;
-	int sz = -1;
+	int sz;
 
 	/* Encode counter */
 	counter = ASN1_INTEGER_new();
 	ASN1_INTEGER_set(counter, value);
-	sz = i2d_ASN1_INTEGER(counter, NULL);
-	i2d_ASN1_INTEGER(counter, &p);
+	sz = i2d_ASN1_INTEGER(counter, &p);
 
 	/* Create the extension */
 	ex = ext_new(nid, crit, p, sz);
@@ -292,9 +267,9 @@ X509_EXTENSION *ext_new_nvcounter(int nid, int crit, int value)
  */
 X509_EXTENSION *ext_new_key(int nid, int crit, EVP_PKEY *k)
 {
-	X509_EXTENSION *ex = NULL;
-	unsigned char *p = NULL;
-	int sz = -1;
+	X509_EXTENSION *ex;
+	unsigned char *p;
+	int sz;
 
 	/* Encode key */
 	BIO *mem = BIO_new(BIO_s_mem());
@@ -316,7 +291,7 @@ X509_EXTENSION *ext_new_key(int nid, int crit, EVP_PKEY *k)
 
 ext_t *ext_get_by_opt(const char *opt)
 {
-	ext_t *ext = NULL;
+	ext_t *ext;
 	unsigned int i;
 
 	/* Sequential search. This is not a performance concern since the number

@@ -1,31 +1,7 @@
 /*
  * Copyright (c) 2014-2016, ARM Limited and Contributors. All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- * Redistributions of source code must retain the above copyright notice, this
- * list of conditions and the following disclaimer.
- *
- * Redistributions in binary form must reproduce the above copyright notice,
- * this list of conditions and the following disclaimer in the documentation
- * and/or other materials provided with the distribution.
- *
- * Neither the name of ARM nor the names of its contributors may be used
- * to endorse or promote products derived from this software without specific
- * prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 
 #ifndef __ZYNQMP_DEF_H__
@@ -69,11 +45,8 @@
 /* CRL registers and bitfields */
 #define CRL_APB_BASE			0xFF5E0000
 #define CRL_APB_RPLL_CTRL		(CRL_APB_BASE + 0x30)
-#define CRL_APB_TIMESTAMP_REF_CTRL	(CRL_APB_BASE + 0x128)
 #define CRL_APB_BOOT_MODE_USER		(CRL_APB_BASE + 0x200)
 #define CRL_APB_RESET_CTRL		(CRL_APB_BASE + 0x218)
-
-#define CRL_APB_TIMESTAMP_REF_CTRL_CLKACT_BIT	(1 << 24)
 
 #define CRL_APB_RPLL_CTRL_BYPASS	(1 << 3)
 
@@ -84,10 +57,7 @@
 
 /* system counter registers and bitfields */
 #define IOU_SCNTRS_BASE			0xFF260000
-#define IOU_SCNTRS_CONTROL		(IOU_SCNTRS_BASE + 0)
 #define IOU_SCNTRS_BASEFREQ		(IOU_SCNTRS_BASE + 0x20)
-
-#define IOU_SCNTRS_CONTROL_EN		(1 << 0)
 
 /* APU registers and bitfields */
 #define APU_BASE		0xFD5C0000
@@ -128,7 +98,6 @@
 #define BASE_GICH_BASE		0xF9040000
 #define BASE_GICV_BASE		0xF9060000
 
-#define IRQ_SEC_IPI_APU			67
 #define ARM_IRQ_SEC_PHY_TIMER		29
 
 #define ARM_IRQ_SEC_SGI_0		8
@@ -146,7 +115,7 @@
  * UART related constants
  ******************************************************************************/
 #define ZYNQMP_UART0_BASE		0xFF000000
-#define ZYNQMP_UART1_BASE		0xFF001000
+#define ZYNQMP_UART1_BASE		0xFF010000
 
 #if ZYNQMP_CONSOLE_IS(cadence)
 # define ZYNQMP_UART_BASE	ZYNQMP_UART0_BASE

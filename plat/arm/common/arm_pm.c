@@ -1,31 +1,7 @@
 /*
- * Copyright (c) 2015, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2015-2016, ARM Limited and Contributors. All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- * Redistributions of source code must retain the above copyright notice, this
- * list of conditions and the following disclaimer.
- *
- * Redistributions in binary form must reproduce the above copyright notice,
- * this list of conditions and the following disclaimer in the documentation
- * and/or other materials provided with the distribution.
- *
- * Neither the name of ARM nor the names of its contributors may be used
- * to endorse or promote products derived from this software without specific
- * prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 
 #include <arch_helpers.h>
@@ -38,8 +14,11 @@
 #include <platform_def.h>
 #include <psci.h>
 
+/* Allow ARM Standard platforms to override this function */
+#pragma weak plat_arm_psci_override_pm_ops
+
 /* Standard ARM platforms are expected to export plat_arm_psci_pm_ops */
-extern const plat_psci_ops_t plat_arm_psci_pm_ops;
+extern plat_psci_ops_t plat_arm_psci_pm_ops;
 
 #if ARM_RECOM_STATE_ID_ENC
 extern unsigned int arm_pm_idle_states[];
@@ -143,11 +122,21 @@ int arm_validate_ns_entrypoint(uintptr_t entrypoint)
 	if ((entrypoint >= ARM_NS_DRAM1_BASE) && (entrypoint <
 			(ARM_NS_DRAM1_BASE + ARM_NS_DRAM1_SIZE)))
 		return PSCI_E_SUCCESS;
+#ifndef AARCH32
 	if ((entrypoint >= ARM_DRAM2_BASE) && (entrypoint <
 			(ARM_DRAM2_BASE + ARM_DRAM2_SIZE)))
 		return PSCI_E_SUCCESS;
+#endif
 
 	return PSCI_E_INVALID_ADDRESS;
+}
+
+/******************************************************************************
+ * Default definition on ARM standard platforms to override the plat_psci_ops.
+ *****************************************************************************/
+const plat_psci_ops_t *plat_arm_psci_override_pm_ops(plat_psci_ops_t *ops)
+{
+	return ops;
 }
 
 /******************************************************************************
@@ -201,7 +190,7 @@ void arm_program_trusted_mailbox(uintptr_t address)
 int plat_setup_psci_ops(uintptr_t sec_entrypoint,
 				const plat_psci_ops_t **psci_ops)
 {
-	*psci_ops = &plat_arm_psci_pm_ops;
+	*psci_ops = plat_arm_psci_override_pm_ops(&plat_arm_psci_pm_ops);
 
 	/* Setup mailbox with entry point. */
 	arm_program_trusted_mailbox(sec_entrypoint);

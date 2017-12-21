@@ -31,7 +31,7 @@
  */
 
 /*
- * Portions copyright (c) 2013-2014, ARM Limited and Contributors.
+ * Portions copyright (c) 2013-2017, ARM Limited and Contributors.
  * All rights reserved.
  */
 
@@ -52,6 +52,7 @@ __BEGIN_DECLS
 void	*memchr(const void *, int, size_t) __pure;
 int	 memcmp(const void *, const void *, size_t) __pure;
 void	*memcpy(void * __restrict, const void * __restrict, size_t);
+void	*memcpy16(void * __restrict, const void * __restrict, size_t);
 void	*memmove(void *, const void *, size_t);
 void	*memset(void *, int, size_t);
 
@@ -59,7 +60,9 @@ char	*strchr(const char *, int) __pure;
 int	 strcmp(const char *, const char *) __pure;
 size_t	 strlen(const char *) __pure;
 int	 strncmp(const char *, const char *, size_t) __pure;
+size_t	 strnlen(const char *, size_t) __pure;
 int	 strcasecmp(const char *, const char *);
+int	 timingsafe_bcmp(const void *, const void *, size_t);
 
 __END_DECLS
 

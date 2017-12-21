@@ -1,31 +1,7 @@
 /*
  * Copyright (c) 2013-2014, ARM Limited and Contributors. All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- * Redistributions of source code must retain the above copyright notice, this
- * list of conditions and the following disclaimer.
- *
- * Redistributions in binary form must reproduce the above copyright notice,
- * this list of conditions and the following disclaimer in the documentation
- * and/or other materials provided with the distribution.
- *
- * Neither the name of ARM nor the names of its contributors may be used
- * to endorse or promote products derived from this software without specific
- * prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 
 #include <arch.h>
@@ -44,6 +20,8 @@
  * This macro can be used for implementing various data cache operations `op`
  */
 .macro do_dcache_maintenance_by_mva op
+	/* Exit early if size is zero */
+	cbz	x1, exit_loop_\op
 	dcache_line_size x2, x3
 	add	x1, x0, x1
 	sub	x3, x2, #1
@@ -54,6 +32,7 @@ loop_\op:
 	cmp	x0, x1
 	b.lo    loop_\op
 	dsb	sy
+exit_loop_\op:
 	ret
 .endm
 	/* ------------------------------------------
@@ -119,7 +98,7 @@ loop1:
 	lsr	x1, x0, x2		// extract cache type bits from clidr
 	and	x1, x1, #7		// mask the bits for current cache only
 	cmp	x1, #2			// see what cache we have at this level
-	b.lt	level_done		// nothing to do if no cache or icache
+	b.lo	level_done		// nothing to do if no cache or icache
 
 	msr	csselr_el1, x10		// select current cache level in csselr
 	isb				// isb to sych the new cssr&csidr
@@ -144,10 +123,10 @@ loop3_\_op:
 	orr	w11, w9, w7		// combine cache, way and set number
 	dc	\_op, x11
 	subs	w7, w7, w17		// decrement set number
-	b.ge	loop3_\_op
+	b.hs	loop3_\_op
 
 	subs	x9, x9, x16		// decrement way number
-	b.ge	loop2_\_op
+	b.hs	loop2_\_op
 
 	b	level_done
 	.endm
@@ -155,7 +134,7 @@ loop3_\_op:
 level_done:
 	add	x10, x10, #2		// increment cache number
 	cmp	x3, x10
-	b.gt    loop1
+	b.hi    loop1
 	msr	csselr_el1, xzr		// select cache level 0 in csselr
 	dsb	sy			// barrier to complete final cache operation
 	isb

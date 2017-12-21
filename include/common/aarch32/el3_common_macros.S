@@ -1,31 +1,7 @@
 /*
- * Copyright (c) 2016, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2016-2017, ARM Limited and Contributors. All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- * Redistributions of source code must retain the above copyright notice, this
- * list of conditions and the following disclaimer.
- *
- * Redistributions in binary form must reproduce the above copyright notice,
- * this list of conditions and the following disclaimer in the documentation
- * and/or other materials provided with the distribution.
- *
- * Neither the name of ARM nor the names of its contributors may be used
- * to endorse or promote products derived from this software without specific
- * prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 
 #ifndef __EL3_COMMON_MACROS_S__
@@ -40,10 +16,18 @@
 	 */
 	.macro el3_arch_init_common _exception_vectors
 	/* ---------------------------------------------------------------------
-	 * Enable the instruction cache and alignment checks
+	 * SCTLR has already been initialised - read current value before
+	 * modifying.
+	 *
+	 * SCTLR.I: Enable the instruction cache.
+	 *
+	 * SCTLR.A: Enable Alignment fault checking. All instructions that load
+	 *  or store one or more registers have an alignment check that the
+	 *  address being accessed is aligned to the size of the data element(s)
+	 *  being accessed.
 	 * ---------------------------------------------------------------------
 	 */
-	ldr	r1, =(SCTLR_RES1 | SCTLR_I_BIT | SCTLR_A_BIT)
+	ldr	r1, =(SCTLR_I_BIT | SCTLR_A_BIT)
 	ldcopr	r0, SCTLR
 	orr	r0, r0, r1
 	stcopr	r0, SCTLR
@@ -58,13 +42,14 @@
 	stcopr	r0, MVBAR
 	isb
 
-	/* -----------------------------------------------------
-	 * Enable the SIF bit to disable instruction fetches
-	 * from Non-secure memory.
-	 * -----------------------------------------------------
+	/* ---------------------------------------------------------------------
+	 * Initialise SCR, setting all fields rather than relying on the hw.
+	 *
+	 * SCR.SIF: Enabled so that Secure state instruction fetches from
+	 *  Non-secure memory are not permitted.
+	 * ---------------------------------------------------------------------
 	 */
-	ldcopr	r0, SCR
-	orr	r0, r0, #SCR_SIF_BIT
+	ldr	r0, =(SCR_RESET_VAL | SCR_SIF_BIT)
 	stcopr	r0, SCR
 
 	/* -----------------------------------------------------
@@ -75,29 +60,63 @@
 	cpsie   a
 	isb
 
-	/* Enable access to Advanced SIMD registers */
+	/* ---------------------------------------------------------------------
+	 * Initialise NSACR, setting all the fields, except for the
+	 * IMPLEMENTATION DEFINED field, rather than relying on the hw. Some
+	 * fields are architecturally UNKNOWN on reset.
+	 *
+	 * NSACR_ENABLE_FP_ACCESS: Represents NSACR.cp11 and NSACR.cp10. The
+	 *  cp11 field is ignored, but is set to same value as cp10. The cp10
+	 *  field is set to allow access to Advanced SIMD and floating point
+	 *  features from both Security states.
+	 * ---------------------------------------------------------------------
+	 */
 	ldcopr	r0, NSACR
-	bic	r0, r0, #NSASEDIS_BIT
-	bic	r0, r0, #NSTRCDIS_BIT
-	orr	r0, r0, #(NASCR_CP10_BIT | NASCR_CP11_BIT)
+	and	r0, r0, #NSACR_IMP_DEF_MASK
+	orr	r0, r0, #(NSACR_RESET_VAL | NSACR_ENABLE_FP_ACCESS)
 	stcopr	r0, NSACR
 	isb
 
-	/*
-	 * Enable access to Advanced SIMD, Floating point and to the Trace
-	 * functionality as well.
+	/* ---------------------------------------------------------------------
+	 * Initialise CPACR, setting all fields rather than relying on hw. Some
+	 * fields are architecturally UNKNOWN on reset.
+	 *
+	 * CPACR.TRCDIS: Trap control for PL0 and PL1 System register accesses
+	 *  to trace registers. Set to zero to allow access.
+	 *
+	 * CPACR_ENABLE_FP_ACCESS: Represents CPACR.cp11 and CPACR.cp10. The
+	 *  cp11 field is ignored, but is set to same value as cp10. The cp10
+	 *  field is set to allow full access from PL0 and PL1 to floating-point
+	 *  and Advanced SIMD features.
+	 * ---------------------------------------------------------------------
 	 */
-	ldcopr	r0, CPACR
-	bic	r0, r0, #ASEDIS_BIT
-	bic	r0, r0, #TRCDIS_BIT
-	orr	r0, r0, #CPACR_ENABLE_FP_ACCESS
+	ldr	r0, =((CPACR_RESET_VAL | CPACR_ENABLE_FP_ACCESS) & ~(TRCDIS_BIT))
 	stcopr	r0, CPACR
 	isb
 
-	vmrs	r0, FPEXC
-	orr	r0, r0, #FPEXC_EN_BIT
+	/* ---------------------------------------------------------------------
+	 * Initialise FPEXC, setting all fields rather than relying on hw. Some
+	 * fields are architecturally UNKNOWN on reset and are set to zero
+	 * except for field(s) listed below.
+	 *
+	 * FPEXC.EN: Enable access to Advanced SIMD and floating point features
+	 *  from all exception levels.
+	 * ---------------------------------------------------------------------
+	 */
+	ldr	r0, =(FPEXC_RESET_VAL | FPEXC_EN_BIT)
 	vmsr	FPEXC, r0
 	isb
+
+	/* ---------------------------------------------------------------------
+	 * Initialise SDCR, setting all the fields rather than relying on hw.
+	 *
+	 * SDCR.SPD: Disable AArch32 privileged debug. Debug exceptions from
+	 * Secure EL1 are disabled.
+	 * ---------------------------------------------------------------------
+	 */
+	ldr	r0, =(SDCR_RESET_VAL | SDCR_SPD(SDCR_SPD_DISABLE))
+	stcopr	r0, SDCR
+
 	.endm
 
 /* -----------------------------------------------------------------------------
@@ -110,8 +129,9 @@
  * why this macro is parameterised ; each parameter allows to enable/disable
  * some actions.
  *
- *  _set_endian:
- *	Whether the macro needs to configure the endianness of data accesses.
+ *  _init_sctlr:
+ *	Whether the macro needs to initialise the SCTLR register including
+ *	configuring the endianness of data accesses.
  *
  *  _warm_boot_mailbox:
  *	Whether the macro needs to detect the type of boot (cold/warm). The
@@ -139,27 +159,37 @@
  * -----------------------------------------------------------------------------
  */
 	.macro el3_entrypoint_common					\
-		_set_endian, _warm_boot_mailbox, _secondary_cold_boot,	\
+		_init_sctlr, _warm_boot_mailbox, _secondary_cold_boot,	\
 		_init_memory, _init_c_runtime, _exception_vectors
 
 	/* Make sure we are in Secure Mode */
-#if ASM_ASSERTION
+#if ENABLE_ASSERTIONS
 	ldcopr	r0, SCR
 	tst	r0, #SCR_NS_BIT
 	ASM_ASSERT(eq)
 #endif
 
-	.if \_set_endian
+	.if \_init_sctlr
 		/* -------------------------------------------------------------
-		 * Set the CPU endianness before doing anything that might
-		 * involve memory reads or writes.
+		 * This is the initialisation of SCTLR and so must ensure that
+		 * all fields are explicitly set rather than relying on hw. Some
+		 * fields reset to an IMPLEMENTATION DEFINED value.
+		 *
+		 * SCTLR.TE: Set to zero so that exceptions to an Exception
+		 *  Level executing at PL1 are taken to A32 state.
+		 *
+		 * SCTLR.EE: Set the CPU endianness before doing anything that
+		 *  might involve memory reads or writes. Set to zero to select
+		 *  Little Endian.
+		 *
+		 * SCTLR.V: Set to zero to select the normal exception vectors
+		 *  with base address held in VBAR.
 		 * -------------------------------------------------------------
 		 */
-		ldcopr	r0, SCTLR
-		bic	r0, r0, #SCTLR_EE_BIT
+		ldr     r0, =(SCTLR_RESET_VAL & ~(SCTLR_TE_BIT | SCTLR_EE_BIT | SCTLR_V_BIT))
 		stcopr	r0, SCTLR
 		isb
-	.endif /* _set_endian */
+	.endif /* _init_sctlr */
 
 	/* Switch to monitor mode */
 	cps	#MODE32_mon
@@ -204,7 +234,7 @@
 		/* This is a cold boot on a secondary CPU */
 		bl	plat_secondary_cold_boot_setup
 		/* plat_secondary_cold_boot_setup() is not supposed to return */
-		bl	plat_panic_handler
+		no_ret	plat_panic_handler
 
 	do_primary_cold_boot:
 	.endif /* _secondary_cold_boot */
@@ -228,7 +258,7 @@
 	 * ---------------------------------------------------------------------
 	 */
 	.if \_init_c_runtime
-#if IMAGE_BL32
+#ifdef IMAGE_BL32
 		/* -----------------------------------------------------------------
 		 * Invalidate the RW memory used by the BL32 (SP_MIN) image. This
 		 * includes the data and NOBITS sections. This is done to
@@ -253,7 +283,7 @@
 		bl	zeromem
 #endif
 
-#if IMAGE_BL1
+#ifdef IMAGE_BL1
 		/* -----------------------------------------------------
 		 * Copy data from ROM to RAM.
 		 * -----------------------------------------------------
@@ -273,6 +303,12 @@
 	 * ---------------------------------------------------------------------
 	 */
 	bl	plat_set_my_stack
+
+#if STACK_PROTECTOR_ENABLED
+	.if \_init_c_runtime
+	bl	update_stack_protector_canary
+	.endif /* _init_c_runtime */
+#endif
 	.endm
 
 #endif /* __EL3_COMMON_MACROS_S__ */

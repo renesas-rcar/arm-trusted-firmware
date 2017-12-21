@@ -1,35 +1,10 @@
 /*
  * Copyright (c) 2014, ARM Limited and Contributors. All rights reserved.
- * Copyright (c) 2015-2016, Renesas Electronics Corporation. All rights reserved.
+ * Copyright (c) 2015-2017, Renesas Electronics Corporation. All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- * Redistributions of source code must retain the above copyright notice, this
- * list of conditions and the following disclaimer.
- *
- * Redistributions in binary form must reproduce the above copyright notice,
- * this list of conditions and the following disclaimer in the documentation
- * and/or other materials provided with the distribution.
- *
- * Neither the name of ARM nor the names of its contributors may be used
- * to endorse or promote products derived from this software without specific
- * prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 
-#include <assert.h>
 #include <debug.h>
 #include <io_driver.h>
 #include <io_storage.h>
@@ -107,7 +82,6 @@ static int32_t emmcdrv_dev_open(
 			const uintptr_t dev_spec __attribute__((unused)),
 			io_dev_info_t **dev_info)
 {
-	assert(dev_info != NULL);
 	*dev_info = (io_dev_info_t *)&emmcdrv_dev_info;
 
 	return IO_SUCCESS;
@@ -134,8 +108,6 @@ static int32_t emmcdrv_block_open(io_dev_info_t *dev_info, const uintptr_t spec,
 	 * entity->info.
 	 */
 	if (current_file.in_use == 0U) {
-		assert(block_spec != NULL);
-		assert(entity != NULL);
 
 		current_file.in_use = 1U;
 		/* File cursor offset for seek and incremental reads etc. */
@@ -194,8 +166,6 @@ static int32_t emmcdrv_block_seek(io_entity_t *entity, int32_t mode,
 
 	/* We only support IO_SEEK_SET for the moment. */
 	if ((io_seek_mode_t)mode == IO_SEEK_SET) {
-		assert(entity != NULL);
-		assert(entity->info != (uintptr_t)NULL);
 
 		/* TODO: can we do some basic limit checks on seek? */
 		((file_state_t *)entity->info)->file_pos = offset;
@@ -216,11 +186,6 @@ static int32_t emmcdrv_block_read(io_entity_t *entity, uintptr_t buffer,
 	uint32_t sector_num;
 	uint32_t emmc_dma = 0U;
 	int32_t result = IO_SUCCESS;
-
-	assert(entity != NULL);
-	assert(buffer != (uintptr_t)NULL);
-	assert(length_read != NULL);
-	assert(entity->info != (uintptr_t)NULL);
 
 	fp = (file_state_t *)entity->info;
 
@@ -256,8 +221,6 @@ static int32_t emmcdrv_block_read(io_entity_t *entity, uintptr_t buffer,
 /* Close a file on the emmcdrv device */
 static int32_t emmcdrv_block_close(io_entity_t *entity)
 {
-	assert(entity != NULL);
-
 	entity->info = 0U;
 
 	/* This would be a mem free() if we had malloc.*/
@@ -272,7 +235,6 @@ static int32_t emmcdrv_block_close(io_entity_t *entity)
 int32_t register_io_dev_emmcdrv(const io_dev_connector_t **dev_con)
 {
 	int32_t result;
-	assert(dev_con != NULL);
 
 	result = io_register_device(&emmcdrv_dev_info);
 	if (result == IO_SUCCESS) {

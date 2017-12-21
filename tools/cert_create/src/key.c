@@ -1,31 +1,7 @@
 /*
- * Copyright (c) 2015, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2015-2017, ARM Limited and Contributors. All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- * Redistributions of source code must retain the above copyright notice, this
- * list of conditions and the following disclaimer.
- *
- * Redistributions in binary form must reproduce the above copyright notice,
- * this list of conditions and the following disclaimer in the documentation
- * and/or other materials provided with the distribution.
- *
- * Neither the name of ARM nor the names of its contributors may be used
- * to endorse or promote products derived from this software without specific
- * prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 
 #include <getopt.h>
@@ -37,11 +13,16 @@
 #include <openssl/evp.h>
 #include <openssl/pem.h>
 
+#if USE_TBBR_DEFS
+#include <tbbr_oid.h>
+#else
+#include <platform_oid.h>
+#endif
+
 #include "cert.h"
 #include "cmd_opt.h"
 #include "debug.h"
 #include "key.h"
-#include "platform_oid.h"
 #include "sha.h"
 
 #define MAX_FILENAME_LEN		1024
@@ -49,7 +30,7 @@
 /*
  * Create a new key container
  */
-static int key_new(key_t *key)
+int key_new(key_t *key)
 {
 	/* Create key pair container */
 	key->key = EVP_PKEY_new();
@@ -62,7 +43,7 @@ static int key_new(key_t *key)
 
 static int key_create_rsa(key_t *key)
 {
-	RSA *rsa = NULL;
+	RSA *rsa;
 
 	rsa = RSA_generate_key(RSA_KEY_BITS, RSA_F4, NULL, NULL);
 	if (rsa == NULL) {
@@ -83,7 +64,7 @@ err:
 #ifndef OPENSSL_NO_EC
 static int key_create_ecdsa(key_t *key)
 {
-	EC_KEY *ec = NULL;
+	EC_KEY *ec;
 
 	ec = EC_KEY_new_by_curve_name(NID_X9_62_prime256v1);
 	if (ec == NULL) {
@@ -123,11 +104,6 @@ int key_create(key_t *key, int type)
 		return 0;
 	}
 
-	/* Create OpenSSL key container */
-	if (!key_new(key)) {
-		return 0;
-	}
-
 	if (key_create_fn[type]) {
 		return key_create_fn[type](key);
 	}
@@ -137,14 +113,8 @@ int key_create(key_t *key, int type)
 
 int key_load(key_t *key, unsigned int *err_code)
 {
-	FILE *fp = NULL;
-	EVP_PKEY *k = NULL;
-
-	/* Create OpenSSL key container */
-	if (!key_new(key)) {
-		*err_code = KEY_ERR_MALLOC;
-		return 0;
-	}
+	FILE *fp;
+	EVP_PKEY *k;
 
 	if (key->fn) {
 		/* Load key from file */
@@ -173,7 +143,7 @@ int key_load(key_t *key, unsigned int *err_code)
 
 int key_store(key_t *key)
 {
-	FILE *fp = NULL;
+	FILE *fp;
 
 	if (key->fn) {
 		fp = fopen(key->fn, "w");
@@ -196,7 +166,6 @@ int key_init(void)
 {
 	cmd_opt_t cmd_opt;
 	key_t *key;
-	int rc = 0;
 	unsigned int i;
 
 	for (i = 0; i < num_keys; i++) {
@@ -211,12 +180,12 @@ int key_init(void)
 		}
 	}
 
-	return rc;
+	return 0;
 }
 
 key_t *key_get_by_opt(const char *opt)
 {
-	key_t *key = NULL;
+	key_t *key;
 	unsigned int i;
 
 	/* Sequential search. This is not a performance concern since the number

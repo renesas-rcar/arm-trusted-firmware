@@ -1,31 +1,7 @@
 /*
- * Copyright (c) 2015, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2015-2017, ARM Limited and Contributors. All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- * Redistributions of source code must retain the above copyright notice, this
- * list of conditions and the following disclaimer.
- *
- * Redistributions in binary form must reproduce the above copyright notice,
- * this list of conditions and the following disclaimer in the documentation
- * and/or other materials provided with the distribution.
- *
- * Neither the name of ARM nor the names of its contributors may be used
- * to endorse or promote products derived from this software without specific
- * prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 
 /*******************************************************************************
@@ -57,6 +33,11 @@ extern const spd_pm_ops_t tlkd_pm_ops;
  * Per-cpu Secure Payload state
  ******************************************************************************/
 tlk_context_t tlk_ctx;
+
+/*******************************************************************************
+ * CPU number on which TLK booted up
+ ******************************************************************************/
+static uint32_t boot_cpu;
 
 /* TLK UID: RFC-4122 compliant UUID (version-5, sha-1) */
 DEFINE_SVC_UUID(tlk_uuid,
@@ -133,6 +114,12 @@ int32_t tlkd_init(void)
 	cm_init_my_context(tlk_entry_point);
 
 	/*
+	 * TLK runs only on a single CPU. Store the value of the boot
+	 * CPU for sanity checking later.
+	 */
+	boot_cpu = plat_my_core_pos();
+
+	/*
 	 * Arrange for an entry into the test secure payload.
 	 */
 	return tlkd_synchronous_sp_entry(&tlk_ctx);
@@ -163,8 +150,8 @@ uint64_t tlkd_smc_handler(uint32_t smc_fid,
 	/* Passing a NULL context is a critical programming error */
 	assert(handle);
 
-	/* These SMCs are only supported by CPU0 */
-	if ((read_mpidr() & MPIDR_CPU_MASK) != 0)
+	/* These SMCs are only supported by a single CPU */
+	if (boot_cpu != plat_my_core_pos())
 		SMC_RET1(handle, SMC_UNK);
 
 	/* Determine which security state this SMC originated from */
@@ -208,7 +195,7 @@ uint64_t tlkd_smc_handler(uint32_t smc_fid,
 	 *    Applications.
 	 * c. open/close sessions
 	 * d. issue commands to the Trusted Apps
-	 * e. resume the preempted standard SMC call.
+	 * e. resume the preempted yielding SMC call.
 	 */
 	case TLK_REGISTER_LOGBUF:
 	case TLK_REGISTER_REQBUF:
@@ -230,15 +217,15 @@ uint64_t tlkd_smc_handler(uint32_t smc_fid,
 		assert(handle == cm_get_context(NON_SECURE));
 
 		/*
-		 * Check if we are already processing a standard SMC
+		 * Check if we are already processing a yielding SMC
 		 * call. Of all the supported fids, only the "resume"
 		 * fid expects the flag to be set.
 		 */
 		if (smc_fid == TLK_RESUME_FID) {
-			if (!get_std_smc_active_flag(tlk_ctx.state))
+			if (!get_yield_smc_active_flag(tlk_ctx.state))
 				SMC_RET1(handle, SMC_UNK);
 		} else {
-			if (get_std_smc_active_flag(tlk_ctx.state))
+			if (get_yield_smc_active_flag(tlk_ctx.state))
 				SMC_RET1(handle, SMC_UNK);
 		}
 
@@ -252,7 +239,7 @@ uint64_t tlkd_smc_handler(uint32_t smc_fid,
 		/*
 		 * Mark the SP state as active.
 		 */
-		set_std_smc_active_flag(tlk_ctx.state);
+		set_yield_smc_active_flag(tlk_ctx.state);
 
 		/*
 		 * We are done stashing the non-secure context. Ask the
@@ -311,7 +298,7 @@ uint64_t tlkd_smc_handler(uint32_t smc_fid,
 
 	/*
 	 * This is a request from the SP to mark completion of
-	 * a standard function ID.
+	 * a yielding function ID.
 	 */
 	case TLK_REQUEST_DONE:
 		if (ns)
@@ -320,7 +307,7 @@ uint64_t tlkd_smc_handler(uint32_t smc_fid,
 		/*
 		 * Mark the SP state as inactive.
 		 */
-		clr_std_smc_active_flag(tlk_ctx.state);
+		clr_yield_smc_active_flag(tlk_ctx.state);
 
 		/* Get a reference to the non-secure context */
 		ns_cpu_context = cm_get_context(NON_SECURE);
@@ -424,13 +411,13 @@ DECLARE_RT_SVC(
 	tlkd_smc_handler
 );
 
-/* Define a SPD runtime service descriptor for standard SMC calls */
+/* Define a SPD runtime service descriptor for yielding SMC calls */
 DECLARE_RT_SVC(
 	tlkd_tos_std,
 
 	OEN_TOS_START,
 	OEN_TOS_END,
-	SMC_TYPE_STD,
+	SMC_TYPE_YIELD,
 	NULL,
 	tlkd_smc_handler
 );
@@ -446,13 +433,13 @@ DECLARE_RT_SVC(
 	tlkd_smc_handler
 );
 
-/* Define a SPD runtime service descriptor for standard SMC calls */
+/* Define a SPD runtime service descriptor for yielding SMC calls */
 DECLARE_RT_SVC(
 	tlkd_tap_std,
 
 	OEN_TAP_START,
 	OEN_TAP_END,
-	SMC_TYPE_STD,
+	SMC_TYPE_YIELD,
 	NULL,
 	tlkd_smc_handler
 );

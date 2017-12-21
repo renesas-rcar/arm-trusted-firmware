@@ -1,31 +1,7 @@
 /*
- * Copyright (c) 2016, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2016-2017, ARM Limited and Contributors. All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- * Redistributions of source code must retain the above copyright notice, this
- * list of conditions and the following disclaimer.
- *
- * Redistributions in binary form must reproduce the above copyright notice,
- * this list of conditions and the following disclaimer in the documentation
- * and/or other materials provided with the distribution.
- *
- * Neither the name of ARM nor the names of its contributors may be used
- * to endorse or promote products derived from this software without specific
- * prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 
 #include <arch.h>
@@ -36,7 +12,7 @@
 #include <runtime_svc.h>
 #include <smcc_helpers.h>
 #include <smcc_macros.S>
-#include <xlat_tables.h>
+#include <xlat_tables_defs.h>
 
 	.globl	sp_min_vector_table
 	.globl	sp_min_entrypoint
@@ -73,12 +49,12 @@ func sp_min_entrypoint
 	 * sp_min_entrypoint() during the cold boot flow, so the cold/warm boot
 	 * and primary/secondary CPU logic should not be executed in this case.
 	 *
-	 * Also, assume that the previous bootloader has already set up the CPU
-	 * endianness and has initialised the memory.
+	 * Also, assume that the previous bootloader has already initialised the
+	 * SCTLR, including the CPU endianness, and has initialised the memory.
 	 * ---------------------------------------------------------------------
 	 */
 	el3_entrypoint_common					\
-		_set_endian=0					\
+		_init_sctlr=0					\
 		_warm_boot_mailbox=0				\
 		_secondary_cold_boot=0				\
 		_init_memory=0					\
@@ -99,7 +75,7 @@ func sp_min_entrypoint
 	 * ---------------------------------------------------------------------
 	 */
 	el3_entrypoint_common					\
-		_set_endian=1					\
+		_init_sctlr=1					\
 		_warm_boot_mailbox=!PROGRAMMABLE_RESET_ADDRESS	\
 		_secondary_cold_boot=!COLD_BOOT_SINGLE_CPU	\
 		_init_memory=1					\
@@ -139,21 +115,10 @@ func sp_min_entrypoint
 	sub	r1, r1, r0
 	bl	clean_dcache_range
 
-	/* Program the registers in cpu_context and exit monitor mode */
-	mov	r0, #NON_SECURE
-	bl	cm_get_context
-
-	/* Restore the SCR */
-	ldr	r2, [r0, #CTX_REGS_OFFSET + CTX_SCR]
-	stcopr	r2, SCR
-	isb
-
-	/* Restore the SCTLR  */
-	ldr	r2, [r0, #CTX_REGS_OFFSET + CTX_NS_SCTLR]
-	stcopr	r2, SCTLR
-
 	bl	smc_get_next_ctx
-	/* The other cpu_context registers have been copied to smc context */
+
+	/* r0 points to `smc_ctx_t` */
+	/* The PSCI cpu_context registers have been copied to `smc_ctx_t` */
 	b	sp_min_exit
 endfunc sp_min_entrypoint
 
@@ -162,42 +127,43 @@ endfunc sp_min_entrypoint
  * SMC handling function for SP_MIN.
  */
 func handle_smc
+	/* On SMC entry, `sp` points to `smc_ctx_t`. Save `lr`. */
+	str	lr, [sp, #SMC_CTX_LR_MON]
+
 	smcc_save_gp_mode_regs
 
-	/* r0 points to smc_context */
-	mov	r2, r0				/* handle */
-	ldcopr	r0, SCR
+	/*
+	 * `sp` still points to `smc_ctx_t`. Save it to a register
+	 * and restore the C runtime stack pointer to `sp`.
+	 */
+	mov	r2, sp				/* handle */
+	ldr	sp, [r2, #SMC_CTX_SP_MON]
 
-	/* Save SCR in stack */
-	push	{r0}
+	ldr	r0, [r2, #SMC_CTX_SCR]
 	and	r3, r0, #SCR_NS_BIT		/* flags */
 
 	/* Switch to Secure Mode*/
 	bic	r0, #SCR_NS_BIT
 	stcopr	r0, SCR
 	isb
+
 	ldr	r0, [r2, #SMC_CTX_GPREG_R0]	/* smc_fid */
 	/* Check whether an SMC64 is issued */
 	tst	r0, #(FUNCID_CC_MASK << FUNCID_CC_SHIFT)
-	beq	1f	/* SMC32 is detected */
+	beq	1f
+	/* SMC32 is not detected. Return error back to caller */
 	mov	r0, #SMC_UNK
 	str	r0, [r2, #SMC_CTX_GPREG_R0]
 	mov	r0, r2
-	b	2f	/* Skip handling the SMC */
+	b	sp_min_exit
 1:
+	/* SMC32 is detected */
 	mov	r1, #0				/* cookie */
 	bl	handle_runtime_svc
-2:
-	/* r0 points to smc context */
 
-	/* Restore SCR from stack */
-	pop	{r1}
-	stcopr	r1, SCR
-	isb
-
+	/* `r0` points to `smc_ctx_t` */
 	b	sp_min_exit
 endfunc handle_smc
-
 
 /*
  * The Warm boot entrypoint for SP_MIN.
@@ -208,7 +174,7 @@ func sp_min_warm_entrypoint
 	 * 'el3_entrypoint_common' must be skipped:
 	 *
 	 *  - Only when the platform bypasses the BL1/BL32 (SP_MIN) entrypoint by
-	 *    programming the reset address do we need to set the CPU endianness.
+	 *    programming the reset address do we need to initialied the SCTLR.
 	 *    In other cases, we assume this has been taken care by the
 	 *    entrypoint code.
 	 *
@@ -221,51 +187,43 @@ func sp_min_warm_entrypoint
 	 *    it has been done once and for all on the cold boot path.
 	 */
 	el3_entrypoint_common					\
-		_set_endian=PROGRAMMABLE_RESET_ADDRESS		\
+		_init_sctlr=PROGRAMMABLE_RESET_ADDRESS		\
 		_warm_boot_mailbox=0				\
 		_secondary_cold_boot=0				\
 		_init_memory=0					\
 		_init_c_runtime=0				\
 		_exception_vectors=sp_min_vector_table
 
-	/* --------------------------------------------
-	 * Enable the MMU with the DCache disabled. It
-	 * is safe to use stacks allocated in normal
-	 * memory as a result. All memory accesses are
-	 * marked nGnRnE when the MMU is disabled. So
-	 * all the stack writes will make it to memory.
-	 * All memory accesses are marked Non-cacheable
-	 * when the MMU is enabled but D$ is disabled.
-	 * So used stack memory is guaranteed to be
-	 * visible immediately after the MMU is enabled
-	 * Enabling the DCache at the same time as the
-	 * MMU can lead to speculatively fetched and
-	 * possibly stale stack memory being read from
-	 * other caches. This can lead to coherency
-	 * issues.
-	 * --------------------------------------------
+	/*
+	 * We're about to enable MMU and participate in PSCI state coordination.
+	 *
+	 * The PSCI implementation invokes platform routines that enable CPUs to
+	 * participate in coherency. On a system where CPUs are not
+	 * cache-coherent without appropriate platform specific programming,
+	 * having caches enabled until such time might lead to coherency issues
+	 * (resulting from stale data getting speculatively fetched, among
+	 * others). Therefore we keep data caches disabled even after enabling
+	 * the MMU for such platforms.
+	 *
+	 * On systems with hardware-assisted coherency, or on single cluster
+	 * platforms, such platform specific programming is not required to
+	 * enter coherency (as CPUs already are); and there's no reason to have
+	 * caches disabled either.
 	 */
 	mov	r0, #DISABLE_DCACHE
 	bl	bl32_plat_enable_mmu
 
-	bl	sp_min_warm_boot
-
-	/* Program the registers in cpu_context and exit monitor mode */
-	mov	r0, #NON_SECURE
-	bl	cm_get_context
-
-	/* Restore the SCR */
-	ldr	r2, [r0, #CTX_REGS_OFFSET + CTX_SCR]
-	stcopr	r2, SCR
+#if HW_ASSISTED_COHERENCY || WARMBOOT_ENABLE_DCACHE_EARLY
+	ldcopr	r0, SCTLR
+	orr	r0, r0, #SCTLR_C_BIT
+	stcopr	r0, SCTLR
 	isb
+#endif
 
-	/* Restore the SCTLR  */
-	ldr	r2, [r0, #CTX_REGS_OFFSET + CTX_NS_SCTLR]
-	stcopr	r2, SCTLR
-
+	bl	sp_min_warm_boot
 	bl	smc_get_next_ctx
-
-	/* The other cpu_context registers have been copied to smc context */
+	/* r0 points to `smc_ctx_t` */
+	/* The PSCI cpu_context registers have been copied to `smc_ctx_t` */
 	b	sp_min_exit
 endfunc sp_min_warm_entrypoint
 
@@ -276,6 +234,5 @@ endfunc sp_min_warm_entrypoint
  * Arguments : r0 must point to the SMC context to restore from.
  */
 func sp_min_exit
-	smcc_restore_gp_mode_regs
-	eret
+	monitor_exit
 endfunc sp_min_exit

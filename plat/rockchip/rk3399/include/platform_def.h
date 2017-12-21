@@ -1,37 +1,14 @@
 /*
  * Copyright (c) 2014-2016, ARM Limited and Contributors. All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- * Redistributions of source code must retain the above copyright notice, this
- * list of conditions and the following disclaimer.
- *
- * Redistributions in binary form must reproduce the above copyright notice,
- * this list of conditions and the following disclaimer in the documentation
- * and/or other materials provided with the distribution.
- *
- * Neither the name of ARM nor the names of its contributors may be used
- * to endorse or promote products derived from this software without specific
- * prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 
 #ifndef __PLATFORM_DEF_H__
 #define __PLATFORM_DEF_H__
 
 #include <arch.h>
+#include <bl31_param.h>
 #include <common_def.h>
 #include <rk3399_def.h>
 
@@ -50,13 +27,13 @@
 /* Size of cacheable stacks */
 #if DEBUG_XLAT_TABLE
 #define PLATFORM_STACK_SIZE 0x800
-#elif IMAGE_BL1
+#elif defined(IMAGE_BL1)
 #define PLATFORM_STACK_SIZE 0x440
-#elif IMAGE_BL2
+#elif defined(IMAGE_BL2)
 #define PLATFORM_STACK_SIZE 0x400
-#elif IMAGE_BL31
+#elif defined(IMAGE_BL31)
 #define PLATFORM_STACK_SIZE 0x800
-#elif IMAGE_BL32
+#elif defined(IMAGE_BL32)
 #define PLATFORM_STACK_SIZE 0x440
 #endif
 
@@ -87,22 +64,6 @@
  * higher than this is invalid.
  */
 #define PLAT_MAX_OFF_STATE		2
-
-/*******************************************************************************
- * Platform memory map related constants
- ******************************************************************************/
-/* TF txet, ro, rw, Size: 512KB */
-#define TZRAM_BASE		(0x0)
-#define TZRAM_SIZE		(0x80000)
-
-/*******************************************************************************
- * BL31 specific defines.
- ******************************************************************************/
-/*
- * Put BL3-1 at the top of the Trusted RAM
- */
-#define BL31_BASE		(TZRAM_BASE + 0x10000)
-#define BL31_LIMIT	(TZRAM_BASE + TZRAM_SIZE)
 
 /*******************************************************************************
  * Platform specific page table and MMU setup constants
@@ -138,12 +99,15 @@
 #define PLAT_RK_G1S_IRQS		RK3399_G1S_IRQS
 #define PLAT_RK_G0_IRQS			RK3399_G0_IRQS
 
-#define PLAT_RK_UART_BASE		RK3399_UART2_BASE
+#define PLAT_RK_UART_BASE		UART2_BASE
 #define PLAT_RK_UART_CLOCK		RK3399_UART_CLOCK
 #define PLAT_RK_UART_BAUDRATE		RK3399_BAUDRATE
 
 #define PLAT_RK_CCI_BASE		CCI500_BASE
 
 #define PLAT_RK_PRIMARY_CPU		0x0
+
+#define PSRAM_DO_DDR_RESUME	1
+#define PSRAM_CHECK_WAKEUP_CPU	0
 
 #endif /* __PLATFORM_DEF_H__ */

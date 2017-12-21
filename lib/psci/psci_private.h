@@ -1,32 +1,8 @@
 /*
- * Copyright (c) 2013-2016, ARM Limited and Contributors. All rights reserved.
- * Copyright (c) 2015-2016, Renesas Electronics Corporation. All rights reserved.
+ * Copyright (c) 2013-2017, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2015-2017, Renesas Electronics Corporation. All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- * Redistributions of source code must retain the above copyright notice, this
- * list of conditions and the following disclaimer.
- *
- * Redistributions in binary form must reproduce the above copyright notice,
- * this list of conditions and the following disclaimer in the documentation
- * and/or other materials provided with the distribution.
- *
- * Neither the name of ARM nor the names of its contributors may be used
- * to endorse or promote products derived from this software without specific
- * prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 
 #ifndef __PSCI_PRIVATE_H__
@@ -36,20 +12,62 @@
 #include <bakery_lock.h>
 #include <bl_common.h>
 #include <cpu_data.h>
-#include <pmf.h>
 #include <psci.h>
 #include <spinlock.h>
 
+#if HW_ASSISTED_COHERENCY
+
 /*
- * The following helper macros abstract the interface to the Bakery
- * Lock API.
+ * On systems with hardware-assisted coherency, make PSCI cache operations NOP,
+ * as PSCI participants are cache-coherent, and there's no need for explicit
+ * cache maintenance operations or barriers to coordinate their state.
  */
-#define psci_lock_init(non_cpu_pd_node, idx)			\
-	((non_cpu_pd_node)[(idx)].lock_index = (idx))
+#define psci_flush_dcache_range(addr, size)
+#define psci_flush_cpu_data(member)
+#define psci_inv_cpu_data(member)
+
+#define psci_dsbish()
+
+/*
+ * On systems where participant CPUs are cache-coherent, we can use spinlocks
+ * instead of bakery locks.
+ */
+#define DEFINE_PSCI_LOCK(_name)		spinlock_t _name
+#define DECLARE_PSCI_LOCK(_name)	extern DEFINE_PSCI_LOCK(_name)
+
+#define psci_lock_get(non_cpu_pd_node)				\
+	spin_lock(&psci_locks[(non_cpu_pd_node)->lock_index])
+#define psci_lock_release(non_cpu_pd_node)			\
+	spin_unlock(&psci_locks[(non_cpu_pd_node)->lock_index])
+
+#else
+
+/*
+ * If not all PSCI participants are cache-coherent, perform cache maintenance
+ * and issue barriers wherever required to coordinate state.
+ */
+#define psci_flush_dcache_range(addr, size)	flush_dcache_range(addr, size)
+#define psci_flush_cpu_data(member)		flush_cpu_data(member)
+#define psci_inv_cpu_data(member)		inv_cpu_data(member)
+
+#define psci_dsbish()				dsbish()
+
+/*
+ * Use bakery locks for state coordination as not all PSCI participants are
+ * cache coherent.
+ */
+#define DEFINE_PSCI_LOCK(_name)		DEFINE_BAKERY_LOCK(_name)
+#define DECLARE_PSCI_LOCK(_name)	DECLARE_BAKERY_LOCK(_name)
+
 #define psci_lock_get(non_cpu_pd_node)				\
 	bakery_lock_get(&psci_locks[(non_cpu_pd_node)->lock_index])
 #define psci_lock_release(non_cpu_pd_node)			\
 	bakery_lock_release(&psci_locks[(non_cpu_pd_node)->lock_index])
+
+#endif
+
+#define psci_lock_init(non_cpu_pd_node, idx)			\
+	((non_cpu_pd_node)[(idx)].lock_index = (idx))
 
 /*
  * The PSCI capability which are provided by the generic code but does not
@@ -106,15 +124,6 @@
 /* Helper macro to identify a CPU standby request in PSCI Suspend call */
 #define is_cpu_standby_req(is_power_down_state, retn_lvl) \
 		(((!(is_power_down_state)) && ((retn_lvl) == 0)) ? 1 : 0)
-
-/* Following are used as ID's to capture time-stamp */
-#define PSCI_STAT_ID_ENTER_LOW_PWR		0
-#define PSCI_STAT_ID_EXIT_LOW_PWR		1
-#define PSCI_STAT_TOTAL_IDS			2
-
-/* Declare PMF service functions for PSCI */
-PMF_DECLARE_CAPTURE_TIMESTAMP(psci_svc)
-PMF_DECLARE_GET_TIMESTAMP(psci_svc)
 
 /*******************************************************************************
  * The following two data structures implement the power domain tree. The tree
@@ -177,8 +186,8 @@ extern non_cpu_pd_node_t psci_non_cpu_pd_nodes[PSCI_NUM_NON_CPU_PWR_DOMAINS];
 extern cpu_pd_node_t psci_cpu_pd_nodes[PLATFORM_CORE_COUNT];
 extern unsigned int psci_caps;
 
-/* One bakery lock is required for each non-cpu power domain */
-DECLARE_BAKERY_LOCK(psci_locks[PSCI_NUM_NON_CPU_PWR_DOMAINS]);
+/* One lock is required per non-CPU power domain node */
+DECLARE_PSCI_LOCK(psci_locks[PSCI_NUM_NON_CPU_PWR_DOMAINS]);
 
 /*******************************************************************************
  * SPD's power management hooks registered with PSCI
@@ -215,6 +224,14 @@ void psci_set_pwr_domains_to_run(unsigned int end_pwrlvl);
 void psci_print_power_domain_map(void);
 unsigned int psci_is_last_on_cpu(void);
 int psci_spd_migrate_info(u_register_t *mpidr);
+void psci_do_pwrdown_sequence(unsigned int power_level);
+
+/*
+ * CPU power down is directly called only when HW_ASSISTED_COHERENCY is
+ * available. Otherwise, this needs post-call stack maintenance, which is
+ * handled in assembly.
+ */
+void prepare_cpu_pwr_dwn(unsigned int power_level);
 
 /* Private exported functions from psci_on.c */
 int psci_cpu_on_start(u_register_t target_cpu,
@@ -247,8 +264,7 @@ void __dead2 psci_system_reset(void);
 void psci_stats_update_pwr_down(unsigned int end_pwrlvl,
 			const psci_power_state_t *state_info);
 void psci_stats_update_pwr_up(unsigned int end_pwrlvl,
-			const psci_power_state_t *state_info,
-			unsigned int flags);
+			const psci_power_state_t *state_info);
 u_register_t psci_stat_residency(u_register_t target_cpu,
 			unsigned int power_state);
 u_register_t psci_stat_count(u_register_t target_cpu,

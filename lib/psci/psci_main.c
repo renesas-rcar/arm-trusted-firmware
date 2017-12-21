@@ -1,32 +1,8 @@
 /*
- * Copyright (c) 2013-2016, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2013-2017, ARM Limited and Contributors. All rights reserved.
  * Copyright (c) 2015-2017, Renesas Electronics Corporation. All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- * Redistributions of source code must retain the above copyright notice, this
- * list of conditions and the following disclaimer.
- *
- * Redistributions in binary form must reproduce the above copyright notice,
- * this list of conditions and the following disclaimer in the documentation
- * and/or other materials provided with the distribution.
- *
- * Neither the name of ARM nor the names of its contributors may be used
- * to endorse or promote products derived from this software without specific
- * prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 
 #include <arch.h>
@@ -34,6 +10,8 @@
 #include <assert.h>
 #include <debug.h>
 #include <platform.h>
+#include <pmf.h>
+#include <runtime_instr.h>
 #include <smcc.h>
 #include <string.h>
 #include "psci_private.h"
@@ -116,13 +94,13 @@ int psci_cpu_suspend(unsigned int power_state,
 		psci_set_cpu_local_state(cpu_pd_state);
 
 #if ENABLE_PSCI_STAT
-		/*
-		 * Capture time-stamp before CPU standby
-		 * No cache maintenance is needed as caches
-		 * are ON through out the CPU standby operation.
-		 */
-		PMF_CAPTURE_TIMESTAMP(psci_svc, PSCI_STAT_ID_ENTER_LOW_PWR,
-			PMF_NO_CACHE_MAINT);
+		plat_psci_stat_accounting_start(&state_info);
+#endif
+
+#if ENABLE_RUNTIME_INSTRUMENTATION
+		PMF_CAPTURE_TIMESTAMP(rt_instr_svc,
+		    RT_INSTR_ENTER_HW_LOW_PWR,
+		    PMF_NO_CACHE_MAINT);
 #endif
 
 		psci_plat_pm_ops->cpu_standby(cpu_pd_state);
@@ -130,14 +108,17 @@ int psci_cpu_suspend(unsigned int power_state,
 		/* Upon exit from standby, set the state back to RUN. */
 		psci_set_cpu_local_state(PSCI_LOCAL_STATE_RUN);
 
+#if ENABLE_RUNTIME_INSTRUMENTATION
+		PMF_CAPTURE_TIMESTAMP(rt_instr_svc,
+		    RT_INSTR_EXIT_HW_LOW_PWR,
+		    PMF_NO_CACHE_MAINT);
+#endif
+
 #if ENABLE_PSCI_STAT
-		/* Capture time-stamp after CPU standby */
-		PMF_CAPTURE_TIMESTAMP(psci_svc, PSCI_STAT_ID_EXIT_LOW_PWR,
-			PMF_NO_CACHE_MAINT);
+		plat_psci_stat_accounting_stop(&state_info);
 
 		/* Update PSCI stats */
-		psci_stats_update_pwr_up(PSCI_CPU_PWR_LVL, &state_info,
-			PMF_NO_CACHE_MAINT);
+		psci_stats_update_pwr_up(PSCI_CPU_PWR_LVL, &state_info);
 #endif
 
 		return PSCI_E_SUCCESS;
@@ -245,7 +226,7 @@ int psci_cpu_off(void)
 int psci_affinity_info(u_register_t target_affinity,
 		       unsigned int lowest_affinity_level)
 {
-	unsigned int target_idx;
+	int target_idx;
 
 	/* We dont support level higher than PSCI_CPU_PWR_LVL */
 	if (lowest_affinity_level > PSCI_CPU_PWR_LVL)

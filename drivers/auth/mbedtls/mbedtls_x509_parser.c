@@ -1,31 +1,7 @@
 /*
- * Copyright (c) 2015, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2015-2017, ARM Limited and Contributors. All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- * Redistributions of source code must retain the above copyright notice, this
- * list of conditions and the following disclaimer.
- *
- * Redistributions in binary form must reproduce the above copyright notice,
- * this list of conditions and the following disclaimer in the documentation
- * and/or other materials provided with the distribution.
- *
- * Neither the name of ARM nor the names of its contributors may be used
- * to endorse or promote products derived from this software without specific
- * prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 
 /*
@@ -36,12 +12,14 @@
  * extensions field, such as an image hash or a public key.
  */
 
+#include <arch_helpers.h>
 #include <assert.h>
 #include <img_parser_mod.h>
 #include <mbedtls_common.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
+#include <utils.h>
 
 /* mbed TLS headers */
 #include <mbedtls/asn1.h>
@@ -62,6 +40,26 @@ static mbedtls_asn1_buf v3_ext;
 static mbedtls_asn1_buf pk;
 static mbedtls_asn1_buf sig_alg;
 static mbedtls_asn1_buf signature;
+
+/*
+ * Clear all static temporary variables.
+ */
+static void clear_temp_vars(void)
+{
+#define ZERO_AND_CLEAN(x)					\
+	do {							\
+		zeromem(&x, sizeof(x));				\
+		clean_dcache_range((uintptr_t)&x, sizeof(x));	\
+	} while (0);
+
+	ZERO_AND_CLEAN(tbs)
+	ZERO_AND_CLEAN(v3_ext);
+	ZERO_AND_CLEAN(pk);
+	ZERO_AND_CLEAN(sig_alg);
+	ZERO_AND_CLEAN(signature);
+
+#undef ZERO_AND_CLEAN
+}
 
 /*
  * Get X509v3 extension
@@ -90,7 +88,7 @@ static int get_ext(const char *oid, void **ext, unsigned int *ext_len)
 			     MBEDTLS_ASN1_SEQUENCE);
 
 	while (p < end) {
-		memset(&extn_oid, 0x0, sizeof(extn_oid));
+		zeromem(&extn_oid, sizeof(extn_oid));
 		is_critical = 0; /* DEFAULT FALSE */
 
 		mbedtls_asn1_get_tag(&p, end, &len, MBEDTLS_ASN1_CONSTRUCTED |
@@ -134,7 +132,12 @@ static int get_ext(const char *oid, void **ext, unsigned int *ext_len)
 
 /*
  * Check the integrity of the certificate ASN.1 structure.
+ *
  * Extract the relevant data that will be used later during authentication.
+ *
+ * This function doesn't clear the static variables located on the top of this
+ * file in case of an error. It is only called from check_integrity(), which
+ * performs the cleanup if necessary.
  */
 static int cert_parse(void *img, unsigned int img_len)
 {
@@ -398,9 +401,18 @@ static void init(void)
 	mbedtls_init();
 }
 
+/*
+ * Wrapper for cert_parse() that clears the static variables used by it in case
+ * of an error.
+ */
 static int check_integrity(void *img, unsigned int img_len)
 {
-	return cert_parse(img, img_len);
+	int rc = cert_parse(img, img_len);
+
+	if (rc != IMG_PARSER_OK)
+		clear_temp_vars();
+
+	return rc;
 }
 
 /*

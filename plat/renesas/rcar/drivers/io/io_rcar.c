@@ -2,34 +2,9 @@
  * Copyright (c) 2014, ARM Limited and Contributors. All rights reserved.
  * Copyright (c) 2015-2017, Renesas Electronics Corporation. All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- * Redistributions of source code must retain the above copyright notice, this
- * list of conditions and the following disclaimer.
- *
- * Redistributions in binary form must reproduce the above copyright notice,
- * this list of conditions and the following disclaimer in the documentation
- * and/or other materials provided with the distribution.
- *
- * Neither the name of ARM nor the names of its contributors may be used
- * to endorse or promote products derived from this software without specific
- * prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 
-#include <assert.h>
 #include <auth_mod.h>
 #include <bl_common.h>
 #include <debug.h>
@@ -43,6 +18,7 @@
 #include <string.h>
 #include <uuid.h>
 #include <mmio.h>
+#include <arch_helpers.h>
 #include "io_rcar.h"
 #include "io_common.h"
 #include "io_private.h"
@@ -94,6 +70,9 @@ typedef struct {
 
 #define RCAR_FLASH_CERT_HEADER	RCAR_GET_FLASH_ADR(6U, 0U)
 #define RCAR_EMMC_CERT_HEADER	(0x00030000U)
+
+#define RCAR_COUNT_LOAD_BL33		(2U)
+#define RCAR_COUNT_LOAD_BL33X		(3U)
 
 static const plat_rcar_name_offset_t name_offset[] = {		/* calc addr, no load, cert offset */
 	{BL31_IMAGE_ID,		0U,				RCAR_ATTR_SET_ALL(0,0,0)},
@@ -192,7 +171,6 @@ static const io_dev_info_t rcar_dev_info = {
 static int32_t rcar_dev_open(const uintptr_t dev_spec __attribute__((unused)),
 			 io_dev_info_t **dev_info)
 {
-	assert(dev_info != NULL);
 	*dev_info = (io_dev_info_t *)&rcar_dev_info; /* cast away const */
 
 	return IO_SUCCESS;
@@ -221,11 +199,6 @@ static int32_t file_to_offset(const int32_t file, uintptr_t *offset,
 	int32_t i;
 	int32_t status = -EINVAL;
 	uint32_t is_calc_addr;
-
-	assert(offset != NULL);
-	assert(cert_addr != NULL);
-	assert(is_noload != NULL);
-	assert(partition != NULL);
 
 	for (i = 0; i < (int32_t)ARRAY_SIZE(name_offset); i++) {
 		if (file == name_offset[i].name) {
@@ -270,9 +243,6 @@ void get_info_from_cert(uint64_t cert_addr, uint32_t *size, uintptr_t *dest_addr
 	uintptr_t	pSize;
 	uintptr_t	pDestH;
 	uintptr_t	pDestL;
-
-	assert(size != NULL);
-	assert(dest_addr != NULL);
 
 	cert_addr &= 0xFFFFFFFFU;		/* need? */
 
@@ -449,7 +419,7 @@ static int32_t check_load_area(uintptr_t src, uintptr_t dst, uintptr_t len)
 	}
 
 	/* check destination range */
-	if ((dst + len) < 0x100000000U) {
+	if ((dst + len) <= UINT32_MAX) {
 		/* check legacy range */
 		/* destination address is lower than the SDRAM top address */
 		if (dst < DRAM1_BASE) {
@@ -574,6 +544,11 @@ static int32_t rcar_dev_init(io_dev_info_t *dev_info, const uintptr_t init_param
 				}
 			}
 			if (IO_SUCCESS == result) {
+#if RCAR_BL2_DCACHE == 1
+				inv_dcache_range(
+					(uint64_t)rcar_image_header_tmp,
+					sizeof(rcar_image_header_tmp));
+#endif /* RCAR_BL2_DCACHE == 1 */
 				result = io_read(backend_handle,
 					(uintptr_t) &rcar_image_header_tmp,
 					sizeof(rcar_image_header_tmp),
@@ -593,8 +568,9 @@ static int32_t rcar_dev_init(io_dev_info_t *dev_info, const uintptr_t init_param
 							[loop * 2U + 2U];
 					}
 					result = IO_SUCCESS;
-					if ((rcar_image_number == 0U)
-						|| (rcar_image_number > 8U)) {
+					if ((rcar_image_number == 0U) ||
+						(rcar_image_number >
+							RCAR_MAX_BL3X_IMAGE)) {
 						WARN("Firmware Image Package "\
 							"header check failed.\n");
 						result = IO_FAIL;
@@ -618,6 +594,11 @@ static int32_t rcar_dev_init(io_dev_info_t *dev_info, const uintptr_t init_param
 				}
 			}
 			if (IO_SUCCESS == result) {
+#if RCAR_BL2_DCACHE == 1
+				inv_dcache_range(RCAR_SDRAM_CERT_ADDRESS,
+						(RCAR_CERT_SIZE * (2U +
+						rcar_image_number)));
+#endif /* RCAR_BL2_DCACHE == 1 */
 				result = io_read(backend_handle,
 						(uintptr_t)
 						RCAR_SDRAM_CERT_ADDRESS,
@@ -665,9 +646,6 @@ static int32_t rcar_file_open(io_dev_info_t *dev_info, const uintptr_t spec,
 	uintptr_t dest_addr;
 	uintptr_t emmc_prttn;
 	const io_drv_spec_t *file_spec = (io_drv_spec_t *)spec;
-
-	assert(file_spec != NULL);
-	assert(entity != NULL);
 
 	/* Can only have one file open at a time for the moment. We need to
 	 * track state like file cursor position. We know the header lives at
@@ -721,9 +699,6 @@ static int32_t rcar_file_open(io_dev_info_t *dev_info, const uintptr_t spec,
 /* Return the size of a file in package */
 static int32_t rcar_file_len(io_entity_t *entity, size_t *length)
 {
-	assert(entity != NULL);
-	assert(length != NULL);
-
 	*length =  ((file_state_t *)entity->info)->size;
 
 	return IO_SUCCESS;
@@ -744,11 +719,6 @@ static int32_t rcar_file_read(io_entity_t *entity, uintptr_t buffer, size_t leng
 #else
 	static uint32_t load_bl33x_counter = 0U;
 #endif /* SPD_NONE */
-
-	assert(entity != NULL);
-	assert(buffer != (uintptr_t)NULL);
-	assert(length_read != NULL);
-	assert(entity->info != (uintptr_t)NULL);
 
 	/* cert image no load */
 	if ( 0U != current_file.is_noload ) {
@@ -779,7 +749,7 @@ static int32_t rcar_file_read(io_entity_t *entity, uintptr_t buffer, size_t leng
 				result = IO_FAIL;
 			}
 
-			if (load_bl33x_counter == 2U) {
+			if (load_bl33x_counter == RCAR_COUNT_LOAD_BL33) {
 				/* Loading target is BL33 */
 				result = check_load_area((uintptr_t)file_offset,
 					buffer,
@@ -809,7 +779,7 @@ static int32_t rcar_file_read(io_entity_t *entity, uintptr_t buffer, size_t leng
 
 			if (result == IO_SUCCESS) {
 				load_bl33x_counter += 1U;
-				if (load_bl33x_counter == 3U) {
+				if (load_bl33x_counter == RCAR_COUNT_LOAD_BL33X) {
 					result = load_bl33x();
 				}
 			}
@@ -826,7 +796,6 @@ static int32_t rcar_file_close(io_entity_t *entity)
 	/* Clear our current file pointer.
 	 * If we had malloc() we would free() here.
 	 */
-	assert(entity != NULL);
 	if (current_file.offset_address != 0U) {
 		(void)memset(&current_file, 0, sizeof(current_file));
 	}
@@ -843,7 +812,6 @@ static int32_t rcar_file_close(io_entity_t *entity)
 int32_t register_io_dev_rcar(const io_dev_connector_t **dev_con)
 {
 	int32_t result;
-	assert(dev_con != NULL);
 
 	result = io_register_device(&rcar_dev_info);
 	if (result == IO_SUCCESS) {

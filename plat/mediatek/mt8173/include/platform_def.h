@@ -1,35 +1,13 @@
 /*
  * Copyright (c) 2014-2015, ARM Limited and Contributors. All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- * Redistributions of source code must retain the above copyright notice, this
- * list of conditions and the following disclaimer.
- *
- * Redistributions in binary form must reproduce the above copyright notice,
- * this list of conditions and the following disclaimer in the documentation
- * and/or other materials provided with the distribution.
- *
- * Neither the name of ARM nor the names of its contributors may be used
- * to endorse or promote products derived from this software without specific
- * prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 
 #ifndef __PLATFORM_DEF_H__
 #define __PLATFORM_DEF_H__
+
+#include "mt8173_def.h"
 
 
 /*******************************************************************************
@@ -43,19 +21,24 @@
  ******************************************************************************/
 
 /* Size of cacheable stacks */
-#if IMAGE_BL1
+#if defined(IMAGE_BL1)
 #define PLATFORM_STACK_SIZE 0x440
-#elif IMAGE_BL2
+#elif defined(IMAGE_BL2)
 #define PLATFORM_STACK_SIZE 0x400
-#elif IMAGE_BL31
+#elif defined(IMAGE_BL31)
 #define PLATFORM_STACK_SIZE 0x800
-#elif IMAGE_BL32
+#elif defined(IMAGE_BL32)
 #define PLATFORM_STACK_SIZE 0x440
 #endif
 
 #define FIRMWARE_WELCOME_STR		"Booting Trusted Firmware\n"
 
 #define PLATFORM_MAX_AFFLVL		MPIDR_AFFLVL2
+#if !ENABLE_PLAT_COMPAT
+#define PLAT_MAX_PWR_LVL		2
+#define PLAT_MAX_RET_STATE		1
+#define PLAT_MAX_OFF_STATE		2
+#endif
 #define PLATFORM_SYSTEM_COUNT		1
 #define PLATFORM_CLUSTER_COUNT		2
 #define PLATFORM_CLUSTER0_CORE_COUNT	4
@@ -111,7 +94,8 @@
 /*******************************************************************************
  * Platform specific page table and MMU setup constants
  ******************************************************************************/
-#define ADDR_SPACE_SIZE		(1ull << 32)
+#define PLAT_PHY_ADDR_SPACE_SIZE	(1ull << 32)
+#define PLAT_VIRT_ADDR_SPACE_SIZE	(1ull << 32)
 #define MAX_XLAT_TABLES		4
 #define MAX_MMAP_REGIONS	16
 
@@ -126,5 +110,20 @@
  ******************************************************************************/
 #define CACHE_WRITEBACK_SHIFT	6
 #define CACHE_WRITEBACK_GRANULE	(1 << CACHE_WRITEBACK_SHIFT)
+
+
+#define PLAT_ARM_GICD_BASE      BASE_GICD_BASE
+#define PLAT_ARM_GICC_BASE      BASE_GICC_BASE
+
+#define PLAT_ARM_G1S_IRQS       MT_IRQ_SEC_SGI_0, \
+				MT_IRQ_SEC_SGI_1, \
+				MT_IRQ_SEC_SGI_2, \
+				MT_IRQ_SEC_SGI_3, \
+				MT_IRQ_SEC_SGI_4, \
+				MT_IRQ_SEC_SGI_5, \
+				MT_IRQ_SEC_SGI_6, \
+				MT_IRQ_SEC_SGI_7
+
+#define PLAT_ARM_G0_IRQS
 
 #endif /* __PLATFORM_DEF_H__ */

@@ -1,37 +1,14 @@
 /*
- * Copyright (c) 2016, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2016-2017, ARM Limited and Contributors. All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- * Redistributions of source code must retain the above copyright notice, this
- * list of conditions and the following disclaimer.
- *
- * Redistributions in binary form must reproduce the above copyright notice,
- * this list of conditions and the following disclaimer in the documentation
- * and/or other materials provided with the distribution.
- *
- * Neither the name of ARM nor the names of its contributors may be used
- * to endorse or promote products derived from this software without specific
- * prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 
 #include <arch.h>
 #include <arch_helpers.h>
 #include <assert.h>
 #include <bl_common.h>
+#include <console.h>
 #include <context.h>
 #include <context_mgmt.h>
 #include <debug.h>
@@ -45,6 +22,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <types.h>
+#include <utils.h>
 #include "sp_min_private.h"
 
 /* Pointers to per-core cpu contexts */
@@ -56,13 +34,13 @@ static smc_ctx_t sp_min_smc_context[PLATFORM_CORE_COUNT];
 /******************************************************************************
  * Define the smcc helper library API's
  *****************************************************************************/
-void *smc_get_ctx(int security_state)
+void *smc_get_ctx(unsigned int security_state)
 {
 	assert(security_state == NON_SECURE);
 	return &sp_min_smc_context[plat_my_core_pos()];
 }
 
-void smc_set_next_ctx(int security_state)
+void smc_set_next_ctx(unsigned int security_state)
 {
 	assert(security_state == NON_SECURE);
 	/* SP_MIN stores only non secure smc context. Nothing to do here */
@@ -124,6 +102,7 @@ static void copy_cpu_ctx_to_smc_stx(const regs_t *cpu_reg_ctx,
 	next_smc_ctx->r0 = read_ctx_reg(cpu_reg_ctx, CTX_GPREG_R0);
 	next_smc_ctx->lr_mon = read_ctx_reg(cpu_reg_ctx, CTX_LR);
 	next_smc_ctx->spsr_mon = read_ctx_reg(cpu_reg_ctx, CTX_SPSR);
+	next_smc_ctx->scr = read_ctx_reg(cpu_reg_ctx, CTX_SCR);
 }
 
 /*******************************************************************************
@@ -134,6 +113,8 @@ static void copy_cpu_ctx_to_smc_stx(const regs_t *cpu_reg_ctx,
 static void sp_min_prepare_next_image_entry(void)
 {
 	entry_point_info_t *next_image_info;
+	cpu_context_t *ctx = cm_get_context(NON_SECURE);
+	u_register_t ns_sctlr;
 
 	/* Program system registers to proceed to non-secure */
 	next_image_info = sp_min_plat_get_bl33_ep_info();
@@ -148,6 +129,16 @@ static void sp_min_prepare_next_image_entry(void)
 	/* Copy r0, lr and spsr from cpu context to SMC context */
 	copy_cpu_ctx_to_smc_stx(get_regs_ctx(cm_get_context(NON_SECURE)),
 			smc_get_next_ctx());
+
+	/* Temporarily set the NS bit to access NS SCTLR */
+	write_scr(read_scr() | SCR_NS_BIT);
+	isb();
+	ns_sctlr = read_ctx_reg(get_regs_ctx(ctx), CTX_NS_SCTLR);
+	write_sctlr(ns_sctlr);
+	isb();
+
+	write_scr(read_scr() & ~SCR_NS_BIT);
+	isb();
 }
 
 /******************************************************************************
@@ -186,6 +177,14 @@ void sp_min_main(void)
 	 * corresponding to the desired security state after the next ERET.
 	 */
 	sp_min_prepare_next_image_entry();
+
+	/*
+	 * Perform any platform specific runtime setup prior to cold boot exit
+	 * from SP_MIN.
+	 */
+	sp_min_plat_runtime_setup();
+
+	console_flush();
 }
 
 /******************************************************************************
@@ -203,7 +202,7 @@ void sp_min_warm_boot(void)
 	smc_set_next_ctx(NON_SECURE);
 
 	next_smc_ctx = smc_get_next_ctx();
-	memset(next_smc_ctx, 0, sizeof(smc_ctx_t));
+	zeromem(next_smc_ctx, sizeof(smc_ctx_t));
 
 	copy_cpu_ctx_to_smc_stx(get_regs_ctx(cm_get_context(NON_SECURE)),
 			next_smc_ctx);

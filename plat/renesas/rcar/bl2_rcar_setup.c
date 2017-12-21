@@ -2,31 +2,7 @@
  * Copyright (c) 2013-2014, ARM Limited and Contributors. All rights reserved.
  * Copyright (c) 2015-2017, Renesas Electronics Corporation. All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- * Redistributions of source code must retain the above copyright notice, this
- * list of conditions and the following disclaimer.
- *
- * Redistributions in binary form must reproduce the above copyright notice,
- * this list of conditions and the following disclaimer in the documentation
- * and/or other materials provided with the distribution.
- *
- * Neither the name of ARM nor the names of its contributors may be used
- * to endorse or promote products derived from this software without specific
- * prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 
 #include <arch_helpers.h>
@@ -87,38 +63,42 @@
 
 /* IPMMU registers */
 #define IPMMU_MM_BASE		(0xE67B0000U)	/* IPMMU-MM */
-#define IPMMUMM_SYSCTRL		(IPMMU_MM_BASE + 0x0500U)
-#define IPMMUMM_SYSAUX		(IPMMU_MM_BASE + 0x0504U)
+#define IPMMUMM_IMSCTLR		(IPMMU_MM_BASE + 0x0500U)
+#define IPMMUMM_IMAUXCTLR	(IPMMU_MM_BASE + 0x0504U)
+#define IPMMUMM_IMSCTLR_ENABLE		(0xC0000000U)
+#define IPMMUMM_IMAUXCTLR_NMERGE40_BIT	(0x01000000U)
+
+#define IMSCTLR_DISCACHE	(0xE0000000U)
 
 #define IPMMU_VI0_BASE		(0xFEBD0000U)	/* IPMMU-VI0 */
-#define IPMMUVI0_SYSCTRL	(IPMMU_VI0_BASE + 0x0500U)
+#define IPMMUVI0_IMSCTLR	(IPMMU_VI0_BASE + 0x0500U)
 
 #define IPMMU_VI1_BASE		(0xFEBE0000U)	/* IPMMU-VI1 */
-#define IPMMUVI1_SYSCTRL	(IPMMU_VI1_BASE + 0x0500U)
+#define IPMMUVI1_IMSCTLR	(IPMMU_VI1_BASE + 0x0500U)
 
 #define IPMMU_PV0_BASE		(0xFD800000U)	/* IPMMU-PV0 */
-#define IPMMUPV0_SYSCTRL	(IPMMU_PV0_BASE + 0x0500U)
+#define IPMMUPV0_IMSCTLR	(IPMMU_PV0_BASE + 0x0500U)
 
 #define IPMMU_PV2_BASE		(0xFD960000U)	/* IPMMU-PV2 */
-#define IPMMUPV2_SYSCTRL	(IPMMU_PV2_BASE + 0x0500U)
+#define IPMMUPV2_IMSCTLR	(IPMMU_PV2_BASE + 0x0500U)
 
 #define IPMMU_PV3_BASE		(0xFD970000U)	/* IPMMU-PV3 */
-#define IPMMUPV3_SYSCTRL	(IPMMU_PV3_BASE + 0x0500U)
+#define IPMMUPV3_IMSCTLR	(IPMMU_PV3_BASE + 0x0500U)
 
 #define IPMMU_HC_BASE		(0xE6570000U)	/* IPMMU-HC */
-#define IPMMUHC_SYSCTRL		(IPMMU_HC_BASE + 0x0500U)
+#define IPMMUHC_IMSCTLR		(IPMMU_HC_BASE + 0x0500U)
 
 #define IPMMU_RT_BASE		(0xFFC80000U)	/* IPMMU-RT */
-#define IPMMURT_SYSCTRL		(IPMMU_RT_BASE + 0x0500U)
+#define IPMMURT_IMSCTLR		(IPMMU_RT_BASE + 0x0500U)
 
 #define IPMMU_MP_BASE		(0xEC670000U)	/* IPMMU-MP */
-#define IPMMUMP_SYSCTRL		(IPMMU_MP_BASE + 0x0500U)
+#define IPMMUMP_IMSCTLR		(IPMMU_MP_BASE + 0x0500U)
 
 #define IPMMU_DS0_BASE		(0xE6740000U)	/* IPMMU-DS0 */
-#define IPMMUDS0_SYSCTRL	(IPMMU_DS0_BASE + 0x0500U)
+#define IPMMUDS0_IMSCTLR	(IPMMU_DS0_BASE + 0x0500U)
 
 #define IPMMU_DS1_BASE		(0xE7740000U)	/* IPMMU-DS1 */
-#define IPMMUDS1_SYSCTRL	(IPMMU_DS1_BASE + 0x0500U)
+#define IPMMUDS1_IMSCTLR	(IPMMU_DS1_BASE + 0x0500U)
 
 /* ARMREG registers */
 #define	P_ARMREG_SEC_CTRL	(0xE62711F0U)
@@ -429,7 +409,7 @@ void bl2_early_platform_setup(meminfo_t *mem_layout)
 
 	/* boot message */
 	reg = (uint32_t)read_midr();
-	switch (reg & (uint32_t)(MIDR_PN_MASK << MIDR_PN_SHIFT)) {
+	switch (reg & ((uint32_t)MIDR_PN_MASK << MIDR_PN_SHIFT)) {
 	case MIDR_CA57:
 		str = cpu_ca57;
 		break;
@@ -456,7 +436,7 @@ void bl2_early_platform_setup(meminfo_t *mem_layout)
 		/* M3 Ver1.1 */
 		if(RCAR_PRODUCT_M3_CUT11 ==
 			(reg & (RCAR_PRODUCT_MASK | RCAR_CUT_MASK))) {
-			prr_val = 0x00000001U;
+			prr_val = RCAR_CUT_ES11;
 		}
 		break;
 	case RCAR_PRODUCT_M3N:
@@ -756,22 +736,32 @@ void bl2_plat_flush_bl31_params(void)
 		val &= (RCAR_PRODUCT_MASK | RCAR_CUT_MASK);
 		if (val == RCAR_PRODUCT_H3_CUT20) {
 			/* Disable TLB function in each IPMMU cache */
-			mmio_write_32(IPMMUVI0_SYSCTRL, 0xE0000000U);
-			mmio_write_32(IPMMUVI1_SYSCTRL, 0xE0000000U);
-			mmio_write_32(IPMMUPV0_SYSCTRL, 0xE0000000U);
-			mmio_write_32(IPMMUPV2_SYSCTRL, 0xE0000000U);
-			mmio_write_32(IPMMUPV3_SYSCTRL, 0xE0000000U);
-			mmio_write_32(IPMMUHC_SYSCTRL, 0xE0000000U);
-			mmio_write_32(IPMMURT_SYSCTRL, 0xE0000000U);
-			mmio_write_32(IPMMUMP_SYSCTRL, 0xE0000000U);
-			mmio_write_32(IPMMUDS0_SYSCTRL, 0xE0000000U);
-			mmio_write_32(IPMMUDS1_SYSCTRL, 0xE0000000U);
+			mmio_write_32(IPMMUVI0_IMSCTLR, IMSCTLR_DISCACHE);
+			mmio_write_32(IPMMUVI1_IMSCTLR, IMSCTLR_DISCACHE);
+			mmio_write_32(IPMMUPV0_IMSCTLR, IMSCTLR_DISCACHE);
+			mmio_write_32(IPMMUPV2_IMSCTLR, IMSCTLR_DISCACHE);
+			mmio_write_32(IPMMUPV3_IMSCTLR, IMSCTLR_DISCACHE);
+			mmio_write_32(IPMMUHC_IMSCTLR, IMSCTLR_DISCACHE);
+			mmio_write_32(IPMMURT_IMSCTLR, IMSCTLR_DISCACHE);
+			mmio_write_32(IPMMUMP_IMSCTLR, IMSCTLR_DISCACHE);
+			mmio_write_32(IPMMUDS0_IMSCTLR, IMSCTLR_DISCACHE);
+			mmio_write_32(IPMMUDS1_IMSCTLR, IMSCTLR_DISCACHE);
+		} else if ((val == (RCAR_PRODUCT_M3N | RCAR_CUT_ES10)) ||
+			   (val == (RCAR_PRODUCT_M3N | RCAR_CUT_ES11))) {
+			/* Disable TLB function in each IPMMU cache */
+			mmio_write_32(IPMMUVI0_IMSCTLR, IMSCTLR_DISCACHE);
+			mmio_write_32(IPMMUPV0_IMSCTLR, IMSCTLR_DISCACHE);
+			mmio_write_32(IPMMUHC_IMSCTLR, IMSCTLR_DISCACHE);
+			mmio_write_32(IPMMURT_IMSCTLR, IMSCTLR_DISCACHE);
+			mmio_write_32(IPMMUMP_IMSCTLR, IMSCTLR_DISCACHE);
+			mmio_write_32(IPMMUDS0_IMSCTLR, IMSCTLR_DISCACHE);
+			mmio_write_32(IPMMUDS1_IMSCTLR, IMSCTLR_DISCACHE);
 		}
 	}
 
 	/* IPMMU-MM setting for linux */
-	mmio_write_32(IPMMUMM_SYSCTRL, 0xC0000000U);
-	mmio_write_32(IPMMUMM_SYSAUX, 0x01000000U);
+	mmio_write_32(IPMMUMM_IMSCTLR, IPMMUMM_IMSCTLR_ENABLE);
+	mmio_write_32(IPMMUMM_IMAUXCTLR, IPMMUMM_IMAUXCTLR_NMERGE40_BIT);
 
 	val = ROM_GetLcs(&lcs);
 	if (val != 0U) {
@@ -788,12 +778,16 @@ void bl2_plat_flush_bl31_params(void)
 	/* disable the System WDT, FIQ and GIC	*/
 	bl2_swdt_release();
 
-	/* Finalize a console of provide early debug support */
-	console_finalize();
-
 	/* Initialize the System Module stop registers */
 	bl2_system_cpg_init();
 
+#if RCAR_BL2_DCACHE == 1
+	/* Disable data cache (clean and invalidate) */
+	val = (uint32_t)read_sctlr_el1();
+	val &= ~((uint32_t)SCTLR_C_BIT);
+	write_sctlr_el1((uint64_t)val);
+	dcsw_op_all(DCCISW);
+#endif /* RCAR_BL2_DCACHE == 1 */
 	/* Disable instruction cache */
 	val = (uint32_t)read_sctlr_el1();
 	val &= ~((uint32_t)SCTLR_I_BIT);
@@ -813,9 +807,10 @@ void bl2_plat_flush_bl31_params(void)
  ******************************************************************************/
 void bl2_plat_arch_setup(void)
 {
-#if 0
-	rcar_configure_mmu_el1(bl2_tzram_layout.total_base,
-			      bl2_tzram_layout.total_size,
+#if RCAR_BL2_DCACHE == 1
+	NOTICE("BL2: D-Cache enable\n");
+	rcar_configure_mmu_el1(BL2_BASE,
+			      (DEVICE_RCAR_BASE2 - BL2_BASE),
 			      BL2_RO_BASE,
 			      BL2_RO_LIMIT
 #if USE_COHERENT_MEM
@@ -823,7 +818,7 @@ void bl2_plat_arch_setup(void)
 			      BL2_COHERENT_RAM_LIMIT
 #endif
 			      );
-#endif
+#endif /* RCAR_BL2_DCACHE == 1 */
 }
 
 /*******************************************************************************
@@ -904,10 +899,11 @@ void bl2_init_generic_timer(void)
 	uint32_t reg;
 	uint32_t modemr;
 	uint32_t modemr_pll;
-	uint32_t pll_table[] = { 8333300U,	/* MD14/MD13 : 0b00 */
-				10000000U,	/* MD14/MD13 : 0b01 */
-				12500000U,	/* MD14/MD13 : 0b10 */
-				16666600U};	/* MD14/MD13 : 0b11 */
+	uint32_t pll_table[] =
+		{	EXTAL_MD14_MD13_TYPE_0,		/* MD14/MD13 : 0b00 */
+			EXTAL_MD14_MD13_TYPE_1,		/* MD14/MD13 : 0b01 */
+			EXTAL_MD14_MD13_TYPE_2,		/* MD14/MD13 : 0b10 */
+			EXTAL_MD14_MD13_TYPE_3};	/* MD14/MD13 : 0b11 */
 	uint32_t reg_cntfid;
 	uint32_t board_type;
 	uint32_t board_rev;
@@ -922,7 +918,7 @@ void bl2_init_generic_timer(void)
 	case MD14_MD13_TYPE_0:
 		(void)get_board_type(&board_type, &board_rev);
 		if (BOARD_SALVATOR_XS == board_type) {
-			reg_cntfid = 8320000U;
+			reg_cntfid = EXTAL_SALVATOR_XS;
 		}
 		break;
 	case MD14_MD13_TYPE_3:

@@ -34,30 +34,44 @@
  *	@(#)assert.h	8.2 (Berkeley) 1/21/94
  * $FreeBSD$
  */
-
-#include <sys/cdefs.h>
-
 /*
- * Unlike other ANSI header files, <assert.h> may usefully be included
- * multiple times, with and without NDEBUG defined.
+ * Portions copyright (c) 2017, ARM Limited and Contributors.
+ * All rights reserved.
  */
-
-#undef assert
-#undef _assert
-
-#ifdef NDEBUG
-#define	assert(e)	((void)0)
-#define	_assert(e)	((void)0)
-#else
-#define	_assert(e)	assert(e)
-
-#define	assert(e)	((e) ? (void)0 : __assert(__func__, __FILE__, \
-			    __LINE__, #e))
-#endif /* NDEBUG */
 
 #ifndef _ASSERT_H_
 #define _ASSERT_H_
+
+#include <debug.h>
+#include <platform_def.h>
+#include <sys/cdefs.h>
+
+#ifndef PLAT_LOG_LEVEL_ASSERT
+#define PLAT_LOG_LEVEL_ASSERT	LOG_LEVEL
+#endif
+
+#if ENABLE_ASSERTIONS
+#define	_assert(e)	assert(e)
+# if PLAT_LOG_LEVEL_ASSERT >= LOG_LEVEL_VERBOSE
+#  define	assert(e)	((e) ? (void)0 : __assert(__FILE__, __LINE__, #e))
+# elif PLAT_LOG_LEVEL_ASSERT >= LOG_LEVEL_INFO
+#  define	assert(e)	((e) ? (void)0 : __assert(__FILE__, __LINE__))
+# else
+#  define	assert(e)	((e) ? (void)0 : __assert())
+# endif
+#else
+#define	assert(e)	((void)0)
+#define	_assert(e)	((void)0)
+#endif /* ENABLE_ASSERTIONS */
+
 __BEGIN_DECLS
-void __assert(const char *, const char *, int, const char *) __dead2;
+#if PLAT_LOG_LEVEL_ASSERT >= LOG_LEVEL_VERBOSE
+void __assert(const char *, unsigned int, const char *) __dead2;
+#elif PLAT_LOG_LEVEL_ASSERT >= LOG_LEVEL_INFO
+void __assert(const char *, unsigned int) __dead2;
+#else
+void __assert(void) __dead2;
+#endif
 __END_DECLS
+
 #endif /* !_ASSERT_H_ */

@@ -1,37 +1,13 @@
 /*
- * Copyright (c) 2013-2016, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2013-2017, ARM Limited and Contributors. All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- * Redistributions of source code must retain the above copyright notice, this
- * list of conditions and the following disclaimer.
- *
- * Redistributions in binary form must reproduce the above copyright notice,
- * this list of conditions and the following disclaimer in the documentation
- * and/or other materials provided with the distribution.
- *
- * Neither the name of ARM nor the names of its contributors may be used
- * to endorse or promote products derived from this software without specific
- * prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 
 #include <arch.h>
 #include <asm_macros.S>
 #include <tsp.h>
-#include <xlat_tables.h>
+#include <xlat_tables_defs.h>
 #include "../tsp_private.h"
 
 
@@ -120,12 +96,12 @@ func tsp_entrypoint
 	 */
 	ldr	x0, =__BSS_START__
 	ldr	x1, =__BSS_SIZE__
-	bl	zeromem16
+	bl	zeromem
 
 #if USE_COHERENT_MEM
 	ldr	x0, =__COHERENT_RAM_START__
 	ldr	x1, =__COHERENT_RAM_UNALIGNED_SIZE__
-	bl	zeromem16
+	bl	zeromem
 #endif
 
 	/* --------------------------------------------
@@ -137,6 +113,15 @@ func tsp_entrypoint
 	 * --------------------------------------------
 	 */
 	bl	plat_set_my_stack
+
+	/* ---------------------------------------------
+	 * Initialize the stack protector canary before
+	 * any C code is called.
+	 * ---------------------------------------------
+	 */
+#if STACK_PROTECTOR_ENABLED
+	bl	update_stack_protector_canary
+#endif
 
 	/* ---------------------------------------------
 	 * Perform early platform setup & platform
@@ -171,7 +156,7 @@ endfunc tsp_entrypoint
 	 * -------------------------------------------
 	 */
 func tsp_vector_table
-	b	tsp_std_smc_entry
+	b	tsp_yield_smc_entry
 	b	tsp_fast_smc_entry
 	b	tsp_cpu_on_entry
 	b	tsp_cpu_off_entry
@@ -180,6 +165,7 @@ func tsp_vector_table
 	b	tsp_sel1_intr_entry
 	b	tsp_system_off_entry
 	b	tsp_system_reset_entry
+	b	tsp_abort_yield_smc_entry
 endfunc tsp_vector_table
 
 	/*---------------------------------------------
@@ -391,7 +377,7 @@ tsp_sel1_intr_return:
 
 	/* Should never reach here */
 tsp_sel1_int_entry_panic:
-	bl	plat_panic_handler
+	no_ret	plat_panic_handler
 endfunc tsp_sel1_intr_entry
 
 	/*---------------------------------------------
@@ -409,7 +395,7 @@ func tsp_cpu_resume_entry
 	restore_args_call_smc
 
 	/* Should never reach here */
-	bl	plat_panic_handler
+	no_ret	plat_panic_handler
 endfunc tsp_cpu_resume_entry
 
 	/*---------------------------------------------
@@ -422,22 +408,49 @@ func tsp_fast_smc_entry
 	restore_args_call_smc
 
 	/* Should never reach here */
-	bl	plat_panic_handler
+	no_ret	plat_panic_handler
 endfunc tsp_fast_smc_entry
 
 	/*---------------------------------------------
 	 * This entrypoint is used by the TSPD to ask
-	 * the TSP to service a std smc request.
+	 * the TSP to service a Yielding SMC request.
 	 * We will enable preemption during execution
 	 * of tsp_smc_handler.
 	 * ---------------------------------------------
 	 */
-func tsp_std_smc_entry
+func tsp_yield_smc_entry
 	msr	daifclr, #DAIF_FIQ_BIT | DAIF_IRQ_BIT
 	bl	tsp_smc_handler
 	msr	daifset, #DAIF_FIQ_BIT | DAIF_IRQ_BIT
 	restore_args_call_smc
 
 	/* Should never reach here */
+	no_ret	plat_panic_handler
+endfunc tsp_yield_smc_entry
+
+	/*---------------------------------------------------------------------
+	 * This entrypoint is used by the TSPD to abort a pre-empted Yielding
+	 * SMC. It could be on behalf of non-secure world or because a CPU
+	 * suspend/CPU off request needs to abort the preempted SMC.
+	 * --------------------------------------------------------------------
+	 */
+func tsp_abort_yield_smc_entry
+
+	/*
+	 * Exceptions masking is already done by the TSPD when entering this
+	 * hook so there is no need to do it here.
+	 */
+
+	/* Reset the stack used by the pre-empted SMC */
+	bl	plat_set_my_stack
+
+	/*
+	 * Allow some cleanup such as releasing locks.
+	 */
+	bl	tsp_abort_smc_handler
+
+	restore_args_call_smc
+
+	/* Should never reach here */
 	bl	plat_panic_handler
-endfunc tsp_std_smc_entry
+endfunc tsp_abort_yield_smc_entry

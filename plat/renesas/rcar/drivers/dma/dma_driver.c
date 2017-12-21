@@ -1,35 +1,11 @@
 /*
- * Copyright (c) 2015-2017, Renesas Electronics Corporation
- * All rights reserved.
+ * Copyright (c) 2015-2017, Renesas Electronics Corporation. All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- *   - Redistributions of source code must retain the above copyright notice,
- *     this list of conditions and the following disclaimer.
- *
- *   - Redistributions in binary form must reproduce the above copyright
- *     notice, this list of conditions and the following disclaimer in the
- *     documentation and/or other materials provided with the distribution.
- *
- *   - Neither the name of Renesas nor the names of its contributors may be
- *     used to endorse or promote products derived from this software without
- *     specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 
 #include <stdint.h>
+#include <arch_helpers.h>
 #include <string.h>
 #include <mmio.h>
 #include "rcar_def.h"
@@ -39,6 +15,22 @@
 #include "dma_driver.h"
 #include "debug.h"
 
+#define	DMA_USE_CHANNEL		(0x00000001U)	/* DMA CH setting (0/16/32) */
+#define	DMAOR_INITIAL		(0x0301U)	/* PR[1:0]=11, DME=1 */
+#define	DMACHCLR_CH_ALL		(0x0000FFFFU)	/* CLR[15:0] */
+#define	DMAFIXDAR_32BIT_SHIFT	(32U)
+#define	DMAFIXDAR_DAR_MASK	(0x000000FFU)	/* DAR[39:32] */
+#define	DMADAR_BOUNDARY_ADDR	(0x100000000ULL)
+#define	DMATCR_CNT_SHIFT	(6U)		/* TS is 64-byte units */
+#define	DMACHCR_TRN_MODE	(0x00105409U)	/* TS=0101, DM=01, SM=01, RS=0100, DE=1 */
+#define	DMACHCR_TE_BIT		(0x00000002U)	/* Transfer End Flag */
+#define	DMACHCR_CHE_BIT		(0x80000000U)	/* Channel Address Error Flag */
+
+#define DMA_LENGTH_LIMIT	(0x40000000U)
+#define DMA_LENGTH_MASK		(0x3FFFFFFFU)
+#define DMA_LEN_ALIGN_MASK	(0x3FFFFFC0U)
+#define	DMA_FRACTION_MASK	(0x3FU)
+#define DMA_EXCEED_LEN_LIMIT	(0xC0000000U)
 
 static void enableDMA(void);
 static void setupDMA(void);
@@ -61,36 +53,37 @@ static void setupDMA(void)
 	/* DMA operation */
 	mmio_write_16(DMA_DMAOR,0x0000U);
 	/* DMA channel clear */
-	mmio_write_32(DMA_DMACHCLR,0x0000FFFFU);
+	mmio_write_32(DMA_DMACHCLR,DMACHCLR_CH_ALL);
 	mmio_write_32(DMA_DMACHCLR,0x00000000U);
 }
 
 static void startDMA(uintptr_t dst, uint32_t src, uint32_t len)
 {
 	/* DMA operation */
-	mmio_write_16(DMA_DMAOR,0x0301U);
+	mmio_write_16(DMA_DMAOR,DMAOR_INITIAL);
 	/* DMA fixed destination address */
 	mmio_write_32(DMA_DMAFIXDAR,
-		(uint32_t)((dst >> 32ULL) & 0x000000FFULL));
+		(uint32_t)((dst >> DMAFIXDAR_32BIT_SHIFT) &
+					DMAFIXDAR_DAR_MASK));
 	/* DMA destination address */
 	mmio_write_32(DMA_DMADAR,
-		(uint32_t)(dst & 0x0FFFFFFFFULL));
+		(uint32_t)(dst & UINT32_MAX));
 	/* DMA source address */
 	mmio_write_32(DMA_DMASAR,src);
 	/* DMA 64bytes-unit transfer count */
-	mmio_write_32(DMA_DMATCR,len >> 6);
+	mmio_write_32(DMA_DMATCR,len >> DMATCR_CNT_SHIFT);
 	/* DMA DMA Secure Control Register */
-	mmio_write_32(DMA_DMASEC,0x00000001U);
+	mmio_write_32(DMA_DMASEC,DMA_USE_CHANNEL);
 	/* DMA channel control */
-	mmio_write_32(DMA_DMACHCR,0x00105409U);
+	mmio_write_32(DMA_DMACHCR,DMACHCR_TRN_MODE);
 }
 
 static void endDMA(void)
 {
 	/* DMA channel control */
-	while((mmio_read_32(DMA_DMACHCR) & 0x00000002U) == 0x00000000U) {
+	while((mmio_read_32(DMA_DMACHCR) & DMACHCR_TE_BIT) == 0x00000000U) {
 		/* DMA channel control */
-		if ((mmio_read_32(DMA_DMACHCR) & 0x80000000U) != 0U) {
+		if ((mmio_read_32(DMA_DMACHCR) & DMACHCR_CHE_BIT) != 0U) {
 			ERROR("BL2: DMA - Channel Address Error\n");
 			panic();
 			break;
@@ -101,7 +94,7 @@ static void endDMA(void)
 	/* DMA operation */
 	mmio_write_16(DMA_DMAOR,0x0000U);
 	/* DMA channel clear */
-	mmio_write_32(DMA_DMACHCLR,0x00000001U);
+	mmio_write_32(DMA_DMACHCLR,DMA_USE_CHANNEL);
 	mmio_write_32(DMA_DMACHCLR,0x00000000U);
 }
 
@@ -122,10 +115,10 @@ void execDMA(uintptr_t dst, uint32_t src, uint32_t len)
 
 	/* fail safe */
 	if (((src + len) < src) ||
-	    ((len == 0U) && ((src + 0x40000000U) < src))) {
+	    ((len == 0U) && ((src + DMA_LENGTH_LIMIT) < src))) {
 		/* source address invalid */
 		if (len == 0U) {
-			len = 0x40000000U;
+			len = DMA_LENGTH_LIMIT;
 		}
 		ERROR("BL2: DMA - Source address invalid\n" \
 		      "           source address  = 0x%x\n," \
@@ -137,10 +130,10 @@ void execDMA(uintptr_t dst, uint32_t src, uint32_t len)
 	if ((dst >= DRAM_LIMIT) ||
 	    ((dst + (uintptr_t)len) >= DRAM_LIMIT) ||
 	    ((len == 0U) &&
-	     ((dst + 0x40000000ULL) >= DRAM_LIMIT))) {
+	     ((dst + DMA_LENGTH_LIMIT) >= DRAM_LIMIT))) {
 		/* destination address invalid */
 		if (len == 0U) {
-			len = 0x40000000U;
+			len = DMA_LENGTH_LIMIT;
 		}
 		ERROR("BL2: DMA - Destination address invalid\n" \
 		      "           destination address = 0x%lx\n," \
@@ -148,22 +141,23 @@ void execDMA(uintptr_t dst, uint32_t src, uint32_t len)
 			dst, len);
 		panic();
 	}
-	if (((dst & 0x3FU) != 0U) || ((src & 0x3FU) != 0U) ||
-		((len & 0xC0000000U) != 0U)) {
+	if (((dst & DMA_FRACTION_MASK) != 0U) ||
+		((src & DMA_FRACTION_MASK) != 0U) ||
+		((len & DMA_EXCEED_LEN_LIMIT) != 0U)) {
 		/* dst or src are not 64-byte alignment. */
 		dmalen = 0U;
 		memlen = len;
 	} else {
 		/* dst and src are 64-byte alignment. */
-		dmalen = len & 0x3FFFFFC0U;
-		memlen = len & 0x3FU;
+		dmalen = len & DMA_LEN_ALIGN_MASK;
+		memlen = len & DMA_FRACTION_MASK;
 	}
 	if (dmalen != 0U) {
-		dst_l = dst & 0x0FFFFFFFFULL;
-		if ((dst_l + (uintptr_t)dmalen) >= 0x100000000ULL) {
+		dst_l = dst & UINT32_MAX;
+		if ((dst_l + (uintptr_t)dmalen) >= DMADAR_BOUNDARY_ADDR) {
 			/* transfer will over than the DMADAR range. */
 			/* divide dma transfer */
-			divlen = (uint32_t)(0x100000000ULL - dst_l);
+			divlen = (uint32_t)(DMADAR_BOUNDARY_ADDR - dst_l);
 			startDMA(dst, src, divlen);
 			endDMA();
 			dst += (uintptr_t)divlen;
@@ -176,19 +170,19 @@ void execDMA(uintptr_t dst, uint32_t src, uint32_t len)
 		src += dmalen;
 	} else {
 		if (memlen == 0U) {
-			dmalen = 0x40000000U;
-			dst_l = dst & 0x0FFFFFFFFULL;
-			if ((dst_l + (uintptr_t)dmalen) >= 0x100000000ULL) {
+			dmalen = DMA_LENGTH_LIMIT;
+			dst_l = dst & UINT32_MAX;
+			if ((dst_l + (uintptr_t)dmalen) >= DMADAR_BOUNDARY_ADDR) {
 				/* transfer will over than the DMADAR range. */
 				/* divide dma transfer */
-				divlen = (uint32_t)(0x100000000ULL - dst_l);
+				divlen = (uint32_t)(DMADAR_BOUNDARY_ADDR - dst_l);
 				startDMA(dst, src, divlen);
 				endDMA();
 				dst += (uintptr_t)divlen;
 				src += divlen;
 				dmalen -= divlen;
 			}
-			startDMA(dst, src, dmalen & 0x3FFFFFFFU);
+			startDMA(dst, src, dmalen & DMA_LENGTH_MASK);
 			endDMA();
 			dst += dmalen;
 			src += dmalen;
@@ -198,5 +192,8 @@ void execDMA(uintptr_t dst, uint32_t src, uint32_t len)
 		(void)memcpy((void*)dst,
 			(const void*)((uintptr_t)src),
 				(size_t)memlen);
+#if RCAR_BL2_DCACHE == 1
+		flush_dcache_range(dst, (size_t)memlen);
+#endif /* RCAR_BL2_DCACHE == 1 */
 	}
 }

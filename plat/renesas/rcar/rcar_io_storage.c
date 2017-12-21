@@ -2,34 +2,9 @@
  * Copyright (c) 2014, ARM Limited and Contributors. All rights reserved.
  * Copyright (c) 2015-2017, Renesas Electronics Corporation. All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- * Redistributions of source code must retain the above copyright notice, this
- * list of conditions and the following disclaimer.
- *
- * Redistributions in binary form must reproduce the above copyright notice,
- * this list of conditions and the following disclaimer in the documentation
- * and/or other materials provided with the distribution.
- *
- * Neither the name of ARM nor the names of its contributors may be used
- * to endorse or promote products derived from this software without specific
- * prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 
-#include <assert.h>
 #include <bl_common.h>		/* For ARRAY_SIZE */
 #include <debug.h>
 #include <io_driver.h>
@@ -441,18 +416,14 @@ void rcar_io_setup (void)
 
 	/* Register the IO devices on this platform */
 	io_result = register_io_dev_rcar(&rcar_dev_con);
-	assert(io_result == IO_SUCCESS);
 
 	io_result = register_io_dev_memdrv(&memmap_dev_con);
-	assert(io_result == IO_SUCCESS);
 
 	/* Open connections to devices and cache the handles */
 	io_result = io_dev_open(rcar_dev_con, 0U, &rcar_dev_handle);
-	assert(io_result == IO_SUCCESS);
 
 	io_result = io_dev_open(memmap_dev_con, 0U,
 				&memdrv_dev_handle);
-	assert(io_result == IO_SUCCESS);
 
 	/* Ignore improbable errors in release builds */
 	(void)io_result;
@@ -468,19 +439,14 @@ void rcar_io_emmc_setup (void)
 
 	/* Register the IO devices on this platform */
 	io_result = register_io_dev_rcar(&rcar_dev_con);
-	assert(io_result == IO_SUCCESS);
 
 	io_result = register_io_dev_emmcdrv(&emmc_dev_con);
-	assert(io_result == IO_SUCCESS);
 
 	/* Open connections to devices and cache the handles */
 	io_result = io_dev_open(rcar_dev_con, 0U, &rcar_dev_handle);
-	assert(io_result == IO_SUCCESS);
 
 	io_result = io_dev_open(emmc_dev_con, 0U,
 				&emmcdrv_dev_handle);
-
-	assert(io_result == IO_SUCCESS);
 
 	/* Ignore improbable errors in release builds */
 	(void)io_result;
@@ -493,8 +459,6 @@ int plat_get_image_source(unsigned int image_id, uintptr_t *dev_handle,
 {
 	int result = IO_FAIL;
 	const struct plat_io_policy *policy;
-
-	assert(image_id < ARRAY_SIZE(policies));
 
 	policy = &policies[image_id];
 	result = policy->check(policy->image_spec);
@@ -511,8 +475,6 @@ int32_t plat_get_drv_source(uint32_t io_drv_id, uintptr_t *dev_handle,
 {
 	int32_t result;
 	const struct plat_io_policy *policy;
-
-	assert(io_drv_id < ARRAY_SIZE(drv_policies));
 
 	policy = &drv_policies[io_drv_id];
 	result = policy->check(policy->image_spec);

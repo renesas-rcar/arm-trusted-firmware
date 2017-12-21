@@ -1,31 +1,7 @@
 /*
  * Copyright (c) 2016, ARM Limited and Contributors. All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- * Redistributions of source code must retain the above copyright notice, this
- * list of conditions and the following disclaimer.
- *
- * Redistributions in binary form must reproduce the above copyright notice,
- * this list of conditions and the following disclaimer in the documentation
- * and/or other materials provided with the distribution.
- *
- * Neither the name of ARM nor the names of its contributors may be used
- * to endorse or promote products derived from this software without specific
- * prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 
 #ifndef __EMMC_H__
@@ -131,21 +107,21 @@ typedef struct emmc_ops {
 } emmc_ops_t;
 
 typedef struct emmc_csd {
-	unsigned char		not_used:		1;
-	unsigned char		crc:			7;
-	unsigned char		ecc:			2;
-	unsigned char		file_format:		2;
-	unsigned char		tmp_write_protect:	1;
-	unsigned char		perm_write_protect:	1;
-	unsigned char		copy:			1;
-	unsigned char		file_format_grp:	1;
+	unsigned int 	    not_used:		1;
+	unsigned int   	    crc:			7;
+	unsigned int   	    ecc:			2;
+	unsigned int   	    file_format:		2;
+	unsigned int   	    tmp_write_protect:	1;
+	unsigned int   	    perm_write_protect:	1;
+	unsigned int   	    copy:			1;
+	unsigned int   	    file_format_grp:	1;
 
-	unsigned short		reserved_1:		5;
-	unsigned short		write_bl_partial:	1;
-	unsigned short		write_bl_len:		4;
-	unsigned short		r2w_factor:		3;
-	unsigned short		default_ecc:		2;
-	unsigned short		wp_grp_enable:		1;
+	unsigned int 		reserved_1:		5;
+	unsigned int 		write_bl_partial:	1;
+	unsigned int 		write_bl_len:		4;
+	unsigned int 		r2w_factor:		3;
+	unsigned int 		default_ecc:		2;
+	unsigned int 		wp_grp_enable:		1;
 
 	unsigned int		wp_grp_size:		5;
 	unsigned int		erase_grp_mult:		5;

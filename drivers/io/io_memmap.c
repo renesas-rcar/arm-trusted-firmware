@@ -1,31 +1,7 @@
 /*
- * Copyright (c) 2014, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2014-2017, ARM Limited and Contributors. All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- * Redistributions of source code must retain the above copyright notice, this
- * list of conditions and the following disclaimer.
- *
- * Redistributions in binary form must reproduce the above copyright notice,
- * this list of conditions and the following disclaimer in the documentation
- * and/or other materials provided with the distribution.
- *
- * Neither the name of ARM nor the names of its contributors may be used
- * to endorse or promote products derived from this software without specific
- * prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 
 #include <assert.h>
@@ -33,6 +9,7 @@
 #include <io_driver.h>
 #include <io_storage.h>
 #include <string.h>
+#include <utils.h>
 
 /* As we need to be able to keep state for seek, only one file can be open
  * at a time. Make this a structure and point to the entity->info. When we
@@ -118,7 +95,6 @@ static int memmap_dev_close(io_dev_info_t *dev_info)
 
 
 /* Open a file on the memmap device */
-/* TODO: Can we do any sensible limit checks on requested memory */
 static int memmap_block_open(io_dev_info_t *dev_info, const uintptr_t spec,
 			     io_entity_t *entity)
 {
@@ -152,13 +128,19 @@ static int memmap_block_open(io_dev_info_t *dev_info, const uintptr_t spec,
 static int memmap_block_seek(io_entity_t *entity, int mode, ssize_t offset)
 {
 	int result = -ENOENT;
+	file_state_t *fp;
 
 	/* We only support IO_SEEK_SET for the moment. */
 	if (mode == IO_SEEK_SET) {
 		assert(entity != NULL);
 
-		/* TODO: can we do some basic limit checks on seek? */
-		((file_state_t *)entity->info)->file_pos = offset;
+		fp = (file_state_t *) entity->info;
+
+		/* Assert that new file position is valid */
+		assert((offset >= 0) && (offset < fp->size));
+
+		/* Reset file position */
+		fp->file_pos = offset;
 		result = 0;
 	}
 
@@ -183,18 +165,24 @@ static int memmap_block_read(io_entity_t *entity, uintptr_t buffer,
 			     size_t length, size_t *length_read)
 {
 	file_state_t *fp;
+	size_t pos_after;
 
 	assert(entity != NULL);
 	assert(buffer != (uintptr_t)NULL);
 	assert(length_read != NULL);
 
-	fp = (file_state_t *)entity->info;
+	fp = (file_state_t *) entity->info;
+
+	/* Assert that file position is valid for this read operation */
+	pos_after = fp->file_pos + length;
+	assert((pos_after >= fp->file_pos) && (pos_after <= fp->size));
 
 	memcpy((void *)buffer, (void *)(fp->base + fp->file_pos), length);
 
 	*length_read = length;
-	/* advance the file 'cursor' for incremental reads */
-	fp->file_pos += length;
+
+	/* Set file position after read */
+	fp->file_pos = pos_after;
 
 	return 0;
 }
@@ -205,19 +193,24 @@ static int memmap_block_write(io_entity_t *entity, const uintptr_t buffer,
 			      size_t length, size_t *length_written)
 {
 	file_state_t *fp;
+	size_t pos_after;
 
 	assert(entity != NULL);
 	assert(buffer != (uintptr_t)NULL);
 	assert(length_written != NULL);
 
-	fp = (file_state_t *)entity->info;
+	fp = (file_state_t *) entity->info;
+
+	/* Assert that file position is valid for this write operation */
+	pos_after = fp->file_pos + length;
+	assert((pos_after >= fp->file_pos) && (pos_after <= fp->size));
 
 	memcpy((void *)(fp->base + fp->file_pos), (void *)buffer, length);
 
 	*length_written = length;
 
-	/* advance the file 'cursor' for incremental writes */
-	fp->file_pos += length;
+	/* Set file position after write */
+	fp->file_pos = pos_after;
 
 	return 0;
 }
@@ -231,7 +224,7 @@ static int memmap_block_close(io_entity_t *entity)
 	entity->info = 0;
 
 	/* This would be a mem free() if we had malloc.*/
-	memset((void *)&current_file, 0, sizeof(current_file));
+	zeromem((void *)&current_file, sizeof(current_file));
 
 	return 0;
 }

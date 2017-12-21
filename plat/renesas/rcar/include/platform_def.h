@@ -2,31 +2,7 @@
  * Copyright (c) 2014, ARM Limited and Contributors. All rights reserved.
  * Copyright (c) 2015-2017, Renesas Electronics Corporation. All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- * Redistributions of source code must retain the above copyright notice, this
- * list of conditions and the following disclaimer.
- *
- * Redistributions in binary form must reproduce the above copyright notice,
- * this list of conditions and the following disclaimer in the documentation
- * and/or other materials provided with the distribution.
- *
- * Neither the name of ARM nor the names of its contributors may be used
- * to endorse or promote products derived from this software without specific
- * prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 
 #ifndef RCAR_PLATFORM_DEF_H__
@@ -98,8 +74,8 @@
 #define BL338_CERT_ID			(NS_BL2U_IMAGE_ID + 21)
 
 /* io drivers id */
-#define FLASH_DEV_ID			(0U)
-#define EMMC_DEV_ID			(1U)
+#define FLASH_DEV_ID			U(0)
+#define EMMC_DEV_ID			U(1)
 
 /*
  * R-Car H3 Cortex-A57
@@ -108,39 +84,17 @@
  * L1:I/32KB(16KBx2way) D/32KB(8KBx4way) L2:512KB(32KBx16way)
  */
 #define PLATFORM_CACHE_LINE_SIZE	128
-#define PLATFORM_CLUSTER_COUNT		2ull
-#define PLATFORM_CLUSTER0_CORE_COUNT	4
-#define PLATFORM_CLUSTER1_CORE_COUNT	4
+#define PLATFORM_CLUSTER_COUNT		U(2)
+#define PLATFORM_CLUSTER0_CORE_COUNT	U(4)
+#define PLATFORM_CLUSTER1_CORE_COUNT	U(4)
 #define PLATFORM_CORE_COUNT		(PLATFORM_CLUSTER1_CORE_COUNT + \
 						PLATFORM_CLUSTER0_CORE_COUNT)
-#define PLATFORM_MAX_CPUS_PER_CLUSTER	4
+#define PLATFORM_MAX_CPUS_PER_CLUSTER	U(4)
 #define PLATFORM_NUM_AFFS		(PLATFORM_CLUSTER_COUNT + \
-					 PLATFORM_CORE_COUNT + 1)
+					 PLATFORM_CORE_COUNT + U(1))
 #define PLATFORM_MAX_AFFLVL		MPIDR_AFFLVL2
-#define MAX_IO_DEVICES			3
-#define MAX_IO_HANDLES			4
-
-/*******************************************************************************
- * BL1 specific defines.
- * BL1 RW data is relocated from ROM to RAM at runtime so we need 2 sets of
- * addresses.
- ******************************************************************************/
-#define BL1_RO_BASE			RCAR_TRUSTED_ROM_BASE
-#define BL1_RO_LIMIT			(RCAR_TRUSTED_ROM_BASE \
-					+ RCAR_TRUSTED_ROM_SIZE)
-/*
- * Put BL1 RW at the top of the Trusted SRAM. BL1_RW_BASE is calculated using
- * the current BL1 RW debug size plus a little space for growth.
- */
-#if TRUSTED_BOARD_BOOT
-#define BL1_RW_BASE			(RCAR_TRUSTED_SRAM_BASE \
-					+ RCAR_TRUSTED_SRAM_SIZE - 0x8000)
-#else
-#define BL1_RW_BASE			(RCAR_TRUSTED_SRAM_BASE \
-					+ RCAR_TRUSTED_SRAM_SIZE - 0x6000)
-#endif
-#define BL1_RW_LIMIT			(RCAR_TRUSTED_SRAM_BASE \
-					+ RCAR_TRUSTED_SRAM_SIZE)
+#define MAX_IO_DEVICES			U(3)
+#define MAX_IO_HANDLES			U(4)
 
 /*******************************************************************************
  * BL2 specific defines.
@@ -149,9 +103,10 @@
  * Put BL2 just below BL3-1. BL2_BASE is calculated using the current BL2 debug
  * size plus a little space for growth.
  */
-#define	RCAR_SECRAM_BASE		(0xE6300000)
-#define BL2_BASE			(0xE6304000)
-#define BL2_LIMIT			(0xE632E800)
+#define RCAR_SYSRAM_BASE		U(0xE6300000)
+#define BL2_BASE			U(0xE6304000)
+#define BL2_LIMIT			U(0xE632E800)
+#define RCAR_SYSRAM_SIZE		(BL2_BASE - RCAR_SYSRAM_BASE)
 
 /*******************************************************************************
  * BL31 specific defines.
@@ -170,14 +125,13 @@
 
 #define BL31_SRAM_BASE			(DEVICE_SRAM_BASE)
 #define BL31_SRAM_LIMIT			(DEVICE_SRAM_BASE + DEVICE_SRAM_SIZE)
-#define BL31_SRAM_CODE_MAX		(0x1000)
 
 /*******************************************************************************
  * BL32 specific defines.
  ******************************************************************************/
 #ifndef SPD_NONE
-# define BL32_BASE			(0x44100000)
-# define BL32_LIMIT			(BL32_BASE + 0x100000)
+# define BL32_BASE			U(0x44100000)
+# define BL32_LIMIT			(BL32_BASE + U(0x100000))
 #endif
 /*
  * ID of the secure physical generic timer interrupt used by the TSP.
@@ -187,16 +141,22 @@
 /*******************************************************************************
  * Platform specific page table and MMU setup constants
  ******************************************************************************/
-#define ADDR_SPACE_SIZE			(1ull << 32)
+#if IMAGE_BL2
+#define PLAT_PHY_ADDR_SPACE_SIZE	(ULL(1) << 40)
+#define PLAT_VIRT_ADDR_SPACE_SIZE	(ULL(1) << 40)
+#else /* !IMAGE_BL2 */
+#define PLAT_PHY_ADDR_SPACE_SIZE	(ULL(1) << 32)
+#define PLAT_VIRT_ADDR_SPACE_SIZE	(ULL(1) << 32)
+#endif /* IMAGE_BL2 */
 
 #if IMAGE_BL1
-# define MAX_XLAT_TABLES		2
+# define MAX_XLAT_TABLES		U(2)
 #elif IMAGE_BL2
-# define MAX_XLAT_TABLES		3
+# define MAX_XLAT_TABLES		U(5)
 #elif IMAGE_BL31
-# define MAX_XLAT_TABLES		4
+# define MAX_XLAT_TABLES		U(4)
 #elif IMAGE_BL32
-#  define MAX_XLAT_TABLES		3
+#  define MAX_XLAT_TABLES		U(3)
 #endif
 
 #define MAX_MMAP_REGIONS		(RCAR_MMAP_ENTRIES + RCAR_BL_REGIONS)

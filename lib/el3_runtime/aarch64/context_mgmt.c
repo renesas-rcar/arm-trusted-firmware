@@ -1,31 +1,7 @@
 /*
- * Copyright (c) 2013-2016, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2013-2017, ARM Limited and Contributors. All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- * Redistributions of source code must retain the above copyright notice, this
- * list of conditions and the following disclaimer.
- *
- * Redistributions in binary form must reproduce the above copyright notice,
- * this list of conditions and the following disclaimer in the documentation
- * and/or other materials provided with the distribution.
- *
- * Neither the name of ARM nor the names of its contributors may be used
- * to endorse or promote products derived from this software without specific
- * prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 
 #include <arch.h>
@@ -39,6 +15,7 @@
 #include <platform_def.h>
 #include <smcc_helpers.h>
 #include <string.h>
+#include <utils.h>
 
 
 /*******************************************************************************
@@ -91,68 +68,106 @@ static void cm_init_context_common(cpu_context_t *ctx, const entry_point_info_t 
 	security_state = GET_SECURITY_STATE(ep->h.attr);
 
 	/* Clear any residual register values from the context */
-	memset(ctx, 0, sizeof(*ctx));
+	zeromem(ctx, sizeof(*ctx));
 
 	/*
-	 * Base the context SCR on the current value, adjust for entry point
-	 * specific requirements and set trap bits from the IMF
-	 * TODO: provide the base/global SCR bits using another mechanism?
+	 * SCR_EL3 was initialised during reset sequence in macro
+	 * el3_arch_init_common. This code modifies the SCR_EL3 fields that
+	 * affect the next EL.
+	 *
+	 * The following fields are initially set to zero and then updated to
+	 * the required value depending on the state of the SPSR_EL3 and the
+	 * Security state and entrypoint attributes of the next EL.
 	 */
 	scr_el3 = read_scr();
 	scr_el3 &= ~(SCR_NS_BIT | SCR_RW_BIT | SCR_FIQ_BIT | SCR_IRQ_BIT |
 			SCR_ST_BIT | SCR_HCE_BIT);
-
+	/*
+	 * SCR_NS: Set the security state of the next EL.
+	 */
 	if (security_state != SECURE)
 		scr_el3 |= SCR_NS_BIT;
-
+	/*
+	 * SCR_EL3.RW: Set the execution state, AArch32 or AArch64, for next
+	 *  Exception level as specified by SPSR.
+	 */
 	if (GET_RW(ep->spsr) == MODE_RW_64)
 		scr_el3 |= SCR_RW_BIT;
-
+	/*
+	 * SCR_EL3.ST: Traps Secure EL1 accesses to the Counter-timer Physical
+	 *  Secure timer registers to EL3, from AArch64 state only, if specified
+	 *  by the entrypoint attributes.
+	 */
 	if (EP_GET_ST(ep->h.attr))
 		scr_el3 |= SCR_ST_BIT;
 
 #ifndef HANDLE_EA_EL3_FIRST
-	/* Explicitly stop to trap aborts from lower exception levels. */
+	/*
+	 * SCR_EL3.EA: Do not route External Abort and SError Interrupt External
+	 *  to EL3 when executing at a lower EL. When executing at EL3, External
+	 *  Aborts are taken to EL3.
+	 */
 	scr_el3 &= ~SCR_EA_BIT;
 #endif
 
-#if IMAGE_BL31
+#ifdef IMAGE_BL31
 	/*
-	 * IRQ/FIQ bits only need setting if interrupt routing
-	 * model has been set up for BL31.
+	 * SCR_EL3.IRQ, SCR_EL3.FIQ: Enable the physical FIQ and IRQ rounting as
+	 *  indicated by the interrupt routing model for BL31.
 	 */
 	scr_el3 |= get_scr_el3_from_routing_model(security_state);
 #endif
 
 	/*
-	 * Set up SCTLR_ELx for the target exception level:
-	 * EE bit is taken from the entrypoint attributes
-	 * M, C and I bits must be zero (as required by PSCI specification)
-	 *
-	 * The target exception level is based on the spsr mode requested.
-	 * If execution is requested to EL2 or hyp mode, HVC is enabled
-	 * via SCR_EL3.HCE.
-	 *
-	 * Always compute the SCTLR_EL1 value and save in the cpu_context
-	 * - the EL2 registers are set up by cm_preapre_ns_entry() as they
-	 * are not part of the stored cpu_context
-	 *
-	 * TODO: In debug builds the spsr should be validated and checked
-	 * against the CPU support, security state, endianess and pc
+	 * SCR_EL3.HCE: Enable HVC instructions if next execution state is
+	 * AArch64 and next EL is EL2, or if next execution state is AArch32 and
+	 * next mode is Hyp.
 	 */
-	sctlr_elx = EP_GET_EE(ep->h.attr) ? SCTLR_EE_BIT : 0;
-	if (GET_RW(ep->spsr) == MODE_RW_64)
-		sctlr_elx |= SCTLR_EL1_RES1;
-	else
-		sctlr_elx |= SCTLR_AARCH32_EL1_RES1;
-	write_ctx_reg(get_sysregs_ctx(ctx), CTX_SCTLR_EL1, sctlr_elx);
-
 	if ((GET_RW(ep->spsr) == MODE_RW_64
 	     && GET_EL(ep->spsr) == MODE_EL2)
 	    || (GET_RW(ep->spsr) != MODE_RW_64
 		&& GET_M32(ep->spsr) == MODE32_hyp)) {
 		scr_el3 |= SCR_HCE_BIT;
 	}
+
+	/*
+	 * Initialise SCTLR_EL1 to the reset value corresponding to the target
+	 * execution state setting all fields rather than relying of the hw.
+	 * Some fields have architecturally UNKNOWN reset values and these are
+	 * set to zero.
+	 *
+	 * SCTLR.EE: Endianness is taken from the entrypoint attributes.
+	 *
+	 * SCTLR.M, SCTLR.C and SCTLR.I: These fields must be zero (as
+	 *  required by PSCI specification)
+	 */
+	sctlr_elx = EP_GET_EE(ep->h.attr) ? SCTLR_EE_BIT : 0;
+	if (GET_RW(ep->spsr) == MODE_RW_64)
+		sctlr_elx |= SCTLR_EL1_RES1;
+	else {
+		/*
+		 * If the target execution state is AArch32 then the following
+		 * fields need to be set.
+		 *
+		 * SCTRL_EL1.nTWE: Set to one so that EL0 execution of WFE
+		 *  instructions are not trapped to EL1.
+		 *
+		 * SCTLR_EL1.nTWI: Set to one so that EL0 execution of WFI
+		 *  instructions are not trapped to EL1.
+		 *
+		 * SCTLR_EL1.CP15BEN: Set to one to enable EL0 execution of the
+		 *  CP15DMB, CP15DSB, and CP15ISB instructions.
+		 */
+		sctlr_elx |= SCTLR_AARCH32_EL1_RES1 | SCTLR_CP15BEN_BIT
+					| SCTLR_NTWI_BIT | SCTLR_NTWE_BIT;
+	}
+
+	/*
+	 * Store the initialised SCTLR_EL1 value in the cpu_context - SCTLR_EL2
+	 * and other EL2 resgisters are set up by cm_preapre_ns_entry() as they
+	 * are not part of the stored cpu_context.
+	 */
+	write_ctx_reg(get_sysregs_ctx(ctx), CTX_SCTLR_EL1, sctlr_elx);
 
 	/* Populate EL3 state so that we've the right context before doing ERET */
 	state = get_el3state_ctx(ctx);
@@ -203,7 +218,7 @@ void cm_init_my_context(const entry_point_info_t *ep)
  ******************************************************************************/
 void cm_prepare_el3_exit(uint32_t security_state)
 {
-	uint32_t sctlr_elx, scr_el3, cptr_el2;
+	uint32_t sctlr_elx, scr_el3, mdcr_el2;
 	cpu_context_t *ctx = cm_get_context(security_state);
 
 	assert(ctx);
@@ -217,37 +232,168 @@ void cm_prepare_el3_exit(uint32_t security_state)
 			sctlr_elx &= ~SCTLR_EE_BIT;
 			sctlr_elx |= SCTLR_EL2_RES1;
 			write_sctlr_el2(sctlr_elx);
-		} else if (read_id_aa64pfr0_el1() &
-			   (ID_AA64PFR0_ELX_MASK << ID_AA64PFR0_EL2_SHIFT)) {
-			/* EL2 present but unused, need to disable safely */
-
-			/* HCR_EL2 = 0, except RW bit set to match SCR_EL3 */
+		} else if (EL_IMPLEMENTED(2)) {
+			/*
+			 * EL2 present but unused, need to disable safely.
+			 * SCTLR_EL2 can be ignored in this case.
+			 *
+			 * Initialise all fields in HCR_EL2, except HCR_EL2.RW,
+			 * to zero so that Non-secure operations do not trap to
+			 * EL2.
+			 *
+			 * HCR_EL2.RW: Set this field to match SCR_EL3.RW
+			 */
 			write_hcr_el2((scr_el3 & SCR_RW_BIT) ? HCR_RW_BIT : 0);
 
-			/* SCTLR_EL2 : can be ignored when bypassing */
+			/*
+			 * Initialise CPTR_EL2 setting all fields rather than
+			 * relying on the hw. All fields have architecturally
+			 * UNKNOWN reset values.
+			 *
+			 * CPTR_EL2.TCPAC: Set to zero so that Non-secure EL1
+			 *  accesses to the CPACR_EL1 or CPACR from both
+			 *  Execution states do not trap to EL2.
+			 *
+			 * CPTR_EL2.TTA: Set to zero so that Non-secure System
+			 *  register accesses to the trace registers from both
+			 *  Execution states do not trap to EL2.
+			 *
+			 * CPTR_EL2.TFP: Set to zero so that Non-secure accesses
+			 *  to SIMD and floating-point functionality from both
+			 *  Execution states do not trap to EL2.
+			 */
+			write_cptr_el2(CPTR_EL2_RESET_VAL &
+					~(CPTR_EL2_TCPAC_BIT | CPTR_EL2_TTA_BIT
+					| CPTR_EL2_TFP_BIT));
 
-			/* CPTR_EL2 : disable all traps TCPAC, TTA, TFP */
-			cptr_el2 = read_cptr_el2();
-			cptr_el2 &= ~(TCPAC_BIT | TTA_BIT | TFP_BIT);
-			write_cptr_el2(cptr_el2);
+			/*
+			 * Initiliase CNTHCTL_EL2. All fields are
+			 * architecturally UNKNOWN on reset and are set to zero
+			 * except for field(s) listed below.
+			 *
+			 * CNTHCTL_EL2.EL1PCEN: Set to one to disable traps to
+			 *  Hyp mode of Non-secure EL0 and EL1 accesses to the
+			 *  physical timer registers.
+			 *
+			 * CNTHCTL_EL2.EL1PCTEN: Set to one to disable traps to
+			 *  Hyp mode of  Non-secure EL0 and EL1 accesses to the
+			 *  physical counter registers.
+			 */
+			write_cnthctl_el2(CNTHCTL_RESET_VAL |
+						EL1PCEN_BIT | EL1PCTEN_BIT);
 
-			/* Enable EL1 access to timer */
-			write_cnthctl_el2(EL1PCEN_BIT | EL1PCTEN_BIT);
-
-			/* Reset CNTVOFF_EL2 */
+			/*
+			 * Initialise CNTVOFF_EL2 to zero as it resets to an
+			 * architecturally UNKNOWN value.
+			 */
 			write_cntvoff_el2(0);
 
-			/* Set VPIDR, VMPIDR to match MIDR, MPIDR */
+			/*
+			 * Set VPIDR_EL2 and VMPIDR_EL2 to match MIDR_EL1 and
+			 * MPIDR_EL1 respectively.
+			 */
 			write_vpidr_el2(read_midr_el1());
 			write_vmpidr_el2(read_mpidr_el1());
 
 			/*
-			 * Reset VTTBR_EL2.
-			 * Needed because cache maintenance operations depend on
-			 * the VMID even when non-secure EL1&0 stage 2 address
-			 * translation are disabled.
+			 * Initialise VTTBR_EL2. All fields are architecturally
+			 * UNKNOWN on reset.
+			 *
+			 * VTTBR_EL2.VMID: Set to zero. Even though EL1&0 stage
+			 *  2 address translation is disabled, cache maintenance
+			 *  operations depend on the VMID.
+			 *
+			 * VTTBR_EL2.BADDR: Set to zero as EL1&0 stage 2 address
+			 *  translation is disabled.
 			 */
-			write_vttbr_el2(0);
+			write_vttbr_el2(VTTBR_RESET_VAL &
+				~((VTTBR_VMID_MASK << VTTBR_VMID_SHIFT)
+				| (VTTBR_BADDR_MASK << VTTBR_BADDR_SHIFT)));
+
+			/*
+			 * Initialise MDCR_EL2, setting all fields rather than
+			 * relying on hw. Some fields are architecturally
+			 * UNKNOWN on reset.
+			 *
+			 * MDCR_EL2.TPMS (ARM v8.2): Do not trap statistical
+			 * profiling controls to EL2.
+			 *
+			 * MDCR_EL2.E2PB (ARM v8.2): SPE enabled in non-secure
+			 * state. Accesses to profiling buffer controls at
+			 * non-secure EL1 are not trapped to EL2.
+			 *
+			 * MDCR_EL2.TDRA: Set to zero so that Non-secure EL0 and
+			 *  EL1 System register accesses to the Debug ROM
+			 *  registers are not trapped to EL2.
+			 *
+			 * MDCR_EL2.TDOSA: Set to zero so that Non-secure EL1
+			 *  System register accesses to the powerdown debug
+			 *  registers are not trapped to EL2.
+			 *
+			 * MDCR_EL2.TDA: Set to zero so that System register
+			 *  accesses to the debug registers do not trap to EL2.
+			 *
+			 * MDCR_EL2.TDE: Set to zero so that debug exceptions
+			 *  are not routed to EL2.
+			 *
+			 * MDCR_EL2.HPME: Set to zero to disable EL2 Performance
+			 *  Monitors.
+			 *
+			 * MDCR_EL2.TPM: Set to zero so that Non-secure EL0 and
+			 *  EL1 accesses to all Performance Monitors registers
+			 *  are not trapped to EL2.
+			 *
+			 * MDCR_EL2.TPMCR: Set to zero so that Non-secure EL0
+			 *  and EL1 accesses to the PMCR_EL0 or PMCR are not
+			 *  trapped to EL2.
+			 *
+			 * MDCR_EL2.HPMN: Set to value of PMCR_EL0.N which is the
+			 *  architecturally-defined reset value.
+			 */
+			mdcr_el2 = ((MDCR_EL2_RESET_VAL |
+					((read_pmcr_el0() & PMCR_EL0_N_BITS)
+					>> PMCR_EL0_N_SHIFT)) &
+					~(MDCR_EL2_TDRA_BIT | MDCR_EL2_TDOSA_BIT
+					| MDCR_EL2_TDA_BIT | MDCR_EL2_TDE_BIT
+					| MDCR_EL2_HPME_BIT | MDCR_EL2_TPM_BIT
+					| MDCR_EL2_TPMCR_BIT));
+
+#if ENABLE_SPE_FOR_LOWER_ELS
+			uint64_t id_aa64dfr0_el1;
+
+			/* Detect if SPE is implemented */
+			id_aa64dfr0_el1 = read_id_aa64dfr0_el1() >>
+				ID_AA64DFR0_PMS_SHIFT;
+			if ((id_aa64dfr0_el1 & ID_AA64DFR0_PMS_MASK) == 1) {
+				/*
+				 * Make sure traps to EL2 are not generated if
+				 * EL2 is implemented but not used.
+				 */
+				mdcr_el2 &= ~MDCR_EL2_TPMS;
+				mdcr_el2 |= MDCR_EL2_E2PB(MDCR_EL2_E2PB_EL1);
+			}
+#endif
+
+			write_mdcr_el2(mdcr_el2);
+
+			/*
+			 * Initialise HSTR_EL2. All fields are architecturally
+			 * UNKNOWN on reset.
+			 *
+			 * HSTR_EL2.T<n>: Set all these fields to zero so that
+			 *  Non-secure EL0 or EL1 accesses to System registers
+			 *  do not trap to EL2.
+			 */
+			write_hstr_el2(HSTR_EL2_RESET_VAL & ~(HSTR_EL2_T_MASK));
+			/*
+			 * Initialise CNTHP_CTL_EL2. All fields are
+			 * architecturally UNKNOWN on reset.
+			 *
+			 * CNTHP_CTL_EL2:ENABLE: Set to zero to disable the EL2
+			 *  physical timer and prevent timer interrupts.
+			 */
+			write_cnthp_ctl_el2(CNTHP_CTL_RESET_VAL &
+						~(CNTHP_CTL_ENABLE_BIT));
 		}
 	}
 
@@ -269,6 +415,7 @@ void cm_el1_sysregs_context_save(uint32_t security_state)
 	assert(ctx);
 
 	el1_sysregs_context_save(get_sysregs_ctx(ctx));
+	el1_sysregs_context_save_post_ops();
 }
 
 void cm_el1_sysregs_context_restore(uint32_t security_state)
