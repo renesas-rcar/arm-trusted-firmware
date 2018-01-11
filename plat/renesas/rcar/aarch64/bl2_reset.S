@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2017, Renesas Electronics Corporation. All rights reserved.
+ * Copyright (c) 2015-2018, Renesas Electronics Corporation. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -291,11 +291,6 @@ SynchronousExceptionA64:
 	ubfx	x0, x1, #MODE_EL_SHIFT, #2
 	cmp	x0, #MODE_EL3
 	b.ne	panic
-
-#if RCAR_BL2_DCACHE == 1
-	bl	disable_mmu_icache_el3
-	tlbi	alle3
-#endif /* RCAR_BL2_DCACHE == 1 */
 
 	ldp	x6, x7, [x20, #(ENTRY_POINT_INFO_ARGS_OFFSET + 0x30)]
 	ldp	x4, x5, [x20, #(ENTRY_POINT_INFO_ARGS_OFFSET + 0x20)]

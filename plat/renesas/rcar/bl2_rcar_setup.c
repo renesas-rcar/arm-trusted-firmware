@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2014, ARM Limited and Contributors. All rights reserved.
- * Copyright (c) 2015-2017, Renesas Electronics Corporation. All rights reserved.
+ * Copyright (c) 2015-2018, Renesas Electronics Corporation. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -256,6 +256,9 @@ struct entry_point_info *bl2_plat_get_bl31_ep_info(void)
 
 		/* Flush the params to be passed to memory */
 		bl2_plat_flush_bl31_params();
+
+		/* Flush of all buffered data and desables the SCIF. */
+		(void)console_flush();
 
 		/*
 		 * Run BL3-1 via an SMC to BL1.
@@ -784,10 +787,12 @@ void bl2_plat_flush_bl31_params(void)
 #if RCAR_BL2_DCACHE == 1
 	/* Disable data cache (clean and invalidate) */
 	val = (uint32_t)read_sctlr_el1();
-	val &= ~((uint32_t)SCTLR_C_BIT);
+	val &= ~((uint32_t)(SCTLR_C_BIT | SCTLR_M_BIT));
 	write_sctlr_el1((uint64_t)val);
 	dcsw_op_all(DCCISW);
+	tlbivmalle1();
 #endif /* RCAR_BL2_DCACHE == 1 */
+
 	/* Disable instruction cache */
 	val = (uint32_t)read_sctlr_el1();
 	val &= ~((uint32_t)SCTLR_I_BIT);
