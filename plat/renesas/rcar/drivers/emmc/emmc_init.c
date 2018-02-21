@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2017, Renesas Electronics Corporation. All rights reserved.
+ * Copyright (c) 2015-2018, Renesas Electronics Corporation. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -218,21 +218,21 @@ static EMMC_ERROR_CODE emmc_dev_init(void)
 
 	/* Power on eMMC */
 	dataL = mmio_read_32(CPG_SMSTPCR3);
-	if ((dataL) & (BIT12)) {
-		dataL &= ~((uint32_t)(BIT12));
+	if ((dataL) & (CPG_MSTP_MMC)) {
+		dataL &= ~((uint32_t)(CPG_MSTP_MMC));
 		mmio_write_32(CPG_CPGWPR, (~dataL));
 		mmio_write_32(CPG_SMSTPCR3, dataL);
 	}
 
 	dataL = mmio_read_32(CPG_MSTPSR3);
-	while ( (dataL & (BIT12)) != 0x0U ) {
+	while ( (dataL & (CPG_MSTP_MMC)) != 0x0U ) {
 		dataL = mmio_read_32(CPG_MSTPSR3);
 	}
 	
 	/* Set SD clock */
 	mmio_write_32(CPG_CPGWPR, ~((uint32_t)(BIT9|BIT0)));	//SD phy 200MHz
 	/* Stop SDnH clock & SDn=200MHz */
-	mmio_write_32(CPG_SD2CKCR, (BIT9|BIT0)); 
+	mmio_write_32(CPG_SDxCKCR, (BIT9|BIT0)); 
 
 	/* MMCIF initialize */
 	SETR_32(SD_INFO1, 0x00000000U);			/* all interrupt clear */
@@ -283,8 +283,8 @@ static EMMC_ERROR_CODE emmc_dev_finalize(void)
 	SETR_32(SD_CLK_CTRL, 0x00000000U);		/* MMC clock stop */
 
 	dataL = mmio_read_32(CPG_SMSTPCR3);
-	if ((dataL & BIT12) == 0U) {
-		dataL |= (BIT12);
+	if ((dataL & CPG_MSTP_MMC) == 0U) {
+		dataL |= (CPG_MSTP_MMC);
 		mmio_write_32(CPG_CPGWPR, (~dataL));
 		mmio_write_32(CPG_SMSTPCR3, dataL);
 	}

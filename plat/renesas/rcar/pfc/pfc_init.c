@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2017, Renesas Electronics Corporation. All rights reserved.
+ * Copyright (c) 2015-2018, Renesas Electronics Corporation. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -25,6 +25,9 @@
 #if RCAR_LSI == RCAR_M3N	/* M3N */
   #include "M3N/pfc_init_m3n.h"
 #endif
+#if RCAR_LSI == RCAR_E3	/* E3 */
+  #include "E3/pfc_init_e3.h"
+#endif
 
  /* Product Register */
 #define PRR			(0xFFF00044U)
@@ -33,6 +36,7 @@
 #define PRR_PRODUCT_H3		(0x00004F00U)           /* R-Car H3 */
 #define PRR_PRODUCT_M3		(0x00005200U)           /* R-Car M3 */
 #define PRR_PRODUCT_M3N		(0x00005500U)           /* R-Car M3N */
+#define PRR_PRODUCT_E3		(0x00005700U)		/* R-Car E3 */
 #define PRR_PRODUCT_10		(0x00U)
 #define PRR_PRODUCT_11		(0x01U)
 #define PRR_PRODUCT_20		(0x10U)
@@ -119,6 +123,13 @@ void pfc_init(void)
 		pfc_init_m3n();
 #endif
 		break;
+	case PRR_PRODUCT_E3:
+#if RCAR_LSI != RCAR_E3
+		PRR_PRODUCT_ERR(reg);
+#else
+		pfc_init_e3();
+#endif
+		break;
 	default:
 		PRR_PRODUCT_ERR(reg);
 		break;
@@ -160,6 +171,11 @@ void pfc_init(void)
 		PRR_PRODUCT_ERR(reg);
 	}
 	pfc_init_m3n();
+ #elif RCAR_LSI == RCAR_E3	/* E3 */
+	if ((PRR_PRODUCT_E3) != (reg & PRR_PRODUCT_MASK)) {
+		PRR_PRODUCT_ERR(reg);
+	}
+	pfc_init_e3();
  #else
   #error "Don't have PFC initialize routine(unknown)."
  #endif

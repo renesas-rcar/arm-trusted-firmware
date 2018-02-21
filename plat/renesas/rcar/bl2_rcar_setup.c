@@ -24,8 +24,8 @@
 #include "bl2_cpg_init.h"
 #include <debug.h>
 #include <mmio.h>
-#include "ddr/boot_init_dram.h"
-#include "qos/qos_init.h"
+#include "boot_init_dram.h"
+#include "qos_init.h"
 #include "rcar_version.h"
 #include "bl2_swdt.h"
 #include "avs_driver.h"
@@ -118,12 +118,24 @@
 #elif RCAR_LSI == RCAR_M3N
 #define TARGET_PRODUCT		RCAR_PRODUCT_M3N
 #define TARGET_NAME		"R-Car M3N"
+#elif RCAR_LSI == RCAR_E3
+#define TARGET_PRODUCT		RCAR_PRODUCT_E3
+#define TARGET_NAME		"R-Car E3"
 #endif
 
 /* for SuspendToRAM */
-#define	GPIO_BASE	(0xE6050000U)
-#define	GPIO_INDT1	(GPIO_BASE + 0x100CU)
-#define	BIT8		((uint32_t)1U<<8)
+#define	GPIO_BASE		(0xE6050000U)
+#define	GPIO_INDT1		(GPIO_BASE + 0x100CU)
+#define GPIO_INDT6		(GPIO_BASE + 0x540CU)
+
+#if (RCAR_LSI == RCAR_E3)
+#define GPIO_INDT		(GPIO_INDT6)
+#define GPIO_BKUP_TRG		((uint32_t)1U<<13)
+#else  /* (RCAR_LSI == RCAR_E3) */
+#define GPIO_INDT		(GPIO_INDT1)
+#define GPIO_BKUP_TRG		((uint32_t)1U<<8)
+#endif /* (RCAR_LSI == RCAR_E3) */
+
 static uint32_t isDdrBackupMode(void);
 
 /*******************************************************************************
@@ -360,6 +372,7 @@ void bl2_early_platform_setup(meminfo_t *mem_layout)
 	uint32_t lcs;
 	uint32_t modemr;
 	uint32_t modemr_boot_dev;
+	uint32_t modemr_sscg;
 	int32_t ret;
 	uint32_t board_type;
 	uint32_t board_rev;
@@ -371,17 +384,24 @@ void bl2_early_platform_setup(meminfo_t *mem_layout)
 	const char *product_h3      = "H3";
 	const char *product_m3      = "M3";
 	const char *product_m3n     = "M3N";
+	const char *product_e3      = "E3";
 	const char *lcs_cm          = "CM";
 	const char *lcs_dm          = "DM";
 	const char *lcs_sd          = "SD";
 	const char *lcs_secure      = "SE";
 	const char *lcs_fa          = "FA";
+#if RCAR_LSI == RCAR_E3
+	const char *boot_hyper160   = "HyperFlash(150MHz)";
+#else /* RCAR_LSI == RCAR_E3 */
 	const char *boot_hyper160   = "HyperFlash(160MHz)";
+#endif /* RCAR_LSI == RCAR_E3 */
 	const char *boot_hyper80    = "HyperFlash(80MHz)";
 	const char *boot_qspi40     = "QSPI Flash(40MHz)";
 	const char *boot_qspi80     = "QSPI Flash(80MHz)";
 	const char *boot_emmc25x1   = "eMMC(25MHz x1)";
 	const char *boot_emmc50x8   = "eMMC(50MHz x8)";
+	const char *sscg_off        = "PLL1 nonSSCG Clock select";
+	const char *sscg_on         = "PLL1 SSCG Clock select";
 	const char *unknown         = "unknown";
 
 	modemr = mmio_read_32(RCAR_MODEMR);
@@ -445,6 +465,9 @@ void bl2_early_platform_setup(meminfo_t *mem_layout)
 	case RCAR_PRODUCT_M3N:
 		str = product_m3n;
 		break;
+	case RCAR_PRODUCT_E3:
+		str = product_e3;
+		break;
 	default:
 		str = unknown;
 		break;
@@ -454,6 +477,19 @@ void bl2_early_platform_setup(meminfo_t *mem_layout)
 		 + RCAR_MAJOR_OFFSET, (prr_val & RCAR_MINOR_MASK));
 	NOTICE("%s", msg);
 
+	/* R-Car Gen3 PLL1 clock select display (E3 only) */
+	reg = mmio_read_32(RCAR_PRR);
+	if ((reg & RCAR_PRODUCT_MASK) == RCAR_PRODUCT_E3) {
+		modemr_sscg = mmio_read_32(RCAR_MODEMR);
+		if ((modemr_sscg & RCAR_SSCG_MASK) == RCAR_SSCG_ENABLE) {
+			str = sscg_on;
+		} else {
+			str = sscg_off;
+		}
+		(void)sprintf(msg, "BL2: %s\n", str);
+		NOTICE("%s", msg);
+	}
+
 	/* Board ID detection */
 	(void)get_board_type(&board_type, &board_rev);
 	
@@ -462,6 +498,7 @@ void bl2_early_platform_setup(meminfo_t *mem_layout)
 	case BOARD_KRIEK:
 	case BOARD_STARTER_KIT:
 	case BOARD_SALVATOR_XS:
+	case BOARD_EBISU:
 	case BOARD_STARTER_KIT_PRE:
 		/* Do nothing. */
 		break;
@@ -678,7 +715,7 @@ static uint32_t isDdrBackupMode(void)
 	if (backupTriggerOnce == 1U) {
 		backupTriggerOnce = 0U;
 		/* Read and return BKUP_TRG(IO port B8, GPIO GP-1-8) */
-		if ((mmio_read_32((uintptr_t)GPIO_INDT1) & BIT8) != 0U) {
+		if ((mmio_read_32((uintptr_t)GPIO_INDT) & GPIO_BKUP_TRG) != 0U) {
 			backupTrigger = 1U;
 		}
 	}
@@ -751,6 +788,15 @@ void bl2_plat_flush_bl31_params(void)
 			mmio_write_32(IPMMUDS1_IMSCTLR, IMSCTLR_DISCACHE);
 		} else if ((val == (RCAR_PRODUCT_M3N | RCAR_CUT_ES10)) ||
 			   (val == (RCAR_PRODUCT_M3N | RCAR_CUT_ES11))) {
+			/* Disable TLB function in each IPMMU cache */
+			mmio_write_32(IPMMUVI0_IMSCTLR, IMSCTLR_DISCACHE);
+			mmio_write_32(IPMMUPV0_IMSCTLR, IMSCTLR_DISCACHE);
+			mmio_write_32(IPMMUHC_IMSCTLR, IMSCTLR_DISCACHE);
+			mmio_write_32(IPMMURT_IMSCTLR, IMSCTLR_DISCACHE);
+			mmio_write_32(IPMMUMP_IMSCTLR, IMSCTLR_DISCACHE);
+			mmio_write_32(IPMMUDS0_IMSCTLR, IMSCTLR_DISCACHE);
+			mmio_write_32(IPMMUDS1_IMSCTLR, IMSCTLR_DISCACHE);
+		} else if (val == (RCAR_PRODUCT_E3 | RCAR_CUT_ES10)) {
 			/* Disable TLB function in each IPMMU cache */
 			mmio_write_32(IPMMUVI0_IMSCTLR, IMSCTLR_DISCACHE);
 			mmio_write_32(IPMMUPV0_IMSCTLR, IMSCTLR_DISCACHE);
@@ -901,6 +947,9 @@ void bl2_plat_get_bl33_meminfo(meminfo_t *bl33_meminfo)
 
 void bl2_init_generic_timer(void)
 {
+#if RCAR_LSI == RCAR_E3
+	uint32_t reg_cntfid = EXTAL_EBISU;
+#else /* RCAR_LSI == RCAR_E3 */
 	uint32_t reg;
 	uint32_t modemr;
 	uint32_t modemr_pll;
@@ -935,6 +984,7 @@ void bl2_init_generic_timer(void)
 		/* none */
 		break;
 	}
+#endif /* RCAR_LSI == RCAR_E3 */
 	/* Update memory mapped and register based freqency */
 	write_cntfrq_el0((u_register_t )reg_cntfid);
 	mmio_write_32(ARM_SYS_CNTCTL_BASE + (uintptr_t)CNTFID_OFF, reg_cntfid);

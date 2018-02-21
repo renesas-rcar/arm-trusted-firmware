@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2017, Renesas Electronics Corporation. All rights reserved.
+ * Copyright (c) 2015-2018, Renesas Electronics Corporation. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -13,7 +13,11 @@
  * Defines
  ************************************************************************/
 #ifndef BOARD_DEFAULT
+#if (RCAR_LSI == RCAR_E3)
+#define BOARD_DEFAULT		(BOARD_EBISU << BOARD_CODE_SHIFT)
+#else  /* (RCAR_LSI == RCAR_E3) */
 #define BOARD_DEFAULT		(BOARD_SALVATOR_X << BOARD_CODE_SHIFT)
+#endif /* (RCAR_LSI == RCAR_E3) */
 #endif
 
 #define SLAVE_ADDR_EEPROM	(0x50U)
@@ -34,6 +38,7 @@ const char *g_board_tbl[] = {
 	[BOARD_KRIEK]		= "Kriek",
 	[BOARD_STARTER_KIT]	= "Starter Kit",
 	[BOARD_SALVATOR_XS]	= "Salvator-XS",
+	[BOARD_EBISU]		= "Ebisu",
 	[BOARD_STARTER_KIT_PRE]	= "Starter Kit",
 	[BOARD_UNKNOWN]		= "unknown"
 };
@@ -52,6 +57,8 @@ int32_t get_board_type(uint32_t *type, uint32_t *rev)
 		[BOARD_STARTER_KIT]	= {0x10U, 0xFFU, 0xFFU, 0xFFU,
 					   0xFFU, 0xFFU, 0xFFU, 0xFFU},
 		[BOARD_SALVATOR_XS]	= {0x10U, 0xFFU, 0xFFU, 0xFFU,
+					   0xFFU, 0xFFU, 0xFFU, 0xFFU},
+		[BOARD_EBISU]		= {0x10U, 0xFFU, 0xFFU, 0xFFU,
 					   0xFFU, 0xFFU, 0xFFU, 0xFFU},
 		[BOARD_STARTER_KIT_PRE]	= {0x10U, 0x10U, 0xFFU, 0xFFU,
 					   0xFFU, 0xFFU, 0xFFU, 0xFFU},

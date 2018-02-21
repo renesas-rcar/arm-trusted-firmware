@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2017, Renesas Electronics Corporation. All rights reserved.
+ * Copyright (c) 2015-2018, Renesas Electronics Corporation. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -16,6 +16,18 @@
 /* ************************ HEADER (INCLUDE) SECTION *********************** */
 
 /* ***************** MACROS, CONSTANTS, COMPILATION FLAGS ****************** */
+
+/* MMC channel select */
+#define MMC_CH0		(0U)		/* SDHI2/MMC0 */
+#define MMC_CH1		(1U)		/* SDHI3/MMC1 */
+
+#if RCAR_LSI == RCAR_E3
+#define USE_MMC_CH	(MMC_CH1)	/* R-Car E3 */
+#else  /* RCAR_LSI == RCAR_E3 */
+#define USE_MMC_CH	(MMC_CH0)	/* R-Car H3/M3/M3N */
+#endif /* RCAR_LSI == RCAR_E3 */
+
+
 #define		BIT0	(0x00000001U)
 #define		BIT1	(0x00000002U)
 #define		BIT2	(0x00000004U)
@@ -49,28 +61,25 @@
 #define		BIT30	(0x40000000U)
 #define		BIT31	(0x80000000U)
 
-/** @brief LIFEC0 (SECURITY) registers
- */
-#define	LIFEC_SEC_BASE	(0xE6110000U)
-/* Security group 0 attribute setting for master ports 3 */
-#define	SEC_GRP0CR3	(LIFEC_SEC_BASE + 0x0150U)
-/* Security group 1 attribute setting for master ports 3 */
-#define	SEC_GRP1CR3	(LIFEC_SEC_BASE + 0x0154U)
-
 
 /** @brief Clock Pulse Generator (CPG) registers
  */
 #define	CPG_BASE		(0xE6150000U)
 
-#define	CPG_MSTPSR3		(CPG_BASE+0x0048U)	// Module stop status register 3
-#define	CPG_MSTPSR7		(CPG_BASE+0x01C4U)	// Module stop status register 7
+#define	CPG_MSTPSR3		(CPG_BASE+0x0048U)	/* Module stop status register 3 */
 
-#define	CPG_SMSTPCR3		(CPG_BASE+0x013CU)	// System module stop control register 3
-#define	CPG_SMSTPCR7		(CPG_BASE+0x014CU)	// System module stop control register 7
+#define	CPG_SMSTPCR3		(CPG_BASE+0x013CU)	/* System module stop control register 3 */
 
-#define	CPG_SD2CKCR		(CPG_BASE+0x0268U)	// SDHI2 clock frequency control register
+#define	CPG_SD2CKCR		(CPG_BASE+0x0268U)	/* SDHI2 clock frequency control register */
+#define CPG_SD3CKCR		(CPG_BASE+0x026CU)	/* SDHI3 clock frequency control register */
 
-#define	CPG_CPGWPR		(CPG_BASE+0x0900U)	// CPG Write Protect Register
+#define	CPG_CPGWPR		(CPG_BASE+0x0900U)	/* CPG Write Protect Register */
+
+#if USE_MMC_CH == MMC_CH0
+#define	CPG_SDxCKCR		(CPG_SD2CKCR)		/* SDHI2/MMC0 */
+#else  /* USE_MMC_CH == MMC_CH0 */
+#define	CPG_SDxCKCR		(CPG_SD3CKCR)		/* SDHI3/MMC1 */
+#endif /* USE_MMC_CH == MMC_CH0 */
 
 
 /** Boot Status register
@@ -80,48 +89,56 @@
 #define  MFISBTSTSR_BOOT_PARTITION	(0x00000010U)
 
 
-/** brief eMMC(SDHI2/MMC0) registers
+/** brief eMMC registers
  */
 #define	MMC0_SD_BASE		(0xEE140000U)
-#define SD_CMD			(MMC0_SD_BASE + 0x0000U)
-#define SD_PORTSEL		(MMC0_SD_BASE + 0x0008U)
-#define SD_ARG			(MMC0_SD_BASE + 0x0010U)
-#define SD_ARG1			(MMC0_SD_BASE + 0x0018U)
-#define SD_STOP			(MMC0_SD_BASE + 0x0020U)
-#define SD_SECCNT		(MMC0_SD_BASE + 0x0028U)
-#define SD_RSP10		(MMC0_SD_BASE + 0x0030U)
-#define SD_RSP1			(MMC0_SD_BASE + 0x0038U)
-#define SD_RSP32		(MMC0_SD_BASE + 0x0040U)
-#define SD_RSP3			(MMC0_SD_BASE + 0x0048U)
-#define SD_RSP54		(MMC0_SD_BASE + 0x0050U)
-#define SD_RSP5			(MMC0_SD_BASE + 0x0058U)
-#define SD_RSP76		(MMC0_SD_BASE + 0x0060U)
-#define SD_RSP7			(MMC0_SD_BASE + 0x0068U)
-#define SD_INFO1		(MMC0_SD_BASE + 0x0070U)
-#define SD_INFO2		(MMC0_SD_BASE + 0x0078U)
-#define SD_INFO1_MASK		(MMC0_SD_BASE + 0x0080U)
-#define SD_INFO2_MASK		(MMC0_SD_BASE + 0x0088U)
-#define SD_CLK_CTRL		(MMC0_SD_BASE + 0x0090U)
-#define SD_SIZE			(MMC0_SD_BASE + 0x0098U)
-#define SD_OPTION		(MMC0_SD_BASE + 0x00A0U)
-#define SD_ERR_STS1		(MMC0_SD_BASE + 0x00B0U)
-#define SD_ERR_STS2		(MMC0_SD_BASE + 0x00B8U)
-#define SD_BUF0			(MMC0_SD_BASE + 0x00C0U)
-#define SDIO_MODE		(MMC0_SD_BASE + 0x00D0U)
-#define SDIO_INFO1		(MMC0_SD_BASE + 0x00D8U)
-#define SDIO_INFO1_MASK		(MMC0_SD_BASE + 0x00E0U)
-#define CC_EXT_MODE		(MMC0_SD_BASE + 0x0360U)
-#define SOFT_RST		(MMC0_SD_BASE + 0x0380U)
-#define VERSION			(MMC0_SD_BASE + 0x0388U)
-#define HOST_MODE		(MMC0_SD_BASE + 0x0390U)
-#define DM_CM_DTRAN_MODE	(MMC0_SD_BASE + 0x0820U)
-#define DM_CM_DTRAN_CTRL	(MMC0_SD_BASE + 0x0828U)
-#define DM_CM_RST		(MMC0_SD_BASE + 0x0830U)
-#define DM_CM_INFO1		(MMC0_SD_BASE + 0x0840U)
-#define DM_CM_INFO1_MASK	(MMC0_SD_BASE + 0x0848U)
-#define DM_CM_INFO2		(MMC0_SD_BASE + 0x0850U)
-#define DM_CM_INFO2_MASK	(MMC0_SD_BASE + 0x0858U)
-#define DM_DTRAN_ADDR		(MMC0_SD_BASE + 0x0880U)
+#define MMC1_SD_BASE		(0xEE160000U)
+
+#if USE_MMC_CH == MMC_CH0
+#define	MMC_SD_BASE		(MMC0_SD_BASE)
+#else  /* USE_MMC_CH == MMC_CH0 */
+#define	MMC_SD_BASE		(MMC1_SD_BASE)
+#endif /* USE_MMC_CH == MMC_CH0 */
+
+#define SD_CMD			(MMC_SD_BASE + 0x0000U)
+#define SD_PORTSEL		(MMC_SD_BASE + 0x0008U)
+#define SD_ARG			(MMC_SD_BASE + 0x0010U)
+#define SD_ARG1			(MMC_SD_BASE + 0x0018U)
+#define SD_STOP			(MMC_SD_BASE + 0x0020U)
+#define SD_SECCNT		(MMC_SD_BASE + 0x0028U)
+#define SD_RSP10		(MMC_SD_BASE + 0x0030U)
+#define SD_RSP1			(MMC_SD_BASE + 0x0038U)
+#define SD_RSP32		(MMC_SD_BASE + 0x0040U)
+#define SD_RSP3			(MMC_SD_BASE + 0x0048U)
+#define SD_RSP54		(MMC_SD_BASE + 0x0050U)
+#define SD_RSP5			(MMC_SD_BASE + 0x0058U)
+#define SD_RSP76		(MMC_SD_BASE + 0x0060U)
+#define SD_RSP7			(MMC_SD_BASE + 0x0068U)
+#define SD_INFO1		(MMC_SD_BASE + 0x0070U)
+#define SD_INFO2		(MMC_SD_BASE + 0x0078U)
+#define SD_INFO1_MASK		(MMC_SD_BASE + 0x0080U)
+#define SD_INFO2_MASK		(MMC_SD_BASE + 0x0088U)
+#define SD_CLK_CTRL		(MMC_SD_BASE + 0x0090U)
+#define SD_SIZE			(MMC_SD_BASE + 0x0098U)
+#define SD_OPTION		(MMC_SD_BASE + 0x00A0U)
+#define SD_ERR_STS1		(MMC_SD_BASE + 0x00B0U)
+#define SD_ERR_STS2		(MMC_SD_BASE + 0x00B8U)
+#define SD_BUF0			(MMC_SD_BASE + 0x00C0U)
+#define SDIO_MODE		(MMC_SD_BASE + 0x00D0U)
+#define SDIO_INFO1		(MMC_SD_BASE + 0x00D8U)
+#define SDIO_INFO1_MASK		(MMC_SD_BASE + 0x00E0U)
+#define CC_EXT_MODE		(MMC_SD_BASE + 0x0360U)
+#define SOFT_RST		(MMC_SD_BASE + 0x0380U)
+#define VERSION			(MMC_SD_BASE + 0x0388U)
+#define HOST_MODE		(MMC_SD_BASE + 0x0390U)
+#define DM_CM_DTRAN_MODE	(MMC_SD_BASE + 0x0820U)
+#define DM_CM_DTRAN_CTRL	(MMC_SD_BASE + 0x0828U)
+#define DM_CM_RST		(MMC_SD_BASE + 0x0830U)
+#define DM_CM_INFO1		(MMC_SD_BASE + 0x0840U)
+#define DM_CM_INFO1_MASK	(MMC_SD_BASE + 0x0848U)
+#define DM_CM_INFO2		(MMC_SD_BASE + 0x0850U)
+#define DM_CM_INFO2_MASK	(MMC_SD_BASE + 0x0858U)
+#define DM_DTRAN_ADDR		(MMC_SD_BASE + 0x0880U)
 
 
 
@@ -234,7 +251,11 @@
 
 /** @brief SYSC Registers
  */
-#define CPG_MSTP_MMC		        (0x00001000U)
+#if USE_MMC_CH == MMC_CH0
+#define CPG_MSTP_MMC		(BIT12)			/* SDHI2/MMC0 */
+#else  /* USE_MMC_CH == MMC_CH0 */
+#define CPG_MSTP_MMC		(BIT11)			/* SDHI3/MMC1 */
+#endif /* USE_MMC_CH == MMC_CH0 */
 
 
 /* ********************** STRUCTURES, TYPE DEFINITIONS ********************* */

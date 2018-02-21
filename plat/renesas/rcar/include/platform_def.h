@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2014, ARM Limited and Contributors. All rights reserved.
- * Copyright (c) 2015-2017, Renesas Electronics Corporation. All rights reserved.
+ * Copyright (c) 2015-2018, Renesas Electronics Corporation. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -105,7 +105,11 @@
  */
 #define RCAR_SYSRAM_BASE		U(0xE6300000)
 #define BL2_BASE			U(0xE6304000)
+#if RCAR_LSI == RCAR_E3
+#define BL2_LIMIT			U(0xE6318000)
+#else  /* RCAR_LSI == RCAR_E3 */
 #define BL2_LIMIT			U(0xE632E800)
+#endif /* RCAR_LSI == RCAR_E3 */
 #define RCAR_SYSRAM_SIZE		(BL2_BASE - RCAR_SYSRAM_BASE)
 
 /*******************************************************************************
@@ -154,7 +158,7 @@
 #elif IMAGE_BL2
 # define MAX_XLAT_TABLES		U(5)
 #elif IMAGE_BL31
-# define MAX_XLAT_TABLES		U(4)
+# define MAX_XLAT_TABLES		U(8)
 #elif IMAGE_BL32
 #  define MAX_XLAT_TABLES		U(3)
 #endif

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2017, Renesas Electronics Corporation. All rights reserved.
+ * Copyright (c) 2018, Renesas Electronics Corporation. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -20,13 +20,29 @@
 #define	BIT_BKUP_CTRL_OUT	((uint8_t)(1U << 4))
 #endif /* PMIC_ROHM_BD9571 */
 
-#define GPIO_INDT1		(0xE605100CU)
-#if DRAM_BACKUP_GPIO_USE==1
-#define GPIO_BKUP_REQB_SHIFT	(9U)
 #define	GPIO_OUTDT1		(0xE6051008U)
-#endif
+#define GPIO_INDT1		(0xE605100CU)
+#define GPIO_OUTDT6		(0xE6055408U)
+#define GPIO_INDT6		(0xE605540CU)
+
+#if (RCAR_LSI == RCAR_E3)
+#if DRAM_BACKUP_GPIO_USE == 1
+#define GPIO_BKUP_REQB_SHIFT	(14U)
+#define	GPIO_OUTDT		(GPIO_OUTDT6)
+#endif /* DRAM_BACKUP_GPIO_USE == 1 */
+#define GPIO_BKUP_TRG_SHIFT	(13U)
+#define GPIO_INDT		(GPIO_INDT6)
+#else  /* (RCAR_LSI == RCAR_E3) */
+#if DRAM_BACKUP_GPIO_USE == 1
+#define GPIO_BKUP_REQB_SHIFT	(9U)
+#define	GPIO_OUTDT		(GPIO_OUTDT1)
+#endif /* DRAM_BACKUP_GPIO_USE == 1 */
 #define GPIO_BKUP_TRG_SHIFT	(8U)
+#define GPIO_INDT		(GPIO_INDT1)
+#endif /* (RCAR_LSI == RCAR_E3) */
+
 #define DRAM_BKUP_TRG_LOOP_CNT	(1000U)
+
 #endif /* RCAR_SYSTEM_SUSPEND */
 
 void dram_get_boot_status(uint32_t *status)
@@ -35,7 +51,7 @@ void dram_get_boot_status(uint32_t *status)
 
 	uint32_t reg_data;
 
-	reg_data = mmio_read_32(GPIO_INDT1);
+	reg_data = mmio_read_32(GPIO_INDT);
 	if (0U != (reg_data & ((uint32_t)1U << GPIO_BKUP_TRG_SHIFT))) {
 		*status = DRAM_BOOT_STATUS_WARM;
 	} else {
@@ -61,7 +77,7 @@ int32_t dram_update_boot_status(uint32_t status)
 
 	if (status == DRAM_BOOT_STATUS_WARM) {
 #if DRAM_BACKUP_GPIO_USE==1
-		mmio_setbits_32(GPIO_OUTDT1, ((uint32_t)1U<<GPIO_BKUP_REQB_SHIFT));
+		mmio_setbits_32(GPIO_OUTDT, ((uint32_t)1U<<GPIO_BKUP_REQB_SHIFT));
 #else
 #if PMIC_ROHM_BD9571
 		/* Set BKUP_CRTL_OUT=High (BKUP mode cnt register) */
@@ -85,7 +101,7 @@ int32_t dram_update_boot_status(uint32_t status)
 		/* Wait GP1_8(BKUP_TRG)=Low */
 		loop_count = DRAM_BKUP_TRG_LOOP_CNT;
 		while (0U < loop_count) {
-			reg_data = mmio_read_32(GPIO_INDT1);
+			reg_data = mmio_read_32(GPIO_INDT);
 			if ((reg_data &
 				((uint32_t)1U << GPIO_BKUP_TRG_SHIFT)) == 0U) {
 				break;

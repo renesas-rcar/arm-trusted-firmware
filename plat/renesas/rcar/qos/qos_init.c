@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2017, Renesas Electronics Corporation. All rights reserved.
+ * Copyright (c) 2015-2018, Renesas Electronics Corporation. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -29,6 +29,9 @@
 #if RCAR_LSI == RCAR_M3N	/* M3N */
   #include "M3N/qos_init_m3n_v10.h"
 #endif
+#if RCAR_LSI == RCAR_E3	/* E3 */
+  #include "E3/qos_init_e3_v10.h"
+#endif
 
  /* Product Register */
 #define PRR			(0xFFF00044U)
@@ -37,6 +40,7 @@
 #define PRR_PRODUCT_H3		(0x00004F00U)           /* R-Car H3 */
 #define PRR_PRODUCT_M3		(0x00005200U)           /* R-Car M3 */
 #define PRR_PRODUCT_M3N		(0x00005500U)           /* R-Car M3N */
+#define PRR_PRODUCT_E3		(0x00005700U)           /* R-Car E3 */
 #define PRR_PRODUCT_10		(0x00U)
 #define PRR_PRODUCT_11		(0x01U)
 #define PRR_PRODUCT_20		(0x10U)
@@ -104,6 +108,18 @@ void qos_init(void)
 		PRR_PRODUCT_ERR(reg);
  #endif
 		break;
+	case PRR_PRODUCT_E3:
+ #if (RCAR_LSI == RCAR_E3)
+		switch (reg & PRR_CUT_MASK) {
+		case PRR_PRODUCT_10:
+		default:
+			qos_init_e3_v10();
+			break;
+		}
+ #else
+		PRR_PRODUCT_ERR(reg);
+ #endif
+		break;
 	default:
 		PRR_PRODUCT_ERR(reg);
 		break;
@@ -155,6 +171,13 @@ void qos_init(void)
 		PRR_PRODUCT_ERR(reg);
 	}
 	qos_init_m3n_v10();
+ #elif RCAR_LSI == RCAR_E3	/* E3 */
+	/* E3 Cut 10 or later */
+	if ((PRR_PRODUCT_E3)
+			!= (reg & (PRR_PRODUCT_MASK))) {
+		PRR_PRODUCT_ERR(reg);
+	}
+	qos_init_e3_v10();
  #else
   #error "Don't have QoS initialize routine(Unknown chip)."
  #endif
@@ -200,6 +223,11 @@ uint32_t get_refperiod(void)
 		refperiod = QOSWT_WTSET0_CYCLE_M3N;
 		break;
  #endif
+ #if (RCAR_LSI == RCAR_E3)
+	case PRR_PRODUCT_E3:
+		refperiod = QOSWT_WTSET0_CYCLE_E3;
+		break;
+ #endif
 	default:
 		break;
 	}
@@ -221,6 +249,8 @@ uint32_t get_refperiod(void)
  #endif
 #elif RCAR_LSI == RCAR_M3N	/* for M3N */
 	refperiod = QOSWT_WTSET0_CYCLE_M3N;
+#elif RCAR_LSI == RCAR_E3	/* for E3 */
+	refperiod = QOSWT_WTSET0_CYCLE_E3;
 #endif
 
 	return refperiod;

@@ -1,10 +1,11 @@
 #
-# Copyright (c) 2015-2017, Renesas Electronics Corporation. All rights reserved.
+# Copyright (c) 2015-2018, Renesas Electronics Corporation. All rights reserved.
 #
 # SPDX-License-Identifier: BSD-3-Clause
 #
 
 ifeq (${RCAR_LSI},${RCAR_AUTO})
+#   E3 not available for LSI_AUTO
     BL2_SOURCES += plat/renesas/rcar/qos/H3/qos_init_h3_v10.c
     BL2_SOURCES += plat/renesas/rcar/qos/H3/qos_init_h3_v11.c
     BL2_SOURCES += plat/renesas/rcar/qos/H3/qos_init_h3_v20.c
@@ -23,6 +24,9 @@ else ifdef RCAR_LSI_CUT_COMPAT
   endif
   ifeq (${RCAR_LSI},${RCAR_M3N})
     BL2_SOURCES += plat/renesas/rcar/qos/M3N/qos_init_m3n_v10.c
+  endif
+  ifeq (${RCAR_LSI},${RCAR_E3})
+    BL2_SOURCES += plat/renesas/rcar/qos/E3/qos_init_e3_v10.c
   endif
 else
   ifeq (${RCAR_LSI},${RCAR_H3})
@@ -53,6 +57,14 @@ else
     else
 #    LSI_CUT 10 or later
      BL2_SOURCES += plat/renesas/rcar/qos/M3N/qos_init_m3n_v10.c
+    endif
+  endif
+  ifeq (${RCAR_LSI},${RCAR_E3})
+    ifeq (${LSI_CUT},10)
+     BL2_SOURCES += plat/renesas/rcar/qos/E3/qos_init_e3_v10.c
+    else
+#    LSI_CUT 10 or later
+     BL2_SOURCES += plat/renesas/rcar/qos/E3/qos_init_e3_v10.c
     endif
   endif
 endif

@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2014, ARM Limited and Contributors. All rights reserved.
- * Copyright (c) 2015-2017, Renesas Electronics Corporation. All rights reserved.
+ * Copyright (c) 2015-2018, Renesas Electronics Corporation. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -233,7 +233,7 @@ func platform_is_primary_cpu
 	 * Get MD6 and MD7 of MODEMR, then move MD6 to bit0 and move MD7 to bit1 of x1
 	 */
 	ldr	x1, =RCAR_MODEMR		/* x1 <- address of MODEMR register	*/
-	ldr	x2, [x1]			/* Get the data of MODEMR -> x2		*/
+	ldr	w2, [x1]			/* Get the data of MODEMR -> x2		*/
 	mov	x1, #0x00c0			/* move MD6(0x0040) and MD7(0x0080)	*/
 	and	x1, x2, x1			/* Get MD6 and MD7 information -> x1	*/
 	lsr	x1, x1, #6			/* MD6->bit0, MD7->bit1			*/
@@ -256,6 +256,12 @@ func platform_is_primary_cpu
 	and	x3, x1, x3
 	cmp	x3, #0x0001			/* If starting CPU is CortexA53		*/
 	bne	checkCA57			/*  is not then branch to check CA57	*/
+
+	ldr	x1, =RCAR_PRR
+	ldr	w1, [x1]			/* Read PRR */
+	ubfx	x1, x1, #31, #1			/* Mask PRR.bit31 */
+	cbnz	x1, primary_check		/* If bit31 is 0b1, Cortex-A57 cluster none. */
+
 	cmp	x2, #0x0001			/* If affinity level 1 is CortexA53	*/
 	beq	primary_check			/*  CPU is CortexA53			*/
 	b	platform_is_secondary		/* It is secondary			*/

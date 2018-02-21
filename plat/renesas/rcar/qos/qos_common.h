@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, Renesas Electronics Corporation. All rights reserved.
+ * Copyright (c) 2017-2018, Renesas Electronics Corporation. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -8,6 +8,20 @@
 #define QOS_COMMON_H_
 
 #define RCAR_REF_195			(0U)
+#define RCAR_REF_390			(1U)
+
+#if (RCAR_LSI == RCAR_E3)
+/* define used for E3 */
+#if (RCAR_REF_INT <= RCAR_REF_390)	//REF 3.9usec or REF 1.95
+#define SUB_SLOT_CYCLE_E3		(0xAFU)		//175
+#else					//REF 7.8usec
+#define SUB_SLOT_CYCLE_E3		(0x15EU)	//350
+#endif /* (RCAR_REF_INT <= RCAR_REF_390) */
+
+#define OPERATING_FREQ_E3		(266U)		//MHz
+#define SL_INIT_SSLOTCLK_E3		(SUB_SLOT_CYCLE_E3 -1U)
+#define QOSWT_WTSET0_CYCLE_E3		((SUB_SLOT_CYCLE_E3 * BASE_SUB_SLOT_NUM * 1000U)/OPERATING_FREQ_E3)	//unit:ns
+#endif
 
 #if (RCAR_LSI == RCAR_AUTO) || (RCAR_LSI == RCAR_M3N)
 /* define used for M3N */

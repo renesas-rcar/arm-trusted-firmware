@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2017, Renesas Electronics Corporation. All rights reserved.
+ * Copyright (c) 2015-2018, Renesas Electronics Corporation. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -10,8 +10,10 @@
 
 /* Product Register */
 #define	PRR			(0xFFF00044)
-#define	PRR_PRODUCT_MASK	(0x00007FFF)
+#define PRR_PRODUCT_MASK	(0x00007F00)
+#define PRR_CUT_MASK		(0x000000FF)
 #define	PRR_PRODUCT_H3_ES_1_0	(0x00004F00)	/* R-Car H3 ES1.0 */
+#define	PRR_PRODUCT_E3		(0x00005700)	/* R-Car E3 */
 
 /* module stop */
 #define	CPG_BASE		(0xE6150000)
@@ -35,6 +37,9 @@
 #define	SCIF_DL			(0x30)		/* Frequency division register */
 #define	SCIF_CKS		(0x34)		/* Clock Select register */
 
+/* mode pin */
+#define	RST_MODEMR		(0xE6160060)
+#define	MODEMR_MD12		(0x00001000)	/* MD12 bit mask */
 
 #define	SCSMR_CA_MASK		(1 << 7)
 #define	SCSMR_CA_ASYNC		(0x0000)
@@ -51,6 +56,7 @@
 				SCSMR_CKS_DIV1)
 
 #define	SCBRR_115200BPS		(17)		/* 115200bps@66MHz */
+#define	SCBRR_115200BPS_E3_SSCG	(15)		/* 115200bps@60MHz SSCG */
 #define	SCBRR_230400BPS		(8)		/* 230400bps@66MHz */
 
 #define	SCSCR_TE_MASK		(1 << 5)
@@ -170,10 +176,25 @@ func console_core_init
 #if SCIF_CLK == SCIF_INTERNAL_CLK
 	ldr	x1, =PRR
 	ldr	w1, [x1]
-	and	w1, w1, #PRR_PRODUCT_MASK
+	and	w1, w1, #(PRR_PRODUCT_MASK | PRR_CUT_MASK)
 	mov	w2, #PRR_PRODUCT_H3_ES_1_0
 	cmp	w1, w2
 	beq	3f
+	and	w1, w1, #PRR_PRODUCT_MASK
+	mov	w2, #PRR_PRODUCT_E3
+	cmp	w1, w2
+	bne	4f
+
+	ldr	x1, =RST_MODEMR
+	ldr	w1, [x1]
+	and	w1, w1, #MODEMR_MD12
+	mov	w2, #MODEMR_MD12
+	cmp	w1, w2
+	bne	4f
+
+	mov	w1, #SCBRR_115200BPS_E3_SSCG	/* 115200bps@60MHz SSCG */
+	b	2f
+4:
 	mov	w1, #SCBRR_115200BPS	/* 115200bps */
 	b	2f
 3:

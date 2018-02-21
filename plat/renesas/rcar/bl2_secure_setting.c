@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2017, Renesas Electronics Corporation. All rights reserved.
+ * Copyright (c) 2015-2018, Renesas Electronics Corporation. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -58,11 +58,17 @@ static const struct {
 	/** Security attribute setting for slave ports 6 */
 	/* Bit13: SCEG PKA (secure APB) slave ports. */
 	/*        0: registers can be accessed from secure resource only. */
+	/*        1: Reserved[R-Car E3] */
 	/* Bit12: SCEG PKA (public APB) slave ports. */
 	/*        0: registers can be accessed from secure resource only. */
+	/*        1: Reserved[R-Car E3] */
 	/* Bit10: SCEG Secure Core slave ports. */
 	/*        0: registers can be accessed from secure resource only. */
+#if RCAR_LSI == RCAR_E3
+	{SEC_SEL6,		0xFFFFFBFFU},
+#else /* RCAR_LSI == RCAR_E3 */
 	{SEC_SEL6,		0xFFFFCBFFU},
+#endif /* RCAR_LSI == RCAR_E3 */
 
 	/** Security attribute setting for slave ports 7 */
 	/*	{SEC_SEL7,		0xFFFFFFFFU},*/
@@ -168,12 +174,19 @@ static const struct {
 	/** Security group 1 attribute setting for slave ports 6 */
 	/* Bit13: SCEG PKA (secure APB) slave ports. */
 	/*        SecurityGroup3 */
+	/*        Reserved[R-Car E3] */
 	/* Bit12: SCEG PKA (public APB) slave ports. */
 	/*        SecurityGroup3 */
+	/*        Reserved[R-Car E3] */
 	/* Bit10: SCEG Secure Core slave ports. */
 	/*        SecurityGroup3 */
+#if RCAR_LSI == RCAR_E3
+	{SEC_GRP0COND6,		0x00000400U},
+	{SEC_GRP1COND6,		0x00000400U},
+#else /* RCAR_LSI == RCAR_E3 */
 	{SEC_GRP0COND6,		0x00003400U},
 	{SEC_GRP1COND6,		0x00003400U},
+#endif /* RCAR_LSI == RCAR_E3 */
 
 	/** Security group 0 attribute setting for slave ports 7 */
 	/** Security group 1 attribute setting for slave ports 7 */

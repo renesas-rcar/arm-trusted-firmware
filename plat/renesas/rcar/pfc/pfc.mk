@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2015-2017, Renesas Electronics Corporation. All rights reserved.
+# Copyright (c) 2015-2018, Renesas Electronics Corporation. All rights reserved.
 #
 # SPDX-License-Identifier: BSD-3-Clause
 #
@@ -21,6 +21,9 @@ else ifdef RCAR_LSI_CUT_COMPAT
   ifeq (${RCAR_LSI},${RCAR_M3N})
     BL2_SOURCES += plat/renesas/rcar/pfc/M3N/pfc_init_m3n.c
   endif
+  ifeq (${RCAR_LSI},${RCAR_E3})
+    BL2_SOURCES += plat/renesas/rcar/pfc/E3/pfc_init_e3.c
+  endif
 else
   ifeq (${RCAR_LSI},${RCAR_H3})
     ifeq (${LSI_CUT},10)
@@ -38,6 +41,9 @@ else
   endif
   ifeq (${RCAR_LSI},${RCAR_M3N})
     BL2_SOURCES += plat/renesas/rcar/pfc/M3N/pfc_init_m3n.c
+  endif
+  ifeq (${RCAR_LSI},${RCAR_E3})
+    BL2_SOURCES += plat/renesas/rcar/pfc/E3/pfc_init_e3.c
   endif
 endif
 

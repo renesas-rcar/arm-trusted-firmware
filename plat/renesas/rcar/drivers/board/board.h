@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2017, Renesas Electronics Corporation. All rights reserved.
+ * Copyright (c) 2015-2018, Renesas Electronics Corporation. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -15,6 +15,7 @@
 #define BOARD_KRIEK			(0x01U)
 #define BOARD_STARTER_KIT		(0x02U)
 #define BOARD_SALVATOR_XS		(0x04U)
+#define BOARD_EBISU			(0x08U)
 #define BOARD_STARTER_KIT_PRE		(0x0BU)
 #define BOARD_UNKNOWN			(BOARD_STARTER_KIT_PRE+1U)
 

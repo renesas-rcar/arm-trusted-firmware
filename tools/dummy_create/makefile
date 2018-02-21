@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2015-2017, Renesas Electronics Corporation. All rights reserved.
+# Copyright (c) 2015-2018, Renesas Electronics Corporation. All rights reserved.
 #
 # SPDX-License-Identifier: BSD-3-Clause
 #
@@ -30,6 +30,18 @@ MEMORY_DEF_SA6 = sa6.ld.S
 define add_define
 DEFINES			+=	-D$(1)$(if $(value $(1)),=$(value $(1)),)
 endef
+
+# Process RCAR_SA0_SIZE flag
+ifndef RCAR_SA0_SIZE
+RCAR_SA0_SIZE := 1
+else
+ifeq (${RCAR_SA0_SIZE},0)
+RCAR_SA0_SIZE := 0
+else
+RCAR_SA0_SIZE := 1
+endif
+endif
+$(eval $(call add_define,RCAR_SA0_SIZE))
 
 # Process RCAR_SA6_TYPE flag
 ifndef RCAR_SA6_TYPE

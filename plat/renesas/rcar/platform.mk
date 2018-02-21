@@ -1,6 +1,6 @@
 #
 # Copyright (c) 2013-2014, ARM Limited and Contributors. All rights reserved.
-# Copyright (c) 2015-2017, Renesas Electronics Corporation. All rights reserved.
+# Copyright (c) 2015-2018, Renesas Electronics Corporation. All rights reserved.
 #
 # SPDX-License-Identifier: BSD-3-Clause
 #
@@ -13,7 +13,9 @@ PLAT_INCLUDES		:=	-Iinclude/common/tbbr				\
 				-Iplat/renesas/rcar/drivers/iic_dvfs/		\
 				-Iplat/renesas/rcar/drivers/board/		\
 				-Iplat/renesas/rcar/include			\
-				-Iplat/renesas/rcar
+				-Iplat/renesas/rcar							\
+				-Iplat/renesas/rcar/ddr						\
+				-Iplat/renesas/rcar/qos
 
 PLAT_BL_COMMON_SOURCES	:=	lib/xlat_tables/xlat_tables_common.c		\
 				lib/xlat_tables/aarch64/xlat_tables.c		\
@@ -85,10 +87,12 @@ endif
 RCAR_H3:=0
 RCAR_M3:=1
 RCAR_M3N:=2
+RCAR_E3:=3
 RCAR_AUTO:=99
 $(eval $(call add_define,RCAR_H3))
 $(eval $(call add_define,RCAR_M3))
 $(eval $(call add_define,RCAR_M3N))
+$(eval $(call add_define,RCAR_E3))
 $(eval $(call add_define,RCAR_AUTO))
 RCAR_CUT_10:=0
 RCAR_CUT_11:=1
@@ -139,6 +143,19 @@ else
     endif
   else ifeq (${LSI},M3N)
     RCAR_LSI:=${RCAR_M3N}
+    ifndef LSI_CUT
+      # enable compatible function.
+      RCAR_LSI_CUT_COMPAT := 1
+      $(eval $(call add_define,RCAR_LSI_CUT_COMPAT))
+    else
+      # disable compatible function.
+      ifeq (${LSI_CUT},10)
+        RCAR_LSI_CUT:=0
+      endif
+      $(eval $(call add_define,RCAR_LSI_CUT))
+    endif
+  else ifeq (${LSI},E3)
+    RCAR_LSI:=${RCAR_E3}
     ifndef LSI_CUT
       # enable compatible function.
       RCAR_LSI_CUT_COMPAT := 1

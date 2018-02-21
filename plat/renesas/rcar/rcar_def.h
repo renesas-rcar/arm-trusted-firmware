@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2014, ARM Limited and Contributors. All rights reserved.
- * Copyright (c) 2015-2017, Renesas Electronics Corporation. All rights reserved.
+ * Copyright (c) 2015-2018, Renesas Electronics Corporation. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -34,7 +34,11 @@
 #define DEVICE_RCAR_BASE	U(0xE6000000)
 #define DEVICE_RCAR_SIZE	U(0x00300000)
 
+#if RCAR_LSI == RCAR_E3
+#define DEVICE_RCAR_BASE2	U(0xE6320000)
+#else  /* RCAR_LSI == RCAR_E3 */
 #define DEVICE_RCAR_BASE2	U(0xE6360000)
+#endif /* RCAR_LSI == RCAR_E3 */
 #define DEVICE_RCAR_SIZE2	U(0x19CA0000)
 
 #define DEVICE_SRAM_BASE	U(0xE6310000)
@@ -206,6 +210,7 @@
 #define RCAR_PRODUCT_H3			U(0x00004F00)
 #define RCAR_PRODUCT_M3			U(0x00005200)
 #define RCAR_PRODUCT_M3N		U(0x00005500)
+#define RCAR_PRODUCT_E3			U(0x00005700)
 #define RCAR_CUT_ES10			U(0x00000000)
 #define RCAR_CUT_ES11			U(0x00000001)
 #define RCAR_CUT_ES20			U(0x00000010)
@@ -224,6 +229,8 @@
 #define RCAR_CPU_MASK_CA53		U(0x04000000)
 #define RCAR_CPU_HAVE_CA57		U(0x00000000)
 #define RCAR_CPU_HAVE_CA53		U(0x00000000)
+#define RCAR_SSCG_MASK			U(0x1000)  /* MD12 */
+#define RCAR_SSCG_ENABLE		U(0x1000)
 
 /*******************************************************************************
  *  RCAR MD pin information
@@ -278,5 +285,6 @@
 #define	EXTAL_MD14_MD13_TYPE_2	U(12500000)	/* When MD14=1 MD13=0 */
 #define	EXTAL_MD14_MD13_TYPE_3	U(16666600)	/* When MD14=1 MD13=1 */
 #define	EXTAL_SALVATOR_XS	U(8320000)	/* When board is Salvator-XS */
+#define EXTAL_EBISU		U(24000000)	/* When board is Ebisu */
 
 #endif /* RCAR_DEF_H__ */
