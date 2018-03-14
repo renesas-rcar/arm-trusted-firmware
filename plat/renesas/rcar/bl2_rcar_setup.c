@@ -130,10 +130,10 @@
 
 #if (RCAR_LSI == RCAR_E3)
 #define GPIO_INDT		(GPIO_INDT6)
-#define GPIO_BKUP_TRG		((uint32_t)1U<<13)
+#define GPIO_BKUP_TRG_SHIFT	((uint32_t)1U<<13U)
 #else  /* (RCAR_LSI == RCAR_E3) */
 #define GPIO_INDT		(GPIO_INDT1)
-#define GPIO_BKUP_TRG		((uint32_t)1U<<8)
+#define GPIO_BKUP_TRG_SHIFT	((uint32_t)1U<<8U)
 #endif /* (RCAR_LSI == RCAR_E3) */
 
 static uint32_t isDdrBackupMode(void);
@@ -702,7 +702,7 @@ void bl2_early_platform_setup(meminfo_t *mem_layout)
 
 /*******************************************************************************
  * Get DDR Backup Mode from GPIO
- *  BKUP_TRG(IO port A8, GPIO GP-0-8): LOW=Cold boot, HIGH=Warm boot
+ *  BKUP_TRG: LOW=Cold boot, HIGH=Warm boot
  * return: uint8_t
  *  0: DDR is not backup mode.
  *  1: DDR is backup mode.
@@ -714,8 +714,9 @@ static uint32_t isDdrBackupMode(void)
 	static uint32_t backupTrigger = 0U;
 	if (backupTriggerOnce == 1U) {
 		backupTriggerOnce = 0U;
-		/* Read and return BKUP_TRG(IO port B8, GPIO GP-1-8) */
-		if ((mmio_read_32((uintptr_t)GPIO_INDT) & GPIO_BKUP_TRG) != 0U) {
+		/* Read and return BKUP_TRG */
+		if ((mmio_read_32((uintptr_t)GPIO_INDT) &
+					GPIO_BKUP_TRG_SHIFT) != 0U) {
 			backupTrigger = 1U;
 		}
 	}
@@ -861,7 +862,7 @@ void bl2_plat_arch_setup(void)
 #if RCAR_BL2_DCACHE == 1
 	NOTICE("BL2: D-Cache enable\n");
 	rcar_configure_mmu_el1(BL2_BASE,
-			      (DEVICE_RCAR_BASE2 - BL2_BASE),
+			      (RCAR_SYSRAM_LIMIT - BL2_BASE),
 			      BL2_RO_BASE,
 			      BL2_RO_LIMIT
 #if USE_COHERENT_MEM

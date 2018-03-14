@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2017, Renesas Electronics Corporation. All rights reserved.
+ * Copyright (c) 2015-2018, Renesas Electronics Corporation. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -36,10 +36,10 @@
 #define WTCNT_RESET_VALUE	(0xF488U)
 #define WTCSRA_BIT_CKS		(0x0007U)
 #define WTCSRB_BIT_CKS		(0x003FU)
-#define SWDT_RSTMSK		((uint32_t)1U << 1)
-#define WTCSRA_WOVFE		((uint32_t)1U << 3)
-#define WTCSRA_WRFLG		((uint32_t)1U << 5)
-#define SWDT_ENABLE		((uint32_t)1U << 7)
+#define SWDT_RSTMSK		((uint32_t)1U << 1U)
+#define WTCSRA_WOVFE		((uint32_t)1U << 3U)
+#define WTCSRA_WRFLG		((uint32_t)1U << 5U)
+#define SWDT_ENABLE		((uint32_t)1U << 7U)
 
 #define WDTRSTCR_MASK_ALL	(0x0000FFFFU)
 #define WTCSRA_MASK_ALL		(0x000000FFU)

@@ -62,17 +62,14 @@ void pfc_init(void)
 	switch (reg & RCAR_PRODUCT_MASK) {
 	case RCAR_PRODUCT_H3:
 		switch (reg & PRR_CUT_MASK) {
-		case PRR_PRODUCT_10:
+		case PRR_PRODUCT_10:	/* H3 Ver.1.0 */
 			pfc_init_h3_v1();
 			break;
-		case PRR_PRODUCT_11:
+		case PRR_PRODUCT_11:	/* H3 Ver.1.1 */
 			pfc_init_h3_v1();
 			break;
-		case PRR_PRODUCT_20:
+		default:		/* H3 Ver.2.0 or later */
 			pfc_init_h3_v2();
-			break;
-		default:
-			PRR_CUT_ERR(reg);
 			break;
 		}
 		break;
@@ -94,17 +91,14 @@ void pfc_init(void)
 		PRR_PRODUCT_ERR(reg);
 #else
 		switch (reg & PRR_CUT_MASK) {
-		case PRR_PRODUCT_10:
+		case PRR_PRODUCT_10:	/* H3 Ver.1.0 */
 			pfc_init_h3_v1();
 			break;
-		case PRR_PRODUCT_11:
+		case PRR_PRODUCT_11:	/* H3 Ver.1.1 */
 			pfc_init_h3_v1();
 			break;
-		case PRR_PRODUCT_20:
+		default:		/* H3 Ver.2.0 or later */
 			pfc_init_h3_v2();
-			break;
-		default:
-			PRR_CUT_ERR(reg);
 			break;
 		}
 #endif
@@ -138,28 +132,25 @@ void pfc_init(void)
 #else
  #if RCAR_LSI == RCAR_H3	/* H3 */
   #if RCAR_LSI_CUT == RCAR_CUT_10
-	/* H3 Cut 10 */
+	/* H3 Ver.1.0 */
 	if ((PRR_PRODUCT_H3 | PRR_PRODUCT_10)
 			!= (reg & (PRR_PRODUCT_MASK | PRR_CUT_MASK))) {
 		PRR_PRODUCT_ERR(reg);
 	}
 	pfc_init_h3_v1();
   #elif RCAR_LSI_CUT == RCAR_CUT_11
-	/* H3 Cut 11 */
+	/* H3 Ver.1.1 */
 	if ((PRR_PRODUCT_H3 | PRR_PRODUCT_11)
 			!= (reg & (PRR_PRODUCT_MASK | PRR_CUT_MASK))) {
 		PRR_PRODUCT_ERR(reg);
 	}
 	pfc_init_h3_v1();
-  #elif RCAR_LSI_CUT == RCAR_CUT_20
-	/* H3 Cut 20 */
-	if ((PRR_PRODUCT_H3 | PRR_PRODUCT_20)
-			!= (reg & (PRR_PRODUCT_MASK | PRR_CUT_MASK))) {
+  #else
+	/* H3 Ver.2.0 or later */
+	if (PRR_PRODUCT_H3 != (reg & PRR_PRODUCT_MASK)) {
 		PRR_PRODUCT_ERR(reg);
 	}
 	pfc_init_h3_v2();
-  #else
-   #error "Don't have PFC initialize routine(H3)."
   #endif
  #elif RCAR_LSI == RCAR_M3	/* M3 */
 	if ((PRR_PRODUCT_M3) != (reg & PRR_PRODUCT_MASK)) {

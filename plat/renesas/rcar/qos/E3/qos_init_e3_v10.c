@@ -10,7 +10,7 @@
 #include "../qos_reg.h"
 #include "qos_init_e3_v10.h"
 
-#define	RCAR_QOS_VERSION		"rev.0.01"
+#define	RCAR_QOS_VERSION		"rev.0.02"
 
 #define QOSCTRL_EARLYR			(QOS_BASE1 + 0x0060U)
 #define QOSCTRL_FSS			(QOS_BASE1 + 0x0048U)
@@ -19,7 +19,7 @@
 
 #if RCAR_QOS_TYPE  == RCAR_QOS_TYPE_DEFAULT
 
-#if RCAR_REF_INT <= RCAR_REF_390
+#if RCAR_REF_INT == RCAR_REF_DEFAULT
 #include "qos_init_e3_v10_mstat390.h"
 #else
 #include "qos_init_e3_v10_mstat780.h"
@@ -100,7 +100,7 @@ void qos_init_e3_v10(void)
 	NOTICE("BL2: QoS is default setting(%s)\n", RCAR_QOS_VERSION);
 #endif
 
-#if RCAR_REF_INT <= RCAR_REF_390
+#if RCAR_REF_INT == RCAR_REF_DEFAULT
 	NOTICE("BL2: DRAM refresh interval 3.9 usec\n");
 #else
 	NOTICE("BL2: DRAM refresh interval 7.8 usec\n");

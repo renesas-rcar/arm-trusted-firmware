@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Renesas Electronics Corporation. All rights reserved.
+ * Copyright (c) 2015-2018, Renesas Electronics Corporation. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -11,13 +11,14 @@
 #if RCAR_SYSTEM_SUSPEND
 /* Local defines */
 #define DRAM_BACKUP_GPIO_USE	(0)
-#if DRAM_BACKUP_GPIO_USE==0
 #include "iic_dvfs.h"
-#endif
 #if PMIC_ROHM_BD9571
 #define	PMIC_SLAVE_ADDR		(0x30U)
 #define	PMIC_BKUP_MODE_CNT	(0x20U)
-#define	BIT_BKUP_CTRL_OUT	((uint8_t)(1U << 4))
+#define	PMIC_QLLM_CNT		(0x27U)
+#define	BIT_BKUP_CTRL_OUT	((uint8_t)(1U << 4U))
+#define	BIT_QLLM_DDR0_EN	((uint8_t)(1U << 0U))
+#define	BIT_QLLM_DDR1_EN	((uint8_t)(1U << 1U))
 #endif /* PMIC_ROHM_BD9571 */
 
 #define	GPIO_OUTDT1		(0xE6051008U)
@@ -67,12 +68,13 @@ int32_t dram_update_boot_status(uint32_t status)
 	int32_t ret = 0;
 #if RCAR_SYSTEM_SUSPEND
 	uint32_t reg_data;
-#if DRAM_BACKUP_GPIO_USE==0
 #if PMIC_ROHM_BD9571
+#if DRAM_BACKUP_GPIO_USE==0
 	uint8_t bkup_mode_cnt = 0U;
+#endif
+	uint8_t qllm_cnt = 0U;
 	int32_t i2c_dvfs_ret = -1;
 #endif /* PMIC_ROHM_BD9571 */
-#endif
 	uint32_t loop_count;
 
 	if (status == DRAM_BOOT_STATUS_WARM) {
@@ -98,7 +100,7 @@ int32_t dram_update_boot_status(uint32_t status)
 		}
 #endif /* PMIC_ROHM_BD9571 */
 #endif /* DRAM_BACKUP_GPIO_USE==1 */
-		/* Wait GP1_8(BKUP_TRG)=Low */
+		/* Wait BKUP_TRG=Low */
 		loop_count = DRAM_BKUP_TRG_LOOP_CNT;
 		while (0U < loop_count) {
 			reg_data = mmio_read_32(GPIO_INDT);
@@ -110,13 +112,25 @@ int32_t dram_update_boot_status(uint32_t status)
 		}
 		if (0U == loop_count) {
 			ERROR(	"\nWarm booting...\n" \
-				" The potential of GP-1-8 did not switch " \
+				" The potential of BKUP_TRG did not switch " \
 				"to Low.\n If you expect the operation of " \
 				"cold boot,\n check the board configuration" \
 				" (ex, Dip-SW) and/or the H/W failure.\n");
 			ret = DRAM_UPDATE_STATUS_ERR;
 		}
 	}
+#if PMIC_ROHM_BD9571
+	if(0 == ret) {
+		qllm_cnt = (BIT_QLLM_DDR0_EN | BIT_QLLM_DDR1_EN);
+		i2c_dvfs_ret = rcar_iic_dvfs_send(PMIC_SLAVE_ADDR,
+				PMIC_QLLM_CNT, qllm_cnt);
+		if (0 != i2c_dvfs_ret) {
+			ERROR("QLLM cnt WRITE ERROR. "
+				"value = %d\n", qllm_cnt);
+			ret = DRAM_UPDATE_STATUS_ERR;
+		}
+	}
+#endif /* PMIC_ROHM_BD9571 */
 #endif /* RCAR_SYSTEM_SUSPEND */
 	return ret;
 }

@@ -218,7 +218,7 @@ static EMMC_ERROR_CODE emmc_dev_init(void)
 
 	/* Power on eMMC */
 	dataL = mmio_read_32(CPG_SMSTPCR3);
-	if ((dataL) & (CPG_MSTP_MMC)) {
+	if ((dataL & CPG_MSTP_MMC) != 0U) {
 		dataL &= ~((uint32_t)(CPG_MSTP_MMC));
 		mmio_write_32(CPG_CPGWPR, (~dataL));
 		mmio_write_32(CPG_SMSTPCR3, dataL);

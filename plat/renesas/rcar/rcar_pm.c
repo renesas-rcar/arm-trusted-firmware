@@ -30,7 +30,6 @@ static void rcar_cluster_pwrdwn_common(void);
 static void __dead2 rcar_system_off(void);
 static void __dead2 rcar_system_reset(void);
 static int32_t cpu_on_check(uint64_t mpidr) __unused;
-extern int32_t platform_is_primary_cpu(uint64_t mpidr);
 extern void cpld_reset_cpu(void);
 
 #define	RCAR_GENERIC_TIMER_STACK	(0x300)
@@ -344,13 +343,13 @@ static void __dead2 rcar_system_off(void)
 #endif
 #else /* PMIC_ROHM_BD9571 */
 	uint64_t my_cpu;
-	int32_t rtn_primary;
+	uint32_t boot_mpidr_ret;
 	int32_t rtn_on;
 
 	my_cpu = read_mpidr_el1();
-	rtn_primary = platform_is_primary_cpu(my_cpu);
+	boot_mpidr_ret = bl31_plat_boot_mpidr_chk();
 	rtn_on = cpu_on_check(my_cpu);
-	if ((rtn_primary != 0) && (rtn_on == 0)) {
+	if ((RCAR_MPIDRCHK_BOOTCPU == boot_mpidr_ret) && (rtn_on == 0)) {
 		rcar_pwrc_cpuoff(my_cpu);
 		rcar_pwrc_clusteroff(my_cpu);
 	} else {

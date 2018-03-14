@@ -42,8 +42,15 @@ static void bl2_secure_cpg_init(void)
 	cpg_write(SCMSTPCR0,	0xFFFFFFFFU);
 	/* Secure Module Stop Control Register 1 */
 	cpg_write(SCMSTPCR1,	0xFFFFFFFFU);
+
+#if (RCAR_LSI == RCAR_E3)
+	/* Secure Module Stop Control Register 2 */
+	cpg_write(SCMSTPCR2,	0xEFFFFFFFU);
+#else /* RCAR_LSI == RCAR_E3 */
 	/* Secure Module Stop Control Register 2 */
 	cpg_write(SCMSTPCR2,	0xEBFFFFFFU);
+#endif /* RCAR_LSI == RCAR_E3 */
+
 	/* Secure Module Stop Control Register 3 */
 	cpg_write(SCMSTPCR3,	0xFFFFFFFFU);
 	/* Secure Module Stop Control Register 4 */
@@ -66,8 +73,15 @@ static void bl2_secure_cpg_init(void)
 	cpg_write(SCSRSTECR0,	0x00000000U);
 	/* Secure Software Reset Access Enable Control Register 1 */
 	cpg_write(SCSRSTECR1,	0x00000000U);
+
+#if (RCAR_LSI == RCAR_E3)
+	/* Secure Software Reset Access Enable Control Register 2 */
+	cpg_write(SCSRSTECR2,	0x10000000U);
+#else /* RCAR_LSI == RCAR_E3 */
 	/* Secure Software Reset Access Enable Control Register 2 */
 	cpg_write(SCSRSTECR2,	0x14000000U);
+#endif /* RCAR_LSI == RCAR_E3 */
+
 	/* Secure Software Reset Access Enable Control Register 3 */
 	cpg_write(SCSRSTECR3,	0x00000000U);
 	/* Secure Software Reset Access Enable Control Register 4 */
@@ -298,7 +312,7 @@ static void bl2_realtime_cpg_init_e3(void)
 	/* Realtime Module Stop Control Register 1 */
 	cpg_write(RMSTPCR1,	0xFFFFFFFFU);
 	/* Realtime Module Stop Control Register 2 */
-	cpg_write(RMSTPCR2,	0x300E0FDCU);
+	cpg_write(RMSTPCR2,	0x000E0FDCU);
 	/* Realtime Module Stop Control Register 3 */
 	cpg_write(RMSTPCR3,	0xFFFFFFDFU);
 	/* Realtime Module Stop Control Register 4 */
@@ -328,7 +342,7 @@ static void bl2_system_cpg_init_e3(void)
 	/* System Module Stop Control Register 1 */
 	cpg_write(SMSTPCR1,	0xFFFFFFFFU);
 	/* System Module Stop Control Register 2 */
-	cpg_write(SMSTPCR2,	0x300E2FDCU);
+	cpg_write(SMSTPCR2,	0x000E2FDCU);
 	/* System Module Stop Control Register 3 */
 	cpg_write(SMSTPCR3,	0xFFFFFBDFU);
 	/* System Module Stop Control Register 4 */

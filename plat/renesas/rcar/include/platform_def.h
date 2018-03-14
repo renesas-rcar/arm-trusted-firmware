@@ -104,6 +104,12 @@
  * size plus a little space for growth.
  */
 #define RCAR_SYSRAM_BASE		U(0xE6300000)
+#if RCAR_LSI == RCAR_E3
+#define RCAR_SYSRAM_LIMIT		U(0xE6320000)
+#else  /* RCAR_LSI == RCAR_E3 */
+#define RCAR_SYSRAM_LIMIT		U(0xE6360000)
+#endif /* RCAR_LSI == RCAR_E3 */
+
 #define BL2_BASE			U(0xE6304000)
 #if RCAR_LSI == RCAR_E3
 #define BL2_LIMIT			U(0xE6318000)
@@ -158,7 +164,7 @@
 #elif IMAGE_BL2
 # define MAX_XLAT_TABLES		U(5)
 #elif IMAGE_BL31
-# define MAX_XLAT_TABLES		U(8)
+# define MAX_XLAT_TABLES		U(4)
 #elif IMAGE_BL32
 #  define MAX_XLAT_TABLES		U(3)
 #endif

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, Renesas Electronics Corporation. All rights reserved.
+ * Copyright (c) 2017-2018, Renesas Electronics Corporation. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -36,7 +36,7 @@
 
 #if RCAR_QOS_TYPE  == RCAR_QOS_TYPE_DEFAULT
 
-#if RCAR_REF_INT == RCAR_REF_195
+#if RCAR_REF_INT == RCAR_REF_DEFAULT
 #include "qos_init_m3_v11_mstat195.h"
 #else
 #include "qos_init_m3_v11_mstat390.h"
@@ -44,7 +44,7 @@
 
 #if RCAR_REWT_TRAINING != RCAR_REWT_TRAINING_DISABLE
 
-#if RCAR_REF_INT == RCAR_REF_195
+#if RCAR_REF_INT == RCAR_REF_DEFAULT
 #include "qos_init_m3_v11_qoswt195.h"
 #else
 #include "qos_init_m3_v11_qoswt390.h"
@@ -148,7 +148,7 @@ void qos_init_m3_v11(void)
 	NOTICE("BL2: QoS is default setting(%s)\n", RCAR_QOS_VERSION);
 #endif
 
-#if RCAR_REF_INT == RCAR_REF_195
+#if RCAR_REF_INT == RCAR_REF_DEFAULT
 	NOTICE("BL2: DRAM refresh interval 1.95 usec\n");
 #else
 	NOTICE("BL2: DRAM refresh interval 3.9 usec\n");

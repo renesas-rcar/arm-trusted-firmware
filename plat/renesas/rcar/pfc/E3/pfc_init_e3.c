@@ -733,7 +733,6 @@ void pfc_init_e3(void)
 	pfc_reg_write(PFC_GPSR5, GPSR5_SSI_SDATA9
 		               | GPSR5_MSIOF0_SS2
 			       | GPSR5_MSIOF0_SS1
-			       | GPSR5_MSIOF0_SYNC
 			       | GPSR5_RX2_A
 			       | GPSR5_TX2_A
 			       | GPSR5_SCK2_A

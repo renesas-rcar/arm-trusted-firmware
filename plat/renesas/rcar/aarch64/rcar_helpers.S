@@ -215,75 +215,11 @@ rep_exec_end:
 	ret
 endfunc plat_report_exception
 
-	/*
-	 *	Starting CPU is ...
-	 *		MD7=1 and MD6=1 of MODEMR	: CortexR7
-	 *		MD7=1 and MD6=0 of MODEMR	: Reserved
-	 *		MD7=0 and MD6=1 of MODEMR	: CortexA53
-	 *		MD7=0 and MD6=0 of MODEMR	: CortexA57
-	 *
-	 *	Information of MPIDR_EL1
-	 *		affinity level 1(bit15-8) = 1	: CortexA53
-	 *		affinity level 1(bit15-8) = 0	: CortexA57
-	 *
-	 */
 
 func platform_is_primary_cpu
-	/*
-	 * Get MD6 and MD7 of MODEMR, then move MD6 to bit0 and move MD7 to bit1 of x1
-	 */
-	ldr	x1, =RCAR_MODEMR		/* x1 <- address of MODEMR register	*/
-	ldr	w2, [x1]			/* Get the data of MODEMR -> x2		*/
-	mov	x1, #0x00c0			/* move MD6(0x0040) and MD7(0x0080)	*/
-	and	x1, x2, x1			/* Get MD6 and MD7 information -> x1	*/
-	lsr	x1, x1, #6			/* MD6->bit0, MD7->bit1			*/
-	/*
-	 * Get data of affinity level 1 of MPIDR_EL1, then move data to bit7-0 of x2
-	 */
-	mov	x2, #MPIDR_CLUSTER_MASK		/* MPIDR_CLUSTER_MASK=0xFF00 -> x2	*/
-	and	x2, x0, x2			/* Get the affinity level 1 -> x2	*/
-	lsr	x2, x2, #MPIDR_AFFINITY_BITS	/* affinity level 1 -> bit7-0 of x2	*/
-	/*
-	 * Check the starting CPU by MD7
-	 */
-	mov	x3, #0x0002			/* for test the MD7			*/
-	and	x3, x1, x3			/* MD7 information -> x3(0 or not)	*/
-	cbnz	x3, primary_check		/* Starting CPU is CortexR7		*/
-	/*
-	 * CA53 check
-	 */
-	mov	x3, #0x0003			/* MD6 and MD7				*/
-	and	x3, x1, x3
-	cmp	x3, #0x0001			/* If starting CPU is CortexA53		*/
-	bne	checkCA57			/*  is not then branch to check CA57	*/
-
-	ldr	x1, =RCAR_PRR
-	ldr	w1, [x1]			/* Read PRR */
-	ubfx	x1, x1, #31, #1			/* Mask PRR.bit31 */
-	cbnz	x1, primary_check		/* If bit31 is 0b1, Cortex-A57 cluster none. */
-
-	cmp	x2, #0x0001			/* If affinity level 1 is CortexA53	*/
-	beq	primary_check			/*  CPU is CortexA53			*/
-	b	platform_is_secondary		/* It is secondary			*/
-	/*
-	 * CA57 check
-	 */
-checkCA57:
-	cmp	x3, #0x0000			/* If starting CPU is CortexA57		*/
-	bne	platform_is_secondary
-	cmp	x2, #0x0000			/* If affinity level 1 is CortexA57	*/
-	beq	primary_check			/*  CPU is CortexA57			*/
-	/*
-	 * This CPU is secondary
-	 */
-platform_is_secondary:
-	mov	x0, #0				/* This cpu is secondary		*/
-	b	primary_check_exit		/* return				*/
-primary_check:
 	and	x0, x0, # MPIDR_CPU_MASK	/* Get the bit7-0 of MPIDR_EL1 -> x0	*/
 	cmp	x0, #RCAR_PRIMARY_CPU		/* x0 = 0 (primary CPU)?		*/
 	cset	x0, eq				/* If x0 is 0 carry bit set		*/
-primary_check_exit:
 	ret
 endfunc platform_is_primary_cpu
 

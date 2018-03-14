@@ -71,7 +71,8 @@ BL31_SOURCES		+=	${RCAR_GIC_SOURCES}				\
 				plat/renesas/rcar/aarch64/rcar_common.c		\
 				plat/renesas/rcar/drivers/pwrc/rcar_call_sram.S	\
 				plat/renesas/rcar/drivers/pwrc/rcar_pwrc.c	\
-				plat/renesas/rcar/drivers/cpld/ulcb_cpld.c
+				plat/renesas/rcar/drivers/cpld/ulcb_cpld.c	\
+				plat/renesas/rcar/drivers/wait/micro_wait.S
 
 # compile option setting
 ARM_CCI_PRODUCT_ID	:= 500
@@ -97,6 +98,7 @@ $(eval $(call add_define,RCAR_AUTO))
 RCAR_CUT_10:=0
 RCAR_CUT_11:=1
 RCAR_CUT_20:=10
+RCAR_CUT_30:=20
 $(eval $(call add_define,RCAR_CUT_10))
 $(eval $(call add_define,RCAR_CUT_11))
 $(eval $(call add_define,RCAR_CUT_20))
@@ -116,12 +118,14 @@ else
       # disable compatible function.
       ifeq (${LSI_CUT},10)
         RCAR_LSI_CUT:=0
-      endif
-      ifeq (${LSI_CUT},11)
+      else ifeq (${LSI_CUT},11)
         RCAR_LSI_CUT:=1
-      endif
-      ifeq (${LSI_CUT},20)
+      else ifeq (${LSI_CUT},20)
         RCAR_LSI_CUT:=10
+      else ifeq (${LSI_CUT},30)
+        RCAR_LSI_CUT:=20
+      else
+        $(error "Error: ${LSI_CUT} is not supported.")
       endif
       $(eval $(call add_define,RCAR_LSI_CUT))
     endif
@@ -135,9 +139,10 @@ else
       # disable compatible function.
       ifeq (${LSI_CUT},10)
         RCAR_LSI_CUT:=0
-      endif
-      ifeq (${LSI_CUT},11)
+      else ifeq (${LSI_CUT},11)
         RCAR_LSI_CUT:=1
+      else
+        $(error "Error: ${LSI_CUT} is not supported.")
       endif
       $(eval $(call add_define,RCAR_LSI_CUT))
     endif
@@ -151,6 +156,10 @@ else
       # disable compatible function.
       ifeq (${LSI_CUT},10)
         RCAR_LSI_CUT:=0
+      else ifeq (${LSI_CUT},11)
+        RCAR_LSI_CUT:=1
+      else
+        $(error "Error: ${LSI_CUT} is not supported.")
       endif
       $(eval $(call add_define,RCAR_LSI_CUT))
     endif
@@ -164,6 +173,8 @@ else
       # disable compatible function.
       ifeq (${LSI_CUT},10)
         RCAR_LSI_CUT:=0
+      else
+        $(error "Error: ${LSI_CUT} is not supported.")
       endif
       $(eval $(call add_define,RCAR_LSI_CUT))
     endif
@@ -265,6 +276,12 @@ ifeq (${RCAR_SYSTEM_SUSPEND},1)
     $(error "Error: When you want RCAR_SYSTEM_SUSPEND to be enable, please also set PMIC_ROHM_BD9571 to enable.")
   endif
 endif
+
+# Process RCAR_DRAM_DDR3L_MEMCONF flag
+ifndef RCAR_DRAM_DDR3L_MEMCONF
+RCAR_DRAM_DDR3L_MEMCONF :=1
+endif
+$(eval $(call add_define,RCAR_DRAM_DDR3L_MEMCONF))
 
 # Process RCAR_BL33_ARG0 flag
 ifdef RCAR_BL33_ARG0

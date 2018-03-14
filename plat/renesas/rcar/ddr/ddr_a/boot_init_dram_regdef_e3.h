@@ -33,6 +33,8 @@
  * Revision history
  *
  * rev.0.01    2018/01/12    New
+ * rev.0.02    2018/02/27    add define DBSC_E3_DBCAM0CTRL0
+ * rev.0.03    2018/03/09    delete define DBSC_E3_DBCAM0CTRL0
  */
 
 #ifndef BOOT_INIT_DRAM_REGDEF_E3_H_
@@ -135,6 +137,9 @@ extern "C" {
 #define				CPG_CPGWPCR                0xE6150904U
 #define				CPG_SRSTCLR4               0xE6150950U
 
+/* MODE Monitor registers */
+
+#define				RST_MODEMR                 0xE6160060U
 
 #ifdef __cplusplus
 }

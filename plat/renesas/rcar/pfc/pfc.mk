@@ -28,11 +28,10 @@ else
   ifeq (${RCAR_LSI},${RCAR_H3})
     ifeq (${LSI_CUT},10)
       BL2_SOURCES += plat/renesas/rcar/pfc/H3/pfc_init_h3_v1.c
-    endif
-    ifeq (${LSI_CUT},11)
+    else ifeq (${LSI_CUT},11)
       BL2_SOURCES += plat/renesas/rcar/pfc/H3/pfc_init_h3_v1.c
-    endif
-    ifeq (${LSI_CUT},20)
+    else
+#     LSI_CUT 20 or later
       BL2_SOURCES += plat/renesas/rcar/pfc/H3/pfc_init_h3_v2.c
     endif
   endif

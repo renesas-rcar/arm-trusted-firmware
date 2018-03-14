@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2017, Renesas Electronics Corporation. All rights reserved.
+ * Copyright (c) 2015-2018, Renesas Electronics Corporation. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -16,11 +16,13 @@
 #define IIC_DVFS_SET_ICCL_EXTAL_TYPE_1	(0x09U)
 #define IIC_DVFS_SET_ICCL_EXTAL_TYPE_2	(0x0BU)
 #define IIC_DVFS_SET_ICCL_EXTAL_TYPE_3	(0x0EU)
+#define IIC_DVFS_SET_ICCL_EXTAL_TYPE_E	(0x15U)
 
 #define IIC_DVFS_SET_ICCH_EXTAL_TYPE_0	(0x01U)
 #define IIC_DVFS_SET_ICCH_EXTAL_TYPE_1	(0x02U)
 #define IIC_DVFS_SET_ICCH_EXTAL_TYPE_2	(0x03U)
 #define IIC_DVFS_SET_ICCH_EXTAL_TYPE_3	(0x05U)
+#define IIC_DVFS_SET_ICCH_EXTAL_TYPE_E	(0x07U)
 
 #define CPG_BIT_SMSTPCR9_DVFS		(0x04000000U)
 
@@ -305,35 +307,45 @@ static int32_t
 	uint32_t reg;
 	uint8_t mode;
 	int32_t result;
+	uint32_t lsi_product;
 
 	result = DVFS_PROCESS;
+
+	lsi_product = (mmio_read_32((uintptr_t)RCAR_PRR) & RCAR_PRODUCT_MASK);
+
 	/* Set ICCR.ICE */
 	mode = mmio_read_8(IIC_DVFS_REG_ICCR)
 				| ((uint8_t)(IIC_DVFS_BIT_ICCR_ENABLE));
 	mmio_write_8(IIC_DVFS_REG_ICCR, mode);
+
 	/* Set clock */
-	reg = mmio_read_32(RCAR_MODEMR) & CHECK_MD13_MD14;
-	switch (reg) {
-	case MD14_MD13_TYPE_0:
-		mmio_write_8(IIC_DVFS_REG_ICCL, IIC_DVFS_SET_ICCL_EXTAL_TYPE_0);
-		mmio_write_8(IIC_DVFS_REG_ICCH, IIC_DVFS_SET_ICCH_EXTAL_TYPE_0);
-		break;
-	case MD14_MD13_TYPE_1:
-		mmio_write_8(IIC_DVFS_REG_ICCL, IIC_DVFS_SET_ICCL_EXTAL_TYPE_1);
-		mmio_write_8(IIC_DVFS_REG_ICCH, IIC_DVFS_SET_ICCH_EXTAL_TYPE_1);
-		break;
-	case MD14_MD13_TYPE_2:
-		mmio_write_8(IIC_DVFS_REG_ICCL, IIC_DVFS_SET_ICCL_EXTAL_TYPE_2);
-		mmio_write_8(IIC_DVFS_REG_ICCH, IIC_DVFS_SET_ICCH_EXTAL_TYPE_2);
-		break;
-	case MD14_MD13_TYPE_3:
-		mmio_write_8(IIC_DVFS_REG_ICCL, IIC_DVFS_SET_ICCL_EXTAL_TYPE_3);
-		mmio_write_8(IIC_DVFS_REG_ICCH, IIC_DVFS_SET_ICCH_EXTAL_TYPE_3);
-		break;
-	default:
-		mmio_write_8(IIC_DVFS_REG_ICCL, IIC_DVFS_SET_ICCL_EXTAL_TYPE_3);
-		mmio_write_8(IIC_DVFS_REG_ICCH, IIC_DVFS_SET_ICCH_EXTAL_TYPE_3);
-		break;
+	if (lsi_product == RCAR_PRODUCT_E3) {
+		mmio_write_8(IIC_DVFS_REG_ICCL, IIC_DVFS_SET_ICCL_EXTAL_TYPE_E);
+		mmio_write_8(IIC_DVFS_REG_ICCH, IIC_DVFS_SET_ICCH_EXTAL_TYPE_E);
+	} else {	
+		reg = mmio_read_32(RCAR_MODEMR) & CHECK_MD13_MD14;
+		switch (reg) {
+		case MD14_MD13_TYPE_0:
+			mmio_write_8(IIC_DVFS_REG_ICCL, IIC_DVFS_SET_ICCL_EXTAL_TYPE_0);
+			mmio_write_8(IIC_DVFS_REG_ICCH, IIC_DVFS_SET_ICCH_EXTAL_TYPE_0);
+			break;
+		case MD14_MD13_TYPE_1:
+			mmio_write_8(IIC_DVFS_REG_ICCL, IIC_DVFS_SET_ICCL_EXTAL_TYPE_1);
+			mmio_write_8(IIC_DVFS_REG_ICCH, IIC_DVFS_SET_ICCH_EXTAL_TYPE_1);
+			break;
+		case MD14_MD13_TYPE_2:
+			mmio_write_8(IIC_DVFS_REG_ICCL, IIC_DVFS_SET_ICCL_EXTAL_TYPE_2);
+			mmio_write_8(IIC_DVFS_REG_ICCH, IIC_DVFS_SET_ICCH_EXTAL_TYPE_2);
+			break;
+		case MD14_MD13_TYPE_3:
+			mmio_write_8(IIC_DVFS_REG_ICCL, IIC_DVFS_SET_ICCL_EXTAL_TYPE_3);
+			mmio_write_8(IIC_DVFS_REG_ICCH, IIC_DVFS_SET_ICCH_EXTAL_TYPE_3);
+			break;
+		default:
+			mmio_write_8(IIC_DVFS_REG_ICCL, IIC_DVFS_SET_ICCL_EXTAL_TYPE_3);
+			mmio_write_8(IIC_DVFS_REG_ICCH, IIC_DVFS_SET_ICCH_EXTAL_TYPE_3);
+			break;
+		}
 	}
 	/* Set ICIC.TACKE, ICIC.WAITE and ICIC.DTEE */
 	mode = mmio_read_8(IIC_DVFS_REG_ICIC)

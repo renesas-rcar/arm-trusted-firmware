@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2017, ARM Limited and Contributors. All rights reserved.
- * Copyright (c) 2015-2017, Renesas Electronics Corporation. All rights reserved.
+ * Copyright (c) 2015-2018, Renesas Electronics Corporation. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -17,7 +17,7 @@ ENTRY(bl2_entrypoint)
 
 MEMORY {
 #if PLAT_rcar
-    RAM (rwx): ORIGIN = BL2_BASE, LENGTH = DEVICE_RCAR_BASE2 - BL2_BASE
+    RAM (rwx): ORIGIN = BL2_BASE, LENGTH = RCAR_SYSRAM_LIMIT - BL2_BASE
 #else
     RAM (rwx): ORIGIN = BL2_BASE, LENGTH = BL2_LIMIT - BL2_BASE
 #endif

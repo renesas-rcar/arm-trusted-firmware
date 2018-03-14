@@ -7,16 +7,15 @@
 #ifndef QOS_COMMON_H_
 #define QOS_COMMON_H_
 
-#define RCAR_REF_195			(0U)
-#define RCAR_REF_390			(1U)
+#define RCAR_REF_DEFAULT		(0U)
 
 #if (RCAR_LSI == RCAR_E3)
 /* define used for E3 */
-#if (RCAR_REF_INT <= RCAR_REF_390)	//REF 3.9usec or REF 1.95
+#if (RCAR_REF_INT == RCAR_REF_DEFAULT)	//REF 3.9usec
 #define SUB_SLOT_CYCLE_E3		(0xAFU)		//175
 #else					//REF 7.8usec
 #define SUB_SLOT_CYCLE_E3		(0x15EU)	//350
-#endif /* (RCAR_REF_INT <= RCAR_REF_390) */
+#endif /* (RCAR_REF_INT == RCAR_REF_DEFAULT) */
 
 #define OPERATING_FREQ_E3		(266U)		//MHz
 #define SL_INIT_SSLOTCLK_E3		(SUB_SLOT_CYCLE_E3 -1U)
@@ -25,11 +24,11 @@
 
 #if (RCAR_LSI == RCAR_AUTO) || (RCAR_LSI == RCAR_M3N)
 /* define used for M3N */
-#if (RCAR_REF_INT == RCAR_REF_195)	//REF 1.95usec
+#if (RCAR_REF_INT == RCAR_REF_DEFAULT)	//REF 1.95usec
 #define SUB_SLOT_CYCLE_M3N		(0x84U)		//132
 #else					//REF 3.9usec
 #define SUB_SLOT_CYCLE_M3N		(0x108U)	//264
-#endif /* (RCAR_REF_INT == RCAR_REF_195) */
+#endif /* (RCAR_REF_INT == RCAR_REF_DEFAULT) */
 
 #define SL_INIT_SSLOTCLK_M3N		(SUB_SLOT_CYCLE_M3N -1U)
 #define QOSWT_WTSET0_CYCLE_M3N		((SUB_SLOT_CYCLE_M3N * BASE_SUB_SLOT_NUM * 1000U)/OPERATING_FREQ)	//unit:ns
@@ -37,11 +36,11 @@
 
 #if (RCAR_LSI == RCAR_AUTO) || (RCAR_LSI == RCAR_H3)
 /* define used for H3 */
-#if (RCAR_REF_INT == RCAR_REF_195)	//REF 1.95usec
+#if (RCAR_REF_INT == RCAR_REF_DEFAULT)	//REF 1.95usec
 #define SUB_SLOT_CYCLE_H3_20		(0x84U)		//132
 #else					//REF 3.9usec
 #define SUB_SLOT_CYCLE_H3_20		(0x108U)	//264
-#endif /* (RCAR_REF_INT == RCAR_REF_195) */
+#endif /* (RCAR_REF_INT == RCAR_REF_DEFAULT) */
 
 #define SL_INIT_SSLOTCLK_H3_20		(SUB_SLOT_CYCLE_H3_20 -1U)
 #define QOSWT_WTSET0_CYCLE_H3_20	((SUB_SLOT_CYCLE_H3_20 * BASE_SUB_SLOT_NUM * 1000U)/OPERATING_FREQ)	//unit:ns
@@ -49,11 +48,11 @@
 
 #if (RCAR_LSI == RCAR_AUTO) || (RCAR_LSI == RCAR_M3)
 /* define used for M3 */
-#if (RCAR_REF_INT == RCAR_REF_195)	//REF 1.95usec
+#if (RCAR_REF_INT == RCAR_REF_DEFAULT)	//REF 1.95usec
 #define SUB_SLOT_CYCLE_M3_11		(0x84U)		//132
 #else					//REF 3.9usec
 #define SUB_SLOT_CYCLE_M3_11		(0x108U)	//264
-#endif /* (RCAR_REF_INT == RCAR_REF_195) */
+#endif /* (RCAR_REF_INT == RCAR_REF_DEFAULT) */
 
 #define SL_INIT_SSLOTCLK_M3_11		(SUB_SLOT_CYCLE_M3_11 -1U)
 #define QOSWT_WTSET0_CYCLE_M3_11	((SUB_SLOT_CYCLE_M3_11 * BASE_SUB_SLOT_NUM * 1000U)/OPERATING_FREQ)	//unit:ns
