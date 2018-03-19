@@ -20,7 +20,7 @@ PLAT_INCLUDES		:=	-Iinclude/common/tbbr				\
 PLAT_BL_COMMON_SOURCES	:=	lib/xlat_tables/xlat_tables_common.c		\
 				lib/xlat_tables/aarch64/xlat_tables.c		\
 				plat/renesas/rcar/drivers/iic_dvfs/iic_dvfs.c
-				
+
 
 RCAR_GIC_SOURCES	:=	drivers/arm/gic/common/gic_common.c	\
 				drivers/arm/gic/v2/gicv2_main.c		\
