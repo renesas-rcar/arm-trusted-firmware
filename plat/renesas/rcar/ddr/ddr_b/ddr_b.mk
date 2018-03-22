@@ -5,3 +5,4 @@
 #
 
 BL2_SOURCES += plat/renesas/rcar/ddr/ddr_b/boot_init_dram.c
+#BL2_SOURCES += plat/renesas/rcar/ddr/ddr_b/dram_sub_func.c

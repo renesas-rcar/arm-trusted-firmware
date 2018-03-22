@@ -44,6 +44,12 @@
 
 #define SL_INIT_SSLOTCLK_H3_20		(SUB_SLOT_CYCLE_H3_20 -1U)
 #define QOSWT_WTSET0_CYCLE_H3_20	((SUB_SLOT_CYCLE_H3_20 * BASE_SUB_SLOT_NUM * 1000U)/OPERATING_FREQ)	//unit:ns
+
+/* define used for H3 Cut 30 */
+#define SUB_SLOT_CYCLE_H3_30		(SUB_SLOT_CYCLE_H3_20)  /* same as H3 Cut 20 */
+#define SL_INIT_SSLOTCLK_H3_30		(SUB_SLOT_CYCLE_H3_30 -1U)
+#define QOSWT_WTSET0_CYCLE_H3_30	((SUB_SLOT_CYCLE_H3_30 * BASE_SUB_SLOT_NUM * 1000U)/OPERATING_FREQ)	//unit:ns
+
 #endif
 
 #if (RCAR_LSI == RCAR_AUTO) || (RCAR_LSI == RCAR_M3)
@@ -89,5 +95,8 @@ typedef struct {
 	uintptr_t addr;
 	uint64_t value;
 } mstat_slot_t;
+
+extern uint32_t qos_init_ddr_ch;
+extern uint8_t qos_init_ddr_phyvalid;
 
 #endif /* QOS_COMMON_H_ */

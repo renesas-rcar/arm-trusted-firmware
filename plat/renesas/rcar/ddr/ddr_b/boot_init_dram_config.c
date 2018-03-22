@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2017, Renesas Electronics Corporation. All rights reserved.
+ * Copyright (c) 2015-2018, Renesas Electronics Corporation. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -8,7 +8,7 @@
  *	NUMBER OF BOARD CONFIGRATION
  *	PLEASE DEFINE
  ******************************************************************************/
-#define BOARDNUM 15
+#define BOARDNUM 16
 /*******************************************************************************
  *	PLEASE SET board number or board judge function
  ******************************************************************************/
@@ -47,8 +47,8 @@ struct _boardcnf_ch {
 	/*SoC dm -> MEM dqY/dm:  (8 means DM)*/
 	uint8_t dm_swap[SLICE_CNT];
 	/* write traing pattern
- 	* (DM,DQ7,....DQ0) x BL16
- 	*/
+	* (DM,DQ7,....DQ0) x BL16
+	*/
 	uint16_t wdqlvl_patt[16];
 	/* delay adjustment is ps*/
 	int8_t cacs_adj[10];
@@ -57,6 +57,7 @@ struct _boardcnf_ch {
 	int8_t dm_adj_r[SLICE_CNT];
 	int8_t dq_adj_r[SLICE_CNT*8];
 };
+
 struct _boardcnf {
 	/* ch in use */
 	uint8_t phyvalid;
@@ -586,7 +587,7 @@ static const struct _boardcnf boardcnfs[BOARDNUM] = {
 	}
 },
 /*
- * boardcnf[7] RENESAS SALVATOR-X board with H3SIP_ver2.0-1rank
+ * boardcnf[7] RENESAS SALVATOR-X board with H3SIP_ver2.0/3.0-8Gbit/1rank
  */
 {
 	0x0f,		/* phyvalid */
@@ -679,10 +680,15 @@ static const struct _boardcnf boardcnfs[BOARDNUM] = {
 	}
 },
 /*
- * boardcnf[8] RENESAS SALVATOR-X board with H3SIP_ver2.0-2rank
+ * boardcnf[8] RENESAS SALVATOR-X board with H3SIP_ver2.0/3.0-8Gbit2rank
  */
 {
+//RCAR_DRAM_SPLIT_2CH		(2U)
+#if RCAR_DRAM_SPLIT == 2
+	0x05,		/* phyvalid */
+#else//RCAR_DRAM_SPLIT != 2
 	0x0f,		/* phyvalid */
+#endif//RCAR_DRAM_SPLIT
 	0x01,		/* dbi_en */
 	0x300,		/* cacs_dly */
 	0,		/* cacs_dly_adj */
@@ -709,6 +715,28 @@ static const struct _boardcnf boardcnfs[BOARDNUM] = {
 			  0, 0, 0, 0, 0, 0, 0, 0,
 			  0, 0, 0, 0, 0, 0, 0, 0 }
 		},
+#if RCAR_DRAM_SPLIT == 2
+/*ch[1]*/	{	// copy from ch[2] (for DRAM_SPLIT_2CH)
+/*ddr_density[]*/	{ 0x02, 0x02 },
+/*ca_swap*/		0x00543210,
+/*dqs_swap*/		0x2301,
+/*dq_swap[]*/		{ 0x01327654 , 0x02316457 , 0x10234567 , 0x01325467 },
+/*dm_swap[]*/		{ 0x08, 0x08, 0x08, 0x08 },
+/*wdqlvl_patt[]*/	WDQLVL_PAT,
+/*cacs_adj*/		{ 0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0 },
+/*dm_adj_w*/		{ 0, 0, 0, 0 },
+/*dqdm_adj_w*/		{ 0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0 },
+/*dm_adj_r*/		{ 0, 0, 0, 0 },
+/*dqdm_adj_r*/		{ 0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0 }
+		},
+#else//RCAR_DRAM_SPLIT != 2
 /*ch[1]*/	{
 /*ddr_density[]*/	{ 0x02, 0x02 },
 /*ca_swap*/		0x00105432,
@@ -729,6 +757,7 @@ static const struct _boardcnf boardcnfs[BOARDNUM] = {
 			  0, 0, 0, 0, 0, 0, 0, 0,
 			  0, 0, 0, 0, 0, 0, 0, 0 }
 		},
+#endif//RCAR_DRAM_SPLIT
 /*ch[2]*/	{
 /*ddr_density[]*/	{ 0x02, 0x02 },
 /*ca_swap*/		0x00543210,
@@ -772,7 +801,7 @@ static const struct _boardcnf boardcnfs[BOARDNUM] = {
 	}
 },
 /*
- * boardcnf[9] RENESAS SALVATOR-MS(1rank) board with H3SoC_VER2.0
+ * boardcnf[9] RENESAS SALVATOR-MS(1rank) board with H3SoC_VER2.0/3.0
  */
 {
 	0x0f,		/* phyvalid */
@@ -880,7 +909,6 @@ static const struct _boardcnf boardcnfs[BOARDNUM] = {
 	{
 /*ch[0]*/	{
 /*ddr_density[]*/	{ 0x02, 0x02 },
-/*ddr_density[]*///	{ 0x02, 0xff },
 /*ca_swap*/		0x00345201,
 /*dqs_swap*/		0x3201,
 /*dq_swap[]*/		{ 0x01672543, 0x45361207, 0x45632107, 0x60715234 },
@@ -946,6 +974,7 @@ static const struct _boardcnf boardcnfs[BOARDNUM] = {
 	0x0a0,		/* dqdm_dly_r */
 	{
 /*ch[0]*/	{
+/*ddr_density[]*///	{ 0x00, 0x00 },
 /*ddr_density[]*/	{ 0x02, 0x02 },
 /*ca_swap*/		0x00501342 ,
 /*dqs_swap*/		0x3201 ,
@@ -1059,6 +1088,222 @@ static const struct _boardcnf boardcnfs[BOARDNUM] = {
 			  0, 0, 0, 0, 0, 0, 0, 0 }
 		}
 	}
+},
+/*
+ * boardcnf[14] RENESAS SALVATOR-X board with H3SIP_ver2.0/3.0-16Gbit-1rank
+ */
+{
+//RCAR_DRAM_SPLIT_2CH		(2U)
+#if RCAR_DRAM_SPLIT == 2
+	0x05,		/* phyvalid */
+#else
+	0x0f,		/* phyvalid */
+#endif
+	0x01,		/* dbi_en */
+	0x300,		/* cacs_dly */
+	0,		/* cacs_dly_adj */
+	0x300,		/* dqdm_dly_w */
+	0x0a0,		/* dqdm_dly_r */
+	{
+/*ch[0]*/	{
+/*ddr_density[]*/	{ 0x04, 0xff },
+/*ca_swap*/		0x00543210,
+/*dqs_swap*/		0x2310,
+/*dq_swap[]*/		{ 0x70631425 , 0x34527016 , 0x43527610 , 0x32104567 },
+/*dm_swap[]*/		{ 0x08, 0x08, 0x08, 0x08 },
+/*wdqlvl_patt[]*/	WDQLVL_PAT,
+/*cacs_adj*/		{ 0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0 },
+/*dm_adj_w*/		{ 0, 0, 0, 0 },
+/*dqdm_adj_w*/		{ 0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0 },
+/*dm_adj_r*/		{ 0, 0, 0, 0 },
+/*dqdm_adj_r*/		{ 0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0 }
+		},
+#if RCAR_DRAM_SPLIT == 2
+/*ch[1]*/	{	// copy from ch[2] (for DRAM_SPLIT_2CH)
+/*ddr_density[]*/	{ 0x04, 0xff },
+/*ca_swap*/		0x00543210,
+/*dqs_swap*/		0x2301,
+/*dq_swap[]*/		{ 0x01327654 , 0x02316457 , 0x10234567 , 0x01325467 },
+/*dm_swap[]*/		{ 0x08, 0x08, 0x08, 0x08 },
+/*wdqlvl_patt[]*/	WDQLVL_PAT,
+/*cacs_adj*/		{ 0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0 },
+/*dm_adj_w*/		{ 0, 0, 0, 0 },
+/*dqdm_adj_w*/		{ 0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0 },
+/*dm_adj_r*/		{ 0, 0, 0, 0 },
+/*dqdm_adj_r*/		{ 0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0 }
+		},
+#else
+/*ch[1]*/	{
+/*ddr_density[]*/	{ 0x04, 0xff },
+/*ca_swap*/		0x00105432,
+/*dqs_swap*/		0x3210,
+/*dq_swap[]*/		{ 0x43256107 , 0x07162354 , 0x10234567 , 0x01235467 },
+/*dm_swap[]*/		{ 0x08, 0x08, 0x08, 0x08 },
+/*wdqlvl_patt[]*/	WDQLVL_PAT,
+/*cacs_adj*/		{ 0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0 },
+/*dm_adj_w*/		{ 0, 0, 0, 0 },
+/*dqdm_adj_w*/		{ 0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0 },
+/*dm_adj_r*/		{ 0, 0, 0, 0 },
+/*dqdm_adj_r*/		{ 0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0 }
+		},
+#endif
+/*ch[2]*/	{
+/*ddr_density[]*/	{ 0x04, 0xff },
+/*ca_swap*/		0x00543210,
+/*dqs_swap*/		0x2301,
+/*dq_swap[]*/		{ 0x01327654 , 0x02316457 , 0x10234567 , 0x01325467 },
+/*dm_swap[]*/		{ 0x08, 0x08, 0x08, 0x08 },
+/*wdqlvl_patt[]*/	WDQLVL_PAT,
+/*cacs_adj*/		{ 0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0 },
+/*dm_adj_w*/		{ 0, 0, 0, 0 },
+/*dqdm_adj_w*/		{ 0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0 },
+/*dm_adj_r*/		{ 0, 0, 0, 0 },
+/*dqdm_adj_r*/		{ 0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0 }
+		},
+/*ch[3]*/	{
+/*ddr_density[]*/	{ 0x04, 0xff },
+/*ca_swap*/		0x00543210,
+/*dqs_swap*/		0x2301,
+/*dq_swap[]*/		{ 0x12034765 , 0x23105467 , 0x23017645 , 0x32106745 },
+/*dm_swap[]*/		{ 0x08, 0x08, 0x08, 0x08 },
+/*wdqlvl_patt[]*/	WDQLVL_PAT,
+/*cacs_adj*/		{ 0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0 },
+/*dm_adj_w*/		{ 0, 0, 0, 0 },
+/*dqdm_adj_w*/		{ 0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0 },
+/*dm_adj_r*/		{ 0, 0, 0, 0 },
+/*dqdm_adj_r*/		{ 0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0 }
+		}
+	}
+},
+/*
+ * boardcnf[15] RENESAS KRIEK board with H3N
+ */
+{
+	0x05,		/* phyvalid */
+	0x01,		/* dbi_en */
+	0x300,		/* cacs_dly */
+	0,		/* cacs_dly_adj */
+	0x300,		/* dqdm_dly_w */
+	0x0a0,		/* dqdm_dly_r */
+	{
+/*ch[0]*/	{
+/*ddr_density[]*/	{ 0x02, 0x02 },
+/*ca_swap*/		0x00345201,
+/*dqs_swap*/		0x3201,
+/*dq_swap[]*/	//	{ 0x01672543, 0x45361207, 0x45632107, 0x60715234 },
+/*dq_swap[]*/	//	{ 0x01672543, 0x45360721, 0x45632107, 0x60715234 },
+/*dq_swap[]*/		{ 0x01672543, 0x45367012, 0x45632107, 0x60715234 },
+/*dm_swap[]*/		{ 0x08, 0x08, 0x08, 0x08 },
+/*wdqlvl_patt[]*/	WDQLVL_PAT,
+/*cacs_adj*/		{ 0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0 },
+/*dm_adj_w*/		{ 0, 0, 0, 0 },
+/*dqdm_adj_w*/		{ 0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0 },
+/*dm_adj_r*/		{ 0, 0, 0, 0 },
+/*dqdm_adj_r*/		{ 0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0 }
+		},
+/*ch[1]*/	{	// for DRAM_SPLIT_2CH
+/*ddr_density[]*/	{ 0x02, 0x02 },
+/*ca_swap*/		0x00302154,
+/*dqs_swap*/		0x2310,
+/*dq_swap[]*/		{ 0x01672543, 0x45361207, 0x45632107, 0x60715234 },
+/*dm_swap[]*/		{ 0x08, 0x08, 0x08, 0x08 },
+/*wdqlvl_patt[]*/	WDQLVL_PAT,
+/*cacs_adj*/		{ 0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0 },
+/*dm_adj_w*/		{ 0, 0, 0, 0 },
+/*dqdm_adj_w*/		{ 0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0 },
+/*dm_adj_r*/		{ 0, 0, 0, 0 },
+/*dqdm_adj_r*/		{ 0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0 }
+		},
+/*ch[2]*/	{	// for DRAM_SPLIT_NON
+/*ddr_density[]*/	{ 0x02, 0x02 },
+/*ca_swap*/		0x00302154,
+/*dqs_swap*/		0x2310,
+/*dq_swap[]*/		{ 0x01672543, 0x45361207, 0x45632107, 0x60715234 },
+/*dm_swap[]*/		{ 0x08, 0x08, 0x08, 0x08 },
+/*wdqlvl_patt[]*/	WDQLVL_PAT,
+/*cacs_adj*/		{ 0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0 },
+/*dm_adj_w*/		{ 0, 0, 0, 0 },
+/*dqdm_adj_w*/		{ 0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0 },
+/*dm_adj_r*/		{ 0, 0, 0, 0 },
+/*dqdm_adj_r*/		{ 0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0 }
+		},
+/*ch[3]*/	{ // Dummy
+/*ddr_density[]*/	{ 0xff, 0xff },
+/*ca_swap*/		0,
+/*dqs_swap*/		0,
+/*dq_swap[]*/		{ 0, 0, 0, 0 },
+/*dm_swap[]*/		{ 0, 0, 0, 0 },
+/*wdqlvl_patt[]*/	WDQLVL_PAT,
+/*cacs_adj*/		{ 0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0 },
+/*dm_adj_w*/		{ 0, 0, 0, 0 },
+/*dqdm_adj_w*/		{ 0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0 },
+/*dm_adj_r*/		{ 0, 0, 0, 0 },
+/*dqdm_adj_r*/		{ 0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0 }
+		}
+	}
 }
 };
 /*******************************************************************************
@@ -1069,21 +1314,26 @@ static const struct _boardcnf boardcnfs[BOARDNUM] = {
  * RENESAS SALVATOR/KRIEK BOARD EXAMPLE
  * judge by md14/md13
  *
- * 16.66MHz CLK,DIV=50,3  (md14,md13==0,0)
- * 20.00MHz CLK,DIV=60,3  (md14,md13==0,1)
- * 25.00MHz CLK,DIV=75,3  (md14,md13==1,0)
- * 16.66MHz CLK,DIV=50,3  (md14,md13==1,1) // for H3ver1.0
+ * 16.66MHz CLK,DIV= 50,3  (md14,md13==0,0)
+ * 20.00MHz CLK,DIV= 60,3  (md14,md13==0,1)
+ * 25.00MHz CLK,DIV= 75,3  (md14,md13==1,0)
+ * 16.66MHz CLK,DIV= 50,3  (md14,md13==1,1) // only for H3ver1.0
+ * 33.33MHz CLK,DIV=100,3  (md14,md13==1,1)
 */
 void boardcnf_get_brd_clk(uint32_t brd, uint32_t *clk, uint32_t *div) {
 	uint32_t md;
-	md = (mmio_read_32(RST_MODEMR)>>13)&0x3;
-	switch(md){
-		case 0x0 : *clk = 50; *div = 3; break;
-		case 0x1 : *clk = 60; *div = 3; break;
-		case 0x2 : *clk = 75; *div = 3; break;
-//		case 0x3 : *clk =100; *div = 3; break;
-		case 0x3 : *clk = 50; *div = 3; break; /* for H3ver1.0 */
+
+	if((Prr_Product == PRR_PRODUCT_H3) & (Prr_Cut == PRR_PRODUCT_10)) {
+		*clk = 50; *div = 3;
+	} else {
+		md = (mmio_read_32(RST_MODEMR)>>13)&0x3;
+		switch(md){
+			case 0x0 : *clk = 50; *div = 3; break;
+			case 0x1 : *clk = 60; *div = 3; break;
+			case 0x2 : *clk = 75; *div = 3; break;
+			case 0x3 : *clk =100; *div = 3; break;
 	}
+		}
 	(void)brd;
 }
 
@@ -1138,7 +1388,7 @@ static const uint32_t TermcodeBySample[20][3]= {
 	{	M3_SAMPLE_SS_E24,		0x00015996	},
 	{	M3_SAMPLE_SS_E28,		0x000159D7	},
 	{	M3_SAMPLE_SS_E32,		0x00015997	},
-	{	0xFFFFFFFF,	0xFFFFFFFF, 0x0001554F	}
+	{	0xFFFFFFFF,	0xFFFFFFFF,	0x0001554F	}
 };
 #ifdef BOARD_JUDGE_AUTO
 /*******************************************************************************
@@ -1237,23 +1487,27 @@ static uint32_t opencheck_SSI_WS6(void)
 		return 1;
 	}
 }
+
 #endif //(RCAR_GEN3_ULCB==0)
 
 static uint32_t _board_judge(void) {
 	uint32_t brd;
 #if (RCAR_GEN3_ULCB==1)
 	/* Starter Kit */
-	if(PRR_PRODUCT_H3 == Prr_Product) {
-	  if (PRR_PRODUCT_11>=Prr_Cut) {
-		/* RENESAS Starter Kit(H3-SIP) board */
+	if(Prr_Product == PRR_PRODUCT_H3) {
+	    if (Prr_Cut<=PRR_PRODUCT_11) {
+		/* RENESAS Starter Kit(H3 SIP) board */
 		brd = 2;
-	  } else {
-		/* RENESAS Starter Kit(H3SIP_VER2.0) board */
+	    } else {
+		/* RENESAS Starter Kit(H3 SIP VER2.0) board */
 		brd = 7;
-	  }
-	} else {
-		/* RENESAS Starter Kit(M3-SIP 1RANK) board */
+	    }
+	} else if(Prr_Product == PRR_PRODUCT_M3) {
+		/* RENESAS Starter Kit(M3-W SIP 1RANK) board */
 		brd = 3;
+	} else {
+		/* RENESAS Starter Kit(M3-N SIP) board */
+		brd = 11;
 	}
 #else// not (RCAR_GEN3_ULCB==1)
 	uint32_t usb2_ovc_open;
@@ -1261,35 +1515,47 @@ static uint32_t _board_judge(void) {
 	usb2_ovc_open = opencheck_SSI_WS6();
 
 	/* RENESAS Eva-borad */
-	if(PRR_PRODUCT_V3H == Prr_Product) {
+	if(Prr_Product == PRR_PRODUCT_V3H) {
 		/* RENESAS Condor board */
 		brd = 12;
 	}
 	else if(usb2_ovc_open) {
-		if(PRR_PRODUCT_M3N == Prr_Product) {
-			/* RENESAS Kriek board with M3N */
+		if(Prr_Product == PRR_PRODUCT_M3N) {
+			/* RENESAS Kriek board with M3-N */
 			brd = 10;
-		} else if(PRR_PRODUCT_M3 == Prr_Product) {
-			/* RENESAS Kriek board with M3 */
+		} else if(Prr_Product == PRR_PRODUCT_M3) {
+			/* RENESAS Kriek board with M3-W */
 			brd = 1;
-		} else {
+		} else if (Prr_Cut<=PRR_PRODUCT_11) {
 			/* RENESAS Kriek board with PM3 */
 			brd = 13;
+		} else {
+			/* RENESAS Kriek board with H3N */
+			brd = 15;
 		}
 	} else {
-		if(PRR_PRODUCT_H3 == Prr_Product) {
-		  if (PRR_PRODUCT_11>=Prr_Cut) {
-			/* RENESAS SALVATOR-X (H3-SIP_VER1.x) */
+		if(Prr_Product == PRR_PRODUCT_H3) {
+		  if (Prr_Cut<=PRR_PRODUCT_11) {
+			/* RENESAS SALVATOR-X (H3 SIP VER1.x) */
 			brd = 2;
+		  } else if (Prr_Cut< PRR_PRODUCT_30) {
+			/* RENESAS SALVATOR-X (H3 SIP VER2.0) */
+			brd = 7;  //  8Gbit/1rank
+//			brd = 8;  //  8Gbit/2rank
 		  } else {
-			/* RENESAS SALVATOR-X (H3-SIP_VER2.0) */
-			brd = 7;
+			/* RENESAS SALVATOR-X (H3 SIP VER3.0) */
+#if (RCAR_DRAM_LPDDR4_MEMCONF == 2)
+			brd = 7;  //  8Gbit/1rank
+#else
+			brd = 8;  //  8Gbit/2rank
+//			brd = 14; // 16Gbit/1rank
+#endif
 		  }
-		} else if(PRR_PRODUCT_M3N == Prr_Product) {
-			/* RENESAS SALVATOR-X (M3N-SIP) */
+		} else if(Prr_Product == PRR_PRODUCT_M3N) {
+			/* RENESAS SALVATOR-X (M3-N SIP) */
 			brd = 11;
 		} else {
-			/* RENESAS SALVATOR-X (M3-SIP) */
+			/* RENESAS SALVATOR-X (M3-W SIP) */
 			brd = 0;
 		}
 	}

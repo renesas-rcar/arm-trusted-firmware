@@ -9,6 +9,7 @@ ifeq (${RCAR_LSI},${RCAR_AUTO})
     BL2_SOURCES += plat/renesas/rcar/qos/H3/qos_init_h3_v10.c
     BL2_SOURCES += plat/renesas/rcar/qos/H3/qos_init_h3_v11.c
     BL2_SOURCES += plat/renesas/rcar/qos/H3/qos_init_h3_v20.c
+    BL2_SOURCES += plat/renesas/rcar/qos/H3/qos_init_h3_v30.c
     BL2_SOURCES += plat/renesas/rcar/qos/M3/qos_init_m3_v10.c
     BL2_SOURCES += plat/renesas/rcar/qos/M3/qos_init_m3_v11.c
     BL2_SOURCES += plat/renesas/rcar/qos/M3N/qos_init_m3n_v10.c
@@ -17,6 +18,7 @@ else ifdef RCAR_LSI_CUT_COMPAT
     BL2_SOURCES += plat/renesas/rcar/qos/H3/qos_init_h3_v10.c
     BL2_SOURCES += plat/renesas/rcar/qos/H3/qos_init_h3_v11.c
     BL2_SOURCES += plat/renesas/rcar/qos/H3/qos_init_h3_v20.c
+    BL2_SOURCES += plat/renesas/rcar/qos/H3/qos_init_h3_v30.c
   endif
   ifeq (${RCAR_LSI},${RCAR_M3})
     BL2_SOURCES += plat/renesas/rcar/qos/M3/qos_init_m3_v10.c
@@ -36,9 +38,11 @@ else
       BL2_SOURCES += plat/renesas/rcar/qos/H3/qos_init_h3_v11.c
     else ifeq (${LSI_CUT},20)
       BL2_SOURCES += plat/renesas/rcar/qos/H3/qos_init_h3_v20.c
+    else ifeq (${LSI_CUT},30)
+      BL2_SOURCES += plat/renesas/rcar/qos/H3/qos_init_h3_v30.c
     else
-#     LSI_CUT 20 or later
-      BL2_SOURCES += plat/renesas/rcar/qos/H3/qos_init_h3_v20.c
+#     LSI_CUT 30 or later
+      BL2_SOURCES += plat/renesas/rcar/qos/H3/qos_init_h3_v30.c
     endif
   endif
   ifeq (${RCAR_LSI},${RCAR_M3})

@@ -1,9 +1,8 @@
 /*
- * Copyright (c) 2015-2017, Renesas Electronics Corporation. All rights reserved.
+ * Copyright (c) 2015-2018, Renesas Electronics Corporation. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
-
 #define DDR_PHY_SLICE_REGSET_OFS_H3VER2  0x0400
 #define DDR_PHY_ADR_V_REGSET_OFS_H3VER2  0x0600
 #define DDR_PHY_ADR_I_REGSET_OFS_H3VER2  0x0640
@@ -263,7 +262,7 @@ static const uint32_t DDR_PHY_ADR_G_REGSET_H3VER2[DDR_PHY_ADR_G_REGSET_NUM_H3VER
 /*06b9*/	0x00000000,
 /*06ba*/	0x00000065,
 /*06bb*/	0x00000000,
-/*06bc*/	0x00020101,
+/*06bc*/	0x00020201,
 /*06bd*/	0x00000000,
 /*06be*/	0x03000000,
 /*06bf*/	0x00000008,
@@ -531,4 +530,3 @@ static const uint32_t DDR_PI_REGSET_H3VER2[DDR_PI_REGSET_NUM_H3VER2] = {
 /*02f3*/	0x00000000,
 /*02f4*/	0x00000000
 };
-

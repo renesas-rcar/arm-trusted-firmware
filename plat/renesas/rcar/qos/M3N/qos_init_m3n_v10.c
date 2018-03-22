@@ -148,7 +148,7 @@ void qos_init_m3n_v10(void)
 	NOTICE("BL2: QoS is default setting(%s)\n", RCAR_QOS_VERSION);
 #endif
 
-#if RCAR_REF_INT == RCAR_REF_195
+#if RCAR_REF_INT == RCAR_REF_DEFAULT
 	NOTICE("BL2: DRAM refresh interval 1.95 usec\n");
 #else
 	NOTICE("BL2: DRAM refresh interval 3.9 usec\n");

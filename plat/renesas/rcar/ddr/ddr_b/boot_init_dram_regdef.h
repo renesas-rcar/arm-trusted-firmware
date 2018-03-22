@@ -1,10 +1,10 @@
 /*
- * Copyright (c) 2015-2017, Renesas Electronics Corporation. All rights reserved.
+ * Copyright (c) 2015-2018, Renesas Electronics Corporation. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
-#define RCAR_DDR_VERSION        "rev.0.29"
+#define RCAR_DDR_VERSION        "rev.0.31rc02"
 #define DRAM_CH_CNT		0x04
 #define SLICE_CNT		0x04
 #define CS_CNT			0x02
@@ -16,52 +16,59 @@
 /* for pll setting */
 #define CLK_DIV(a,diva, b,divb) (((a)*(divb))/((b)*(diva)))
 #define CLK_MUL(a,diva, b,divb) (((a)*(b))/((diva)*(divb)))
+
 /* for ddr deisity setting */
 #define DBMEMCONF_REG(d3,row,bank,col,dw) ((d3)<<30 | ((row)<<24) | ((bank)<<16) | ((col)<<8) | (dw))
 #define DBMEMCONF_REGD(density) (DBMEMCONF_REG((density)%2,((density)+1)/2+(29-3-10-2),3,10,2))
 #define DBMEMCONF_VAL(ch,cs) (DBMEMCONF_REGD(DBMEMCONF_DENS(ch,cs)))
+
 /* refresh mode */
 #define DBSC_REFINTS		0x0		// 0: Average interval is REFINT. / 1: Average interval is 1/2 REFINT.
+
 /* system registers */
+#define CPG_BASE		(0xE6150000U)
+#define CPG_FRQCRB		(CPG_BASE + 0x0004U)
+
+#define CPG_PLLECR		(CPG_BASE + 0x00D0U)
+#define CPG_MSTPSR5		(CPG_BASE + 0x003CU)	// R	32	Module stop status register 5
+#define CPG_SRCR4		(CPG_BASE + 0x00BCU)
+#define CPG_PLL3CR		(CPG_BASE + 0x00DCU)
+#define CPG_ZB3CKCR		(CPG_BASE + 0x0380U)
+#define CPG_FRQCRD		(CPG_BASE + 0x00E4U)
+#define CPG_SMSTPCR5		(CPG_BASE + 0x0144U)	// R/W	32	System module stop control register 5
+#define CPG_CPGWPR		(CPG_BASE + 0x0900U)
+#define CPG_SRSTCLR4		(CPG_BASE + 0x0950U)
+
+#define CPG_FRQCRB_KICK_BIT	(1U<<31)
+#define CPG_PLLECR_PLL3E_BIT	(1U<<3)
+#define CPG_PLLECR_PLL3ST_BIT	(1U<<11)
+#define CPG_ZB3CKCR_ZB3ST_BIT	(1U<<11)
+
 #define RST_BASE		(0xE6160000U)
 #define RST_MODEMR		(RST_BASE + 0x0060U)
-#define CPG_BASE		(0xE6150000U)
-#define CPG_PLLECR		(CPG_BASE + 0x00D0U)
-#define CPG_CPGWPR		(CPG_BASE + 0x0900U)
-#define CPG_PLL1CR		(CPG_BASE + 0x0028U)
-#define CPG_PLL3CR		(CPG_BASE + 0x00DCU)
-#define CPG_SRCR4		(CPG_BASE + 0x00BCU)
-#define CPG_SRSTCLR4		(CPG_BASE + 0x0950U)
-#define CPG_PLLECR_PLL3E_BIT	(1<<3)
-#define CPG_PLLECR_PLL3ST_BIT	(1<<11)
-/* PLL3 W/A */
-#define CPG_FRQCRB		(CPG_BASE + 0x0004U)
-#define CPG_FRQCRB_KICK_BIT	(1<<31)
-#define CPG_FRQCRD		(CPG_BASE + 0x00E4U)
-#define CPG_MSTPCRM1		(CPG_BASE + 0x0380U)
-#define CPG_MSTPCRM1_ZB3ST_BIT	(1<<11)
 
 /* chip_id and calibration code */
-#define LIFEC_CHIPID(x)		(0xE6110040U+(x)*4)
+#define LIFEC_CHIPID(x)		(0xE6110040U+0x04U*(x))
 
 /* Product Register */
 #define PRR			(0xFFF00044U)
 #define PRR_PRODUCT_MASK	(0x00007F00U)
 #define PRR_CUT_MASK		(0x000000FFU)
-#define PRR_PRODUCT_H3		(0x00004F00U)           /* R-Car H3  */
-#define PRR_PRODUCT_M3		(0x00005200U)           /* R-Car M3  */
-#define PRR_PRODUCT_M3N		(0x00005500U)           /* R-Car M3N */
-#define PRR_PRODUCT_V3H		(0x00005600U)           /* R-Car V3H */
-#define PRR_PRODUCT_10		(0x00U)			/*   ver 1.0 */
-#define PRR_PRODUCT_11		(0x01U)			/*   ver 1.1 */
-#define PRR_PRODUCT_20		(0x10U)			/*   ver 2.0 */
+#define PRR_PRODUCT_H3		(0x00004F00U)           /* R-Car H3   */
+#define PRR_PRODUCT_M3		(0x00005200U)           /* R-Car M3-W */
+#define PRR_PRODUCT_M3N		(0x00005500U)           /* R-Car M3-N */
+#define PRR_PRODUCT_V3H		(0x00005600U)           /* R-Car V3H  */
+#define PRR_PRODUCT_10		(0x00U)			/*   ver 1.0  */
+#define PRR_PRODUCT_11		(0x01U)			/*   ver 1.1  */
+#define PRR_PRODUCT_20		(0x10U)			/*   ver 2.0  */
+#define PRR_PRODUCT_30		(0x20U)			/*   ver 3.0  */
 
 /* DBSC registers */
 #define DBSC_DBSYSCONF1		0xE6790004U
 #define DBSC_DBPHYCONF0		0xE6790010U
 #define DBSC_DBKIND		0xE6790020U
 
-#define DBSC_DBMEMCONF(ch,cs)	(0xE6790030U+0x10U*ch+0x4U*cs)
+#define DBSC_DBMEMCONF(ch,cs)	(0xE6790030U+0x10U*ch+0x04U*cs)
 #define DBSC_DBMEMCONF_0_0	0xE6790030U
 #define DBSC_DBMEMCONF_0_1	0xE6790034U
 #define DBSC_DBMEMCONF_0_2	0xE6790038U
@@ -87,7 +94,7 @@
 #define DBSC_DBWAIT		0xE6790210U
 #define DBSC_DBSYSCTRL0		0xE6790280U
 
-#define DBSC_DBTR(x)		(0xE6790300U+4*x)
+#define DBSC_DBTR(x)		(0xE6790300U+0x04U*(x))
 #define DBSC_DBTR0		0xE6790300U
 #define DBSC_DBTR1		0xE6790304U
 #define DBSC_DBTR3		0xE679030CU
@@ -116,29 +123,21 @@
 #define DBSC_DBTR26		0xE6790368U
 
 #define DBSC_DBBL		0xE6790400U
-
 #define DBSC_DBRFCNF1		0xE6790414U
 #define DBSC_DBRFCNF2		0xE6790418U
-
 #define DBSC_DBTSPCNF		0xE6790420U
 #define DBSC_DBCALCNF		0xE6790424U
-
-#define DBSC_DBRNK(x)		(0xE6790430U+0x4*(x))
+#define DBSC_DBRNK(x)		(0xE6790430U+0x04U*(x))
 #define DBSC_DBRNK2		0xE6790438U
 #define DBSC_DBRNK3		0xE679043CU
 #define DBSC_DBRNK4		0xE6790440U
 #define DBSC_DBRNK5		0xE6790444U
-#define DBSC_DBODT(x)		(0xE6790460U+0x4*(x))
+#define DBSC_DBODT(x)		(0xE6790460U+0x04U*(x))
+
 #define DBSC_DBADJ0		0xE6790500U
 #define DBSC_DBDBICNT		0xE6790518U
 #define DBSC_DBDFIPMSTRCNF	0xE6790520U
 #define DBSC_DBDFICUPDCNF	0xE679052CU
-
-#define DBSC_DBPDLK(ch)		(0xE6790620U+0x40U*(ch))
-#define DBSC_DBPDLK_0		0xE6790620U
-#define DBSC_DBPDLK_1		0xE6790660U
-#define DBSC_DBPDLK_2		0xE67906a0U
-#define DBSC_DBPDLK_3		0xE67906e0U
 
 #define DBSC_INITCOMP(ch)	(0xE6790600U+0x40U*(ch))
 #define DBSC_INITCOMP_0		0xE6790600U
@@ -158,11 +157,29 @@
 #define DBSC_DBPDCNT0_2		0xE6790690U
 #define DBSC_DBPDCNT0_3		0xE67906D0U
 
+#define DBSC_DBPDCNT1(ch)	(0xE6790614U+0x40U*(ch))
+#define DBSC_DBPDCNT1_0		0xE6790614U
+#define DBSC_DBPDCNT1_1		0xE6790654U
+#define DBSC_DBPDCNT1_2		0xE6790694U
+#define DBSC_DBPDCNT1_3		0xE67906D4U
+
+#define DBSC_DBPDCNT2(ch)	(0xE6790618U+0x40U*(ch))
+#define DBSC_DBPDCNT2_0		0xE6790618U
+#define DBSC_DBPDCNT2_1		0xE6790658U
+#define DBSC_DBPDCNT2_2		0xE6790698U
+#define DBSC_DBPDCNT2_3		0xE67906D8U
+
 #define DBSC_DBPDCNT3(ch)	(0xE679061CU+0x40U*(ch))
 #define DBSC_DBPDCNT3_0		0xE679061CU
 #define DBSC_DBPDCNT3_1		0xE679065CU
 #define DBSC_DBPDCNT3_2		0xE679069CU
 #define DBSC_DBPDCNT3_3		0xE67906DCU
+
+#define DBSC_DBPDLK(ch)		(0xE6790620U+0x40U*(ch))
+#define DBSC_DBPDLK_0		0xE6790620U
+#define DBSC_DBPDLK_1		0xE6790660U
+#define DBSC_DBPDLK_2		0xE67906a0U
+#define DBSC_DBPDLK_3		0xE67906e0U
 
 #define DBSC_DBPDRGA(ch)	(0xE6790624U+0x40U*(ch))
 #define DBSC_DBPDRGD(ch)	(0xE6790628U+0x40U*(ch))
@@ -204,20 +221,20 @@
 #define DBSC_DBSCTR1		0xE6791708U
 #define DBSC_DBSCHRW2		0xE679170CU
 
-#define DBSC_SCFCTST01(x)	(0xE6791700U+8*(x))
+#define DBSC_SCFCTST01(x)	(0xE6791700U+0x08U*(x))
 #define DBSC_SCFCTST0		0xE6791700U
 #define DBSC_SCFCTST1		0xE6791708U
 #define DBSC_SCFCTST2		0xE679170CU
 
-#define DBSC_DBMRRDR(chab)	(0xE6791800U+0x4U*(chab))
+#define DBSC_DBMRRDR(chab)	(0xE6791800U+0x04U*(chab))
 #define DBSC_DBMRRDR_0		0xE6791800U
 #define DBSC_DBMRRDR_1		0xE6791804U
 #define DBSC_DBMRRDR_2		0xE6791808U
 #define DBSC_DBMRRDR_3		0xE679180CU
-#define DBSC_DBMRRDR_4		0xE679180CU
-#define DBSC_DBMRRDR_5		0xE679180CU
-#define DBSC_DBMRRDR_6		0xE679180CU
-#define DBSC_DBMRRDR_7		0xE679180CU
+#define DBSC_DBMRRDR_4		0xE6791810U
+#define DBSC_DBMRRDR_5		0xE6791814U
+#define DBSC_DBMRRDR_6		0xE6791818U
+#define DBSC_DBMRRDR_7		0xE679181CU
 
 #define DBSC_DBMEMSWAPCONF0	0xE6792000U
 
@@ -229,21 +246,9 @@
 #define DBSC_PLL_LOCK_2		0xE6794254U
 #define DBSC_PLL_LOCK_3		0xE6794354U
 
-#define DBSC_DBPDCNT1(ch)	(0xE6790614U+0x40U*(ch))
-#define DBSC_DBPDCNT1_0		0xE6790614U
-#define DBSC_DBPDCNT1_1		0xE6790654U
-#define DBSC_DBPDCNT1_2		0xE6790694U
-#define DBSC_DBPDCNT1_3		0xE67906D4U
-
-#define DBSC_DBPDCNT2(ch)	(0xE6790618U+0x40U*(ch))
-#define DBSC_DBPDCNT2_0		0xE6790618U
-#define DBSC_DBPDCNT2_1		0xE6790658U
-#define DBSC_DBPDCNT2_2		0xE6790698U
-#define DBSC_DBPDCNT2_3		0xE67906D8U
-
 /* STAT registers */
-#define MSTAT_SL_INIT		0xE67E8000
-#define MSTAT_REF_ARS		0xE67E8004
+#define MSTAT_SL_INIT		0xE67E8000U
+#define MSTAT_REF_ARS		0xE67E8004U
 #define MSTATQ_STATQC		0xE67E8008U
 #define MSTATQ_WTENABLE		0xE67E8030U
 #define MSTATQ_WTREFRESH	0xE67E8034U
@@ -265,11 +270,8 @@
 #define QOSCTRL_STATGEN0	(QOS_BASE1 + 0x0088U)
 
 /* other module */
-#define THS1_CTSR		0xE6198020
-#define THS1_TEMP		0xE6198028
-
-#define CPG_MSTPSR5		0xE615003C	// R	32	Module stop status register 5
-#define CPG_SMSTPCR5		0xE6150144	// R/W	32	System module stop control register 5
+#define THS1_THCTR		0xE6198020U
+#define THS1_TEMP		0xE6198028U
 
 #define	DBSC_BASE			(0xE6790000U)
 #define DBSC_DBSCHQOS00		(DBSC_BASE + 0x1030U)
