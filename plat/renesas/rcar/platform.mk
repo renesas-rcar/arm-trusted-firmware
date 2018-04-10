@@ -33,6 +33,7 @@ BL2_SOURCES		+=	${RCAR_GIC_SOURCES}				\
 				plat/renesas/rcar/aarch64/rcar_helpers.S	\
 				plat/renesas/rcar/bl2_rcar_setup.c		\
 				plat/renesas/rcar/aarch64/rcar_common.c		\
+				plat/renesas/rcar/aarch64/rcar_drivers_common.c	\
 				plat/renesas/rcar/drivers/io/io_rcar.c		\
 				plat/renesas/rcar/drivers/io/io_memdrv.c	\
 				plat/renesas/rcar/drivers/io/io_emmcdrv.c	\
@@ -69,6 +70,7 @@ BL31_SOURCES		+=	${RCAR_GIC_SOURCES}				\
 				plat/renesas/rcar/rcar_topology.c		\
 				plat/renesas/rcar/aarch64/rcar_helpers.S	\
 				plat/renesas/rcar/aarch64/rcar_common.c		\
+				plat/renesas/rcar/aarch64/rcar_drivers_common.c	\
 				plat/renesas/rcar/drivers/pwrc/rcar_call_sram.S	\
 				plat/renesas/rcar/drivers/pwrc/rcar_pwrc.c	\
 				plat/renesas/rcar/drivers/cpld/ulcb_cpld.c	\
@@ -89,11 +91,13 @@ RCAR_H3:=0
 RCAR_M3:=1
 RCAR_M3N:=2
 RCAR_E3:=3
+RCAR_H3N:=4
 RCAR_AUTO:=99
 $(eval $(call add_define,RCAR_H3))
 $(eval $(call add_define,RCAR_M3))
 $(eval $(call add_define,RCAR_M3N))
 $(eval $(call add_define,RCAR_E3))
+$(eval $(call add_define,RCAR_H3N))
 $(eval $(call add_define,RCAR_AUTO))
 RCAR_CUT_10:=0
 RCAR_CUT_11:=1
@@ -102,6 +106,7 @@ RCAR_CUT_30:=20
 $(eval $(call add_define,RCAR_CUT_10))
 $(eval $(call add_define,RCAR_CUT_11))
 $(eval $(call add_define,RCAR_CUT_20))
+$(eval $(call add_define,RCAR_CUT_30))
 
 ifndef LSI
   $(error "Error: Unknown LSI. Please use LSI=<LSI name> to specify the LSI")
@@ -123,6 +128,21 @@ else
       else ifeq (${LSI_CUT},20)
         RCAR_LSI_CUT:=10
       else ifeq (${LSI_CUT},30)
+        RCAR_LSI_CUT:=20
+      else
+        $(error "Error: ${LSI_CUT} is not supported.")
+      endif
+      $(eval $(call add_define,RCAR_LSI_CUT))
+    endif
+  else ifeq (${LSI},H3N)
+    RCAR_LSI:=${RCAR_H3N}
+    ifndef LSI_CUT
+      # enable compatible function.
+      RCAR_LSI_CUT_COMPAT := 1
+      $(eval $(call add_define,RCAR_LSI_CUT_COMPAT))
+    else
+      # disable compatible function.
+      ifeq (${LSI_CUT},30)
         RCAR_LSI_CUT:=20
       else
         $(error "Error: ${LSI_CUT} is not supported.")
@@ -279,7 +299,7 @@ endif
 
 # Process RCAR_DRAM_LPDDR4_MEMCONF flag
 ifndef RCAR_DRAM_LPDDR4_MEMCONF
-RCAR_DRAM_LPDDR4_MEMCONF :=3
+RCAR_DRAM_LPDDR4_MEMCONF :=1
 endif
 $(eval $(call add_define,RCAR_DRAM_LPDDR4_MEMCONF))
 
@@ -299,6 +319,12 @@ ifndef RCAR_BL2_DCACHE
 RCAR_BL2_DCACHE := 0
 endif
 $(eval $(call add_define,RCAR_BL2_DCACHE))
+
+# Process RCAR_DRAM_CHANNEL flag
+ifndef RCAR_DRAM_CHANNEL
+RCAR_DRAM_CHANNEL :=15
+endif
+$(eval $(call add_define,RCAR_DRAM_CHANNEL))
 
 # Enable workarounds for selected Cortex-A53 erratas.
 ERRATA_A53_835769  := 1

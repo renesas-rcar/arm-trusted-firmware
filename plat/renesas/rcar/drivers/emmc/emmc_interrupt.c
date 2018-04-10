@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2017, Renesas Electronics Corporation. All rights reserved.
+ * Copyright (c) 2015-2018, Renesas Electronics Corporation. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -238,6 +238,20 @@ static EMMC_ERROR_CODE emmc_trans_sector (
     	/* Read */
 		else
 		{
+        /* Checks when the read data reaches SD_SIZE. */
+        /* The BRE bit is cleared at emmc_interrupt function. */
+        if(((i % (uint32_t)(EMMC_BLOCK_LENGTH>>EMMC_BUF_SIZE_SHIFT)) == 0U)
+         && (i != 0U)) {
+            /* BRE check */
+            while(((GETR_32(SD_INFO2)) & SD_INFO2_BRE) == 0U) {
+                /* ERROR check */
+                if(((GETR_32(SD_INFO2)) & SD_INFO2_ALL_ERR) != 0U) {
+                    return EMMC_ERR_TRANSFER;
+                }
+            }
+            /* BRE clear */
+            SETR_32(SD_INFO2, (uint32_t)(GETR_32(SD_INFO2) & ~SD_INFO2_BRE));
+        }
             *bufPtrLL = GETR_64(SD_BUF0);    /* FIFO --> buffer */
         }
         bufPtrLL++;

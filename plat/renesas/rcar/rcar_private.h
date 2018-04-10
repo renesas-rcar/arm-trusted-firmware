@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2014, ARM Limited and Contributors. All rights reserved.
- * Copyright (c) 2015-2017, Renesas Electronics Corporation. All rights reserved.
+ * Copyright (c) 2015-2018, Renesas Electronics Corporation. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -144,5 +144,9 @@ int rcar_validate_power_state(unsigned int power_state);
 
 /* Function prototypes for read and write to the CPU system registers */
 void iciallu(void);
+
+/* Function prototypes for MSTP write */
+void cpg_write(uintptr_t regadr, uint32_t regval);
+void mstpcr_write(uint32_t mstpcr, uint32_t mstpsr, uint32_t target_bit);
 
 #endif /* RCAR_PRIVATE_H__ */

@@ -161,6 +161,7 @@ static const struct _boardcnf boardcnfs[BOARDNUM] = {
 	{
 /*ch[0]*/	{
 /*ddr_density[]*/	{ 0x02, 0x02 },
+/*ddr_density[]*///	{ 0x04, 0x04 },
 /*ca_swap*/		0x00345201,
 /*dqs_swap*/		0x3201,
 /*dq_swap[]*/		{ 0x01672543, 0x45361207, 0x45632107, 0x60715234 },
@@ -181,6 +182,7 @@ static const struct _boardcnf boardcnfs[BOARDNUM] = {
 		},
 /*ch[1]*/	{
 /*ddr_density[]*/	{ 0x02, 0x02 },
+/*ddr_density[]*///	{ 0x04, 0x04 },
 /*ca_swap*/		0x00302154,
 /*dqs_swap*/		0x2310,
 /*dq_swap[]*/		{ 0x01672543, 0x45361207, 0x45632107, 0x60715234 },
@@ -453,6 +455,7 @@ static const struct _boardcnf boardcnfs[BOARDNUM] = {
 	{
 /*ch[0]*/	{
 /*ddr_density[]*/	{ 0x02, 0xff },
+/*ddr_density[]*///	{ 0x04, 0xff },
 /*ca_swap*/		0x00345201,
 /*dqs_swap*/		0x3201,
 /*dq_swap[]*/		{ 0x01672543, 0x45361207, 0x45632107, 0x60715234 },
@@ -473,6 +476,7 @@ static const struct _boardcnf boardcnfs[BOARDNUM] = {
 		},
 /*ch[1]*/	{
 /*ddr_density[]*/	{ 0x02, 0xff },
+/*ddr_density[]*///	{ 0x04, 0xff },
 /*ca_swap*/		0x00302154,
 /*dqs_swap*/		0x2310,
 /*dq_swap[]*/		{ 0x01672543, 0x45361207, 0x45632107, 0x60715234 },
@@ -680,15 +684,14 @@ static const struct _boardcnf boardcnfs[BOARDNUM] = {
 	}
 },
 /*
- * boardcnf[8] RENESAS SALVATOR-X board with H3SIP_ver2.0/3.0-8Gbit2rank
+ * boardcnf[8] RENESAS SALVATOR-X board with H3SIP_ver2.0/3.0-8Gbit/2rank
  */
 {
-//RCAR_DRAM_SPLIT_2CH		(2U)
-#if RCAR_DRAM_SPLIT == 2
+#if RCAR_DRAM_CHANNEL==5
 	0x05,		/* phyvalid */
-#else//RCAR_DRAM_SPLIT != 2
+#else//RCAR_DRAM_CHANNEL!=5
 	0x0f,		/* phyvalid */
-#endif//RCAR_DRAM_SPLIT
+#endif//RCAR_DRAM_CHANNEL
 	0x01,		/* dbi_en */
 	0x300,		/* cacs_dly */
 	0,		/* cacs_dly_adj */
@@ -715,7 +718,7 @@ static const struct _boardcnf boardcnfs[BOARDNUM] = {
 			  0, 0, 0, 0, 0, 0, 0, 0,
 			  0, 0, 0, 0, 0, 0, 0, 0 }
 		},
-#if RCAR_DRAM_SPLIT == 2
+#if ((RCAR_DRAM_CHANNEL==5)&&(RCAR_DRAM_SPLIT==2))
 /*ch[1]*/	{	// copy from ch[2] (for DRAM_SPLIT_2CH)
 /*ddr_density[]*/	{ 0x02, 0x02 },
 /*ca_swap*/		0x00543210,
@@ -736,7 +739,7 @@ static const struct _boardcnf boardcnfs[BOARDNUM] = {
 			  0, 0, 0, 0, 0, 0, 0, 0,
 			  0, 0, 0, 0, 0, 0, 0, 0 }
 		},
-#else//RCAR_DRAM_SPLIT != 2
+#else //(RCAR_DRAM_CHANNEL==5)&&(RCAR_DRAM_SPLIT==2)
 /*ch[1]*/	{
 /*ddr_density[]*/	{ 0x02, 0x02 },
 /*ca_swap*/		0x00105432,
@@ -757,7 +760,7 @@ static const struct _boardcnf boardcnfs[BOARDNUM] = {
 			  0, 0, 0, 0, 0, 0, 0, 0,
 			  0, 0, 0, 0, 0, 0, 0, 0 }
 		},
-#endif//RCAR_DRAM_SPLIT
+#endif//(RCAR_DRAM_CHANNEL==5)&&(RCAR_DRAM_SPLIT==2)
 /*ch[2]*/	{
 /*ddr_density[]*/	{ 0x02, 0x02 },
 /*ca_swap*/		0x00543210,
@@ -934,7 +937,7 @@ static const struct _boardcnf boardcnfs[BOARDNUM] = {
  */
 {
 	0x01,		/* phyvalid */
-	0x1,		/* dbi_en */
+	0x01,		/* dbi_en */
 	0x300,		/* cacs_dly */
 	0,		/* cacs_dly_adj */
 	0x300,		/* dqdm_dly_w */
@@ -1093,12 +1096,11 @@ static const struct _boardcnf boardcnfs[BOARDNUM] = {
  * boardcnf[14] RENESAS SALVATOR-X board with H3SIP_ver2.0/3.0-16Gbit-1rank
  */
 {
-//RCAR_DRAM_SPLIT_2CH		(2U)
-#if RCAR_DRAM_SPLIT == 2
+#if RCAR_DRAM_CHANNEL==5
 	0x05,		/* phyvalid */
-#else
+#else//RCAR_DRAM_CHANNEL!=5
 	0x0f,		/* phyvalid */
-#endif
+#endif//RCAR_DRAM_CHANNEL
 	0x01,		/* dbi_en */
 	0x300,		/* cacs_dly */
 	0,		/* cacs_dly_adj */
@@ -1125,7 +1127,7 @@ static const struct _boardcnf boardcnfs[BOARDNUM] = {
 			  0, 0, 0, 0, 0, 0, 0, 0,
 			  0, 0, 0, 0, 0, 0, 0, 0 }
 		},
-#if RCAR_DRAM_SPLIT == 2
+#if ((RCAR_DRAM_CHANNEL==5)&&(RCAR_DRAM_SPLIT==2))
 /*ch[1]*/	{	// copy from ch[2] (for DRAM_SPLIT_2CH)
 /*ddr_density[]*/	{ 0x04, 0xff },
 /*ca_swap*/		0x00543210,
@@ -1146,7 +1148,7 @@ static const struct _boardcnf boardcnfs[BOARDNUM] = {
 			  0, 0, 0, 0, 0, 0, 0, 0,
 			  0, 0, 0, 0, 0, 0, 0, 0 }
 		},
-#else
+#else //(RCAR_DRAM_CHANNEL==5)&&(RCAR_DRAM_SPLIT==2)
 /*ch[1]*/	{
 /*ddr_density[]*/	{ 0x04, 0xff },
 /*ca_swap*/		0x00105432,
@@ -1167,7 +1169,7 @@ static const struct _boardcnf boardcnfs[BOARDNUM] = {
 			  0, 0, 0, 0, 0, 0, 0, 0,
 			  0, 0, 0, 0, 0, 0, 0, 0 }
 		},
-#endif
+#endif//(RCAR_DRAM_CHANNEL==5)&&(RCAR_DRAM_SPLIT==2)
 /*ch[2]*/	{
 /*ddr_density[]*/	{ 0x04, 0xff },
 /*ca_swap*/		0x00543210,
@@ -1225,8 +1227,6 @@ static const struct _boardcnf boardcnfs[BOARDNUM] = {
 /*ddr_density[]*/	{ 0x02, 0x02 },
 /*ca_swap*/		0x00345201,
 /*dqs_swap*/		0x3201,
-/*dq_swap[]*/	//	{ 0x01672543, 0x45361207, 0x45632107, 0x60715234 },
-/*dq_swap[]*/	//	{ 0x01672543, 0x45360721, 0x45632107, 0x60715234 },
 /*dq_swap[]*/		{ 0x01672543, 0x45367012, 0x45632107, 0x60715234 },
 /*dm_swap[]*/		{ 0x08, 0x08, 0x08, 0x08 },
 /*wdqlvl_patt[]*/	WDQLVL_PAT,
@@ -1544,7 +1544,7 @@ static uint32_t _board_judge(void) {
 //			brd = 8;  //  8Gbit/2rank
 		  } else {
 			/* RENESAS SALVATOR-X (H3 SIP VER3.0) */
-#if (RCAR_DRAM_LPDDR4_MEMCONF == 2)
+#if (RCAR_DRAM_LPDDR4_MEMCONF == 0)
 			brd = 7;  //  8Gbit/1rank
 #else
 			brd = 8;  //  8Gbit/2rank

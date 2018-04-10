@@ -18,6 +18,7 @@
 #include "emmc_std.h"
 #include "emmc_registers.h"
 #include "emmc_def.h"
+#include "rcar_private.h"
 
 /* ***************** MACROS, CONSTANTS, COMPILATION FLAGS ****************** */
 
@@ -214,20 +215,8 @@ static void emmc_drv_init(void)
  */
 static EMMC_ERROR_CODE emmc_dev_init(void)
 {
-	uint32_t dataL;
-
-	/* Power on eMMC */
-	dataL = mmio_read_32(CPG_SMSTPCR3);
-	if ((dataL & CPG_MSTP_MMC) != 0U) {
-		dataL &= ~((uint32_t)(CPG_MSTP_MMC));
-		mmio_write_32(CPG_CPGWPR, (~dataL));
-		mmio_write_32(CPG_SMSTPCR3, dataL);
-	}
-
-	dataL = mmio_read_32(CPG_MSTPSR3);
-	while ( (dataL & (CPG_MSTP_MMC)) != 0x0U ) {
-		dataL = mmio_read_32(CPG_MSTPSR3);
-	}
+	/* Enable clock supply to eMMC. */
+	mstpcr_write(CPG_SMSTPCR3, CPG_MSTPSR3, CPG_MSTP_MMC);
 	
 	/* Set SD clock */
 	mmio_write_32(CPG_CPGWPR, ~((uint32_t)(BIT9|BIT0)));	//SD phy 200MHz

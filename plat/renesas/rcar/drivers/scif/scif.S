@@ -18,6 +18,7 @@
 /* module stop */
 #define	CPG_BASE		(0xE6150000)
 #define	CPG_SMSTPCR3		(0x013C)
+#define CPG_MSTPSR3		(0x0048)
 #define	MSTP310			(1 << 10)
 #define	CPG_CPGWPR		(0x0900)
 
@@ -149,6 +150,10 @@ func console_core_init
 	mvn	w2, w1
 	str	w2, [x0, #CPG_CPGWPR]
 	str	w1, [x0, #CPG_SMSTPCR3]
+5:
+	ldr w1, [x0, #CPG_MSTPSR3]
+	and w1, w1, #MSTP310
+	cbnz w1, 5b
 
 	ldr	x0, =SCIF2_BASE
 	/* Clear bits TE and RE in SCSCR to 0 */

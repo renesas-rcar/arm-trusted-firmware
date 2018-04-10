@@ -8,10 +8,10 @@
 #include <debug.h>
 #include "../qos_common.h"
 #include "../qos_reg.h"
-#include "qos_init_h3_v30.h"
+#include "qos_init_h3n_v30.h"
 
 
-#define	RCAR_QOS_VERSION		"rev.0.06"
+#define	RCAR_QOS_VERSION		"rev.0.02"
 
 #define QOSCTRL_FSS			(QOS_BASE1 + 0x0048U)
 
@@ -19,7 +19,7 @@
 
 #define	QOSWT_WTEN_ENABLE				(0x1U)
 
-#define QOSCTRL_REF_ARS_ARBSTOPCYCLE_H3_30	(SL_INIT_SSLOTCLK_H3_30 - 0x5U)
+#define QOSCTRL_REF_ARS_ARBSTOPCYCLE_H3N	(SL_INIT_SSLOTCLK_H3N - 0x5U)
 
 #define OSWT_WTREF_SLOT0_EN_REQ1_SLOT	(3U)
 #define OSWT_WTREF_SLOT0_EN_REQ2_SLOT	(9U)
@@ -28,28 +28,28 @@
 
 #define QOSWT_WTSET0_REQ_SSLOT0			(5U)
 #define WT_BASE_SUB_SLOT_NUM0			(12U)
-#define QOSWT_WTSET0_PERIOD0_H3_30		((QOSWT_TIME_BANK0/QOSWT_WTSET0_CYCLE_H3_30)-1U)
+#define QOSWT_WTSET0_PERIOD0_H3N		((QOSWT_TIME_BANK0/QOSWT_WTSET0_CYCLE_H3N)-1U)
 #define QOSWT_WTSET0_SSLOT0				(QOSWT_WTSET0_REQ_SSLOT0 -1U)
 #define QOSWT_WTSET0_SLOTSLOT0			(WT_BASE_SUB_SLOT_NUM0 -1U)
 
-#define QOSWT_WTSET1_PERIOD1_H3_30		(QOSWT_WTSET0_PERIOD0_H3_30)
+#define QOSWT_WTSET1_PERIOD1_H3N		(QOSWT_WTSET0_PERIOD0_H3N)
 #define QOSWT_WTSET1_SSLOT1				(QOSWT_WTSET0_SSLOT0)
 #define QOSWT_WTSET1_SLOTSLOT1			(QOSWT_WTSET0_SLOTSLOT0)
 
 #if RCAR_QOS_TYPE  == RCAR_QOS_TYPE_DEFAULT
 
 #if RCAR_REF_INT == RCAR_REF_DEFAULT
-#include "qos_init_h3_v30_mstat195.h"
+#include "qos_init_h3n_v30_mstat195.h"
 #else
-#include "qos_init_h3_v30_mstat390.h"
+#include "qos_init_h3n_v30_mstat390.h"
 #endif
 
 #if RCAR_REWT_TRAINING != RCAR_REWT_TRAINING_DISABLE
 
 #if RCAR_REF_INT == RCAR_REF_DEFAULT
-#include "qos_init_h3_v30_qoswt195.h"
+#include "qos_init_h3n_v30_qoswt195.h"
 #else
-#include "qos_init_h3_v30_qoswt390.h"
+#include "qos_init_h3n_v30_qoswt390.h"
 #endif
 
 #endif /* RCAR_REWT_TRAINING != RCAR_REWT_TRAINING_DISABLE */
@@ -126,31 +126,25 @@ static void dbsc_setting(void)
 	io_write_32(DBSC_DBSYSCNT0, 0x00000000U);
 }
 
-void qos_init_h3_v30(void)
+void qos_init_h3n_v30(void)
 {
 	unsigned int split_area;
 	dbsc_setting();
 
-#if RCAR_DRAM_LPDDR4_MEMCONF == 0  /* 1GB */
-	split_area = 0x1BU;
-#else                              /* default 2GB */
+	/* use 1(2GB) for RCAR_DRAM_LPDDR4_MEMCONF for H3N */
 	split_area = 0x1CU;
-#endif
 
 	/* DRAM Split Address mapping */
-#if (RCAR_DRAM_SPLIT == RCAR_DRAM_SPLIT_4CH) || \
+#if (RCAR_DRAM_SPLIT == RCAR_DRAM_SPLIT_4CH)
+ #if RCAR_LSI == RCAR_H3N
+  #error "Don't set DRAM Split 4ch(H3N)"
+ #else
+	ERROR("DRAM Split 4ch not supported.(H3N)");
+	panic();
+ #endif
+#elif (RCAR_DRAM_SPLIT == RCAR_DRAM_SPLIT_2CH) || \
     (RCAR_DRAM_SPLIT == RCAR_DRAM_SPLIT_AUTO)
-	NOTICE("BL2: DRAM Split is 4ch(DDR %x)\n", (int)qos_init_ddr_phyvalid);
-
-	io_write_32(AXI_ADSPLCR0, ADSPLCR0_ADRMODE_DEFAULT
-				  | ADSPLCR0_SPLITSEL(0xFFU)
-				  | ADSPLCR0_AREA(split_area)
-				  | ADSPLCR0_SWP);
-	io_write_32(AXI_ADSPLCR1, 0x00000000U);
-	io_write_32(AXI_ADSPLCR2, 0x00001054U);
-	io_write_32(AXI_ADSPLCR3, 0x00000000U);
-#elif RCAR_DRAM_SPLIT == RCAR_DRAM_SPLIT_2CH
-	NOTICE("BL2: DRAM Split is 2ch(DDR %x)\n",(int)qos_init_ddr_phyvalid);
+	NOTICE("BL2: DRAM Split is 2ch(DDR %x)\n", (int)qos_init_ddr_phyvalid);
 
 	io_write_32(AXI_ADSPLCR0, ADSPLCR0_AREA(split_area));
 	io_write_32(AXI_ADSPLCR1, ADSPLCR0_ADRMODE_DEFAULT
@@ -161,7 +155,7 @@ void qos_init_h3_v30(void)
 	io_write_32(AXI_ADSPLCR3, 0x00000000U);
 #else
 	io_write_32(AXI_ADSPLCR0, ADSPLCR0_AREA(split_area));
-	NOTICE("BL2: DRAM Split is OFF(DDR %x)\n",(int)qos_init_ddr_phyvalid);
+	NOTICE("BL2: DRAM Split is OFF(DDR %x)\n", (int)qos_init_ddr_phyvalid);
 #endif
 
 #if !(RCAR_QOS_TYPE == RCAR_QOS_NONE)
@@ -180,7 +174,7 @@ void qos_init_h3_v30(void)
 #endif /* RCAR_REWT_TRAINING != RCAR_REWT_TRAINING_DISABLE */
 
 	io_write_32(QOSCTRL_RAS,   0x00000044U);
-	io_write_64(QOSCTRL_DANN,  0x0404010002020201UL);
+	io_write_64(QOSCTRL_DANN,  0x0404020002020201UL);
 	io_write_32(QOSCTRL_DANT,  0x0020100AU);
 	io_write_32(QOSCTRL_FSS,   0x0000000AU);
 	io_write_32(QOSCTRL_INSFC, 0x06330001U);
@@ -189,8 +183,8 @@ void qos_init_h3_v30(void)
 	/* GPU Boost Mode */
 	io_write_32(QOSCTRL_STATGEN0, 0x00000001U);
 
-	io_write_32(QOSCTRL_SL_INIT, SL_INIT_REFFSSLOT | SL_INIT_SLOTSSLOT | SL_INIT_SSLOTCLK_H3_30);
-	io_write_32(QOSCTRL_REF_ARS, ((QOSCTRL_REF_ARS_ARBSTOPCYCLE_H3_30 << 16)));
+	io_write_32(QOSCTRL_SL_INIT, SL_INIT_REFFSSLOT | SL_INIT_SLOTSSLOT | SL_INIT_SSLOTCLK_H3N);
+	io_write_32(QOSCTRL_REF_ARS, ((QOSCTRL_REF_ARS_ARBSTOPCYCLE_H3N << 16)));
 
 	{
 	uint32_t i;
@@ -224,6 +218,12 @@ void qos_init_h3_v30(void)
 	}
 
 	/* 3DG bus Leaf setting */
+	io_write_32(GPU_ACT_GRD, 0x00001234U);
+	io_write_32(GPU_ACT0, 0x00000000U);
+	io_write_32(GPU_ACT1, 0x00000000U);
+	io_write_32(GPU_ACT2, 0x00000000U);
+	io_write_32(GPU_ACT3, 0x00000000U);
+	io_write_32(GPU_ACT_GRD, 0x00000000U);
 
 	/* RT bus Leaf setting */
 	io_write_32(RT_ACT0, 0x00000000U);
@@ -240,8 +240,8 @@ void qos_init_h3_v30(void)
 #if RCAR_REWT_TRAINING != RCAR_REWT_TRAINING_DISABLE
 	/*  re-write training setting */
 	io_write_32(QOSWT_WTREF,  ((QOSWT_WTREF_SLOT1_EN << 16)       | QOSWT_WTREF_SLOT0_EN));
-	io_write_32(QOSWT_WTSET0, ((QOSWT_WTSET0_PERIOD0_H3_30 << 16) | (QOSWT_WTSET0_SSLOT0 << 8) | QOSWT_WTSET0_SLOTSLOT0));
-	io_write_32(QOSWT_WTSET1, ((QOSWT_WTSET1_PERIOD1_H3_30 << 16) | (QOSWT_WTSET1_SSLOT1 << 8) | QOSWT_WTSET1_SLOTSLOT1));
+	io_write_32(QOSWT_WTSET0, ((QOSWT_WTSET0_PERIOD0_H3N << 16) | (QOSWT_WTSET0_SSLOT0 << 8) | QOSWT_WTSET0_SLOTSLOT0));
+	io_write_32(QOSWT_WTSET1, ((QOSWT_WTSET1_PERIOD1_H3N << 16) | (QOSWT_WTSET1_SSLOT1 << 8) | QOSWT_WTSET1_SLOTSLOT1));
 
 	io_write_32(QOSWT_WTEN,   QOSWT_WTEN_ENABLE);
 #endif /* RCAR_REWT_TRAINING != RCAR_REWT_TRAINING_DISABLE */

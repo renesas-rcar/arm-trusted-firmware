@@ -112,7 +112,7 @@
 #define MIDR_CA53		(0x0D03U << MIDR_PN_SHIFT)
 
 /* R-Car Gen3 product check */
-#if RCAR_LSI == RCAR_H3
+#if (RCAR_LSI == RCAR_H3) || (RCAR_LSI == RCAR_H3N)
 #define TARGET_PRODUCT		RCAR_PRODUCT_H3
 #define TARGET_NAME		"R-Car H3"
 #elif RCAR_LSI == RCAR_M3
@@ -600,6 +600,31 @@ void bl2_early_platform_setup(meminfo_t *mem_layout)
 
 	/* Setup the BL2 memory layout */
 	bl2_tzram_layout = *mem_layout;
+
+	/* DDR 4GB/8GB memory config log */
+	reg = mmio_read_32(RCAR_PRR);
+	/* Later than H3 Ver.3.0 */
+	if (((reg & RCAR_PRODUCT_MASK) == RCAR_PRODUCT_H3) &&
+		((reg & RCAR_CUT_MASK) >= RCAR_CUT_ES30)) {
+#if (RCAR_DRAM_LPDDR4_MEMCONF == 0)
+		/* 4GB(1GBx4) */
+		NOTICE("BL2: CH0: 0x400000000 - 0x440000000, 1 GiB\n");
+		NOTICE("BL2: CH1: 0x500000000 - 0x540000000, 1 GiB\n");
+		NOTICE("BL2: CH2: 0x600000000 - 0x640000000, 1 GiB\n");
+		NOTICE("BL2: CH3: 0x700000000 - 0x740000000, 1 GiB\n");
+#elif (RCAR_DRAM_LPDDR4_MEMCONF == 1) && (RCAR_DRAM_CHANNEL == 5) && \
+	(RCAR_DRAM_SPLIT == 2)
+		/* 4GB(2GBx2 2ch split) */
+		NOTICE("BL2: CH0: 0x400000000 - 0x480000000, 2 GiB\n");
+		NOTICE("BL2: CH1: 0x500000000 - 0x580000000, 2 GiB\n");
+#elif (RCAR_DRAM_LPDDR4_MEMCONF == 1) && (RCAR_DRAM_CHANNEL == 15)
+		/* 8GB(2GBx4: default) */
+		NOTICE("BL2: CH0: 0x400000000 - 0x480000000, 2 GiB\n");
+		NOTICE("BL2: CH1: 0x500000000 - 0x580000000, 2 GiB\n");
+		NOTICE("BL2: CH2: 0x600000000 - 0x680000000, 2 GiB\n");
+		NOTICE("BL2: CH3: 0x700000000 - 0x780000000, 2 GiB\n");
+#endif /* RCAR_DRAM_LPDDR4_MEMCONF == 0 */
+	}
 
 	if((modemr == MODEMR_BOOT_CPU_CA57) ||
 	   (modemr == MODEMR_BOOT_CPU_CA53)) {

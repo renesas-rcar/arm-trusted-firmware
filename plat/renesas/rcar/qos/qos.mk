@@ -5,7 +5,7 @@
 #
 
 ifeq (${RCAR_LSI},${RCAR_AUTO})
-#   E3 not available for LSI_AUTO
+#   E3, H3N not available for LSI_AUTO
     BL2_SOURCES += plat/renesas/rcar/qos/H3/qos_init_h3_v10.c
     BL2_SOURCES += plat/renesas/rcar/qos/H3/qos_init_h3_v11.c
     BL2_SOURCES += plat/renesas/rcar/qos/H3/qos_init_h3_v20.c
@@ -19,6 +19,9 @@ else ifdef RCAR_LSI_CUT_COMPAT
     BL2_SOURCES += plat/renesas/rcar/qos/H3/qos_init_h3_v11.c
     BL2_SOURCES += plat/renesas/rcar/qos/H3/qos_init_h3_v20.c
     BL2_SOURCES += plat/renesas/rcar/qos/H3/qos_init_h3_v30.c
+  endif
+  ifeq (${RCAR_LSI},${RCAR_H3N})
+    BL2_SOURCES += plat/renesas/rcar/qos/H3/qos_init_h3n_v30.c
   endif
   ifeq (${RCAR_LSI},${RCAR_M3})
     BL2_SOURCES += plat/renesas/rcar/qos/M3/qos_init_m3_v10.c
@@ -43,6 +46,14 @@ else
     else
 #     LSI_CUT 30 or later
       BL2_SOURCES += plat/renesas/rcar/qos/H3/qos_init_h3_v30.c
+    endif
+  endif
+  ifeq (${RCAR_LSI},${RCAR_H3N})
+    ifeq (${LSI_CUT},30)
+      BL2_SOURCES += plat/renesas/rcar/qos/H3/qos_init_h3n_v30.c
+    else
+#     LSI_CUT 30 or later
+      BL2_SOURCES += plat/renesas/rcar/qos/H3/qos_init_h3n_v30.c
     endif
   endif
   ifeq (${RCAR_LSI},${RCAR_M3})

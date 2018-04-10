@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2017, Renesas Electronics Corporation. All rights reserved.
+ * Copyright (c) 2015-2018, Renesas Electronics Corporation. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -9,6 +9,5 @@
 
 void bl2_cpg_init(void);
 void bl2_system_cpg_init(void);
-void cpg_write(uintptr_t regadr, uint32_t regval);
 
 #endif	/* BL2_CPG_INIT_H__ */

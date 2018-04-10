@@ -50,6 +50,7 @@
 #define WTCNT_COUNT_8p13k		(0x10000U - 40687U)
 #define WTCNT_COUNT_8p13k_H3ES1p0	(0x10000U - 20343U)
 #define WTCNT_COUNT_8p22k		(0x10000U - 41115U)
+#define WTCNT_COUNT_7p81k		(0x10000U - 39062U)
 #define WTCSRA_CKS_DIV16		(0x00000002U)
 
 static void bl2_swdt_disable(void);
@@ -58,10 +59,12 @@ void bl2_swdt_init(void)
 {
 	uint32_t sr;
 	uint32_t rmsk;
+#if (RCAR_LSI != RCAR_E3)
 	uint32_t product_cut = mmio_read_32((uintptr_t)RCAR_PRR)
 				& (RCAR_PRODUCT_MASK | RCAR_CUT_MASK);
 	uint32_t chk_data = mmio_read_32((uintptr_t)RCAR_MODEMR)
 							& CHECK_MD13_MD14;
+#endif /* RCAR_LSI != RCAR_E3 */
 
 	if ((mmio_read_32(SWDT_WTCSRA) & SWDT_ENABLE) != 0U) {
 		/* Stop SWDT	*/
@@ -76,6 +79,11 @@ void bl2_swdt_init(void)
 	/* The System Watchdog timer is a single-channel timer  */
 	/* that uses the OSCCLK as an input clock and can be    */
 	/* used as a watchdog timer.                            */
+#if (RCAR_LSI == RCAR_E3)
+	/* OSCCLK=125kHz count=39062, set 0x5A5A676A	*/
+	mmio_write_32(SWDT_WTCNT,(WTCNT_UPPER_BYTE |
+		WTCNT_COUNT_7p81k));
+#else /* RCAR_LSI == RCAR_E3 */
 	switch (chk_data) {
 	case MD14_MD13_TYPE_0:	/* MD13=0 and MD14=0		*/
 	case MD14_MD13_TYPE_2:	/* MD13=0 and MD14=1		*/
@@ -107,6 +115,7 @@ void bl2_swdt_init(void)
 		panic();
 		break;
 	}
+#endif /* RCAR_LSI == RCAR_E3 */
 
 	rmsk = mmio_read_32(RST_WDTRSTCR) & WDTRSTCR_MASK_ALL;
 	mmio_write_32(RST_WDTRSTCR,(WDTRSTCR_UPPER_BYTE

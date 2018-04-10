@@ -26,9 +26,10 @@
 #define RCAR_TRUSTED_SRAM_BASE	0x44000000	/* Trusted Firmware Image */
 #define RCAR_TRUSTED_SRAM_SIZE	0x0003E000	/* 248 KB */
 
-#define FLASH0_BASE		U(0x08000000)		/* LBSC RPC address */
-#define FLASH0_SIZE		U(0x04000000)		/* 64MB */
-#define FLASH_MEMORY_SIZE	U(0x04000000)		/* HyperFlash 64MB */
+#define FLASH0_BASE		U(0x08000000)	/* LBSC RPC address */
+#define FLASH0_SIZE		U(0x04000000)	/* 64MB */
+#define FLASH_MEMORY_SIZE	U(0x04000000)	/* HyperFlash 64MB */
+#define FLASH_TRANS_SIZE_UNIT	U(0x00000100)	/* HyperFlash transfer size units */
 
 /* Aggregate of all devices in the first GB */
 #define DEVICE_RCAR_BASE	U(0xE6000000)
@@ -210,6 +211,7 @@
 #define RCAR_CUT_ES10			U(0x00000000)
 #define RCAR_CUT_ES11			U(0x00000001)
 #define RCAR_CUT_ES20			U(0x00000010)
+#define RCAR_CUT_ES30			U(0x00000020)
 #define RCAR_MAJOR_MASK			U(0x000000F0)
 #define RCAR_MINOR_MASK			U(0x0000000F)
 #define RCAR_PRODUCT_SHIFT		U(8)

@@ -15,7 +15,7 @@
   #include "M3/pfc_init_m3.h"
   #include "M3N/pfc_init_m3n.h"
 #endif
-#if RCAR_LSI == RCAR_H3	/* H3 */
+#if (RCAR_LSI == RCAR_H3) || (RCAR_LSI == RCAR_H3N)	/* H3 */
   #include "H3/pfc_init_h3_v1.h"
   #include "H3/pfc_init_h3_v2.h"
 #endif
@@ -87,7 +87,7 @@ void pfc_init(void)
 #elif RCAR_LSI_CUT_COMPAT
 	switch (reg & PRR_PRODUCT_MASK) {
 	case PRR_PRODUCT_H3:
-#if RCAR_LSI != RCAR_H3
+#if (RCAR_LSI != RCAR_H3) && (RCAR_LSI != RCAR_H3N)
 		PRR_PRODUCT_ERR(reg);
 #else
 		switch (reg & PRR_CUT_MASK) {
@@ -130,7 +130,7 @@ void pfc_init(void)
 	}
 
 #else
- #if RCAR_LSI == RCAR_H3	/* H3 */
+ #if (RCAR_LSI == RCAR_H3) || (RCAR_LSI == RCAR_H3N)	/* H3 */
   #if RCAR_LSI_CUT == RCAR_CUT_10
 	/* H3 Ver.1.0 */
 	if ((PRR_PRODUCT_H3 | PRR_PRODUCT_10)

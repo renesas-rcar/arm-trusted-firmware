@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2017, Renesas Electronics Corporation. All rights reserved.
+ * Copyright (c) 2015-2018, Renesas Electronics Corporation. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -10,6 +10,7 @@
 #include "bl2_cpg_register.h"
 #include "avs_driver.h"
 #include "rcar_def.h"
+#include "rcar_private.h"
 
 #if (AVS_SETTING_ENABLE==1)
 #if PMIC_ROHM_BD9571
@@ -162,23 +163,14 @@ void bl2_avs_init(void)
 {
 #if (AVS_SETTING_ENABLE==1)
 	uint32_t val;
-	uint32_t mstp;
 
 #if PMIC_ROHM_BD9571
 	/* Initialize AVS status */
 	avs_status = avs_status_init;
 #endif	/* PMIC_ROHM_BD9571 */
 
-	/* Bit of the module which wants to enable clock supply. */
-	mstp = CPG_SYS_ADVFS_BIT;
-	/* Enables the clock supply to the CPG. */
-	cpg_write(CPG_SMSTPCR9, mmio_read_32(CPG_SMSTPCR9) & (~mstp));
-	/* Is the clock supply to the CPG disabled ? */
-	while((mmio_read_32(CPG_MSTPSR9) & mstp) != 0U) {
-		/* Enables the clock supply to the CPG. */
-		cpg_write(CPG_SMSTPCR9,
-				mmio_read_32(CPG_SMSTPCR9) & (~mstp));
-	}
+	/* Enable clock supply to ADVFS. */
+	mstpcr_write(CPG_SMSTPCR9, CPG_MSTPSR9, CPG_SYS_ADVFS_BIT);
 
 	/* Read AVS code (Initial values are derived from eFuse) */
 	val = mmio_read_32(ADVADJP2) & ADVADJP2_VOLCOND_MASK;
@@ -194,16 +186,8 @@ void bl2_avs_init(void)
 	}
 
 #if PMIC_ROHM_BD9571
-	/* Bit of the module which wants to enable clock supply. */
-	mstp = CPG_SYS_DVFS_BIT;
-	/* Enables the clock supply to the CPG. */
-	cpg_write(CPG_SMSTPCR9, mmio_read_32(CPG_SMSTPCR9) & (~mstp));
-	/* Is the clock supply to the CPG disabled ? */
-	while((mmio_read_32(CPG_MSTPSR9) & mstp) != 0U) {
-		/* Enables the clock supply to the CPG. */
-		cpg_write(CPG_SMSTPCR9,
-				mmio_read_32(CPG_SMSTPCR9) & (~mstp));
-	}
+	/* Enable clock supply to DVFS. */
+	mstpcr_write(CPG_SMSTPCR9, CPG_MSTPSR9, CPG_SYS_DVFS_BIT);
 
 	/* Disable I2C module and All internal registers initialized. */
 	mmio_write_8(IIC_ICCR, 0x00U);

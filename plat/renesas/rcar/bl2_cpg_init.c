@@ -9,12 +9,13 @@
 #include "rcar_def.h"
 #include "bl2_cpg_register.h"
 #include "bl2_cpg_init.h"
+#include "rcar_private.h"
 
 static void bl2_secure_cpg_init(void);
-#if (RCAR_LSI == RCAR_AUTO) || (RCAR_LSI == RCAR_H3)
+#if (RCAR_LSI == RCAR_AUTO) || (RCAR_LSI == RCAR_H3) || (RCAR_LSI == RCAR_H3N)
 static void bl2_realtime_cpg_init_h3(void);
 static void bl2_system_cpg_init_h3(void);
-#endif /* (RCAR_LSI == RCAR_AUTO) || (RCAR_LSI == RCAR_H3) */
+#endif /* (RCAR_LSI == RCAR_AUTO) || (RCAR_LSI == RCAR_H3) || (RCAR_LSI == RCAR_H3N) */
 #if (RCAR_LSI == RCAR_AUTO) || (RCAR_LSI == RCAR_M3)
 static void bl2_realtime_cpg_init_m3(void);
 static void bl2_system_cpg_init_m3(void);
@@ -102,7 +103,7 @@ static void bl2_secure_cpg_init(void)
 	cpg_write(SCSRSTECR11,	0x00000000U);
 }
 
-#if (RCAR_LSI == RCAR_AUTO) || (RCAR_LSI == RCAR_H3)
+#if (RCAR_LSI == RCAR_AUTO) || (RCAR_LSI == RCAR_H3) || (RCAR_LSI == RCAR_H3N)
 static void bl2_realtime_cpg_init_h3(void)
 {
 	uint32_t	prr;
@@ -121,7 +122,7 @@ static void bl2_realtime_cpg_init_h3(void)
 	/* Realtime Module Stop Control Register 1 */
 	cpg_write(RMSTPCR1,	0xFFFFFFFFU);
 	/* Realtime Module Stop Control Register 2 */
-	cpg_write(RMSTPCR2,	0x340E0FDCU);
+	cpg_write(RMSTPCR2,	0x040E0FDCU);
 	/* Realtime Module Stop Control Register 3 */
 	cpg_write(RMSTPCR3,	0xFFFFFFDFU);
 	/* Realtime Module Stop Control Register 4 */
@@ -156,7 +157,7 @@ static void bl2_system_cpg_init_h3(void)
 	/* System Module Stop Control Register 1 */
 	cpg_write(SMSTPCR1,	0xFFFFFFFFU);
 	/* System Module Stop Control Register 2 */
-	cpg_write(SMSTPCR2,	0x340E2FDCU);
+	cpg_write(SMSTPCR2,	0x040E2FDCU);
 	/* System Module Stop Control Register 3 */
 	cpg_write(SMSTPCR3,	0xFFFFFBDFU);
 	/* System Module Stop Control Register 4 */
@@ -176,7 +177,7 @@ static void bl2_system_cpg_init_h3(void)
 	/* System Module Stop Control Register 11 */
 	cpg_write(SMSTPCR11,	0x000000B7U);
 }
-#endif /* (RCAR_LSI == RCAR_AUTO) || (RCAR_LSI == RCAR_H3) */
+#endif /* (RCAR_LSI == RCAR_AUTO) || (RCAR_LSI == RCAR_H3) || (RCAR_LSI == RCAR_H3N) */
 
 #if (RCAR_LSI == RCAR_AUTO) || (RCAR_LSI == RCAR_M3)
 static void bl2_realtime_cpg_init_m3(void)
@@ -188,7 +189,7 @@ static void bl2_realtime_cpg_init_m3(void)
 	/* Realtime Module Stop Control Register 1 */
 	cpg_write(RMSTPCR1,	0xFFFFFFFFU);
 	/* Realtime Module Stop Control Register 2 */
-	cpg_write(RMSTPCR2,	0x340E0FDCU);
+	cpg_write(RMSTPCR2,	0x040E0FDCU);
 	/* Realtime Module Stop Control Register 3 */
 	cpg_write(RMSTPCR3,	0xFFFFFFDFU);
 	/* Realtime Module Stop Control Register 4 */
@@ -218,7 +219,7 @@ static void bl2_system_cpg_init_m3(void)
 	/* System Module Stop Control Register 1 */
 	cpg_write(SMSTPCR1,	0xFFFFFFFFU);
 	/* System Module Stop Control Register 2 */
-	cpg_write(SMSTPCR2,	0x340E2FDCU);
+	cpg_write(SMSTPCR2,	0x040E2FDCU);
 	/* System Module Stop Control Register 3 */
 	cpg_write(SMSTPCR3,	0xFFFFFBDFU);
 	/* System Module Stop Control Register 4 */
@@ -250,7 +251,7 @@ static void bl2_realtime_cpg_init_m3n(void)
 	/* Realtime Module Stop Control Register 1 */
 	cpg_write(RMSTPCR1,	0xFFFFFFFFU);
 	/* Realtime Module Stop Control Register 2 */
-	cpg_write(RMSTPCR2,	0x340E0FDCU);
+	cpg_write(RMSTPCR2,	0x040E0FDCU);
 	/* Realtime Module Stop Control Register 3 */
 	cpg_write(RMSTPCR3,	0xFFFFFFDFU);
 	/* Realtime Module Stop Control Register 4 */
@@ -280,7 +281,7 @@ static void bl2_system_cpg_init_m3n(void)
 	/* System Module Stop Control Register 1 */
 	cpg_write(SMSTPCR1,	0xFFFFFFFFU);
 	/* System Module Stop Control Register 2 */
-	cpg_write(SMSTPCR2,	0x340E2FDCU);
+	cpg_write(SMSTPCR2,	0x040E2FDCU);
 	/* System Module Stop Control Register 3 */
 	cpg_write(SMSTPCR3,	0xFFFFFBDFU);
 	/* System Module Stop Control Register 4 */
@@ -396,7 +397,7 @@ void bl2_cpg_init(void)
 			panic();
 			break;
 		}
-#elif RCAR_LSI == RCAR_H3
+#elif (RCAR_LSI == RCAR_H3) || (RCAR_LSI == RCAR_H3N)
 		bl2_realtime_cpg_init_h3();
 #elif RCAR_LSI == RCAR_M3
 		bl2_realtime_cpg_init_m3();
@@ -430,7 +431,7 @@ void bl2_system_cpg_init(void)
 		panic();
 		break;
 	}
-#elif RCAR_LSI == RCAR_H3
+#elif (RCAR_LSI == RCAR_H3) || (RCAR_LSI == RCAR_H3N)
 	bl2_system_cpg_init_h3();
 #elif RCAR_LSI == RCAR_M3
 	bl2_system_cpg_init_m3();
@@ -441,11 +442,4 @@ void bl2_system_cpg_init(void)
 #else /* RCAR_LSI == RCAR_XX */
 #error "Don't have CPG initialize routine(unknown)."
 #endif /* RCAR_LSI == RCAR_XX */
-}
-
-void cpg_write(uintptr_t regadr, uint32_t regval)
-{
-	uint32_t value = (regval);
-	mmio_write_32((uintptr_t)CPG_CPGWPR,~value);
-	mmio_write_32(regadr,value);
 }

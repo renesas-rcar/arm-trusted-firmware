@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2017, Renesas Electronics Corporation. All rights reserved.
+ * Copyright (c) 2015-2018, Renesas Electronics Corporation. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -79,13 +79,11 @@ endfunc micro_wait_ca53
 /* Time measurement function using the TMU ch3. */
 #if (TMU3_MEASUREMENT == 1)
 func init_TMU3
-	ldr	x0, =CPG_BASE
-	ldr	w1, [x0, #CPG_SMSTPCR1]
-	and	w1, w1, #~MSTPCR1_TMU1
-	mvn	w2, w1
-	str	w2, [x0, #CPG_CPGWPR]
-	str	w1, [x0, #CPG_SMSTPCR1]
-	dsb	sy
+	ldr	x2, =CPG_BASE
+	ldr	w0, [x2, #CPG_SMSTPCR1]
+	ldr	w1, [x2, #CPG_MSTPSR1]
+	ldr	w2, #MSTPCR1_TMU1
+	bl	mstpcr_write
 	ret
 endfunc init_TMU3
 

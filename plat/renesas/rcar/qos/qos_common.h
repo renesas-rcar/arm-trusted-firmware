@@ -52,6 +52,19 @@
 
 #endif
 
+#if (RCAR_LSI == RCAR_H3N)
+/* define used for H3N */
+#if (RCAR_REF_INT == RCAR_REF_DEFAULT)	//REF 1.95usec
+#define SUB_SLOT_CYCLE_H3N		(0x84U)		//132
+#else					//REF 3.9usec
+#define SUB_SLOT_CYCLE_H3N		(0x108U)	//264
+#endif /* (RCAR_REF_INT == RCAR_REF_DEFAULT) */
+
+#define SL_INIT_SSLOTCLK_H3N		(SUB_SLOT_CYCLE_H3N -1U)
+#define QOSWT_WTSET0_CYCLE_H3N	((SUB_SLOT_CYCLE_H3N * BASE_SUB_SLOT_NUM * 1000U)/OPERATING_FREQ)	//unit:ns
+
+#endif
+
 #if (RCAR_LSI == RCAR_AUTO) || (RCAR_LSI == RCAR_M3)
 /* define used for M3 */
 #if (RCAR_REF_INT == RCAR_REF_DEFAULT)	//REF 1.95usec

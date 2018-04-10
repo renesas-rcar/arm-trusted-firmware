@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2017, Renesas Electronics Corporation. All rights reserved.
+ * Copyright (c) 2015-2018, Renesas Electronics Corporation. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -14,6 +14,7 @@
 #include "bl2_dma_register.h"
 #include "dma_driver.h"
 #include "debug.h"
+#include "rcar_private.h"
 
 #define	DMA_USE_CHANNEL		(0x00000001U)	/* DMA CH setting (0/16/32) */
 #define	DMAOR_INITIAL		(0x0301U)	/* PR[1:0]=11, DME=1 */
@@ -22,15 +23,19 @@
 #define	DMAFIXDAR_DAR_MASK	(0x000000FFU)	/* DAR[39:32] */
 #define	DMADAR_BOUNDARY_ADDR	(0x100000000ULL)
 #define	DMATCR_CNT_SHIFT	(6U)		/* TS is 64-byte units */
+#define	DMATCR_MAX		(0x00FFFFFFU)	/* Max of TCR */
 #define	DMACHCR_TRN_MODE	(0x00105409U)	/* TS=0101, DM=01, SM=01, RS=0100, DE=1 */
+#define	DMACHCR_DE_BIT		(0x00000001U)	/* DMA Enable */
 #define	DMACHCR_TE_BIT		(0x00000002U)	/* Transfer End Flag */
 #define	DMACHCR_CHE_BIT		(0x80000000U)	/* Channel Address Error Flag */
 
-#define DMA_LENGTH_LIMIT	(0x40000000U)
-#define DMA_LENGTH_MASK		(0x3FFFFFFFU)
-#define DMA_LEN_ALIGN_MASK	(0x3FFFFFC0U)
-#define	DMA_FRACTION_MASK	(0x3FU)
-#define DMA_EXCEED_LEN_LIMIT	(0xC0000000U)
+#define	DMA_SIZE_UNIT		FLASH_TRANS_SIZE_UNIT	/* transfer size units */
+#define	DMA_FRACTION_MASK	(0xFFU)		/* fraction mask for 256-byte units */
+#define DMA_DST_LIMIT		(0x10000000000ULL)	/* 40bit address area */
+/* transfer length limit */
+#define DMA_LENGTH_LIMIT	((DMATCR_MAX \
+				* ((uint32_t)1U << DMATCR_CNT_SHIFT)) \
+				& ~((uint32_t)DMA_FRACTION_MASK))
 
 static void enableDMA(void);
 static void setupDMA(void);
@@ -40,12 +45,8 @@ static void endDMA(void);
 
 static void enableDMA(void)
 {
-	/* Is the clock supply to the CPG disabled ? */
-	while((mmio_read_32(CPG_MSTPSR2) & SYS_DMAC_BIT) != 0U) {
-		/* Enables the clock supply to the CPG. */
-		cpg_write(CPG_SMSTPCR2,
-			mmio_read_32(CPG_SMSTPCR2) & (~SYS_DMAC_BIT));
-	}
+	/* Enable clock supply to DMAC. */
+	mstpcr_write(CPG_SMSTPCR2, CPG_MSTPSR2, SYS_DMAC_BIT);
 }
 
 static void setupDMA(void)
@@ -54,7 +55,6 @@ static void setupDMA(void)
 	mmio_write_16(DMA_DMAOR,0x0000U);
 	/* DMA channel clear */
 	mmio_write_32(DMA_DMACHCLR,DMACHCLR_CH_ALL);
-	mmio_write_32(DMA_DMACHCLR,0x00000000U);
 }
 
 static void startDMA(uintptr_t dst, uint32_t src, uint32_t len)
@@ -89,13 +89,17 @@ static void endDMA(void)
 			break;
 		}
 	}
+	/* DMA transfer Disable*/
+	mmio_write_32(DMA_DMACHCR,
+		mmio_read_32(DMA_DMACHCR) & ~((uint32_t)DMACHCR_DE_BIT));
+	while ((mmio_read_32(DMA_DMACHCR) & DMACHCR_DE_BIT) != 0U) {
+	}
 	/* DMA DMA Secure Control Register */
 	mmio_write_32(DMA_DMASEC,0x00000000U);
 	/* DMA operation */
 	mmio_write_16(DMA_DMAOR,0x0000U);
 	/* DMA channel clear */
 	mmio_write_32(DMA_DMACHCLR,DMA_USE_CHANNEL);
-	mmio_write_32(DMA_DMACHCLR,0x00000000U);
 }
 
 void initDMA(void)
@@ -105,95 +109,44 @@ void initDMA(void)
 }
 
 /* execDMA */
-/* note) Parameter len is interpret 0x40000000, If len is 0. */
 void execDMA(uintptr_t dst, uint32_t src, uint32_t len)
 {
-	uint32_t	dmalen = 0U;
-	uint32_t	memlen = 0U;
-	uintptr_t	dst_l = 0U;
-	uint32_t	divlen = 0U;
+	uint32_t	dmalen;
 
-	/* fail safe */
-	if (((src + len) < src) ||
-	    ((len == 0U) && ((src + DMA_LENGTH_LIMIT) < src))) {
+	if ((len & DMA_FRACTION_MASK) != 0U) {
+		dmalen = (len + DMA_SIZE_UNIT) & ~((uint32_t)DMA_FRACTION_MASK);
+	} else {
+		dmalen = len;
+	}
+
+	if (((src + dmalen) < src) ||
+		((src & DMA_FRACTION_MASK) != 0U)) {
 		/* source address invalid */
-		if (len == 0U) {
-			len = DMA_LENGTH_LIMIT;
-		}
 		ERROR("BL2: DMA - Source address invalid\n" \
-		      "           source address  = 0x%x\n," \
+		      "           source address  = 0x%x\n" \
 		      "           transfer length = 0x%x\n",
-			src, len);
+			src, dmalen);
 		panic();
 	}
-	/* fail safe */
-	if ((dst >= DRAM_LIMIT) ||
-	    ((dst + (uintptr_t)len) >= DRAM_LIMIT) ||
-	    ((len == 0U) &&
-	     ((dst + DMA_LENGTH_LIMIT) >= DRAM_LIMIT))) {
+	if ((dst >= DMA_DST_LIMIT) ||
+	    ((dst + (uintptr_t)dmalen) > DMA_DST_LIMIT) ||
+		(((dst & UINT32_MAX) + dmalen) > DMADAR_BOUNDARY_ADDR) ||
+		((dst & DMA_FRACTION_MASK) != 0U)) {
 		/* destination address invalid */
-		if (len == 0U) {
-			len = DMA_LENGTH_LIMIT;
-		}
 		ERROR("BL2: DMA - Destination address invalid\n" \
-		      "           destination address = 0x%lx\n," \
+		      "           destination address = 0x%lx\n" \
 		      "           transfer length     = 0x%x\n",
-			dst, len);
+			dst, dmalen);
 		panic();
 	}
-	if (((dst & DMA_FRACTION_MASK) != 0U) ||
-		((src & DMA_FRACTION_MASK) != 0U) ||
-		((len & DMA_EXCEED_LEN_LIMIT) != 0U)) {
-		/* dst or src are not 64-byte alignment. */
-		dmalen = 0U;
-		memlen = len;
-	} else {
-		/* dst and src are 64-byte alignment. */
-		dmalen = len & DMA_LEN_ALIGN_MASK;
-		memlen = len & DMA_FRACTION_MASK;
+	if ((dmalen > DMA_LENGTH_LIMIT) || (dmalen == 0U)) {
+		/* transfer length exceeded the limit or zero. */
+		ERROR("BL2: DMA - Transfer size invalid\n" \
+		      "           transfer length     = 0x%x\n",
+			dmalen);
+		panic();
 	}
-	if (dmalen != 0U) {
-		dst_l = dst & UINT32_MAX;
-		if ((dst_l + (uintptr_t)dmalen) >= DMADAR_BOUNDARY_ADDR) {
-			/* transfer will over than the DMADAR range. */
-			/* divide dma transfer */
-			divlen = (uint32_t)(DMADAR_BOUNDARY_ADDR - dst_l);
-			startDMA(dst, src, divlen);
-			endDMA();
-			dst += (uintptr_t)divlen;
-			src += divlen;
-			dmalen -= divlen;
-		}
-		startDMA(dst, src, dmalen);
-		endDMA();
-		dst += dmalen;
-		src += dmalen;
-	} else {
-		if (memlen == 0U) {
-			dmalen = DMA_LENGTH_LIMIT;
-			dst_l = dst & UINT32_MAX;
-			if ((dst_l + (uintptr_t)dmalen) >= DMADAR_BOUNDARY_ADDR) {
-				/* transfer will over than the DMADAR range. */
-				/* divide dma transfer */
-				divlen = (uint32_t)(DMADAR_BOUNDARY_ADDR - dst_l);
-				startDMA(dst, src, divlen);
-				endDMA();
-				dst += (uintptr_t)divlen;
-				src += divlen;
-				dmalen -= divlen;
-			}
-			startDMA(dst, src, dmalen & DMA_LENGTH_MASK);
-			endDMA();
-			dst += dmalen;
-			src += dmalen;
-		}
-	}
-	if (memlen != 0U) {
-		(void)memcpy((void*)dst,
-			(const void*)((uintptr_t)src),
-				(size_t)memlen);
-#if RCAR_BL2_DCACHE == 1
-		flush_dcache_range(dst, (size_t)memlen);
-#endif /* RCAR_BL2_DCACHE == 1 */
-	}
+
+	startDMA(dst, src, dmalen);
+	endDMA();
 }

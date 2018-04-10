@@ -15,6 +15,10 @@ else ifdef RCAR_LSI_CUT_COMPAT
     BL2_SOURCES += plat/renesas/rcar/pfc/H3/pfc_init_h3_v1.c
     BL2_SOURCES += plat/renesas/rcar/pfc/H3/pfc_init_h3_v2.c
   endif
+  ifeq (${RCAR_LSI},${RCAR_H3N})
+    BL2_SOURCES += plat/renesas/rcar/pfc/H3/pfc_init_h3_v1.c
+    BL2_SOURCES += plat/renesas/rcar/pfc/H3/pfc_init_h3_v2.c
+  endif
   ifeq (${RCAR_LSI},${RCAR_M3})
     BL2_SOURCES += plat/renesas/rcar/pfc/M3/pfc_init_m3.c
   endif
@@ -34,6 +38,9 @@ else
 #     LSI_CUT 20 or later
       BL2_SOURCES += plat/renesas/rcar/pfc/H3/pfc_init_h3_v2.c
     endif
+  endif
+  ifeq (${RCAR_LSI},${RCAR_H3N})
+    BL2_SOURCES += plat/renesas/rcar/pfc/H3/pfc_init_h3_v2.c
   endif
   ifeq (${RCAR_LSI},${RCAR_M3})
     BL2_SOURCES += plat/renesas/rcar/pfc/M3/pfc_init_m3.c

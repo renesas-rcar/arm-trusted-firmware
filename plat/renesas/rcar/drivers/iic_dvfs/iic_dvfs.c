@@ -9,6 +9,7 @@
 #include "rcar_def.h"
 #include "bl2_cpg_register.h"
 #include "iic_dvfs.h"
+#include "rcar_private.h"
 
 #define DVFS_RETRY_MAX			(2U)
 
@@ -97,17 +98,11 @@ int32_t
 		uint8_t slave_addr, uint8_t reg_addr, uint8_t reg_data)
 {
 	int32_t result;
-	uint32_t reg;
 	DVFS_STATUS_T status;
 	uint32_t err_count;
 
-	/* Clock supply of DVFS is enabled */
-	reg = mmio_read_32(SCMSTPCR9) & ~CPG_BIT_SMSTPCR9_DVFS;
-	mmio_write_32(RCAR_CPGWPR, ~reg);
-	mmio_write_32(SCMSTPCR9, reg);
-	while ((mmio_read_32(SCMSTPCR9) & CPG_BIT_SMSTPCR9_DVFS)
-							!= 0x00000000U) {
-	}
+	/* Enable clock supply to DVFS. */
+	mstpcr_write(SCMSTPCR9, CPG_MSTPSR9, CPG_BIT_SMSTPCR9_DVFS);
 
 	/* Disable IIC-DVFS module */
 	mmio_write_8(IIC_DVFS_REG_ICCR, 0x00U);
@@ -153,17 +148,11 @@ int32_t
 		uint8_t slave_addr, uint8_t reg_addr, uint8_t *reg_data)
 {
 	int32_t result;
-	uint32_t reg;
 	DVFS_STATUS_T status;
 	uint32_t err_count;
 
-	/* Clock supply of DVFS is enabled */
-	reg = mmio_read_32(SCMSTPCR9) & ~CPG_BIT_SMSTPCR9_DVFS;
-	mmio_write_32(RCAR_CPGWPR, ~reg);
-	mmio_write_32(SCMSTPCR9, reg);
-	while ((mmio_read_32(SCMSTPCR9) & CPG_BIT_SMSTPCR9_DVFS)
-							!= 0x00000000U) {
-	}
+	/* Enable clock supply to DVFS. */
+	mstpcr_write(SCMSTPCR9, CPG_MSTPSR9, CPG_BIT_SMSTPCR9_DVFS);
 
 	/* Disable IIC-DVFS module */
 	mmio_write_8(IIC_DVFS_REG_ICCR, 0x00U);

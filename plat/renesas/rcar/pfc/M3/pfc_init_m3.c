@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2017, Renesas Electronics Corporation. All rights reserved.
+ * Copyright (c) 2015-2018, Renesas Electronics Corporation. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -9,7 +9,7 @@
 #include "bl2_cpg_init.h"
 #include "pfc_init_m3.h"
 #include "rcar_def.h"
-
+#include "rcar_private.h"
 
 /* GPIO base address */
 #define	GPIO_BASE		(0xE6050000U)
@@ -802,6 +802,7 @@
 /* Realtime module stop control */
 #define	CPG_BASE		(0xE6150000U)
 #define CPG_SCMSTPCR0		(CPG_BASE + 0x0B20U)
+#define CPG_MSTPSR0		(CPG_BASE + 0x0030U)
 #define SCMSTPCR0_RTDMAC	(0x00200000U)
 
 /* RT-DMAC Registers */
@@ -843,12 +844,8 @@ static void StartRtDma0_Descriptor(void)
 	reg = mmio_read_32(RCAR_PRR);
 	reg &= (RCAR_PRODUCT_MASK | RCAR_CUT_MASK);
 	if (reg == (RCAR_PRODUCT_M3_CUT10)) {
-		/* Module stop clear */
-		while((mmio_read_32(CPG_SCMSTPCR0) & SCMSTPCR0_RTDMAC) != 0U) {
-			reg = mmio_read_32(CPG_SCMSTPCR0);
-			reg &= ~SCMSTPCR0_RTDMAC;
-			cpg_write(CPG_SCMSTPCR0, reg);
-		}
+		/* Enable clock supply to RTDMAC. */
+		mstpcr_write(CPG_SCMSTPCR0, CPG_MSTPSR0, SCMSTPCR0_RTDMAC);
 
 		/* Initialize ch0, Reset Descriptor */
 		mmio_write_32(RTDMAC_RDMCHCLR, ((uint32_t)1U << RTDMAC_CH));

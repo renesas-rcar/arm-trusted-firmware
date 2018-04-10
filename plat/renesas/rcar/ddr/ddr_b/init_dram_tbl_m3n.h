@@ -3,6 +3,7 @@
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
+
 #define DDR_PHY_SLICE_REGSET_OFS_M3N  0x0800
 #define DDR_PHY_ADR_V_REGSET_OFS_M3N  0x0a00
 #define DDR_PHY_ADR_I_REGSET_OFS_M3N  0x0a80
@@ -220,7 +221,7 @@ static const uint32_t DDR_PHY_ADR_G_REGSET_M3N[DDR_PHY_ADR_G_REGSET_NUM_M3N] = {
 /*0b8b*/	0x00000050,
 /*0b8c*/	0x00000000,
 /*0b8d*/	0x01010100,
-/*0b8e*/	0x00000000,
+/*0b8e*/	0x00010000,
 /*0b8f*/	0x00000000,
 /*0b90*/	0x00000101,
 /*0b91*/	0x00000000,
@@ -274,7 +275,7 @@ static const uint32_t DDR_PHY_ADR_G_REGSET_M3N[DDR_PHY_ADR_G_REGSET_NUM_M3N] = {
 /*0bc1*/	0x00000020,
 /*0bc2*/	0x00000000,
 /*0bc3*/	0x00000000,
-/*0bc4*/	0x04102035,
+/*0bc4*/	0x04102006,
 /*0bc5*/	0x00041020,
 /*0bc6*/	0x01c98c98,
 /*0bc7*/	0x00400000,

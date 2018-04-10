@@ -53,7 +53,6 @@ static uint32_t wdqdm_dly[DRAM_CH_CNT][CS_CNT][SLICE_CNT][9];
 static uint32_t wdqdm_st[DRAM_CH_CNT][CS_CNT][SLICE_CNT];
 static uint32_t wdqdm_win[DRAM_CH_CNT][CS_CNT][SLICE_CNT];
 static uint32_t max_density;
-static uint32_t max_cs;
 static uint32_t ddr0800_mul;
 static uint32_t ddr_mul;
 static uint32_t ddr_mbps;
@@ -930,6 +929,7 @@ static uint16_t _f_scale(uint32_t ddr_mbps, uint32_t ddr_mbpsdiv, uint32_t ps, u
 static void _f_scale_js2(uint32_t ddr_mbps, uint32_t ddr_mbpsdiv, uint16_t *js2)
 {
 	int i;
+
 	for(i=0;i<JS2_TBLCNT;i++) {
 		js2[i] = _f_scale(ddr_mbps, ddr_mbpsdiv,
 			1UL*jedec_spec2[JS2_DERATE][i].ps,
@@ -1149,6 +1149,7 @@ static void ddrtbl_load(void)
 		RL = js1[js1_ind].RLwoDBI;
 
 	WL = js1[js1_ind].WL;
+
 	/* calculate jedec_spec2 */
 	_f_scale_js2(ddr_mbps, ddr_mbpsdiv, js2);
 
@@ -1907,7 +1908,7 @@ static void dbsc_regset(void)
 		dataL=(_par_DBRNK_VAL>>(i*4)) & 0x0f;
 		dataL2=0;
 		foreach_vch(ch){
-			dataL2=(dataL2<<4) | dataL;
+			dataL2= dataL2 | (dataL<<(4*ch)) ;
 		}
 		mmio_write_32(DBSC_DBRNK(2+i), dataL2);
 	}
@@ -1999,11 +2000,11 @@ static void dbsc_regset(void)
 		mmio_write_32(DBSC_DBMONCONF4, 0x00700000);
 	}
 
-	if (PRR_PRODUCT_H3==Prr_Product){
-		if(PRR_PRODUCT_10==Prr_Cut){
+	if (Prr_Product==PRR_PRODUCT_H3){
+		if(Prr_Cut==PRR_PRODUCT_10){
 			/* resrdis, simple mode, sc off	*/
 			mmio_write_32(DBSC_DBBCAMDIS, 0x00000007);
-		} else if(PRR_PRODUCT_11==Prr_Cut){
+		} else if(Prr_Cut==PRR_PRODUCT_11){
 			/* resrdis, simple mode		*/
 			mmio_write_32(DBSC_DBBCAMDIS, 0x00000005);
 		} else {/* H3ver2.0			*/
@@ -2108,7 +2109,7 @@ static void dbsc_regset_post(void)
 		/* non : H3ver1.x/M3-Wver1.x not support */
 	} else {
 #if RCAR_DRAM_SPLIT == 2
-		if(Prr_Product==PRR_PRODUCT_H3)
+		if((Prr_Product==PRR_PRODUCT_H3)&&(Boardcnf->phyvalid==0x05))
 			mmio_write_32(DBSC_DBDFICUPDCNF, 0x2a240001);
 		else
 			mmio_write_32(DBSC_DBDFICUPDCNF, 0x28240001);
@@ -2748,9 +2749,10 @@ static uint32_t init_ddr(void)
 	/***********************************************************************
 	Thermal sensor setting
 	***********************************************************************/
-	// THCTR Bit6: PONM=0 , Bit0: THSST=1
+	/* THCTR Bit6: PONM=0 , Bit0: THSST=1	*/
 	dataL = ((*((volatile uint32_t*)THS1_THCTR)) & 0xFFFFFFBF) | 0x00000001;
 	*((volatile uint32_t*)THS1_THCTR) = dataL;
+
 
 	/***********************************************************************
 	setup DDR mode registers
@@ -3644,7 +3646,7 @@ int32_t InitDram(void)
 		while( (BIT22) & *((volatile uint32_t*)CPG_MSTPSR5) );  // wait bit=0
 	}
 
-	// THCTR Bit6: PONM=0 , Bit0: THSST=0
+	/* THCTR Bit6: PONM=0 , Bit0: THSST=0	*/
 	dataL = (*((volatile uint32_t*)THS1_THCTR)) & 0xFFFFFFBE;
 	*((volatile uint32_t*)THS1_THCTR) = dataL;
 
@@ -3702,7 +3704,6 @@ int32_t InitDram(void)
 #endif//RCAR_DRAM_SPLIT_2CH
 
 	max_density=0;
-	max_cs=0;
 
 	for(cs=0;cs<CS_CNT;cs++){
 		ch_have_this_cs[cs]=0;
@@ -3722,8 +3723,6 @@ int32_t InitDram(void)
 				max_density=dataL;
 			if((cs==1) && (Prr_Product==PRR_PRODUCT_H3)&&(Prr_Cut<=PRR_PRODUCT_11))
 				continue;
-			if(cs==1)
-				max_cs=1;
 			ch_have_this_cs[cs] |= (1U<<ch);
 		}
 	}
@@ -3901,6 +3900,7 @@ void ddr_padcal_tcompensate_getinit(uint32_t override)
 		tcal.init_temp =125;
 	}
 }
+
 
 #ifndef ddr_qos_init_setting
 // for QoS init

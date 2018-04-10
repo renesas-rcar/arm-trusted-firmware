@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2017, Renesas Electronics Corporation. All rights reserved.
+ * Copyright (c) 2015-2018, Renesas Electronics Corporation. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -103,6 +103,7 @@
 #define EMMC_SECTOR_SIZE                    512
 #define EMMC_BLOCK_LENGTH                   512
 #define EMMC_BLOCK_LENGTH_DW                128
+#define EMMC_BUF_SIZE_SHIFT                 3U          /* 8byte = 2^3 */
 
 /** @brief eMMC specification clock
  */
