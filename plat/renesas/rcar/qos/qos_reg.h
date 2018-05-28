@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, Renesas Electronics Corporation. All rights reserved.
+ * Copyright (c) 2017-2018, Renesas Electronics Corporation. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -60,11 +60,15 @@
 #define	AXI_ADSPLCR1				(AXI_BASE + 0x000CU)
 #define	AXI_ADSPLCR2				(AXI_BASE + 0x0010U)
 #define	AXI_ADSPLCR3				(AXI_BASE + 0x0014U)
+#define	AXI_MMCR					(AXI_BASE + 0x0300U)
 #define	ADSPLCR0_ADRMODE_DEFAULT	((uint32_t)0U << 31U)
 #define	ADSPLCR0_ADRMODE_GEN2		((uint32_t)1U << 31U)
 #define	ADSPLCR0_SPLITSEL(x)		((uint32_t)(x) << 16U)
 #define	ADSPLCR0_AREA(x)			((uint32_t)(x) <<  8U)
 #define	ADSPLCR0_SWP				(0x0CU)
+
+#define	AXI_TR3CR					(0xE67D100CU)
+#define	AXI_TR4CR					(0xE67D1014U)
 
 #define	QOS_BASE0					(0xE67E0000U)
 #define	QOSBW_FIX_QOS_BANK0			(QOS_BASE0 + 0x0000U)

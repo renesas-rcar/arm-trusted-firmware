@@ -63,6 +63,7 @@ void bl31_secondly_reset(void);
 void rcar_bl31_go_suspend_to_ram(void);
 void rcar_bl31_set_suspend_to_ram(void);
 void rcar_bl31_init_suspend_to_ram(void);
+void rcar_bl31_suspend_to_ram(void);
 #endif /* RCAR_SYSTEM_SUSPEND */
 void rcar_bl31_code_copy_to_system_ram(void);
 uint32_t rcar_bl31_get_cluster(void);

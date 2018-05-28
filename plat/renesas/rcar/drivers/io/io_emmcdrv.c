@@ -202,7 +202,7 @@ static int32_t emmcdrv_block_read(io_entity_t *entity, uintptr_t buffer,
 						>> EMMC_SECTOR_SIZE_SHIFT;
 	sector_num = (uint32_t)((length + (EMMC_SECTOR_SIZE - 1U)) 
 						>> EMMC_SECTOR_SIZE_SHIFT);
-	if ((uint64_t)(buffer + length) <= UINT32_MAX ) {
+	if ((uint64_t)(buffer + length -1U) <= UINT32_MAX ) {
 		emmc_dma = LOADIMAGE_FLAGS_DMA_ENABLE;
 	}
 	

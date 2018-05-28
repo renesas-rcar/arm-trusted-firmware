@@ -11,7 +11,7 @@
 #include "qos_init_h3_v30.h"
 
 
-#define	RCAR_QOS_VERSION		"rev.0.06"
+#define	RCAR_QOS_VERSION		"rev.0.07"
 
 #define QOSCTRL_FSS			(QOS_BASE1 + 0x0048U)
 
@@ -222,6 +222,11 @@ void qos_init_h3_v30(void)
 	}
 #endif /* RCAR_REWT_TRAINING != RCAR_REWT_TRAINING_DISABLE */
 	}
+
+	/* AXI setting */
+	io_write_32(AXI_MMCR,  0x00010008U);
+	io_write_32(AXI_TR3CR, 0x00010000U);
+	io_write_32(AXI_TR4CR, 0x00010000U);
 
 	/* 3DG bus Leaf setting */
 

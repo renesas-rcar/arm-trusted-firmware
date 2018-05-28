@@ -12,7 +12,7 @@
 #define	PRR			(0xFFF00044)
 #define PRR_PRODUCT_MASK	(0x00007F00)
 #define PRR_CUT_MASK		(0x000000FF)
-#define	PRR_PRODUCT_H3_ES_1_0	(0x00004F00)	/* R-Car H3 ES1.0 */
+#define	PRR_PRODUCT_H3_VER_10	(0x00004F00)	/* R-Car H3 Ver.1.0 */
 #define	PRR_PRODUCT_E3		(0x00005700)	/* R-Car E3 */
 
 /* module stop */
@@ -182,7 +182,7 @@ func console_core_init
 	ldr	x1, =PRR
 	ldr	w1, [x1]
 	and	w1, w1, #(PRR_PRODUCT_MASK | PRR_CUT_MASK)
-	mov	w2, #PRR_PRODUCT_H3_ES_1_0
+	mov	w2, #PRR_PRODUCT_H3_VER_10
 	cmp	w1, w2
 	beq	3f
 	and	w1, w1, #PRR_PRODUCT_MASK
@@ -203,7 +203,7 @@ func console_core_init
 	mov	w1, #SCBRR_115200BPS	/* 115200bps */
 	b	2f
 3:
-	mov	w1, #SCBRR_230400BPS	/* H3 ES1.0 sets clock to doubling */
+	mov	w1, #SCBRR_230400BPS	/* H3 Ver.1.0 sets clock to doubling */
 2:
 	strb	w1, [x0, SCIF_SCBRR]
 #else

@@ -35,6 +35,9 @@
 #include "emmc_def.h"
 #include "rom_api.h"
 #include "board.h"
+#if PMIC_ROHM_BD9571 && RCAR_SYSTEM_RESET_KEEPON_DDR
+#include "iic_dvfs.h"
+#endif /* PMIC_ROHM_BD9571 && RCAR_SYSTEM_RESET_KEEPON_DDR */
 
 
 /* CPG write protect registers */
@@ -138,6 +141,14 @@
 #define GPIO_INDT		(GPIO_INDT1)
 #define GPIO_BKUP_TRG_SHIFT	((uint32_t)1U<<8U)
 #endif /* (RCAR_LSI == RCAR_E3) */
+
+#define	RCAR_COLD_BOOT		(0x00U)
+#define	RCAR_WARM_BOOT		(0x01U)
+#if PMIC_ROHM_BD9571 && RCAR_SYSTEM_RESET_KEEPON_DDR
+#define	PMIC_SLAVE_ADDR		(0x30U)
+#define	PMIC_REG_KEEP10		(0x79U)
+#define	BIT_REG_KEEP10_MAGIC	(0x55U)
+#endif /* PMIC_ROHM_BD9571 && RCAR_SYSTEM_RESET_KEEPON_DDR */
 
 static uint32_t isDdrBackupMode(void);
 
@@ -459,10 +470,10 @@ void bl2_early_platform_setup(meminfo_t *mem_layout)
 		break;
 	case RCAR_PRODUCT_M3:
 		str = product_m3;
-		/* M3 Ver1.1 */
+		/* M3 Ver.1.1 */
 		if(RCAR_PRODUCT_M3_CUT11 ==
 			(reg & (RCAR_PRODUCT_MASK | RCAR_CUT_MASK))) {
-			prr_val = RCAR_CUT_ES11;
+			prr_val = RCAR_CUT_VER11;
 		}
 		break;
 	case RCAR_PRODUCT_M3N:
@@ -475,7 +486,7 @@ void bl2_early_platform_setup(meminfo_t *mem_layout)
 		str = unknown;
 		break;
 	}
-	(void)sprintf(msg, "BL2: PRR is R-Car %s Ver%d.%d\n", str,
+	(void)sprintf(msg, "BL2: PRR is R-Car %s Ver.%d.%d\n", str,
 		((prr_val & RCAR_MAJOR_MASK) >> RCAR_MAJOR_SHIFT)
 		 + RCAR_MAJOR_OFFSET, (prr_val & RCAR_MINOR_MASK));
 	NOTICE("%s", msg);
@@ -511,10 +522,10 @@ void bl2_early_platform_setup(meminfo_t *mem_layout)
 	}
 	
 	if ((board_type == BOARD_UNKNOWN) || (board_rev == BOARD_REV_UNKNOWN)) {
-		(void)sprintf(msg, "BL2: Board is %s Rev---\n",
+		(void)sprintf(msg, "BL2: Board is %s Rev.---\n",
 			GET_BOARD_NAME(board_type));
 	} else {
-		(void)sprintf(msg, "BL2: Board is %s Rev%d.%d\n",
+		(void)sprintf(msg, "BL2: Board is %s Rev.%d.%d\n",
 			GET_BOARD_NAME(board_type), GET_BOARD_MAJOR(board_rev),
 			GET_BOARD_MINOR(board_rev));
 	}
@@ -605,7 +616,7 @@ void bl2_early_platform_setup(meminfo_t *mem_layout)
 	reg = mmio_read_32(RCAR_PRR);
 	/* Later than H3 Ver.3.0 */
 	if (((reg & RCAR_PRODUCT_MASK) == RCAR_PRODUCT_H3) &&
-		((reg & RCAR_CUT_MASK) >= RCAR_CUT_ES30)) {
+		((reg & RCAR_CUT_MASK) >= RCAR_CUT_VER30)) {
 #if (RCAR_DRAM_LPDDR4_MEMCONF == 0)
 		/* 4GB(1GBx4) */
 		NOTICE("BL2: CH0: 0x400000000 - 0x440000000, 1 GiB\n");
@@ -687,7 +698,7 @@ void bl2_early_platform_setup(meminfo_t *mem_layout)
 				DBGCPUPREN | mmio_read_32(CPG_CA53DBGRCR));
 	}
 
-	/* STA restriction check for R-Car H3 WS1.0 */
+	/* STA restriction check for R-Car H3 Ver.1.0 */
 	reg = mmio_read_32(RCAR_PRR) & (RCAR_PRODUCT_MASK | RCAR_CUT_MASK);
 	if (reg  == RCAR_PRODUCT_H3_CUT10) {
 		/* PLL0, PLL2, PLL4 setting */
@@ -729,28 +740,51 @@ void bl2_early_platform_setup(meminfo_t *mem_layout)
 }
 
 /*******************************************************************************
- * Get DDR Backup Mode from GPIO
- *  BKUP_TRG: LOW=Cold boot, HIGH=Warm boot
- * return: uint8_t
- *  0: DDR is not backup mode.
- *  1: DDR is backup mode.
+ * Get DDR Backup Mode
+ *  BKUP_TRG= LOW:Cold boot, HIGH:Warm boot
+ *
+ * When the build option RCAR_SYSTEM_RESET_KEEPON_DDR is enabled.
+ *  BKUP_TRG= LOW:Cold boot
+ *            HIGH and REG_KEEP10=MAGIC :Cold boot
+ *            HIGH and REG_KEEP10=other :Warm boot
+ * return: uint32_t
+ *  0: Cold boot
+ *  1: Warm boot
  ******************************************************************************/
 static uint32_t isDdrBackupMode(void)
 {
 #if RCAR_SYSTEM_SUSPEND
 	static uint32_t backupTriggerOnce = 1U;
-	static uint32_t backupTrigger = 0U;
+	static uint32_t backupTrigger = RCAR_COLD_BOOT;
+#if PMIC_ROHM_BD9571 && RCAR_SYSTEM_RESET_KEEPON_DDR
+	uint8_t pmic_data;
+	int32_t i2c_dvfs_ret;
+#endif /* PMIC_ROHM_BD9571 && RCAR_SYSTEM_RESET_KEEPON_DDR */
 	if (backupTriggerOnce == 1U) {
 		backupTriggerOnce = 0U;
 		/* Read and return BKUP_TRG */
 		if ((mmio_read_32((uintptr_t)GPIO_INDT) &
 					GPIO_BKUP_TRG_SHIFT) != 0U) {
-			backupTrigger = 1U;
+#if PMIC_ROHM_BD9571 && RCAR_SYSTEM_RESET_KEEPON_DDR
+			/* Read REG Keep10 register */
+			i2c_dvfs_ret = rcar_iic_dvfs_recieve(PMIC_SLAVE_ADDR,
+					PMIC_REG_KEEP10, &pmic_data);
+			if (0 != i2c_dvfs_ret) {
+				ERROR("BL2: REG Keep10 READ ERROR.\n");
+				panic();
+			} else {
+				if(BIT_REG_KEEP10_MAGIC != pmic_data) {
+					backupTrigger = RCAR_WARM_BOOT;
+				}
+			}
+#else /* PMIC_ROHM_BD9571 && RCAR_SYSTEM_RESET_KEEPON_DDR */
+			backupTrigger = RCAR_WARM_BOOT;
+#endif /* PMIC_ROHM_BD9571 && RCAR_SYSTEM_RESET_KEEPON_DDR */
 		}
 	}
 	return backupTrigger;
 #else	/* RCAR_SYSTEM_SUSPEND */
-	return 0U;	/* Cold boot only */
+	return RCAR_COLD_BOOT;	/* Cold boot only */
 #endif	/* RCAR_SYSTEM_SUSPEND */
 }
 
@@ -791,7 +825,7 @@ void bl2_plat_flush_bl31_params(void)
 	val = mmio_read_32(RCAR_PRR);
 	if ((RCAR_PRODUCT_M3 == (val & RCAR_PRODUCT_MASK)) ||
 		((RCAR_PRODUCT_H3 == (val & RCAR_PRODUCT_MASK)) &&
-			(RCAR_CUT_ES20 > (val & RCAR_CUT_MASK)))) {
+			(RCAR_CUT_VER20 > (val & RCAR_CUT_MASK)))) {
 		/* No need to disable MFIS write protection */
 		;
 	} else {
@@ -816,8 +850,8 @@ void bl2_plat_flush_bl31_params(void)
 			mmio_write_32(IPMMUMP_IMSCTLR, IMSCTLR_DISCACHE);
 			mmio_write_32(IPMMUDS0_IMSCTLR, IMSCTLR_DISCACHE);
 			mmio_write_32(IPMMUDS1_IMSCTLR, IMSCTLR_DISCACHE);
-		} else if ((val == (RCAR_PRODUCT_M3N | RCAR_CUT_ES10)) ||
-			   (val == (RCAR_PRODUCT_M3N | RCAR_CUT_ES11))) {
+		} else if ((val == (RCAR_PRODUCT_M3N | RCAR_CUT_VER10)) ||
+			   (val == (RCAR_PRODUCT_M3N | RCAR_CUT_VER11))) {
 			/* Disable TLB function in each IPMMU cache */
 			mmio_write_32(IPMMUVI0_IMSCTLR, IMSCTLR_DISCACHE);
 			mmio_write_32(IPMMUPV0_IMSCTLR, IMSCTLR_DISCACHE);
@@ -826,7 +860,7 @@ void bl2_plat_flush_bl31_params(void)
 			mmio_write_32(IPMMUMP_IMSCTLR, IMSCTLR_DISCACHE);
 			mmio_write_32(IPMMUDS0_IMSCTLR, IMSCTLR_DISCACHE);
 			mmio_write_32(IPMMUDS1_IMSCTLR, IMSCTLR_DISCACHE);
-		} else if (val == (RCAR_PRODUCT_E3 | RCAR_CUT_ES10)) {
+		} else if (val == (RCAR_PRODUCT_E3 | RCAR_CUT_VER10)) {
 			/* Disable TLB function in each IPMMU cache */
 			mmio_write_32(IPMMUVI0_IMSCTLR, IMSCTLR_DISCACHE);
 			mmio_write_32(IPMMUPV0_IMSCTLR, IMSCTLR_DISCACHE);

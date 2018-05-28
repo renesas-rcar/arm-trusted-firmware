@@ -29,9 +29,9 @@ endfunc cortex_a72_disable_l2_prefetch
 	 * ---------------------------------------------
 	 */
 func cortex_a72_disable_hw_prefetcher
-	ldcopr16	r0, r1, CORTEX_A72_ACTLR
-	orr64_imm	r0, r1, CORTEX_A72_ACTLR_DISABLE_L1_DCACHE_HW_PFTCH
-	stcopr16	r0, r1, CORTEX_A72_ACTLR
+	ldcopr16	r0, r1, CORTEX_A72_CPUACTLR
+	orr64_imm	r0, r1, CORTEX_A72_CPUACTLR_DISABLE_L1_DCACHE_HW_PFTCH
+	stcopr16	r0, r1, CORTEX_A72_CPUACTLR
 	isb
 	dsb	ish
 	bx	lr
@@ -61,11 +61,50 @@ func cortex_a72_disable_ext_debug
 	bx	lr
 endfunc cortex_a72_disable_ext_debug
 
+	/* ---------------------------------------------------
+	 * Errata Workaround for Cortex A72 Errata #859971.
+	 * This applies only to revision <= r0p3 of Cortex A72.
+	 * Inputs:
+	 * r0: variant[4:7] and revision[0:3] of current cpu.
+	 * Shall clobber: r0-r3
+	 * ---------------------------------------------------
+	 */
+func errata_a72_859971_wa
+	mov		r2,lr
+	bl		check_errata_859971
+	mov		lr, r2
+	cmp		r0, #ERRATA_NOT_APPLIES
+	beq		1f
+	ldcopr16	r0, r1, CORTEX_A72_CPUACTLR
+	orr64_imm	r1, r1, CORTEX_A72_CPUACTLR_DIS_INSTR_PREFETCH
+	stcopr16	r0, r1, CORTEX_A72_CPUACTLR
+1:
+	bx   		lr
+endfunc errata_a72_859971_wa
+
+func check_errata_859971
+	mov		r1, #0x03
+	b		cpu_rev_var_ls
+endfunc check_errata_859971
+
+func check_errata_cve_2017_5715
+	mov	r0, #ERRATA_MISSING
+	bx	lr
+endfunc check_errata_cve_2017_5715
+
 	/* -------------------------------------------------
 	 * The CPU Ops reset function for Cortex-A72.
 	 * -------------------------------------------------
 	 */
 func cortex_a72_reset_func
+	mov	r5, lr
+	bl	cpu_get_rev_var
+	mov	r4, r0
+
+#if ERRATA_A72_859971
+	mov	r0, r4
+	bl	errata_a72_859971_wa
+#endif
 	/* ---------------------------------------------
 	 * Enable the SMP bit.
 	 * ---------------------------------------------
@@ -185,6 +224,28 @@ func cortex_a72_cluster_pwr_dwn
 	pop	{r12, lr}
 	b	cortex_a72_disable_ext_debug
 endfunc cortex_a72_cluster_pwr_dwn
+
+#if REPORT_ERRATA
+/*
+ * Errata printing function for Cortex A72. Must follow AAPCS.
+ */
+func cortex_a72_errata_report
+	push	{r12, lr}
+
+	bl	cpu_get_rev_var
+	mov	r4, r0
+
+	/*
+	 * Report all errata. The revision-variant information is passed to
+	 * checking functions of each errata.
+	 */
+	report_errata ERRATA_A72_859971, cortex_a72, 859971
+	report_errata WORKAROUND_CVE_2017_5715, cortex_a72, cve_2017_5715
+
+	pop	{r12, lr}
+	bx	lr
+endfunc cortex_a72_errata_report
+#endif
 
 declare_cpu_ops cortex_a72, CORTEX_A72_MIDR, \
 	cortex_a72_reset_func, \

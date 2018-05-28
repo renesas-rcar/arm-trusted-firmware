@@ -367,6 +367,40 @@ static void __dead2 rcar_system_reset(void)
 #if PMIC_LEVEL_MODE
 	int32_t error;
 
+#if RCAR_SYSTEM_RESET_KEEPON_DDR
+	uint8_t		mode;
+
+	/* The code of iic for DVFS driver is copied to system ram */
+	rcar_bl31_code_copy_to_system_ram();
+
+	error = rcar_iic_dvfs_send(SLAVE_ADDR_PMIC
+					,REG_ADDR_REG_KEEP10
+					,REG_DATA_REG_KEEP10_MAGIC);
+	if (error != 0) {
+		ERROR("Failed send KEEP10 magic ret=%d \n",error);
+	} else {
+
+		error = rcar_iic_dvfs_recieve(SLAVE_ADDR_PMIC
+					,REG_ADDR_BKUP_Mode_Cnt, &mode);
+		if (error != 0) {
+			ERROR("Failed recieve BKUP_Mode_Cnt ret=%d \n",error);
+		} else {
+			mode = ( mode | REG_DATA_KEEPON_DDR1C |
+					REG_DATA_KEEPON_DDR0C |
+					REG_DATA_KEEPON_DDR1  |
+					REG_DATA_KEEPON_DDR0 );
+
+			error = rcar_iic_dvfs_send(SLAVE_ADDR_PMIC
+						,REG_ADDR_BKUP_Mode_Cnt
+						,mode);
+			if (error != 0) {
+				ERROR("Failed send KEEPON_DDRx ret=%d \n",error);
+			} else {
+				rcar_bl31_set_suspend_to_ram();
+			}
+		}
+	}
+#else /* RCAR_SYSTEM_RESET_KEEPON_DDR */
 	/* The code of iic for DVFS driver is copied to system ram */
 	rcar_bl31_code_copy_to_system_ram();
 
@@ -376,6 +410,7 @@ static void __dead2 rcar_system_reset(void)
 	if (error != 0) {
 		ERROR("BL3-1:Failed the SYSTEM-RESET.\n");
 	}
+#endif /* RCAR_SYSTEM_RESET_KEEPON_DDR */
 #else /* pulse mode */
 	#if (RCAR_GEN3_ULCB==1)
 	/* Starter Kit */

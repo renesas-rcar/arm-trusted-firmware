@@ -270,8 +270,8 @@ u_register_t psci_stat_residency(u_register_t target_cpu,
 u_register_t psci_stat_count(u_register_t target_cpu,
 			unsigned int power_state);
 
-#if PLAT_rcar
-extern void rcar_bl31_set_suspend_to_ram(void);
+#if (PLAT_rcar && RCAR_SYSTEM_SUSPEND)
+extern void rcar_bl31_suspend_to_ram(void);
 #endif
 
 #endif /* __PSCI_PRIVATE_H__ */

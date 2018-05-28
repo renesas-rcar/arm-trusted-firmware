@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2014, ARM Limited and Contributors. All rights reserved.
- * Copyright (c) 2015-2017, Renesas Electronics Corporation. All rights reserved.
+ * Copyright (c) 2015-2018, Renesas Electronics Corporation. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -9,6 +9,7 @@
 #include <io_driver.h>
 #include <io_storage.h>
 #include <string.h>
+#include "rcar_def.h"
 #include "io_common.h"
 #include "io_private.h"
 #include "io_memdrv.h"
@@ -149,6 +150,7 @@ static int32_t memdrv_block_read(io_entity_t *entity, uintptr_t buffer,
 			     size_t length, size_t *length_read)
 {
 	file_state_t *fp;
+	int32_t result;
 
 	fp = (file_state_t *)entity->info;
 
@@ -157,15 +159,23 @@ static int32_t memdrv_block_read(io_entity_t *entity, uintptr_t buffer,
 		fp->base + fp->file_pos,
 		length, length);
 
-	/* DMA driver */
-	execDMA(buffer, (uint32_t)(fp->base + fp->file_pos),
-		(uint32_t)length);
+	/* check source range */
+	if (FLASH_MEMORY_SIZE < (fp->file_pos + length)) {
+		ERROR("BL2: check load image (source address)\n");
+		result = IO_FAIL;
+	} else {
 
-	*length_read = length;
-	/* advance the file 'cursor' for incremental reads */
-	fp->file_pos += (ssize_t)length;
+		/* DMA driver */
+		execDMA(buffer, (uint32_t)(fp->base + fp->file_pos),
+			(uint32_t)length);
 
-	return IO_SUCCESS;
+		*length_read = length;
+		/* advance the file 'cursor' for incremental reads */
+		fp->file_pos += (ssize_t)length;
+
+		result = IO_SUCCESS;
+	}
+	return result;
 }
 
 

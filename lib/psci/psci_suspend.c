@@ -200,7 +200,7 @@ exit:
 		return;
 #if (PLAT_rcar && RCAR_SYSTEM_SUSPEND)
 	if ((uint32_t)end_pwrlvl==(uint32_t)PLAT_MAX_PWR_LVL) {
-		rcar_bl31_set_suspend_to_ram();
+		rcar_bl31_suspend_to_ram();
 	}
 #endif
 

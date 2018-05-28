@@ -24,6 +24,13 @@ static uint32_t boardcnf_get_brd_type(void) {
 }
 #endif // BOARD_JUDGE_AUTO
 /*******************************************************************************
+ *	Set DRAM ODT , VREFca , Derating  condtition
+ ******************************************************************************/
+//#define _def_LPDDR4_ODT	0x36	// MR11
+//#define _def_LPDDR4_VREFCA	0x11	// MR12
+//#define JS2_DERATE		1	// 1: Temperature Derating
+
+/*******************************************************************************
  *	BOARD CONFIGRATION
  *	PLEASE DEFINE boardcnfs[]
  ******************************************************************************/
@@ -33,8 +40,6 @@ struct _boardcnf_ch {
 	 *0x02... 8Gbit/die
 	 *0x03...12Gbit/die
 	 *0x04...16Gbit/die
-	 *0x05...24Gbit/die
-	 *0x06...32Gbit/die
 	 *0xff...NO_MEMORY
 	*/
 	uint8_t ddr_density[CS_CNT];

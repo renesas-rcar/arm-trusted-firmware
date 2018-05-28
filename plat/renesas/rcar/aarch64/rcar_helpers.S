@@ -326,6 +326,12 @@ A57:
 	 * Cortex-A57 specific settings
 	 * --------------------------------------------------------------------
 	 */
+	mrs	x0, CORTEX_A57_CPUACTLR_EL1		/* Get data from CPUACTLR_EL1	*/
+	orr	x0, x0, #RCAR_CA57_DIS_LOAD_PASS_STORE	/* Disable Load pass store 	*/
+	msr	CORTEX_A57_CPUACTLR_EL1, x0		/* Store data to CPUACTLR_EL1 	*/
+	isb
+	dsb	sy
+
 	mrs	x0, CORTEX_A57_L2CTLR_EL1		/* Get data from CORTEX_A57_L2CTLR_EL1		*/
 	/*
 	 * On R-Car H3/M3/M3N

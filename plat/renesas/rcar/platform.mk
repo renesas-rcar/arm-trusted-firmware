@@ -289,7 +289,7 @@ endif
 $(eval $(call add_define,RCAR_SYSTEM_SUSPEND))
 
 # SYSTEM_SUSPEND requires power control of PMIC etc.
-# When executing SYSTEM_SUSPEND other than Salvator-X,
+# When executing SYSTEM_SUSPEND other than Salvator-X, Salvator-XS and Ebisu,
 # processing equivalent to that implemented in PMIC_ROHM_BD9571 is necessary.
 ifeq (${RCAR_SYSTEM_SUSPEND},1)
   ifeq (${PMIC_ROHM_BD9571},0)
@@ -326,10 +326,33 @@ RCAR_DRAM_CHANNEL :=15
 endif
 $(eval $(call add_define,RCAR_DRAM_CHANNEL))
 
+#Process RCAR_SYSTEM_RESET_KEEPON_DDR flag
+ifndef RCAR_SYSTEM_RESET_KEEPON_DDR
+RCAR_SYSTEM_RESET_KEEPON_DDR := 0
+endif
+$(eval $(call add_define,RCAR_SYSTEM_RESET_KEEPON_DDR))
+
+# RCAR_SYSTEM_RESET_KEEPON_DDR requires power control of PMIC etc.
+# When executing SYSTEM_SUSPEND other than Salvator-X, Salvator-XS and Ebisu,
+# processing equivalent to that implemented in PMIC_ROHM_BD9571 is necessary.
+# Also, it is necessary to enable RCAR_SYSTEM_SUSPEND.
+ifeq (${RCAR_SYSTEM_RESET_KEEPON_DDR},1)
+  ifeq (${PMIC_ROHM_BD9571},0)
+    $(error "Error: When you want RCAR_SYSTEM_RESET_KEEPON_DDR to be enable, please also set PMIC_ROHM_BD9571 to enable.")
+  endif
+  ifeq (${RCAR_SYSTEM_SUSPEND},0)
+    $(error "Error: When you want RCAR_SYSTEM_RESET_KEEPON_DDR to be enable, please also set RCAR_SYSTEM_SUSPEND to enable.")
+  endif
+endif
+
+
 # Enable workarounds for selected Cortex-A53 erratas.
 ERRATA_A53_835769  := 1
 ERRATA_A53_843419  := 1
 ERRATA_A53_855873  := 1
+
+# Enable workarounds for selected Cortex-A57 erratas.
+ERRATA_A57_859972  := 1
 
 include plat/renesas/rcar/ddr/ddr.mk
 include plat/renesas/rcar/qos/qos.mk

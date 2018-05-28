@@ -48,7 +48,7 @@
 #define WTCSRB_INIT_DATA	(WTCSRB_UPPER_BYTE + 0x21U)
 
 #define WTCNT_COUNT_8p13k		(0x10000U - 40687U)
-#define WTCNT_COUNT_8p13k_H3ES1p0	(0x10000U - 20343U)
+#define WTCNT_COUNT_8p13k_H3VER10	(0x10000U - 20343U)
 #define WTCNT_COUNT_8p22k		(0x10000U - 41115U)
 #define WTCNT_COUNT_7p81k		(0x10000U - 39062U)
 #define WTCSRA_CKS_DIV16		(0x00000002U)
@@ -98,11 +98,11 @@ void bl2_swdt_init(void)
 		break;
 	case MD14_MD13_TYPE_3:	/* MD13=1 and MD14=1		*/
 		/* OSCCLK=130.2kHz				*/
-		if (product_cut==(RCAR_PRODUCT_H3 | RCAR_CUT_ES10)) {
+		if (product_cut==(RCAR_PRODUCT_H3 | RCAR_CUT_VER10)) {
 			/* R-car H3 ES1.0			*/
 			/* count=20343, set 0x5A5AB089		*/
 			mmio_write_32(SWDT_WTCNT,(WTCNT_UPPER_BYTE |
-				WTCNT_COUNT_8p13k_H3ES1p0));
+				WTCNT_COUNT_8p13k_H3VER10));
 		} else {
 			/* count=40687, set 0x5A5A6111		*/
 			mmio_write_32(SWDT_WTCNT,(WTCNT_UPPER_BYTE |

@@ -154,3 +154,5 @@ else
         endif
     endif
 endif
+
+ENABLE_AMU			:= 0

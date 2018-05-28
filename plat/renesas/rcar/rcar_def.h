@@ -208,21 +208,21 @@
 #define RCAR_PRODUCT_M3			U(0x00005200)
 #define RCAR_PRODUCT_M3N		U(0x00005500)
 #define RCAR_PRODUCT_E3			U(0x00005700)
-#define RCAR_CUT_ES10			U(0x00000000)
-#define RCAR_CUT_ES11			U(0x00000001)
-#define RCAR_CUT_ES20			U(0x00000010)
-#define RCAR_CUT_ES30			U(0x00000020)
+#define RCAR_CUT_VER10			U(0x00000000)
+#define RCAR_CUT_VER11			U(0x00000001)
+#define RCAR_CUT_VER20			U(0x00000010)
+#define RCAR_CUT_VER30			U(0x00000020)
 #define RCAR_MAJOR_MASK			U(0x000000F0)
 #define RCAR_MINOR_MASK			U(0x0000000F)
 #define RCAR_PRODUCT_SHIFT		U(8)
 #define RCAR_MAJOR_SHIFT		U(4)
 #define RCAR_MINOR_SHIFT		U(0)
 #define RCAR_MAJOR_OFFSET		U(1)
-#define RCAR_PRODUCT_H3_CUT10		(RCAR_PRODUCT_H3 | U(0x00)) /* H3 Ver1.0 */
-#define RCAR_PRODUCT_H3_CUT11		(RCAR_PRODUCT_H3 | U(0x01)) /* H3 Ver1.1 */
-#define RCAR_PRODUCT_H3_CUT20		(RCAR_PRODUCT_H3 | U(0x10)) /* H3 Ver2.0 */
-#define RCAR_PRODUCT_M3_CUT10		(RCAR_PRODUCT_M3 | U(0x00)) /* M3 Ver1.0 */
-#define RCAR_PRODUCT_M3_CUT11		(RCAR_PRODUCT_M3 | U(0x10)) /* M3 Ver1.1 */
+#define RCAR_PRODUCT_H3_CUT10		(RCAR_PRODUCT_H3 | U(0x00)) /* H3 Ver.1.0 */
+#define RCAR_PRODUCT_H3_CUT11		(RCAR_PRODUCT_H3 | U(0x01)) /* H3 Ver.1.1 */
+#define RCAR_PRODUCT_H3_CUT20		(RCAR_PRODUCT_H3 | U(0x10)) /* H3 Ver.2.0 */
+#define RCAR_PRODUCT_M3_CUT10		(RCAR_PRODUCT_M3 | U(0x00)) /* M3 Ver.1.0 */
+#define RCAR_PRODUCT_M3_CUT11		(RCAR_PRODUCT_M3 | U(0x10)) /* M3 Ver.1.1 */
 #define RCAR_CPU_MASK_CA57		U(0x80000000)
 #define RCAR_CPU_MASK_CA53		U(0x04000000)
 #define RCAR_CPU_HAVE_CA57		U(0x00000000)
@@ -284,5 +284,11 @@
 #define	EXTAL_MD14_MD13_TYPE_3	U(16666600)	/* When MD14=1 MD13=1 */
 #define	EXTAL_SALVATOR_XS	U(8320000)	/* When board is Salvator-XS */
 #define EXTAL_EBISU		U(24000000)	/* When board is Ebisu */
+
+/*******************************************************************************
+ * CPU Auxiliary Control Register specific definitions.
+ ******************************************************************************/
+
+#define RCAR_CA57_DIS_LOAD_PASS_STORE	(ULL(1) << 55)
 
 #endif /* RCAR_DEF_H__ */

@@ -844,7 +844,9 @@ struct _jedec_spec2 {
 #define JS2_tRFCab (JS2_TBLCNT+3)
 #define JS2_CNT (JS2_TBLCNT+4)
 
+#ifndef JS2_DERATE
 #define JS2_DERATE 0
+#endif
 const struct _jedec_spec2 jedec_spec2[2][JS2_TBLCNT] = {
 	{
 /*tSR   */	{ 15000 , 3 },
@@ -879,7 +881,7 @@ const struct _jedec_spec2 jedec_spec2[2][JS2_TBLCNT] = {
 /*tRAS  */	{ 43875 , 3 },
 /*tWR   */	{ 18000 , 4 },
 /*tWTR  */	{ 10000 , 8 },
-/*tRRD  */	{ 10000 , 4 },
+/*tRRD  */	{ 11875 , 4 },
 /*tPPD  */	{     0 , 0 },
 /*tFAW  */	{ 40000 , 0 },
 /*tDQSCK*/	{  3600 , 0 },
@@ -1293,11 +1295,36 @@ static void ddrtbl_load(void)
 	/***********************************************************************
 	Adjust PI paramters
 	***********************************************************************/
+#ifdef _def_LPDDR4_ODT
+	ddrtbl_setval(_cnf_DDR_PI_REGSET, _reg_PI_MR11_DATA_F0_0, _def_LPDDR4_ODT);
+	ddrtbl_setval(_cnf_DDR_PI_REGSET, _reg_PI_MR11_DATA_F0_1, _def_LPDDR4_ODT);
+	ddrtbl_setval(_cnf_DDR_PI_REGSET, _reg_PI_MR11_DATA_F0_2, _def_LPDDR4_ODT);
+	ddrtbl_setval(_cnf_DDR_PI_REGSET, _reg_PI_MR11_DATA_F0_3, _def_LPDDR4_ODT);
+
+	ddrtbl_setval(_cnf_DDR_PI_REGSET, _reg_PI_MR11_DATA_F1_0, _def_LPDDR4_ODT);
+	ddrtbl_setval(_cnf_DDR_PI_REGSET, _reg_PI_MR11_DATA_F1_1, _def_LPDDR4_ODT);
+	ddrtbl_setval(_cnf_DDR_PI_REGSET, _reg_PI_MR11_DATA_F1_2, _def_LPDDR4_ODT);
+	ddrtbl_setval(_cnf_DDR_PI_REGSET, _reg_PI_MR11_DATA_F1_3, _def_LPDDR4_ODT);
+#endif//_def_LPDDR4_ODT
+
+#ifdef _def_LPDDR4_VREFCA
+	ddrtbl_setval(_cnf_DDR_PI_REGSET, _reg_PI_MR12_DATA_F0_0, _def_LPDDR4_VREFCA);
+	ddrtbl_setval(_cnf_DDR_PI_REGSET, _reg_PI_MR12_DATA_F0_1, _def_LPDDR4_VREFCA);
+	ddrtbl_setval(_cnf_DDR_PI_REGSET, _reg_PI_MR12_DATA_F0_2, _def_LPDDR4_VREFCA);
+	ddrtbl_setval(_cnf_DDR_PI_REGSET, _reg_PI_MR12_DATA_F0_3, _def_LPDDR4_VREFCA);
+
+	ddrtbl_setval(_cnf_DDR_PI_REGSET, _reg_PI_MR12_DATA_F1_0, _def_LPDDR4_VREFCA);
+	ddrtbl_setval(_cnf_DDR_PI_REGSET, _reg_PI_MR12_DATA_F1_1, _def_LPDDR4_VREFCA);
+	ddrtbl_setval(_cnf_DDR_PI_REGSET, _reg_PI_MR12_DATA_F1_2, _def_LPDDR4_VREFCA);
+	ddrtbl_setval(_cnf_DDR_PI_REGSET, _reg_PI_MR12_DATA_F1_3, _def_LPDDR4_VREFCA);
+#endif//_def_LPDDR4_VREFCA
 	if((Prr_Product==PRR_PRODUCT_M3N)||(Prr_Product==PRR_PRODUCT_V3H)) {
 		js2[JS2_tIEdly] = _f_scale(ddr_mbps, ddr_mbpsdiv, 7000,0) +7;
 		if(js2[JS2_tIEdly]>(RL)) js2[JS2_tIEdly]=RL;
 	} else if ((Prr_Product==PRR_PRODUCT_H3)&&(Prr_Cut> PRR_PRODUCT_11)){
 		js2[JS2_tIEdly] = _f_scale(ddr_mbps, ddr_mbpsdiv, 9000,0) +4;
+	} else if((Prr_Product==PRR_PRODUCT_H3 )&&(Prr_Cut<=PRR_PRODUCT_11)){
+		js2[JS2_tIEdly] = _f_scale(ddr_mbps, ddr_mbpsdiv, 10000,0);
 	}
 
 	if(((Prr_Product==PRR_PRODUCT_H3 )&&(Prr_Cut> PRR_PRODUCT_11))
@@ -2007,9 +2034,13 @@ static void dbsc_regset(void)
 		} else if(Prr_Cut==PRR_PRODUCT_11){
 			/* resrdis, simple mode		*/
 			mmio_write_32(DBSC_DBBCAMDIS, 0x00000005);
-		} else {/* H3ver2.0			*/
+		} else if(Prr_Cut<PRR_PRODUCT_30){
+			/* H3ver2.0			*/
 			/* resrdis			*/
 			mmio_write_32(DBSC_DBBCAMDIS, 0x00000001);
+		} else {/* H3ver3.0(include H3N)	*/
+			/* exprespque			*/
+			mmio_write_32(DBSC_DBBCAMDIS, 0x00000010);
 		}
 	} else {	/* M3/M3N/V3H			*/
 			/* resrdis			*/
@@ -2271,6 +2302,7 @@ static void change_lpddr4_en(uint32_t mode)
 		_reg_PHY_PAD_CLK_DRIVE,
 		_reg_PHY_PAD_CS_DRIVE
 	};
+
 	for(i=0; i<3; i++) {
 		foreach_vch(ch){
 			dataL = ddr_getval(ch, _reg_PHY_PAD_DRIVE_X[i]);
@@ -2752,7 +2784,6 @@ static uint32_t init_ddr(void)
 	/* THCTR Bit6: PONM=0 , Bit0: THSST=1	*/
 	dataL = ((*((volatile uint32_t*)THS1_THCTR)) & 0xFFFFFFBF) | 0x00000001;
 	*((volatile uint32_t*)THS1_THCTR) = dataL;
-
 
 	/***********************************************************************
 	setup DDR mode registers
@@ -3900,7 +3931,6 @@ void ddr_padcal_tcompensate_getinit(uint32_t override)
 		tcal.init_temp =125;
 	}
 }
-
 
 #ifndef ddr_qos_init_setting
 // for QoS init

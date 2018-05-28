@@ -38,7 +38,7 @@ RCAR_INSTANTIATE_LOCK
 #define	STATE_CA57_CPU	(27U)
 #define	STATE_CA53_CPU	(22U)
 
-#define	STATUS_L2RST	((uint32_t)0U<<4)
+#define	STATUS_L2RST	((uint32_t)0U<<4U)
 #define	MODE_L2_DOWN	(0x00000002U)
 #define	CPU_PWR_OFF	(0x00000003U)
 
@@ -375,6 +375,19 @@ void rcar_pwrc_disable_interrupt_wakeup(uint64_t mpidr)
 
 void rcar_pwrc_clusteroff(uint64_t mpidr)
 {
+	uintptr_t reg;
+	uint32_t cluster_type;
+
+	rcar_lock_get();
+	cluster_type = rcar_bl31_get_mpidr_cluster(mpidr);
+	if (RCAR_CLUSTER_CA53 == cluster_type) {
+		reg = (uintptr_t)RCAR_CA53CPUCMCR;
+	} else {
+		reg = (uintptr_t)RCAR_CA57CPUCMCR;
+	}
+	/* all of the CPUs in the cluster is in the CoreStandby mode	*/
+	mmio_write_32(reg, (uint32_t)(STATUS_L2RST | MODE_L2_DOWN));
+	rcar_lock_release();
 }
 
 #if !PMIC_ROHM_BD9571
@@ -481,19 +494,19 @@ static void __attribute__ ((section (".system_ram")))  rcar_bl31_set_self_refres
 	/* Write enable */
 	lsi_product &= RCAR_PRODUCT_MASK;
 	if (((lsi_product != RCAR_PRODUCT_M3) &&
-	      (!((lsi_product == RCAR_PRODUCT_H3) && (lsi_cut < RCAR_CUT_ES20))))) {
+	      (!((lsi_product == RCAR_PRODUCT_H3) && (lsi_cut < RCAR_CUT_VER20))))) {
 		mmio_write_32(DBSC4_REG_DBSYSCNT0, DBSC4_SET_DBSYSCNT0_WRITE_ENABLE);
 	}
 
 	/* Set the Self-Refresh mode	*/
 	mmio_write_32(DBSC4_REG_DBACEN, 0U);		/* Set the ACCEN bit to 0 in the DBACEN	*/
 		/* Wait until the processing in response to the SDRAM access request in the DBSC4 is completed.	*/
-	if ((lsi_product == RCAR_PRODUCT_H3) && (lsi_cut < RCAR_CUT_ES20)){
-		/* for R-CarH3 Ver1.x WA */
+	if ((lsi_product == RCAR_PRODUCT_H3) && (lsi_cut < RCAR_CUT_VER20)){
+		/* for R-CarH3 Ver.1.x WA */
 		/* Waiting	: tRC * 512 *2 = 66us(LPDDR4) [min]  -> 100us OK!! */
 		micro_wait(100U);
 	} else if (lsi_product == RCAR_PRODUCT_H3) {
-		/* for R-CarH3 Ver2.0~ */
+		/* for R-CarH3 Ver.2.0~ */
 		mmio_write_32(DBSC4_REG_DBCAM0CTRL0, 1U);		/* CAM Flush 1: Flush.	*/
 		while ((mmio_read_32(DBSC4_REG_DBCAM0STAT0) & DBSC4_BIT_DBCAMxSTAT0) == 0U){
 		}							/* wait BIT0==1 */
@@ -575,7 +588,7 @@ static void __attribute__ ((section (".system_ram")))  rcar_bl31_set_self_refres
 
 	/* Write disable */
 	if (((lsi_product != RCAR_PRODUCT_M3) &&
-	      (!((lsi_product == RCAR_PRODUCT_H3) && (lsi_cut < RCAR_CUT_ES20))))) {
+	      (!((lsi_product == RCAR_PRODUCT_H3) && (lsi_cut < RCAR_CUT_VER20))))) {
 		mmio_write_32(DBSC4_REG_DBSYSCNT0, DBSC4_SET_DBSYSCNT0_WRITE_DISABLE);
 	}
 }
@@ -756,6 +769,24 @@ void rcar_bl31_init_suspend_to_ram(void)
 		panic();
 	}
 #endif /* PMIC_ROHM_BD9571 */
+}
+
+void rcar_bl31_suspend_to_ram(void)
+{
+#if RCAR_SYSTEM_RESET_KEEPON_DDR
+	int32_t error;
+
+	rcar_bl31_code_copy_to_system_ram();
+
+	error = rcar_iic_dvfs_send(SLAVE_ADDR_PMIC, REG_ADDR_REG_KEEP10 ,0U);
+	if(0 != error) {
+		ERROR("Failed send KEEP10 init ret=%d \n",error);
+	} else {
+#endif /* RCAR_SYSTEM_RESET_KEEPON_DDR */
+		rcar_bl31_set_suspend_to_ram();
+#if RCAR_SYSTEM_RESET_KEEPON_DDR
+	}
+#endif /* RCAR_SYSTEM_RESET_KEEPON_DDR */
 }
 #endif /* RCAR_SYSTEM_SUSPEND */
 

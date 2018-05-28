@@ -79,18 +79,18 @@ static uint32_t get_table_index(void)
 
 	switch (product) {
 	case RCAR_PRODUCT_H3:
-		if (cut_ver == RCAR_CUT_ES10) {
+		if (cut_ver == RCAR_CUT_VER10) {
 			index = OLD_API_TABLE1;	/* H3 Ver.1.0 */
-		} else if (cut_ver == RCAR_CUT_ES11) {
+		} else if (cut_ver == RCAR_CUT_VER11) {
 			index = OLD_API_TABLE1;	/* H3 Ver.1.1 */
-		} else if (cut_ver == RCAR_CUT_ES20) {
+		} else if (cut_ver == RCAR_CUT_VER20) {
 			index = OLD_API_TABLE2;	/* H3 Ver.2.0 */
 		} else {
 			index = NEW_API_TABLE;	/* Later than H3 Ver.2.0 */
 		}
 		break;
 	case RCAR_PRODUCT_M3:
-		if (cut_ver == RCAR_CUT_ES10) {
+		if (cut_ver == RCAR_CUT_VER10) {
 			index = OLD_API_TABLE3;	/* M3 Ver.1.0 */
 		} else {
 			index = NEW_API_TABLE;	/* M3 Ver.1.1 or later */

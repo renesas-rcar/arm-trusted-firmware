@@ -112,7 +112,7 @@ static void bl2_realtime_cpg_init_h3(void)
 
 	/* CPG (REALTIME) registers */
 
-	if ((prr == RCAR_CUT_ES10) || (prr == RCAR_CUT_ES11)) {
+	if ((prr == RCAR_CUT_VER10) || (prr == RCAR_CUT_VER11)) {
 		/* Realtime Module Stop Control Register 0 */
 		cpg_write(RMSTPCR0,	0x00200000U);
 	} else {
@@ -133,7 +133,7 @@ static void bl2_realtime_cpg_init_h3(void)
 	cpg_write(RMSTPCR6,	0xFFFFFFFFU);
 	/* Realtime Module Stop Control Register 7 */
 	cpg_write(RMSTPCR7,	0xFFFFFFFFU);
-	if ((prr == RCAR_CUT_ES10) || (prr == RCAR_CUT_ES11)) {
+	if ((prr == RCAR_CUT_VER10) || (prr == RCAR_CUT_VER11)) {
 		/* Realtime Module Stop Control Register 8 */
 		cpg_write(RMSTPCR8,	0x01F1FFF4U);
 	} else {

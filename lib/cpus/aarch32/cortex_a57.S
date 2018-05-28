@@ -67,9 +67,9 @@ func errata_a57_806969_wa
 	mov		lr, r2
 	cmp		r0, #ERRATA_NOT_APPLIES
 	beq		1f
-	ldcopr16	r0, r1, CORTEX_A57_ACTLR
-	orr64_imm	r0, r1, CORTEX_A57_ACTLR_NO_ALLOC_WBWA
-	stcopr16	r0, r1, CORTEX_A57_ACTLR
+	ldcopr16	r0, r1, CORTEX_A57_CPUACTLR
+	orr64_imm	r0, r1, CORTEX_A57_CPUACTLR_NO_ALLOC_WBWA
+	stcopr16	r0, r1, CORTEX_A57_CPUACTLR
 1:
 	bx	lr
 endfunc errata_a57_806969_wa
@@ -111,9 +111,9 @@ func errata_a57_813420_wa
 	mov		lr, r2
 	cmp		r0, #ERRATA_NOT_APPLIES
 	beq		1f
-	ldcopr16	r0, r1, CORTEX_A57_ACTLR
-	orr64_imm	r0, r1, CORTEX_A57_ACTLR_DCC_AS_DCCI
-	stcopr16	r0, r1, CORTEX_A57_ACTLR
+	ldcopr16	r0, r1, CORTEX_A57_CPUACTLR
+	orr64_imm	r0, r1, CORTEX_A57_CPUACTLR_DCC_AS_DCCI
+	stcopr16	r0, r1, CORTEX_A57_CPUACTLR
 1:
 	bx		lr
 endfunc errata_a57_813420_wa
@@ -143,9 +143,9 @@ func a57_disable_ldnp_overread
 	mov		lr, r2
 	cmp		r0, #ERRATA_NOT_APPLIES
 	beq		1f
-	ldcopr16	r0, r1, CORTEX_A57_ACTLR
-	orr64_imm	r0, r1, CORTEX_A57_ACTLR_DIS_OVERREAD
-	stcopr16	r0, r1, CORTEX_A57_ACTLR
+	ldcopr16	r0, r1, CORTEX_A57_CPUACTLR
+	orr64_imm	r0, r1, CORTEX_A57_CPUACTLR_DIS_OVERREAD
+	stcopr16	r0, r1, CORTEX_A57_CPUACTLR
 1:
 	bx		lr
 endfunc a57_disable_ldnp_overread
@@ -172,9 +172,9 @@ func errata_a57_826974_wa
 	mov		lr, r2
 	cmp		r0, #ERRATA_NOT_APPLIES
 	beq		1f
-	ldcopr16	r0, r1, CORTEX_A57_ACTLR
-	orr64_imm	r0, r1, CORTEX_A57_ACTLR_DIS_LOAD_PASS_DMB
-	stcopr16	r0, r1, CORTEX_A57_ACTLR
+	ldcopr16	r0, r1, CORTEX_A57_CPUACTLR
+	orr64_imm	r0, r1, CORTEX_A57_CPUACTLR_DIS_LOAD_PASS_DMB
+	stcopr16	r0, r1, CORTEX_A57_CPUACTLR
 1:
 	bx		lr
 endfunc errata_a57_826974_wa
@@ -201,9 +201,9 @@ func errata_a57_826977_wa
 	mov		lr, r2
 	cmp		r0, #ERRATA_NOT_APPLIES
 	beq		1f
-	ldcopr16	r0, r1, CORTEX_A57_ACTLR
-	orr64_imm	r0, r1, CORTEX_A57_ACTLR_GRE_NGRE_AS_NGNRE
-	stcopr16	r0, r1, CORTEX_A57_ACTLR
+	ldcopr16	r0, r1, CORTEX_A57_CPUACTLR
+	orr64_imm	r0, r1, CORTEX_A57_CPUACTLR_GRE_NGRE_AS_NGNRE
+	stcopr16	r0, r1, CORTEX_A57_CPUACTLR
 1:
 	bx		lr
 endfunc errata_a57_826977_wa
@@ -230,15 +230,15 @@ func errata_a57_828024_wa
 	mov		lr, r2
 	cmp		r0, #ERRATA_NOT_APPLIES
 	beq		1f
-	ldcopr16	r0, r1, CORTEX_A57_ACTLR
+	ldcopr16	r0, r1, CORTEX_A57_CPUACTLR
 	/*
-	 * Setting the relevant bits in CORTEX_A57_ACTLR has to be done in 2
+	 * Setting the relevant bits in CORTEX_A57_CPUACTLR has to be done in 2
 	 * instructions here because the resulting bitmask doesn't fit in a
 	 * 16-bit value so it cannot be encoded in a single instruction.
 	 */
-	orr64_imm	r0, r1, CORTEX_A57_ACTLR_NO_ALLOC_WBWA
-	orr64_imm	r0, r1, (CORTEX_A57_ACTLR_DIS_L1_STREAMING | CORTEX_A57_ACTLR_DIS_STREAMING)
-	stcopr16	r0, r1, CORTEX_A57_ACTLR
+	orr64_imm	r0, r1, CORTEX_A57_CPUACTLR_NO_ALLOC_WBWA
+	orr64_imm	r0, r1, (CORTEX_A57_CPUACTLR_DIS_L1_STREAMING | CORTEX_A57_CPUACTLR_DIS_STREAMING)
+	stcopr16	r0, r1, CORTEX_A57_CPUACTLR
 1:
 	bx		lr
 endfunc errata_a57_828024_wa
@@ -265,9 +265,9 @@ func errata_a57_829520_wa
 	mov		lr, r2
 	cmp		r0, #ERRATA_NOT_APPLIES
 	beq		1f
-	ldcopr16	r0, r1, CORTEX_A57_ACTLR
-	orr64_imm	r0, r1, CORTEX_A57_ACTLR_DIS_INDIRECT_PREDICTOR
-	stcopr16	r0, r1, CORTEX_A57_ACTLR
+	ldcopr16	r0, r1, CORTEX_A57_CPUACTLR
+	orr64_imm	r0, r1, CORTEX_A57_CPUACTLR_DIS_INDIRECT_PREDICTOR
+	stcopr16	r0, r1, CORTEX_A57_CPUACTLR
 1:
 	bx		lr
 endfunc errata_a57_829520_wa
@@ -294,9 +294,9 @@ func errata_a57_833471_wa
 	mov		lr, r2
 	cmp		r0, #ERRATA_NOT_APPLIES
 	beq		1f
-	ldcopr16	r0, r1, CORTEX_A57_ACTLR
-	orr64_imm	r1, r1, CORTEX_A57_ACTLR_FORCE_FPSCR_FLUSH
-	stcopr16	r0, r1, CORTEX_A57_ACTLR
+	ldcopr16	r0, r1, CORTEX_A57_CPUACTLR
+	orr64_imm	r1, r1, CORTEX_A57_CPUACTLR_FORCE_FPSCR_FLUSH
+	stcopr16	r0, r1, CORTEX_A57_CPUACTLR
 1:
 	bx		lr
 endfunc errata_a57_833471_wa
@@ -305,6 +305,37 @@ func check_errata_833471
 	mov	r1, #0x12
 	b	cpu_rev_var_ls
 endfunc check_errata_833471
+
+	/* ---------------------------------------------------
+	 * Errata Workaround for Cortex A57 Errata #859972.
+	 * This applies only to revision <= r1p3 of Cortex A57.
+	 * Inputs:
+	 * r0: variant[4:7] and revision[0:3] of current cpu.
+	 * Shall clobber: r0-r3
+	 * ---------------------------------------------------
+	 */
+func errata_a57_859972_wa
+	mov		r2, lr
+	bl		check_errata_859972
+	mov		lr, r2
+	cmp		r0, #ERRATA_NOT_APPLIES
+	beq		1f
+	ldcopr16	r0, r1, CORTEX_A57_CPUACTLR
+	orr64_imm	r1, r1, CORTEX_A57_CPUACTLR_DIS_INSTR_PREFETCH
+	stcopr16	r0, r1, CORTEX_A57_CPUACTLR
+1:
+	bx		lr
+endfunc errata_a57_859972_wa
+
+func check_errata_859972
+	mov	r1, #0x13
+	b	cpu_rev_var_ls
+endfunc check_errata_859972
+
+func check_errata_cve_2017_5715
+	mov	r0, #ERRATA_MISSING
+	bx	lr
+endfunc check_errata_cve_2017_5715
 
 	/* -------------------------------------------------
 	 * The CPU Ops reset function for Cortex-A57.
@@ -354,6 +385,11 @@ func cortex_a57_reset_func
 #if ERRATA_A57_833471
 	mov	r0, r4
 	bl	errata_a57_833471_wa
+#endif
+
+#if ERRATA_A57_859972
+	mov	r0, r4
+	bl	errata_a57_859972_wa
 #endif
 
 	/* ---------------------------------------------
@@ -487,6 +523,8 @@ func cortex_a57_errata_report
 	report_errata ERRATA_A57_828024, cortex_a57, 828024
 	report_errata ERRATA_A57_829520, cortex_a57, 829520
 	report_errata ERRATA_A57_833471, cortex_a57, 833471
+	report_errata ERRATA_A57_859972, cortex_a57, 859972
+	report_errata WORKAROUND_CVE_2017_5715, cortex_a57, cve_2017_5715
 
 	pop	{r12, lr}
 	bx	lr

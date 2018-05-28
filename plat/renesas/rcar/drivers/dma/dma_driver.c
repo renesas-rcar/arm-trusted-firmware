@@ -119,7 +119,7 @@ void execDMA(uintptr_t dst, uint32_t src, uint32_t len)
 		dmalen = len;
 	}
 
-	if (((src + dmalen) < src) ||
+	if (((src + dmalen - 1U) < src) ||
 		((src & DMA_FRACTION_MASK) != 0U)) {
 		/* source address invalid */
 		ERROR("BL2: DMA - Source address invalid\n" \
@@ -128,8 +128,7 @@ void execDMA(uintptr_t dst, uint32_t src, uint32_t len)
 			src, dmalen);
 		panic();
 	}
-	if ((dst >= DMA_DST_LIMIT) ||
-	    ((dst + (uintptr_t)dmalen) > DMA_DST_LIMIT) ||
+	if (((dst + (uintptr_t)dmalen) > DMA_DST_LIMIT) ||
 		(((dst & UINT32_MAX) + dmalen) > DMADAR_BOUNDARY_ADDR) ||
 		((dst & DMA_FRACTION_MASK) != 0U)) {
 		/* destination address invalid */
