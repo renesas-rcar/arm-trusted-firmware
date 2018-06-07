@@ -25,8 +25,56 @@
 /*******************************************************************************
  *	variables
  ******************************************************************************/
-static uint32_t Prr_Product;
-static uint32_t Prr_Cut;
+#ifdef RCAR_DDR_FIXED_LSI_TYPE
+#ifndef RCAR_AUTO
+  #define RCAR_AUTO	99
+  #define RCAR_H3	0
+  #define RCAR_M3	1
+  #define RCAR_M3N	2
+  #define RCAR_E3	3	// NON
+  #define RCAR_H3N	4
+
+  #define RCAR_CUT_10	0
+  #define RCAR_CUT_11	1
+  #define RCAR_CUT_20	10
+  #define RCAR_CUT_30	20
+#endif
+#ifndef RCAR_LSI
+  #define RCAR_LSI	RCAR_AUTO
+#endif
+#if(RCAR_LSI==RCAR_AUTO)
+	static uint32_t Prr_Product;
+	static uint32_t Prr_Cut;
+#else
+  #if(RCAR_LSI==RCAR_H3)
+	static const uint32_t Prr_Product	= PRR_PRODUCT_H3;
+  #elif(RCAR_LSI==RCAR_M3)
+	static const uint32_t Prr_Product	= PRR_PRODUCT_M3;
+  #elif(RCAR_LSI==RCAR_M3N)
+	static const uint32_t Prr_Product	= PRR_PRODUCT_M3N;
+  #elif(RCAR_LSI==RCAR_H3N)
+	static const uint32_t Prr_Product	= PRR_PRODUCT_H3;
+  #endif//RCAR_LSI
+
+  #ifndef RCAR_LSI_CUT
+	static uint32_t Prr_Cut;
+  #else//RCAR_LSI_CUT
+    #if(RCAR_LSI_CUT==RCAR_CUT_10)
+	static const uint32_t Prr_Cut		= PRR_PRODUCT_10;
+    #elif(RCAR_LSI_CUT==RCAR_CUT_11)
+	static const uint32_t Prr_Cut		= PRR_PRODUCT_11;
+    #elif(RCAR_LSI_CUT==RCAR_CUT_20)
+	static const uint32_t Prr_Cut		= PRR_PRODUCT_20;
+    #elif(RCAR_LSI_CUT==RCAR_CUT_30)
+	static const uint32_t Prr_Cut		= PRR_PRODUCT_30;
+    #endif//RCAR_LSI_CUT
+  #endif//RCAR_LSI_CUT
+#endif//RCAR_AUTO_NON
+#else//RCAR_DDR_FIXED_LSI_TYPE
+	static uint32_t Prr_Product;
+	static uint32_t Prr_Cut;
+#endif//RCAR_DDR_FIXED_LSI_TYPE
+
 char *pRCAR_DDR_VERSION;
 uint32_t _cnf_BOARDTYPE;
 static uint32_t *pDDR_REGDEF_TBL;
@@ -763,9 +811,9 @@ static uint32_t ddrphy_regif_chk(void)
 
 	if(((Prr_Product==PRR_PRODUCT_H3) && (Prr_Cut<=PRR_PRODUCT_11))
 	  ||(Prr_Product==PRR_PRODUCT_M3)) {
-		PI_VERSION_CODE=0x2041;		/* H3ver1.x/M3-W */
+		PI_VERSION_CODE=0x2041;		/* H3 Ver.1.x/M3-W */
 	} else {
-		PI_VERSION_CODE=0x2040;		/* H3ver2.0/M3-N/V3H */
+		PI_VERSION_CODE=0x2040;		/* H3 Ver.2.0 or later/M3-N/V3H */
 	}
 
 	ddr_getval_ach(_reg_PI_VERSION, (uint32_t *)tmp_ach);
@@ -899,7 +947,7 @@ const struct _jedec_spec2 jedec_spec2[2][JS2_TBLCNT] = {
 
 /* pb, ab */
 const uint16_t jedec_spec2_tRFC_pb_ab[2][7] = {
-/*	4Gb, 6Gb, 8Gb,12Gb, 16Gb, 24Gb(TBD), 32Gb(TBD)	*/
+/*	4Gb, 6Gb, 8Gb,12Gb, 16Gb, 24Gb(non), 32Gb(non)	*/
 	{
 	 60,  90,  90, 140, 140, 280, 280
 	},
@@ -1048,7 +1096,7 @@ const uint32_t _reg_PI_MR14_DATA_Fx_CSx[2][CSAB_CNT] = {
 };
 
 /*******************************************************************************
- * regif pll w/a   ( REGIF_H3ver2/M3-N/V3H_WA )
+ * regif pll w/a   ( REGIF H3 Ver.2.0 or later/M3-N/V3H WA )
  *******************************************************************************/
 static void regif_pll_wa(void)
 {
@@ -1063,7 +1111,7 @@ static void regif_pll_wa(void)
 			 ddrtbl_getval(_cnf_DDR_PHY_ADR_G_REGSET, _reg_PHY_LP4_BOOT_PLL_CTRL));
 
 	} else {
-		// PLL setting for PHY : M3-W/M3-N/V3H/H3ver2
+		// PLL setting for PHY : M3-W/M3-N/V3H/H3 Ver.2.0 or later
 		reg_ddrphy_write_a(ddr_regdef_adr(_reg_PHY_PLL_WAIT), (0x5064U<<ddr_regdef_lsb(_reg_PHY_PLL_WAIT)));
 
 		reg_ddrphy_write_a(ddr_regdef_adr(_reg_PHY_PLL_CTRL),
@@ -1160,7 +1208,7 @@ static void ddrtbl_load(void)
 	***********************************************************************/
 	if (Prr_Product==PRR_PRODUCT_H3) {
 		if (Prr_Cut<=PRR_PRODUCT_11) {
-		// H3 ver1.0/1.1
+		// H3 Ver.1.x
 			_tblcopy(_cnf_DDR_PHY_SLICE_REGSET,
 				DDR_PHY_SLICE_REGSET_H3, DDR_PHY_SLICE_REGSET_NUM_H3);
 			_tblcopy(_cnf_DDR_PHY_ADR_V_REGSET,
@@ -1190,7 +1238,7 @@ static void ddrtbl_load(void)
 
 			DDR_PHY_ADR_I_NUM=1;
 		} else {
-		// H3 ver2.0/3.0
+		// H3 Ver.2.0 or later
 			_tblcopy(_cnf_DDR_PHY_SLICE_REGSET,
 				DDR_PHY_SLICE_REGSET_H3VER2, DDR_PHY_SLICE_REGSET_NUM_H3VER2);
 			_tblcopy(_cnf_DDR_PHY_ADR_V_REGSET,
@@ -1216,7 +1264,7 @@ static void ddrtbl_load(void)
 			DDR_PHY_ADR_I_NUM=0;
 		}
 	} else if (Prr_Product==PRR_PRODUCT_M3) {
-	// M3-W ver1.x/3.0
+	// M3-W
 		_tblcopy(_cnf_DDR_PHY_SLICE_REGSET,
 			DDR_PHY_SLICE_REGSET_M3, DDR_PHY_SLICE_REGSET_NUM_M3);
 		_tblcopy(_cnf_DDR_PHY_ADR_V_REGSET,
@@ -1246,7 +1294,7 @@ static void ddrtbl_load(void)
 
 		DDR_PHY_ADR_I_NUM=2;
 	} else {
-	// M3-N ver1.x , V3H ver1.0
+	// M3-N/V3H
 		_tblcopy(_cnf_DDR_PHY_SLICE_REGSET,
 			DDR_PHY_SLICE_REGSET_M3N, DDR_PHY_SLICE_REGSET_NUM_M3N);
 		_tblcopy(_cnf_DDR_PHY_ADR_V_REGSET,
@@ -1638,7 +1686,7 @@ static void ddr_config(void)
 	if((Prr_Product==PRR_PRODUCT_H3)&&(Prr_Cut<=PRR_PRODUCT_11)) {
 		ddr_config_sub_h3v1x();
 	} else {
-		ddr_config_sub();   // H3ver2.0/M3-N/V3H is same as M3-W
+		ddr_config_sub();	// H3 Ver.2.0 or later/M3-N/V3H is same as M3-W
 	}
 
 	/***********************************************************************
@@ -1754,7 +1802,7 @@ static void dbsc_regset_pre(void)
 	/* FREQRATIO=2 */
 	mmio_write_32(DBSC_DBSYSCONF1, 0x00000002);
 
-	/* Chanel map (H3ver1.x) */
+	/* Chanel map (H3 Ver.1.x) */
 	if((Prr_Product==PRR_PRODUCT_H3)&&(Prr_Cut<=PRR_PRODUCT_11))
 		mmio_write_32(DBSC_DBSCHCNT1, 0x00001010);
 
@@ -1896,7 +1944,7 @@ static void dbsc_regset(void)
 
 	/* DBTR21.TCCD */
 	/* DBTR23.TCCD */
-	/* H3ver1.0 cannot use TBTR23 feature */
+	/* H3 Ver.1.0 cannot use TBTR23 feature */
 	if(ddr_tccd==8 &&
 		!((Prr_Product==PRR_PRODUCT_H3)&&(Prr_Cut<=PRR_PRODUCT_10))
 	) {
@@ -1933,6 +1981,9 @@ static void dbsc_regset(void)
 	for(i=0;i<4;i++){
 		uint32_t dataL2;
 		dataL=(_par_DBRNK_VAL>>(i*4)) & 0x0f;
+		if((Prr_Product==PRR_PRODUCT_H3)&&(Prr_Cut>PRR_PRODUCT_11)&&(i==0)){
+			dataL +=1;
+		}
 		dataL2=0;
 		foreach_vch(ch){
 			dataL2= dataL2 | (dataL<<(4*ch)) ;
@@ -2022,7 +2073,7 @@ static void dbsc_regset(void)
 
 	mmio_write_32(QOSCTRL_RAEN,	0x00000001U);
 #endif//ddr_qos_init_setting
-	/* H3ver1.1 need to set monitor function */
+	/* H3 Ver.1.1 need to set monitor function */
 	if ((Prr_Product==PRR_PRODUCT_H3)&&(Prr_Cut==PRR_PRODUCT_11)) {
 		mmio_write_32(DBSC_DBMONCONF4, 0x00700000);
 	}
@@ -2035,14 +2086,14 @@ static void dbsc_regset(void)
 			/* resrdis, simple mode		*/
 			mmio_write_32(DBSC_DBBCAMDIS, 0x00000005);
 		} else if(Prr_Cut<PRR_PRODUCT_30){
-			/* H3ver2.0			*/
+			/* H3 Ver.2.0			*/
 			/* resrdis			*/
 			mmio_write_32(DBSC_DBBCAMDIS, 0x00000001);
-		} else {/* H3ver3.0(include H3N)	*/
+		} else {/* H3 Ver.3.0(include H3N)	*/
 			/* exprespque			*/
 			mmio_write_32(DBSC_DBBCAMDIS, 0x00000010);
 		}
-	} else {	/* M3/M3N/V3H			*/
+	} else {	/* M3-W/M3-N/V3H		*/
 			/* resrdis			*/
 			mmio_write_32(DBSC_DBBCAMDIS, 0x00000001);
 	}
@@ -2052,9 +2103,10 @@ static void dbsc_regset_post(void)
 {
 	uint32_t ch,cs;
 	uint32_t dataL;
-	uint32_t slice,rdlat_max;
+	uint32_t slice,rdlat_max,rdlat_min;
 
 	rdlat_max = 0;
+	rdlat_min = 0xffff;
 	foreach_vch(ch){
 		for(cs=0;cs<CS_CNT;cs++){
 			if((ch_have_this_cs[cs] & (1U<<ch)) != 0) {
@@ -2062,12 +2114,18 @@ static void dbsc_regset_post(void)
 					ddr_setval_s(ch, slice, _reg_PHY_PER_CS_TRAINING_INDEX, cs);
 					dataL = ddr_getval_s(ch, slice,	_reg_PHY_RDDQS_LATENCY_ADJUST);
 					if(dataL>rdlat_max) rdlat_max = dataL;
+					if(dataL<rdlat_min) rdlat_min = dataL;
 				}
 			}
 		}
 	}
-	mmio_write_32(DBSC_DBTR(24),
-		((rdlat_max +2)<<24) + ((rdlat_max +2)<<16) + mmio_read_32(DBSC_DBTR(24)));
+	if((Prr_Product==PRR_PRODUCT_H3)&&(Prr_Cut> PRR_PRODUCT_11)){
+		mmio_write_32(DBSC_DBTR(24),
+			((rdlat_max *2 -rdlat_min +4)<<24) + ((rdlat_min +2)<<16) + mmio_read_32(DBSC_DBTR(24)));
+	} else {
+		mmio_write_32(DBSC_DBTR(24),
+			((rdlat_max +2)<<24) + ((rdlat_max +2)<<16) + mmio_read_32(DBSC_DBTR(24)));
+	}
 
 	/* set ddr density information */
 	foreach_ech(ch){
@@ -2088,7 +2146,7 @@ static void dbsc_regset_post(void)
 	if(Boardcnf->dbi_en)
 		mmio_write_32(DBSC_DBDBICNT, 0x00000003);
 
-	/* H3ver2 DBI wa */
+	/* H3 Ver.2.0 or later/M3-N/V3H DBI wa */
 	if ((((Prr_Product==PRR_PRODUCT_H3)&&(Prr_Cut> PRR_PRODUCT_11))
 	   ||(Prr_Product==PRR_PRODUCT_M3N)||(Prr_Product==PRR_PRODUCT_V3H))&&(Boardcnf->dbi_en))
 		reg_ddrphy_write_a(0x00001010,	0x01000000);
@@ -2101,9 +2159,9 @@ static void dbsc_regset_post(void)
 	/* Periodic-WriteDQ Training seeting */
 	if(((Prr_Product==PRR_PRODUCT_H3)&&(Prr_Cut<=PRR_PRODUCT_11))
 	 ||((Prr_Product==PRR_PRODUCT_M3)&&(Prr_Cut==PRR_PRODUCT_10))) {
-		/* non : H3ver1.x/M3-Wver1.0 not support */
+		/* non : H3 Ver.1.x/M3-W Ver.1.0 not support */
 	} else {
-		/* H3ver2,M3-Wver1.1,M3-N,V3H -> Periodic-WriteDQ Training seeting */
+		/* H3 Ver.2.0 or later/M3-W Ver.1.1 or later/M3-N/V3H -> Periodic-WriteDQ Training seeting */
 
 		/* Periodic WriteDQ Training seeting */
 		mmio_write_32(DBSC_DBDFIPMSTRCNF, 0x00000000);
@@ -2137,7 +2195,7 @@ static void dbsc_regset_post(void)
 	mmio_write_32(DBSC_DBCALCNF, 0x01000010);
 	if(((Prr_Product==PRR_PRODUCT_H3)&&(Prr_Cut<=PRR_PRODUCT_11))
 	 ||((Prr_Product==PRR_PRODUCT_M3)&&(Prr_Cut<=PRR_PRODUCT_20))){
-		/* non : H3ver1.x/M3-Wver1.x not support */
+		/* non : H3 Ver.1.x/M3-W Ver.1.x not support */
 	} else {
 #if RCAR_DRAM_SPLIT == 2
 		if((Prr_Product==PRR_PRODUCT_H3)&&(Boardcnf->phyvalid==0x05))
@@ -2389,7 +2447,7 @@ static uint32_t set_term_code(void)
 					ddr_setval(ch, _reg_PHY_PAD_TERM_X[index],dataL);
 				}
 			}
-		} else { // M3-Wver1.1/H3ver2.0/M3-N/V3H
+		} else { // M3-W Ver.1.1 or later/H3 Ver.2.0 or later/M3-N/V3H
 			foreach_vch(ch){
 				for(index=0;index<_reg_PHY_PAD_TERM_X_NUM;index++) {
 					dataL = ddr_getval(ch, _reg_PHY_PAD_TERM_X[index]);
@@ -2452,7 +2510,7 @@ static inline uint32_t wait_freqchgreq(uint32_t assert)
 	uint32_t ch;
 	count = 100000;
 
-	/* H3 ver1.0/1.1 cannot see frqchg_req */
+	/* H3 Ver.1.x cannot see frqchg_req */
 	if((Prr_Product==PRR_PRODUCT_H3)&&(Prr_Cut<=PRR_PRODUCT_11)) {
 		return 0;
 	}
@@ -2578,7 +2636,7 @@ static uint32_t pi_training_go(void)
 	do {
 		frqchg_req = mmio_read_32(DBSC_DBPDSTAT(mst_ch)) & 0x01;
 
-		/* H3 ver1.x cannot see frqchg_req */
+		/* H3 Ver.1.x cannot see frqchg_req */
 		if((Prr_Product==PRR_PRODUCT_H3)
 		&& (Prr_Cut<=PRR_PRODUCT_11)) {
 			if((retry%4096)==1) {
@@ -3684,8 +3742,19 @@ int32_t InitDram(void)
 	/***********************************************************************
 	Judge product and cut
 	***********************************************************************/
+#ifdef RCAR_DDR_FIXED_LSI_TYPE
+#if(RCAR_LSI==RCAR_AUTO)
 	Prr_Product = mmio_read_32(PRR) & PRR_PRODUCT_MASK;
 	Prr_Cut = mmio_read_32(PRR) & PRR_CUT_MASK;
+#else//RCAR_LSI
+#ifndef RCAR_LSI_CUT
+	Prr_Cut = mmio_read_32(PRR) & PRR_CUT_MASK;
+#endif//RCAR_LSI_CUT
+#endif//RCAR_LSI
+#else//RCAR_DDR_FIXED_LSI_TYPE
+	Prr_Product = mmio_read_32(PRR) & PRR_PRODUCT_MASK;
+	Prr_Cut = mmio_read_32(PRR) & PRR_CUT_MASK;
+#endif//RCAR_DDR_FIXED_LSI_TYPE
 
 	if (Prr_Product==PRR_PRODUCT_H3) {
 		if(Prr_Cut<=PRR_PRODUCT_11){
@@ -3704,7 +3773,7 @@ int32_t InitDram(void)
 
 	if(((Prr_Product==PRR_PRODUCT_H3)&&(Prr_Cut<=PRR_PRODUCT_11))
 	 ||((Prr_Product==PRR_PRODUCT_M3)&&(Prr_Cut<=PRR_PRODUCT_20))){
-		/* non : H3ver1.x/M3-Wver1.x not support */
+		/* non : H3 Ver.1.x/M3-W Ver.1.x not support */
 	} else {
 		mmio_write_32(DBSC_DBSYSCNT0, 0x00001234);
 	}
@@ -3823,7 +3892,7 @@ int32_t InitDram(void)
 		mmio_write_32(DBSC_DBPDLK(ch), 0x00000000);
 	if(((Prr_Product==PRR_PRODUCT_H3)&&(Prr_Cut<=PRR_PRODUCT_11))
 	 ||((Prr_Product==PRR_PRODUCT_M3)&&(Prr_Cut<=PRR_PRODUCT_20))){
-		/* non : H3ver1.x/M3-Wver1.x not support */
+		/* non : H3 Ver.1.x/M3-W Ver.1.x not support */
 	} else {
 		mmio_write_32(DBSC_DBSYSCNT0, 0x00000000);
 	}

@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
-#define RCAR_DDR_VERSION        "rev.0.32"
+#define RCAR_DDR_VERSION        "rev.0.33"
 #define DRAM_CH_CNT		0x04
 #define SLICE_CNT		0x04
 #define CS_CNT			0x02
@@ -58,10 +58,10 @@
 #define PRR_PRODUCT_M3		(0x00005200U)           /* R-Car M3-W */
 #define PRR_PRODUCT_M3N		(0x00005500U)           /* R-Car M3-N */
 #define PRR_PRODUCT_V3H		(0x00005600U)           /* R-Car V3H  */
-#define PRR_PRODUCT_10		(0x00U)			/*   ver 1.0  */
-#define PRR_PRODUCT_11		(0x01U)			/*   ver 1.1  */
-#define PRR_PRODUCT_20		(0x10U)			/*   ver 2.0  */
-#define PRR_PRODUCT_30		(0x20U)			/*   ver 3.0  */
+#define PRR_PRODUCT_10		(0x00U)			/*   Ver.1.0  */
+#define PRR_PRODUCT_11		(0x01U)			/*   Ver.1.1  */
+#define PRR_PRODUCT_20		(0x10U)			/*   Ver.2.0  */
+#define PRR_PRODUCT_30		(0x20U)			/*   Ver.3.0  */
 
 /* DBSC registers */
 #define DBSC_DBSYSCONF1		0xE6790004U

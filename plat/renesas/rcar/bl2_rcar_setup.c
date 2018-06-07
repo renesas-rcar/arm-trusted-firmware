@@ -470,11 +470,6 @@ void bl2_early_platform_setup(meminfo_t *mem_layout)
 		break;
 	case RCAR_PRODUCT_M3:
 		str = product_m3;
-		/* M3 Ver.1.1 */
-		if(RCAR_PRODUCT_M3_CUT11 ==
-			(reg & (RCAR_PRODUCT_MASK | RCAR_CUT_MASK))) {
-			prr_val = RCAR_CUT_VER11;
-		}
 		break;
 	case RCAR_PRODUCT_M3N:
 		str = product_m3n;
@@ -486,9 +481,17 @@ void bl2_early_platform_setup(meminfo_t *mem_layout)
 		str = unknown;
 		break;
 	}
-	(void)sprintf(msg, "BL2: PRR is R-Car %s Ver.%d.%d\n", str,
-		((prr_val & RCAR_MAJOR_MASK) >> RCAR_MAJOR_SHIFT)
-		 + RCAR_MAJOR_OFFSET, (prr_val & RCAR_MINOR_MASK));
+
+	if(RCAR_PRODUCT_M3_CUT11 ==
+		(reg & (RCAR_PRODUCT_MASK | RCAR_CUT_MASK))) {
+		/* M3 Ver.1.1 or Ver.1.2 */
+		(void)sprintf(msg,
+			"BL2: PRR is R-Car %s Ver.1.1 / Ver.1.2\n", str);
+	} else {
+		(void)sprintf(msg, "BL2: PRR is R-Car %s Ver.%d.%d\n", str,
+			((prr_val & RCAR_MAJOR_MASK) >> RCAR_MAJOR_SHIFT)
+			 + RCAR_MAJOR_OFFSET, (prr_val & RCAR_MINOR_MASK));
+	}
 	NOTICE("%s", msg);
 
 	/* R-Car Gen3 PLL1 clock select display (E3 only) */

@@ -38,7 +38,6 @@ RCAR_INSTANTIATE_LOCK
 #define	STATE_CA57_CPU	(27U)
 #define	STATE_CA53_CPU	(22U)
 
-#define	STATUS_L2RST	((uint32_t)0U<<4U)
 #define	MODE_L2_DOWN	(0x00000002U)
 #define	CPU_PWR_OFF	(0x00000003U)
 
@@ -377,16 +376,27 @@ void rcar_pwrc_clusteroff(uint64_t mpidr)
 {
 	uintptr_t reg;
 	uint32_t cluster_type;
+	uint32_t lsi_product;
+	uint32_t lsi_cut;
 
 	rcar_lock_get();
+	
+	lsi_product = mmio_read_32((uintptr_t)RCAR_PRR);
+	lsi_cut = lsi_product & RCAR_CUT_MASK;
+	lsi_product &= RCAR_PRODUCT_MASK;
+
 	cluster_type = rcar_bl31_get_mpidr_cluster(mpidr);
 	if (RCAR_CLUSTER_CA53 == cluster_type) {
 		reg = (uintptr_t)RCAR_CA53CPUCMCR;
 	} else {
 		reg = (uintptr_t)RCAR_CA57CPUCMCR;
 	}
-	/* all of the CPUs in the cluster is in the CoreStandby mode	*/
-	mmio_write_32(reg, (uint32_t)(STATUS_L2RST | MODE_L2_DOWN));
+
+	if(!((RCAR_PRODUCT_M3 == lsi_product) && (lsi_cut <= RCAR_M3_CUT_VER11)) &&
+	   !((RCAR_PRODUCT_H3 == lsi_product) && (lsi_cut <= RCAR_CUT_VER20))) {
+		/* all of the CPUs in the cluster is in the CoreStandby mode	*/
+		mmio_write_32(reg, MODE_L2_DOWN);
+	}
 	rcar_lock_release();
 }
 
