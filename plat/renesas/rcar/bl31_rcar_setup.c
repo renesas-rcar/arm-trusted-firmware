@@ -216,3 +216,19 @@ uint32_t bl31_plat_boot_mpidr_chk(void)
 	return rc;
 }
 
+/*******************************************************************************
+ * Perform the runtime platform specific setup here.
+ ******************************************************************************/
+void bl31_plat_runtime_setup(void)
+{
+#if (RCAR_DISABLE_NONSECURE_RPC_ACCESS == 0)
+	/* Enable non-secure access to the RPC HyperFlash region. */
+	mmio_write_32(0xee2000b8, 0x155);
+	mmio_write_32(0xee200000, mmio_read_32(0xee200000) & 0x7fffffff);
+#endif
+	/*
+	 * Finish the use of console driver in BL31 so that any runtime logs
+	 * from BL31 will be suppressed.
+	 */
+	console_uninit();
+}

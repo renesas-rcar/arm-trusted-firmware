@@ -392,6 +392,12 @@ PROGRAMMABLE_RESET_ADDRESS	:=	1
 COLD_BOOT_SINGLE_CPU		:=	1
 #endif /* IMAGE_BL2 */
 
+# Process RCAR_DISABLE_NONSECURE_RPC_ACCESS flag
+ifndef RCAR_DISABLE_NONSECURE_RPC_ACCESS
+RCAR_DISABLE_NONSECURE_RPC_ACCESS := 0
+endif
+$(eval $(call add_define,RCAR_DISABLE_NONSECURE_RPC_ACCESS))
+
 include plat/renesas/rcar/ddr/ddr.mk
 include plat/renesas/rcar/qos/qos.mk
 include plat/renesas/rcar/pfc/pfc.mk
