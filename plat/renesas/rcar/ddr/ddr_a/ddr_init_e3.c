@@ -106,21 +106,24 @@
  *                            recovery_from_backup_mode:
  *                                DBSC setting after recovery_Step3
  *                           ddr_init_e3.h : RCAR_E3_DDR_VERSION "rev.0.05" -> "rev.0.06"
+ * rev.0.06a   2018/04/03    delete setting and fnction init_ddr_e31866,init_ddr_e31600 for internal use at ddr_qos_init_setting
+ *                           ddr_init_e3.h : RCAR_E3_DDR_VERSION "rev.0.06" -> "rev.0.06a"
+ * rev.0.07    2018/05/17    Adding setting to activate MCS1_N/MODT1  at  RCAR_DRAM_DDR3L_MEMDUAL = 1
+ *                           ddr_init_e3.h : RCAR_E3_DDR_VERSION "rev.0.06a" -> "rev.0.07"
+ * rev.0.08    2018/08/02    Change Init/BackupResume Sequence to correct setting to PDQSR,LCDLR and Correct BackupResume Sequence
+ *                           ddr_init_e3.h : RCAR_E3_DDR_VERSION "rev.0.07" -> "rev.0.08"
+ * rev.0.09    2018/08/22    Separate initialization of Rdbit/Wrbit/Rd/Wr and Correct BackupResume Sequence (add RCAR_DRAM_DDR3L_MEMDUAL)
+ *                           ddr_init_e3.h : RCAR_E3_DDR_VERSION "rev.0.08" -> "rev.0.09"
  */
 
 
 #include <stdint.h>
-
-#ifndef ddr_qos_init_setting
 #include <debug.h>
-#endif
 
 #include "boot_init_dram_regdef_e3.h"
 #include "ddr_init_e3.h"
 
-#ifndef ddr_qos_init_setting
 #include "../dram_sub_func.h"
-#endif
 
 // rev.0.04 add variables
 /*******************************************************************************
@@ -132,8 +135,6 @@ uint32_t ddrBackup;
 /*******************************************************************************
  *  Prototypes
  ******************************************************************************/
-//static uint32_t init_ddr_e31866(void); // rev.0.03
-//static uint32_t init_ddr_e31600(void); // rev.0.03
 //static uint32_t init_ddr(void); // rev.0.04
 //static uint32_t recovery_from_backup_mode(void); // rev.0.04
 //int32_t dram_update_boot_status(uint32_t status); // rev.0.04
@@ -163,6 +164,21 @@ uint32_t init_ddr(void)
    uint32_t RegVal_R2, RegVal_R5, RegVal_R6, RegVal_R7, RegVal_R12, i;
    uint32_t ddr_md;
 
+//rev.0.08
+   uint32_t RegVal,j;
+   uint32_t dqsgd_0c, bdlcount_0c, bdlcount_0c_div2, bdlcount_0c_div4, bdlcount_0c_div8, bdlcount_0c_div16;
+   uint32_t gatesl_0c, rdqsd_0c, rdqsnd_0c, rbd_0c[4];
+   uint32_t pdqsr_ctl,lcdl_ctl,lcdl_judge1,lcdl_judge2;
+
+//rev.0.08
+   if ((ReadReg_32(0xFFF00044) & 0x000000FF) == 0x00000000) {
+     pdqsr_ctl  = 1;
+     lcdl_ctl   = 1;
+    }else {
+     pdqsr_ctl  = 0;
+     lcdl_ctl   = 0;
+   }
+
    // Judge the DDR bit rate (ddr_md : 0 = 1584Mbps, 1 = 1856Mbps)
    ddr_md = (ReadReg_32(RST_MODEMR)>>19)&BIT0;
 
@@ -187,19 +203,23 @@ uint32_t init_ddr(void)
    WriteReg_32(DBSC_E3_DBSYSCNT0,0x00001234);
    WriteReg_32(DBSC_E3_DBKIND,0x00000007);
 
-#ifdef ddr_qos_init_setting
-   WriteReg_32(DBSC_E3_DBMEMCONF00,0x0f030a02);    // 1GB
+
+#if RCAR_DRAM_DDR3L_MEMCONF == 0
+   WriteReg_32(DBSC_E3_DBMEMCONF00,0x0f030a02); // 1GB
+#elif RCAR_DRAM_DDR3L_MEMCONF == 1
+   WriteReg_32(DBSC_E3_DBMEMCONF00,0x10030a02); // 2GB(default)
+#elif RCAR_DRAM_DDR3L_MEMCONF == 2
+   WriteReg_32(DBSC_E3_DBMEMCONF00,0x10030b02); // 4GB
 #else
-   #if RCAR_DRAM_DDR3L_MEMCONF == 0
-      WriteReg_32(DBSC_E3_DBMEMCONF00,0x0f030a02); // 1GB
-   #elif RCAR_DRAM_DDR3L_MEMCONF == 1
-      WriteReg_32(DBSC_E3_DBMEMCONF00,0x10030a02); // 2GB(default)
-   #elif RCAR_DRAM_DDR3L_MEMCONF == 2
-      WriteReg_32(DBSC_E3_DBMEMCONF00,0x10030b02); // 4GB
-   #else
-      WriteReg_32(DBSC_E3_DBMEMCONF00,0x10030a02); // 2GB
-   #endif
+   WriteReg_32(DBSC_E3_DBMEMCONF00,0x10030a02); // 2GB
 #endif
+
+#if RCAR_DRAM_DDR3L_MEMDUAL == 1
+         RegVal_R2 = (ReadReg_32(0xE6790614));
+         WriteReg_32(0xE6790614,RegVal_R2 | 0x00000003); // MCS1_N/MODT1 are activated.
+#endif
+
+
 
    WriteReg_32(DBSC_E3_DBPHYCONF0,0x00000001);
 
@@ -520,6 +540,10 @@ uint32_t init_ddr(void)
 
    WriteReg_32(DBSC_E3_DBPDRGA0,0x00000005);
    WriteReg_32(DBSC_E3_DBPDRGD0,0xC1AA00C0);
+
+   //rev.0.08
+   if (pdqsr_ctl == 1){}else{
+
    WriteReg_32(DBSC_E3_DBPDRGA0,0x000000A0);
    WriteReg_32(DBSC_E3_DBPDRGD0,0x7C0002C5);
    WriteReg_32(DBSC_E3_DBPDRGA0,0x000000C0);
@@ -528,6 +552,9 @@ uint32_t init_ddr(void)
    WriteReg_32(DBSC_E3_DBPDRGD0,0x7C0002C5);
    WriteReg_32(DBSC_E3_DBPDRGA0,0x00000100);
    WriteReg_32(DBSC_E3_DBPDRGD0,0x7C0002C5);
+
+   }
+
    WriteReg_32(DBSC_E3_DBPDRGA0,0x00000001);
    WriteReg_32(DBSC_E3_DBPDRGD0,0x00010801);
    WriteReg_32(DBSC_E3_DBPDRGA0,0x00000006);
@@ -539,8 +566,58 @@ uint32_t init_ddr(void)
     ***************************************************************************/
    WriteReg_32(DBSC_E3_DBPDRGA0,0x00000005);
    WriteReg_32(DBSC_E3_DBPDRGD0,0xC1AA00D8);
+
+   //rev.0.08
    WriteReg_32(DBSC_E3_DBPDRGA0,0x00000001);
-   WriteReg_32(DBSC_E3_DBPDRGD0,0x0001F001);
+   WriteReg_32(DBSC_E3_DBPDRGD0,0x00011001);
+   WriteReg_32(DBSC_E3_DBPDRGA0,0x00000006);
+   while ( (BIT0 & ReadReg_32(DBSC_E3_DBPDRGD0)) == 0 );
+
+if (pdqsr_ctl == 1){
+   WriteReg_32(DBSC_E3_DBPDRGA0,0x000000A0);
+   WriteReg_32(DBSC_E3_DBPDRGD0,0x7C0002C5);
+   WriteReg_32(DBSC_E3_DBPDRGA0,0x000000C0);
+   WriteReg_32(DBSC_E3_DBPDRGD0,0x7C0002C5);
+   WriteReg_32(DBSC_E3_DBPDRGA0,0x000000E0);
+   WriteReg_32(DBSC_E3_DBPDRGD0,0x7C0002C5);
+   WriteReg_32(DBSC_E3_DBPDRGA0,0x00000100);
+   WriteReg_32(DBSC_E3_DBPDRGD0,0x7C0002C5);
+}
+
+   WriteReg_32(DBSC_E3_DBPDRGA0,0x00000001);
+   WriteReg_32(DBSC_E3_DBPDRGD0,0x00012001);
+   WriteReg_32(DBSC_E3_DBPDRGA0,0x00000006);
+   while ( (BIT0 & ReadReg_32(DBSC_E3_DBPDRGD0)) == 0 );
+
+if (pdqsr_ctl == 1){
+   WriteReg_32(DBSC_E3_DBPDRGA0,0x000000A0);
+   WriteReg_32(DBSC_E3_DBPDRGD0,0x7C000285);
+   WriteReg_32(DBSC_E3_DBPDRGA0,0x000000C0);
+   WriteReg_32(DBSC_E3_DBPDRGD0,0x7C000285);
+   WriteReg_32(DBSC_E3_DBPDRGA0,0x000000E0);
+   WriteReg_32(DBSC_E3_DBPDRGD0,0x7C000285);
+   WriteReg_32(DBSC_E3_DBPDRGA0,0x00000100);
+   WriteReg_32(DBSC_E3_DBPDRGD0,0x7C000285);
+}
+
+   WriteReg_32(DBSC_E3_DBPDRGA0,0x00000001);
+   WriteReg_32(DBSC_E3_DBPDRGD0,0x00014001);
+   WriteReg_32(DBSC_E3_DBPDRGA0,0x00000006);
+   while ( (BIT0 & ReadReg_32(DBSC_E3_DBPDRGD0)) == 0 );
+
+if (pdqsr_ctl == 1){
+   WriteReg_32(DBSC_E3_DBPDRGA0,0x000000A0);
+   WriteReg_32(DBSC_E3_DBPDRGD0,0x7C0002C5);
+   WriteReg_32(DBSC_E3_DBPDRGA0,0x000000C0);
+   WriteReg_32(DBSC_E3_DBPDRGD0,0x7C0002C5);
+   WriteReg_32(DBSC_E3_DBPDRGA0,0x000000E0);
+   WriteReg_32(DBSC_E3_DBPDRGD0,0x7C0002C5);
+   WriteReg_32(DBSC_E3_DBPDRGA0,0x00000100);
+   WriteReg_32(DBSC_E3_DBPDRGD0,0x7C0002C5);
+}
+
+   WriteReg_32(DBSC_E3_DBPDRGA0,0x00000001);
+   WriteReg_32(DBSC_E3_DBPDRGD0,0x00018001);
    WriteReg_32(DBSC_E3_DBPDRGA0,0x00000006);
    while ( (BIT0 & ReadReg_32(DBSC_E3_DBPDRGD0)) == 0 );
 
@@ -596,6 +673,9 @@ uint32_t init_ddr(void)
       } // RegVal_R12 < RegVal_R6
    } // for i
 
+//rev.0.08
+   if (pdqsr_ctl == 1){}else{
+
    WriteReg_32(DBSC_E3_DBPDRGA0,0x000000A0);
    WriteReg_32(DBSC_E3_DBPDRGD0,0x7C0002C5);
    WriteReg_32(DBSC_E3_DBPDRGA0,0x000000C0);
@@ -604,10 +684,90 @@ uint32_t init_ddr(void)
    WriteReg_32(DBSC_E3_DBPDRGD0,0x7C0002C5);
    WriteReg_32(DBSC_E3_DBPDRGA0,0x00000100);
    WriteReg_32(DBSC_E3_DBPDRGD0,0x7C0002C5);
+
+   }
+
    WriteReg_32(DBSC_E3_DBPDRGA0,0x00000001);
    WriteReg_32(DBSC_E3_DBPDRGD0,0x00015001);
    WriteReg_32(DBSC_E3_DBPDRGA0,0x00000006);
    while ( (BIT0 & ReadReg_32(DBSC_E3_DBPDRGD0)) == 0 );
+
+
+//rev.0.08
+   if (lcdl_ctl == 1){
+       for (i=0; i< 4; i++) {
+          WriteReg_32(DBSC_E3_DBPDRGA0,0x000000B0 + i*0x20);
+          dqsgd_0c = (ReadReg_32(DBSC_E3_DBPDRGD0) & 0x000000FF);
+          WriteReg_32(DBSC_E3_DBPDRGA0,0x000000B1 + i*0x20);
+          bdlcount_0c = ((ReadReg_32(DBSC_E3_DBPDRGD0) & 0x0000FF00) >> 8);
+          bdlcount_0c_div2  = (bdlcount_0c >> 1);
+          bdlcount_0c_div4  = (bdlcount_0c >> 2);
+          bdlcount_0c_div8  = (bdlcount_0c >> 3);
+          bdlcount_0c_div16 = (bdlcount_0c >> 4);
+
+          if (ddr_md==0){                                 // 1584Mbps
+             lcdl_judge1 = bdlcount_0c_div2 + bdlcount_0c_div4 + bdlcount_0c_div8 ;
+             lcdl_judge2 = bdlcount_0c + bdlcount_0c_div4 + bdlcount_0c_div16 ;
+          } else {                                        // 1856Mbps
+             lcdl_judge1 = bdlcount_0c_div2 + bdlcount_0c_div4 ;
+             lcdl_judge2 = bdlcount_0c + bdlcount_0c_div4 ;
+          } // ddr_md
+
+          if (dqsgd_0c > lcdl_judge1) {
+             if (dqsgd_0c <= lcdl_judge2) {
+                WriteReg_32(DBSC_E3_DBPDRGA0, 0x000000B0 + i * 0x20);
+                RegVal = (ReadReg_32(DBSC_E3_DBPDRGD0) & 0xFFFFFF00);
+                WriteReg_32(DBSC_E3_DBPDRGD0,((dqsgd_0c - bdlcount_0c_div8) | RegVal));
+              } else {
+                WriteReg_32(DBSC_E3_DBPDRGA0, 0x000000B0 + i * 0x20);
+                RegVal = (ReadReg_32(DBSC_E3_DBPDRGD0) & 0xFFFFFF00);
+                WriteReg_32(DBSC_E3_DBPDRGD0, RegVal);
+                WriteReg_32(DBSC_E3_DBPDRGA0, 0x000000B2 + i * 0x20);
+                gatesl_0c = (ReadReg_32(DBSC_E3_DBPDRGD0) & 0x00000007);
+                WriteReg_32(DBSC_E3_DBPDRGA0, 0x000000B2 + i * 0x20);
+                RegVal = (ReadReg_32(DBSC_E3_DBPDRGD0) & 0xFFFFFFF8);
+                WriteReg_32(DBSC_E3_DBPDRGD0, (RegVal|(gatesl_0c + 1)));
+                WriteReg_32(DBSC_E3_DBPDRGA0, 0x000000AF + i * 0x20);
+                RegVal = (ReadReg_32(DBSC_E3_DBPDRGD0));
+                rdqsd_0c = (RegVal & 0x0000FF00) >> 8;
+                rdqsnd_0c = (RegVal & 0x00FF0000) >> 16;
+                WriteReg_32(DBSC_E3_DBPDRGA0, 0x000000AF + i * 0x20);
+                WriteReg_32(DBSC_E3_DBPDRGD0, ((RegVal & 0xFF0000FF)|((rdqsd_0c + bdlcount_0c_div4) << 8)|((rdqsnd_0c + bdlcount_0c_div4) << 16)));
+                WriteReg_32(DBSC_E3_DBPDRGA0, 0x000000AA + i * 0x20);
+                RegVal = (ReadReg_32(DBSC_E3_DBPDRGD0));
+                rbd_0c[0] = (RegVal      ) & 0x0000001f;
+                rbd_0c[1] = (RegVal >>  8) & 0x0000001f;
+                rbd_0c[2] = (RegVal >> 16) & 0x0000001f;
+                rbd_0c[3] = (RegVal >> 24) & 0x0000001f;
+                WriteReg_32(DBSC_E3_DBPDRGA0, 0x000000AA + i * 0x20);
+                RegVal = (ReadReg_32(DBSC_E3_DBPDRGD0) & 0xE0E0E0E0);
+                for (j=0; j< 4; j++) {
+                    rbd_0c[j] = (rbd_0c[j] + bdlcount_0c_div4);
+                    if (rbd_0c[j] > 0x1F) rbd_0c[j] = 0x1F;
+                    RegVal = RegVal | (rbd_0c[j] <<8*j);
+                }
+                WriteReg_32(DBSC_E3_DBPDRGD0, RegVal);
+                WriteReg_32(DBSC_E3_DBPDRGA0, 0x000000AB + i * 0x20);
+                RegVal = (ReadReg_32(DBSC_E3_DBPDRGD0));
+                rbd_0c[0] = (RegVal      ) & 0x0000001f;
+                rbd_0c[1] = (RegVal >>  8) & 0x0000001f;
+                rbd_0c[2] = (RegVal >> 16) & 0x0000001f;
+                rbd_0c[3] = (RegVal >> 24) & 0x0000001f;
+                WriteReg_32(DBSC_E3_DBPDRGA0, 0x000000AB + i * 0x20);
+                RegVal = (ReadReg_32(DBSC_E3_DBPDRGD0) & 0xE0E0E0E0);
+                for (j=0; j< 4; j++) {
+                    rbd_0c[j] = (rbd_0c[j] + bdlcount_0c_div4);
+                    if (rbd_0c[j] > 0x1F) rbd_0c[j] = 0x1F;
+                    RegVal = RegVal | (rbd_0c[j] <<8*j);
+                }
+                WriteReg_32(DBSC_E3_DBPDRGD0, RegVal);
+             }
+          }
+       }
+       WriteReg_32(DBSC_E3_DBPDRGA0,0x00000002);
+       WriteReg_32(DBSC_E3_DBPDRGD0,0x07D81E37);
+   }
+
 
    WriteReg_32(DBSC_E3_DBPDRGA0,0x00000003);
    WriteReg_32(DBSC_E3_DBPDRGD0,0x0380C700);
@@ -630,6 +790,24 @@ uint32_t init_ddr(void)
    WriteReg_32(DBSC_E3_DBDFICUPDCNF,0x40100001);
    WriteReg_32(DBSC_E3_DBRFEN,0x00000001);
    WriteReg_32(DBSC_E3_DBACEN,0x00000001);
+
+//rev.0.08
+   if (pdqsr_ctl == 1){
+   WriteReg_32(0xE67F0018,0x00000001);
+   RegVal = ReadReg_32(0x40000000);
+   WriteReg_32(DBSC_E3_DBPDRGA0,0x00000000);
+   WriteReg_32(DBSC_E3_DBPDRGD0,RegVal);
+   WriteReg_32(DBSC_E3_DBPDRGA0,0x000000A0);
+   WriteReg_32(DBSC_E3_DBPDRGD0,0x7C0002C5);
+   WriteReg_32(DBSC_E3_DBPDRGA0,0x000000C0);
+   WriteReg_32(DBSC_E3_DBPDRGD0,0x7C0002C5);
+   WriteReg_32(DBSC_E3_DBPDRGA0,0x000000E0);
+   WriteReg_32(DBSC_E3_DBPDRGD0,0x7C0002C5);
+   WriteReg_32(DBSC_E3_DBPDRGA0,0x00000100);
+   WriteReg_32(DBSC_E3_DBPDRGD0,0x7C0002C5);
+
+   }
+
 
    // rev.0.03 add Comment
    /****************************************************************************
@@ -670,7 +848,12 @@ uint32_t init_ddr(void)
    WriteReg_32(DBSC_E3_DBSCHQOS151,0x00000030);
    WriteReg_32(DBSC_E3_DBSCHQOS152,0x00000020);
    WriteReg_32(DBSC_E3_DBSCHQOS153,0x00000010);
+
+//rev.0.08
+   if (pdqsr_ctl == 1){}else{
    WriteReg_32(0xE67F0018,0x00000001);
+   }
+
    WriteReg_32(DBSC_E3_DBSYSCNT0,0x00000000);
 #endif
 
@@ -680,7 +863,6 @@ uint32_t init_ddr(void)
 } // init_ddr
 
 // rev.0.04 add function
-#ifndef ddr_qos_init_setting
 uint32_t recovery_from_backup_mode(void)
 {
 
@@ -690,6 +872,23 @@ uint32_t recovery_from_backup_mode(void)
    uint32_t RegVal_R2, RegVal_R5, RegVal_R6, RegVal_R7, RegVal_R12, i;
    uint32_t ddr_md;
    uint32_t err;
+
+
+//rev.0.08
+   uint32_t RegVal,j;
+   uint32_t dqsgd_0c, bdlcount_0c, bdlcount_0c_div2, bdlcount_0c_div4, bdlcount_0c_div8, bdlcount_0c_div16;
+   uint32_t gatesl_0c, rdqsd_0c, rdqsnd_0c, rbd_0c[4];
+   uint32_t pdqsr_ctl,lcdl_ctl,lcdl_judge1,lcdl_judge2;
+
+//rev.0.08
+   if ((ReadReg_32(0xFFF00044) & 0x000000FF) == 0x00000000) {
+     pdqsr_ctl  = 1;
+     lcdl_ctl   = 1;
+    }else {
+     pdqsr_ctl  = 0;
+     lcdl_ctl   = 0;
+   }
+
 
    // Judge the DDR bit rate (ddr_md : 0 = 1584Mbps, 1 = 1856Mbps)
    ddr_md = (ReadReg_32(RST_MODEMR)>>19)&BIT0;
@@ -715,18 +914,20 @@ uint32_t recovery_from_backup_mode(void)
    WriteReg_32(DBSC_E3_DBSYSCNT0,0x00001234);
    WriteReg_32(DBSC_E3_DBKIND,0x00000007);
 
-#ifdef ddr_qos_init_setting
+#if RCAR_DRAM_DDR3L_MEMCONF == 0
    WriteReg_32(DBSC_E3_DBMEMCONF00,0x0f030a02);
+#elif RCAR_DRAM_DDR3L_MEMCONF == 1
+   WriteReg_32(DBSC_E3_DBMEMCONF00,0x10030a02);
+#elif RCAR_DRAM_DDR3L_MEMCONF == 2
+   WriteReg_32(DBSC_E3_DBMEMCONF00,0x10030b02);
 #else
-   #if RCAR_DRAM_DDR3L_MEMCONF == 0
-      WriteReg_32(DBSC_E3_DBMEMCONF00,0x0f030a02);
-   #elif RCAR_DRAM_DDR3L_MEMCONF == 1
-      WriteReg_32(DBSC_E3_DBMEMCONF00,0x10030a02);
-   #elif RCAR_DRAM_DDR3L_MEMCONF == 2
-      WriteReg_32(DBSC_E3_DBMEMCONF00,0x10030b02);
-   #else
-      WriteReg_32(DBSC_E3_DBMEMCONF00,0x10030a02);
-   #endif
+   WriteReg_32(DBSC_E3_DBMEMCONF00,0x10030a02);
+#endif
+
+//rev.0.08
+#if RCAR_DRAM_DDR3L_MEMDUAL == 1
+         RegVal_R2 = (ReadReg_32(0xE6790614));
+         WriteReg_32(0xE6790614,RegVal_R2 | 0x00000003); // MCS1_N/MODT1 are activated.
 #endif
 
    WriteReg_32(DBSC_E3_DBPHYCONF0,0x00000001);
@@ -1010,6 +1211,10 @@ uint32_t recovery_from_backup_mode(void)
       WriteReg_32(DBSC_E3_DBPDRGD0,0x04058A00);
    } // ddr_md
 
+//rev0.08
+   WriteReg_32(DBSC_E3_DBPDRGA0,0x0000000C);
+   WriteReg_32(DBSC_E3_DBPDRGD0,0x18000040);
+
    /****************************************************************************
     *  recovery_Step2(PHY setting 2)
     ***************************************************************************/
@@ -1102,6 +1307,10 @@ uint32_t recovery_from_backup_mode(void)
 
    WriteReg_32(DBSC_E3_DBPDRGA0,0x00000005);
    WriteReg_32(DBSC_E3_DBPDRGD0,0xC1AA00C0);
+
+   //rev.0.08
+   if (pdqsr_ctl == 1){}else{
+
    WriteReg_32(DBSC_E3_DBPDRGA0,0x000000A0);
    WriteReg_32(DBSC_E3_DBPDRGD0,0x7C0002C5);
    WriteReg_32(DBSC_E3_DBPDRGA0,0x000000C0);
@@ -1110,6 +1319,9 @@ uint32_t recovery_from_backup_mode(void)
    WriteReg_32(DBSC_E3_DBPDRGD0,0x7C0002C5);
    WriteReg_32(DBSC_E3_DBPDRGA0,0x00000100);
    WriteReg_32(DBSC_E3_DBPDRGD0,0x7C0002C5);
+
+   }
+
    WriteReg_32(DBSC_E3_DBPDRGA0,0x00000001);
    WriteReg_32(DBSC_E3_DBPDRGD0,0x00010801);
    WriteReg_32(DBSC_E3_DBPDRGA0,0x00000006);
@@ -1117,8 +1329,59 @@ uint32_t recovery_from_backup_mode(void)
 
    WriteReg_32(DBSC_E3_DBPDRGA0,0x00000005);
    WriteReg_32(DBSC_E3_DBPDRGD0,0xC1AA00D8);
+
+
+   //rev.0.08
    WriteReg_32(DBSC_E3_DBPDRGA0,0x00000001);
-   WriteReg_32(DBSC_E3_DBPDRGD0,0x0001F001);
+   WriteReg_32(DBSC_E3_DBPDRGD0,0x00011001);
+   WriteReg_32(DBSC_E3_DBPDRGA0,0x00000006);
+   while ( (BIT0 & ReadReg_32(DBSC_E3_DBPDRGD0)) == 0 );
+
+if (pdqsr_ctl == 1){
+   WriteReg_32(DBSC_E3_DBPDRGA0,0x000000A0);
+   WriteReg_32(DBSC_E3_DBPDRGD0,0x7C0002C5);
+   WriteReg_32(DBSC_E3_DBPDRGA0,0x000000C0);
+   WriteReg_32(DBSC_E3_DBPDRGD0,0x7C0002C5);
+   WriteReg_32(DBSC_E3_DBPDRGA0,0x000000E0);
+   WriteReg_32(DBSC_E3_DBPDRGD0,0x7C0002C5);
+   WriteReg_32(DBSC_E3_DBPDRGA0,0x00000100);
+   WriteReg_32(DBSC_E3_DBPDRGD0,0x7C0002C5);
+}
+
+   WriteReg_32(DBSC_E3_DBPDRGA0,0x00000001);
+   WriteReg_32(DBSC_E3_DBPDRGD0,0x00012001);
+   WriteReg_32(DBSC_E3_DBPDRGA0,0x00000006);
+   while ( (BIT0 & ReadReg_32(DBSC_E3_DBPDRGD0)) == 0 );
+
+if (pdqsr_ctl == 1){
+   WriteReg_32(DBSC_E3_DBPDRGA0,0x000000A0);
+   WriteReg_32(DBSC_E3_DBPDRGD0,0x7C000285);
+   WriteReg_32(DBSC_E3_DBPDRGA0,0x000000C0);
+   WriteReg_32(DBSC_E3_DBPDRGD0,0x7C000285);
+   WriteReg_32(DBSC_E3_DBPDRGA0,0x000000E0);
+   WriteReg_32(DBSC_E3_DBPDRGD0,0x7C000285);
+   WriteReg_32(DBSC_E3_DBPDRGA0,0x00000100);
+   WriteReg_32(DBSC_E3_DBPDRGD0,0x7C000285);
+}
+
+   WriteReg_32(DBSC_E3_DBPDRGA0,0x00000001);
+   WriteReg_32(DBSC_E3_DBPDRGD0,0x00014001);
+   WriteReg_32(DBSC_E3_DBPDRGA0,0x00000006);
+   while ( (BIT0 & ReadReg_32(DBSC_E3_DBPDRGD0)) == 0 );
+
+if (pdqsr_ctl == 1){
+   WriteReg_32(DBSC_E3_DBPDRGA0,0x000000A0);
+   WriteReg_32(DBSC_E3_DBPDRGD0,0x7C0002C5);
+   WriteReg_32(DBSC_E3_DBPDRGA0,0x000000C0);
+   WriteReg_32(DBSC_E3_DBPDRGD0,0x7C0002C5);
+   WriteReg_32(DBSC_E3_DBPDRGA0,0x000000E0);
+   WriteReg_32(DBSC_E3_DBPDRGD0,0x7C0002C5);
+   WriteReg_32(DBSC_E3_DBPDRGA0,0x00000100);
+   WriteReg_32(DBSC_E3_DBPDRGD0,0x7C0002C5);
+}
+
+   WriteReg_32(DBSC_E3_DBPDRGA0,0x00000001);
+   WriteReg_32(DBSC_E3_DBPDRGD0,0x00018001);
    WriteReg_32(DBSC_E3_DBPDRGA0,0x00000006);
    while ( (BIT0 & ReadReg_32(DBSC_E3_DBPDRGD0)) == 0 );
 
@@ -1167,6 +1430,9 @@ uint32_t recovery_from_backup_mode(void)
       } // RegVal_R12 < RegVal_R6
    } // for i
 
+//rev.0.08
+   if (pdqsr_ctl == 1){}else{
+
    WriteReg_32(DBSC_E3_DBPDRGA0,0x000000A0);
    WriteReg_32(DBSC_E3_DBPDRGD0,0x7C0002C5);
    WriteReg_32(DBSC_E3_DBPDRGA0,0x000000C0);
@@ -1175,10 +1441,91 @@ uint32_t recovery_from_backup_mode(void)
    WriteReg_32(DBSC_E3_DBPDRGD0,0x7C0002C5);
    WriteReg_32(DBSC_E3_DBPDRGA0,0x00000100);
    WriteReg_32(DBSC_E3_DBPDRGD0,0x7C0002C5);
+
+   }
+
    WriteReg_32(DBSC_E3_DBPDRGA0,0x00000001);
    WriteReg_32(DBSC_E3_DBPDRGD0,0x00015001);
    WriteReg_32(DBSC_E3_DBPDRGA0,0x00000006);
    while ( (BIT0 & ReadReg_32(DBSC_E3_DBPDRGD0)) == 0 );
+
+
+//rev.0.08
+   if (lcdl_ctl == 1){
+       for (i=0; i< 4; i++) {
+          WriteReg_32(DBSC_E3_DBPDRGA0,0x000000B0 + i*0x20);
+          dqsgd_0c = (ReadReg_32(DBSC_E3_DBPDRGD0) & 0x000000FF);
+          WriteReg_32(DBSC_E3_DBPDRGA0,0x000000B1 + i*0x20);
+          bdlcount_0c = ((ReadReg_32(DBSC_E3_DBPDRGD0) & 0x0000FF00) >> 8);
+          bdlcount_0c_div2  = (bdlcount_0c >> 1);
+          bdlcount_0c_div4  = (bdlcount_0c >> 2);
+          bdlcount_0c_div8  = (bdlcount_0c >> 3);
+          bdlcount_0c_div16 = (bdlcount_0c >> 4);
+
+          if (ddr_md==0){                                 // 1584Mbps
+             lcdl_judge1 = bdlcount_0c_div2 + bdlcount_0c_div4 + bdlcount_0c_div8 ;
+             lcdl_judge2 = bdlcount_0c + bdlcount_0c_div4 + bdlcount_0c_div16 ;
+          } else {                                        // 1856Mbps
+             lcdl_judge1 = bdlcount_0c_div2 + bdlcount_0c_div4 ;
+             lcdl_judge2 = bdlcount_0c + bdlcount_0c_div4 ;
+          } // ddr_md
+
+          if (dqsgd_0c > lcdl_judge1) {
+             if (dqsgd_0c <= lcdl_judge2) {
+                WriteReg_32(DBSC_E3_DBPDRGA0, 0x000000B0 + i * 0x20);
+                RegVal = (ReadReg_32(DBSC_E3_DBPDRGD0) & 0xFFFFFF00);
+                WriteReg_32(DBSC_E3_DBPDRGD0,((dqsgd_0c - bdlcount_0c_div8) | RegVal));
+              } else {
+                WriteReg_32(DBSC_E3_DBPDRGA0, 0x000000B0 + i * 0x20);
+                RegVal = (ReadReg_32(DBSC_E3_DBPDRGD0) & 0xFFFFFF00);
+                WriteReg_32(DBSC_E3_DBPDRGD0, RegVal);
+                WriteReg_32(DBSC_E3_DBPDRGA0, 0x000000B2 + i * 0x20);
+                gatesl_0c = (ReadReg_32(DBSC_E3_DBPDRGD0) & 0x00000007);
+                WriteReg_32(DBSC_E3_DBPDRGA0, 0x000000B2 + i * 0x20);
+                RegVal = (ReadReg_32(DBSC_E3_DBPDRGD0) & 0xFFFFFFF8);
+                WriteReg_32(DBSC_E3_DBPDRGD0, (RegVal|(gatesl_0c + 1)));
+                WriteReg_32(DBSC_E3_DBPDRGA0, 0x000000AF + i * 0x20);
+                RegVal = (ReadReg_32(DBSC_E3_DBPDRGD0));
+                rdqsd_0c = (RegVal & 0x0000FF00) >> 8;
+                rdqsnd_0c = (RegVal & 0x00FF0000) >> 16;
+                WriteReg_32(DBSC_E3_DBPDRGA0, 0x000000AF + i * 0x20);
+                WriteReg_32(DBSC_E3_DBPDRGD0, ((RegVal & 0xFF0000FF)|((rdqsd_0c + bdlcount_0c_div4) << 8)|((rdqsnd_0c + bdlcount_0c_div4) << 16)));
+                WriteReg_32(DBSC_E3_DBPDRGA0, 0x000000AA + i * 0x20);
+                RegVal = (ReadReg_32(DBSC_E3_DBPDRGD0));
+                rbd_0c[0] = (RegVal      ) & 0x0000001f;
+                rbd_0c[1] = (RegVal >>  8) & 0x0000001f;
+                rbd_0c[2] = (RegVal >> 16) & 0x0000001f;
+                rbd_0c[3] = (RegVal >> 24) & 0x0000001f;
+                WriteReg_32(DBSC_E3_DBPDRGA0, 0x000000AA + i * 0x20);
+                RegVal = (ReadReg_32(DBSC_E3_DBPDRGD0) & 0xE0E0E0E0);
+                for (j=0; j< 4; j++) {
+                    rbd_0c[j] = (rbd_0c[j] + bdlcount_0c_div4);
+                    if (rbd_0c[j] > 0x1F) rbd_0c[j] = 0x1F;
+                    RegVal = RegVal | (rbd_0c[j] <<8*j);
+                }
+                WriteReg_32(DBSC_E3_DBPDRGD0, RegVal);
+                WriteReg_32(DBSC_E3_DBPDRGA0, 0x000000AB + i * 0x20);
+                RegVal = (ReadReg_32(DBSC_E3_DBPDRGD0));
+                rbd_0c[0] = (RegVal      ) & 0x0000001f;
+                rbd_0c[1] = (RegVal >>  8) & 0x0000001f;
+                rbd_0c[2] = (RegVal >> 16) & 0x0000001f;
+                rbd_0c[3] = (RegVal >> 24) & 0x0000001f;
+                WriteReg_32(DBSC_E3_DBPDRGA0, 0x000000AB + i * 0x20);
+                RegVal = (ReadReg_32(DBSC_E3_DBPDRGD0) & 0xE0E0E0E0);
+                for (j=0; j< 4; j++) {
+                    rbd_0c[j] = (rbd_0c[j] + bdlcount_0c_div4);
+                    if (rbd_0c[j] > 0x1F) rbd_0c[j] = 0x1F;
+                    RegVal = RegVal | (rbd_0c[j] <<8*j);
+                }
+                WriteReg_32(DBSC_E3_DBPDRGD0, RegVal);
+             }
+          }
+       }
+       WriteReg_32(DBSC_E3_DBPDRGA0,0x00000002);
+       WriteReg_32(DBSC_E3_DBPDRGD0,0x07D81E37);
+   }
+
+
 
    WriteReg_32(DBSC_E3_DBPDRGA0,0x00000003);
    WriteReg_32(DBSC_E3_DBPDRGD0,0x0380C700);
@@ -1192,6 +1539,25 @@ uint32_t recovery_from_backup_mode(void)
     ***************************************************************************/
    WriteReg_32(DBSC_E3_DBDFICUPDCNF,0x40100001);
    WriteReg_32(DBSC_E3_DBACEN,0x00000001);
+
+//rev.0.08
+   if (pdqsr_ctl == 1){
+   WriteReg_32(0xE67F0018,0x00000001);
+   RegVal = ReadReg_32(0x40000000);
+   WriteReg_32(DBSC_E3_DBPDRGA0,0x00000000);
+   WriteReg_32(DBSC_E3_DBPDRGD0,RegVal);
+   WriteReg_32(DBSC_E3_DBPDRGA0,0x000000A0);
+   WriteReg_32(DBSC_E3_DBPDRGD0,0x7C0002C5);
+   WriteReg_32(DBSC_E3_DBPDRGA0,0x000000C0);
+   WriteReg_32(DBSC_E3_DBPDRGD0,0x7C0002C5);
+   WriteReg_32(DBSC_E3_DBPDRGA0,0x000000E0);
+   WriteReg_32(DBSC_E3_DBPDRGD0,0x7C0002C5);
+   WriteReg_32(DBSC_E3_DBPDRGA0,0x00000100);
+   WriteReg_32(DBSC_E3_DBPDRGD0,0x7C0002C5);
+
+   }
+
+
    WriteReg_32(DBSC_E3_DBPDLK0,0x00000000);
    WriteReg_32(DBSC_E3_DBSYSCNT0,0x00000000);
 
@@ -1227,76 +1593,23 @@ uint32_t recovery_from_backup_mode(void)
    WriteReg_32(DBSC_E3_DBSCHQOS151,0x00000030);
    WriteReg_32(DBSC_E3_DBSCHQOS152,0x00000020);
    WriteReg_32(DBSC_E3_DBSCHQOS153,0x00000010);
+
+//rev.0.08
+   if (pdqsr_ctl == 1){}else{
    WriteReg_32(0xE67F0018,0x00000001);
+   }
+
    WriteReg_32(DBSC_E3_DBSYSCNT0,0x00000000);
 #endif
 
    return 1;
 
 } // recovery_from_backup_mode
-#endif
 
-// rev.0.04 add
 /*******************************************************************************
- * Switching "for the board team" and "for the IPL team" is done by define (ddr_qos_init_setting),
- * and switching of the setting value by the bit rate is performed in the function
- * (init_ddr) to be called.
- *  For board team when define (ddr_qos_init_setting) is valid
- *      init_ddr_e31600 : MD19=0,DDR3L,1584Mbps
- *      init_ddr_e31866 : MD19=1,DDR3L,1856Mbps
- *  For IPL when define (ddr_qos_init_setting) is invalid
  *      init_ddr : MD19=0,DDR3L,1584Mbps / MD19=1,DDR3L,1856Mbps
  ******************************************************************************/
 
-#ifdef ddr_qos_init_setting
-/*******************************************************************************
- *  DDR Initialize entry for board team
- ******************************************************************************/
-uint32_t init_ddr_e31866(void)
-{
-    uint32_t dataL;
-    uint32_t failcount;
-
-    dataL=init_ddr();
-
-    if(dataL==1){
-        failcount =0;
-    } else {
-        failcount =1;
-    } // dataL
-
-    if(failcount==0){
-        return INITDRAM_OK;
-    } else {
-        return INITDRAM_NG;
-    } // failcount
-} // init_ddr_e31866
-
-uint32_t init_ddr_e31600(void)
-{
-    uint32_t dataL;
-    uint32_t failcount;
-
-    dataL=init_ddr();
-
-    if(dataL==1){
-        failcount =0;
-    } else {
-        failcount =1;
-    }
-
-    if(failcount==0){
-        return INITDRAM_OK;
-    } else {
-        return INITDRAM_NG;
-    } // failcount
-} // init_ddr_e31600
-
-/*******************************************************************************
- *  END
- ******************************************************************************/
-
-#else
 /*******************************************************************************
  *  DDR Initialize entry for IPL
  ******************************************************************************/
@@ -1334,14 +1647,11 @@ int32_t InitDram(void)
 
     if(failcount==0){
         return INITDRAM_OK;
-        return 1;
     } else {
         return INITDRAM_NG;
-        return 0;
     } // failcount
 } // InitDram
 
 /*******************************************************************************
  *  END
  ******************************************************************************/
-#endif

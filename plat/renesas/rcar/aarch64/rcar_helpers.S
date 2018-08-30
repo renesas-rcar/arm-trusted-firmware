@@ -184,9 +184,6 @@ endfunc platform_mem_init
 	 * ---------------------------------------------
 	 */
 func plat_report_exception
-	mrs	x1, CurrentEl
-
-	str	w0, [x1]
 #if IMAGE_BL2
 	mov	w1, #FIQ_SP_ELX
 	cmp	w0, w1

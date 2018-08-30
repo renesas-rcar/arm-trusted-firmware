@@ -58,11 +58,6 @@ func rcar_bl31_save_generic_timer
 
 	stp	x9, x10, [x0, #OFFSET_SP_X9_X10]
 
-	/* stop the generic timer */
-	mov_imm	x10, (RCAR_CNTC_BASE + CNTCR_OFF)
-	mov	x9, #0
-	str	w9, [x10]
-
 	/* save CNTFID0 and cntpct_el0 */
 	mov_imm	x10, (RCAR_CNTC_BASE + CNTFID_OFF)
 	ldr	x9, [x10]

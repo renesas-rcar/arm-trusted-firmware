@@ -126,7 +126,7 @@ static void bl2_realtime_cpg_init_h3(void)
 	/* Realtime Module Stop Control Register 3 */
 	cpg_write(RMSTPCR3,	0xFFFFFFDFU);
 	/* Realtime Module Stop Control Register 4 */
-	cpg_write(RMSTPCR4,	0x80000184U);
+	cpg_write(RMSTPCR4,	0x80000004U);
 	/* Realtime Module Stop Control Register 5 */
 	cpg_write(RMSTPCR5,	0xC3FFFFFFU);
 	/* Realtime Module Stop Control Register 6 */
@@ -141,7 +141,7 @@ static void bl2_realtime_cpg_init_h3(void)
 		cpg_write(RMSTPCR8,	0x01F1FFF7U);
 	}
 	/* Realtime Module Stop Control Register 9 */
-	cpg_write(RMSTPCR9,	0xFFFFFFFEU);
+	cpg_write(RMSTPCR9,	0xFFFFFFFFU);
 	/* Realtime Module Stop Control Register 10 */
 	cpg_write(RMSTPCR10,	0xFFFEFFE0U);
 	/* Realtime Module Stop Control Register 11 */
@@ -171,7 +171,7 @@ static void bl2_system_cpg_init_h3(void)
 	/* System Module Stop Control Register 8 */
 	cpg_write(SMSTPCR8,	0x01F1FFF5U);
 	/* System Module Stop Control Register 9 */
-	cpg_write(SMSTPCR9,	0xFFFFFFFEU);
+	cpg_write(SMSTPCR9,	0xFFFFFFFFU);
 	/* System Module Stop Control Register 10 */
 	cpg_write(SMSTPCR10,	0xFFFEFFE0U);
 	/* System Module Stop Control Register 11 */
@@ -193,7 +193,7 @@ static void bl2_realtime_cpg_init_m3(void)
 	/* Realtime Module Stop Control Register 3 */
 	cpg_write(RMSTPCR3,	0xFFFFFFDFU);
 	/* Realtime Module Stop Control Register 4 */
-	cpg_write(RMSTPCR4,	0x80000184U);
+	cpg_write(RMSTPCR4,	0x80000004U);
 	/* Realtime Module Stop Control Register 5 */
 	cpg_write(RMSTPCR5,	0xC3FFFFFFU);
 	/* Realtime Module Stop Control Register 6 */
@@ -203,7 +203,7 @@ static void bl2_realtime_cpg_init_m3(void)
 	/* Realtime Module Stop Control Register 8 */
 	cpg_write(RMSTPCR8,	0x01F1FFF7U);
 	/* Realtime Module Stop Control Register 9 */
-	cpg_write(RMSTPCR9,	0xFFFFFFFEU);
+	cpg_write(RMSTPCR9,	0xFFFFFFFFU);
 	/* Realtime Module Stop Control Register 10 */
 	cpg_write(RMSTPCR10,	0xFFFEFFE0U);
 	/* Realtime Module Stop Control Register 11 */
@@ -233,7 +233,7 @@ static void bl2_system_cpg_init_m3(void)
 	/* System Module Stop Control Register 8 */
 	cpg_write(SMSTPCR8,	0x01F1FFF7U);
 	/* System Module Stop Control Register 9 */
-	cpg_write(SMSTPCR9,	0xFFFFFFFEU);
+	cpg_write(SMSTPCR9,	0xFFFFFFFFU);
 	/* System Module Stop Control Register 10 */
 	cpg_write(SMSTPCR10,	0xFFFEFFE0U);
 	/* System Module Stop Control Register 11 */
@@ -255,7 +255,7 @@ static void bl2_realtime_cpg_init_m3n(void)
 	/* Realtime Module Stop Control Register 3 */
 	cpg_write(RMSTPCR3,	0xFFFFFFDFU);
 	/* Realtime Module Stop Control Register 4 */
-	cpg_write(RMSTPCR4,	0x80000184U);
+	cpg_write(RMSTPCR4,	0x80000004U);
 	/* Realtime Module Stop Control Register 5 */
 	cpg_write(RMSTPCR5,	0xC3FFFFFFU);
 	/* Realtime Module Stop Control Register 6 */
@@ -263,9 +263,9 @@ static void bl2_realtime_cpg_init_m3n(void)
 	/* Realtime Module Stop Control Register 7 */
 	cpg_write(RMSTPCR7,	0xFFFFFFFFU);
 	/* Realtime Module Stop Control Register 8 */
-	cpg_write(RMSTPCR8,	0x01F1FFF7U);
+	cpg_write(RMSTPCR8,	0x00F1FFF7U);
 	/* Realtime Module Stop Control Register 9 */
-	cpg_write(RMSTPCR9,	0xFFFFFFFEU);
+	cpg_write(RMSTPCR9,	0xFFFFFFFFU);
 	/* Realtime Module Stop Control Register 10 */
 	cpg_write(RMSTPCR10,	0xFFFFFFE0U);
 	/* Realtime Module Stop Control Register 11 */
@@ -293,9 +293,9 @@ static void bl2_system_cpg_init_m3n(void)
 	/* System Module Stop Control Register 7 */
 	cpg_write(SMSTPCR7,	0xFFFFFFFFU);
 	/* System Module Stop Control Register 8 */
-	cpg_write(SMSTPCR8,	0x01F1FFF7U);
+	cpg_write(SMSTPCR8,	0x00F1FFF7U);
 	/* System Module Stop Control Register 9 */
-	cpg_write(SMSTPCR9,	0xFFFFFFFEU);
+	cpg_write(SMSTPCR9,	0xFFFFFFFFU);
 	/* System Module Stop Control Register 10 */
 	cpg_write(SMSTPCR10,	0xFFFFFFE0U);
 	/* System Module Stop Control Register 11 */
@@ -317,7 +317,7 @@ static void bl2_realtime_cpg_init_e3(void)
 	/* Realtime Module Stop Control Register 3 */
 	cpg_write(RMSTPCR3,	0xFFFFFFDFU);
 	/* Realtime Module Stop Control Register 4 */
-	cpg_write(RMSTPCR4,	0x80000184U);
+	cpg_write(RMSTPCR4,	0x80000004U);
 	/* Realtime Module Stop Control Register 5 */
 	cpg_write(RMSTPCR5,	0xC3FFFFFFU);
 	/* Realtime Module Stop Control Register 6 */
@@ -327,7 +327,7 @@ static void bl2_realtime_cpg_init_e3(void)
 	/* Realtime Module Stop Control Register 8 */
 	cpg_write(RMSTPCR8,	0x00F1FFF7U);
 	/* Realtime Module Stop Control Register 9 */
-	cpg_write(RMSTPCR9,	0xFFFFFFDEU);
+	cpg_write(RMSTPCR9,	0xFFFFFFDFU);
 	/* Realtime Module Stop Control Register 10 */
 	cpg_write(RMSTPCR10,	0xFFFFFFE8U);
 	/* Realtime Module Stop Control Register 11 */
@@ -357,7 +357,7 @@ static void bl2_system_cpg_init_e3(void)
 	/* System Module Stop Control Register 8 */
 	cpg_write(SMSTPCR8,	0x00F1FFF7U);
 	/* System Module Stop Control Register 9 */
-	cpg_write(SMSTPCR9,	0xFFFFFFDEU);
+	cpg_write(SMSTPCR9,	0xFFFFFFDFU);
 	/* System Module Stop Control Register 10 */
 	cpg_write(SMSTPCR10,	0xFFFFFFE8U);
 	/* System Module Stop Control Register 11 */

@@ -169,6 +169,19 @@ func bl2_reset
 	eret
 endfunc bl2_reset
 
+func disable_invalidate_icache
+	/* Disable instruction cache */
+	mrs	x0, sctlr_el1
+	bic	x0, x0, #SCTLR_I_BIT
+	msr	sctlr_el1, x0
+	isb
+
+	/* Invalidate instruction cache */
+	ic	iallu
+	dsb	sy
+	isb
+	ret
+endfunc disable_invalidate_icache
 
 	.align	3
 BL2_MEM_INFO:					/* meminfo_t */
@@ -283,6 +296,8 @@ SynchronousExceptionA64:
 	mov	x0, #BL1_SMC_RUN_IMAGE
 	cmp	x19, x0
 	b.ne	panic
+
+	bl	disable_invalidate_icache
 
 	mov	x0, x20
 	ldp	x0, x1, [x20, #ENTRY_POINT_INFO_PC_OFFSET]

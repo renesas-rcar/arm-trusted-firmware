@@ -517,6 +517,7 @@ void bl2_early_platform_setup(meminfo_t *mem_layout)
 	case BOARD_SALVATOR_XS:
 	case BOARD_EBISU:
 	case BOARD_STARTER_KIT_PRE:
+	case BOARD_EBISU_4D:
 		/* Do nothing. */
 		break;
 	default:
@@ -638,6 +639,15 @@ void bl2_early_platform_setup(meminfo_t *mem_layout)
 		NOTICE("BL2: CH2: 0x600000000 - 0x680000000, 2 GiB\n");
 		NOTICE("BL2: CH3: 0x700000000 - 0x780000000, 2 GiB\n");
 #endif /* RCAR_DRAM_LPDDR4_MEMCONF == 0 */
+	}
+	if ((reg & RCAR_PRODUCT_MASK) == RCAR_PRODUCT_E3) {
+#if (RCAR_DRAM_DDR3L_MEMCONF == 0)
+		/* 1GB(512MBx2) */
+		NOTICE("BL2: 0x400000000 - 0x440000000, 1 GiB\n");
+#elif (RCAR_DRAM_DDR3L_MEMCONF == 1)
+		/* 2GB(512MBx4) */
+		NOTICE("BL2: 0x400000000 - 0x480000000, 2 GiB\n");
+#endif /* RCAR_DRAM_DDR3L_MEMCONF == 0 */
 	}
 
 	if((modemr == MODEMR_BOOT_CPU_CA57) ||
@@ -906,16 +916,6 @@ void bl2_plat_flush_bl31_params(void)
 	tlbivmalle1();
 #endif /* RCAR_BL2_DCACHE == 1 */
 
-	/* Disable instruction cache */
-	val = (uint32_t)read_sctlr_el1();
-	val &= ~((uint32_t)SCTLR_I_BIT);
-	write_sctlr_el1((uint64_t)val);
-	isb();
-
-	/* Invalidate instruction cache */
-	iciallu();
-	dsb();
-	isb();
 }
 
 

@@ -40,6 +40,7 @@ const char *g_board_tbl[] = {
 	[BOARD_SALVATOR_XS]	= "Salvator-XS",
 	[BOARD_EBISU]		= "Ebisu",
 	[BOARD_STARTER_KIT_PRE]	= "Starter Kit",
+	[BOARD_EBISU_4D]	= "Ebisu-4D",
 	[BOARD_UNKNOWN]		= "unknown"
 };
 
@@ -61,6 +62,8 @@ int32_t get_board_type(uint32_t *type, uint32_t *rev)
 		[BOARD_EBISU]		= {0x10U, 0xFFU, 0xFFU, 0xFFU,
 					   0xFFU, 0xFFU, 0xFFU, 0xFFU},
 		[BOARD_STARTER_KIT_PRE]	= {0x10U, 0x10U, 0xFFU, 0xFFU,
+					   0xFFU, 0xFFU, 0xFFU, 0xFFU},
+		[BOARD_EBISU_4D]	= {0x10U, 0xFFU, 0xFFU, 0xFFU,
 					   0xFFU, 0xFFU, 0xFFU, 0xFFU},
 	};
 

@@ -73,8 +73,7 @@ BL31_SOURCES		+=	${RCAR_GIC_SOURCES}				\
 				plat/renesas/rcar/aarch64/rcar_drivers_common.c	\
 				plat/renesas/rcar/drivers/pwrc/rcar_call_sram.S	\
 				plat/renesas/rcar/drivers/pwrc/rcar_pwrc.c	\
-				plat/renesas/rcar/drivers/cpld/ulcb_cpld.c	\
-				plat/renesas/rcar/drivers/wait/micro_wait.S
+				plat/renesas/rcar/drivers/cpld/ulcb_cpld.c
 
 # compile option setting
 ARM_CCI_PRODUCT_ID	:= 500
@@ -308,6 +307,12 @@ ifndef RCAR_DRAM_DDR3L_MEMCONF
 RCAR_DRAM_DDR3L_MEMCONF :=1
 endif
 $(eval $(call add_define,RCAR_DRAM_DDR3L_MEMCONF))
+
+# Process RCAR_DRAM_DDR3L_MEMDUAL flag
+ifndef RCAR_DRAM_DDR3L_MEMDUAL
+RCAR_DRAM_DDR3L_MEMDUAL :=1
+endif
+$(eval $(call add_define,RCAR_DRAM_DDR3L_MEMDUAL))
 
 # Process RCAR_BL33_ARG0 flag
 ifdef RCAR_BL33_ARG0
