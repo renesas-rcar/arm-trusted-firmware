@@ -11,6 +11,11 @@ A53_DISABLE_NON_TEMPORAL_HINT := 0
 SEPARATE_CODE_AND_RODATA := 1
 override RESET_TO_BL31 := 1
 
+# Do not enable SVE
+ENABLE_SVE_FOR_NS	:= 0
+
+WORKAROUND_CVE_2017_5715	:=	0
+
 ifdef ZYNQMP_ATF_MEM_BASE
     $(eval $(call add_define,ZYNQMP_ATF_MEM_BASE))
 
@@ -39,7 +44,8 @@ $(eval $(call add_define_val,ZYNQMP_CONSOLE,ZYNQMP_CONSOLE_ID_${ZYNQMP_CONSOLE})
 PLAT_INCLUDES		:=	-Iinclude/plat/arm/common/			\
 				-Iinclude/plat/arm/common/aarch64/		\
 				-Iplat/xilinx/zynqmp/include/			\
-				-Iplat/xilinx/zynqmp/pm_service/
+				-Iplat/xilinx/zynqmp/pm_service/		\
+				-Iplat/xilinx/zynqmp/ipi_mailbox_service/
 
 PLAT_BL_COMMON_SOURCES	:=	lib/xlat_tables/xlat_tables_common.c		\
 				lib/xlat_tables/aarch64/xlat_tables.c		\
@@ -68,7 +74,9 @@ BL31_SOURCES		+=	drivers/arm/cci/cci.c				\
 				plat/xilinx/zynqmp/plat_startup.c		\
 				plat/xilinx/zynqmp/plat_topology.c		\
 				plat/xilinx/zynqmp/sip_svc_setup.c		\
+				plat/xilinx/zynqmp/zynqmp_ipi.c		\
 				plat/xilinx/zynqmp/pm_service/pm_svc_main.c	\
 				plat/xilinx/zynqmp/pm_service/pm_api_sys.c	\
 				plat/xilinx/zynqmp/pm_service/pm_ipi.c		\
-				plat/xilinx/zynqmp/pm_service/pm_client.c
+				plat/xilinx/zynqmp/pm_service/pm_client.c	\
+				plat/xilinx/zynqmp/ipi_mailbox_service/ipi_mailbox_svc.c

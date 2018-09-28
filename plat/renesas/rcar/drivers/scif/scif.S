@@ -91,11 +91,11 @@
 #define SCFDR_T_MASK		(0x1f << 8)
 
 #define	DL_INIT_DATA		(8)		/* 14.7456MHz/(115200bps*16)*/
-			
-#define	CKS_CKS_DIV_MASK		(1 << 15)
+
+#define	CKS_CKS_DIV_MASK	(1 << 15)
 #define	CKS_CKS_DIV_CLK		(0x0000)
 #define	CKS_XIN_MASK		(1 << 14)
-#define	CKS_XIN_SCIF_CLK		(0x0000)
+#define	CKS_XIN_SCIF_CLK	(0x0000)
 #define	CKS_INIT_DATA		(CKS_CKS_DIV_CLK + CKS_XIN_SCIF_CLK)
 
 	.globl	console_init

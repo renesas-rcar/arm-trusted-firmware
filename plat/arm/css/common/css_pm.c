@@ -74,6 +74,9 @@ static void css_pwr_domain_on_finisher_common(
 {
 	assert(CSS_CORE_PWR_STATE(target_state) == ARM_LOCAL_STATE_OFF);
 
+	/* Enable the gic cpu interface */
+	plat_arm_gic_cpuif_enable();
+
 	/*
 	 * Perform the common cluster specific operations i.e enable coherency
 	 * if this cluster was off.
@@ -95,13 +98,10 @@ void css_pwr_domain_on_finish(const psci_power_state_t *target_state)
 	/* Assert that the system power domain need not be initialized */
 	assert(CSS_SYSTEM_PWR_STATE(target_state) == ARM_LOCAL_STATE_RUN);
 
-	css_pwr_domain_on_finisher_common(target_state);
-
 	/* Program the gic per-cpu distributor or re-distributor interface */
 	plat_arm_gic_pcpu_init();
 
-	/* Enable the gic cpu interface */
-	plat_arm_gic_cpuif_enable();
+	css_pwr_domain_on_finisher_common(target_state);
 }
 
 /*******************************************************************************
@@ -144,8 +144,18 @@ void css_pwr_domain_suspend(const psci_power_state_t *target_state)
 	if (CSS_CORE_PWR_STATE(target_state) == ARM_LOCAL_STATE_RET)
 		return;
 
+
 	assert(CSS_CORE_PWR_STATE(target_state) == ARM_LOCAL_STATE_OFF);
 	css_power_down_common(target_state);
+
+	/* Perform system domain state saving if issuing system suspend */
+	if (CSS_SYSTEM_PWR_STATE(target_state) == ARM_LOCAL_STATE_OFF) {
+		arm_system_pwr_domain_save();
+
+		/* Power off the Redistributor after having saved its context */
+		plat_arm_gic_redistif_off();
+	}
+
 	css_scp_suspend(target_state);
 }
 
@@ -165,10 +175,12 @@ void css_pwr_domain_suspend_finish(
 
 	/* Perform system domain restore if woken up from system suspend */
 	if (CSS_SYSTEM_PWR_STATE(target_state) == ARM_LOCAL_STATE_OFF)
+		/*
+		 * At this point, the Distributor must be powered on to be ready
+		 * to have its state restored. The Redistributor will be powered
+		 * on as part of gicv3_rdistif_init_restore.
+		 */
 		arm_system_pwr_domain_resume();
-	else
-		/* Enable the gic cpu interface */
-		plat_arm_gic_cpuif_enable();
 
 	css_pwr_domain_on_finisher_common(target_state);
 }
@@ -287,8 +299,20 @@ plat_psci_ops_t plat_arm_psci_pm_ops = {
 	.system_off		= css_system_off,
 	.system_reset		= css_system_reset,
 	.validate_power_state	= css_validate_power_state,
-	.validate_ns_entrypoint = arm_validate_ns_entrypoint,
+	.validate_ns_entrypoint = arm_validate_psci_entrypoint,
 	.translate_power_state_by_mpidr = css_translate_power_state_by_mpidr,
 	.get_node_hw_state	= css_node_hw_state,
-	.get_sys_suspend_power_state = css_get_sys_suspend_power_state
+	.get_sys_suspend_power_state = css_get_sys_suspend_power_state,
+/*
+ * mem_protect is not supported in RESET_TO_BL31 and RESET_TO_SP_MIN,
+ * as that would require mapping in all of NS DRAM into BL31 or BL32.
+ */
+#if defined(PLAT_ARM_MEM_PROT_ADDR) && !RESET_TO_BL31 && !RESET_TO_SP_MIN
+	.mem_protect_chk	= arm_psci_mem_protect_chk,
+	.read_mem_protect	= arm_psci_read_mem_protect,
+	.write_mem_protect	= arm_nor_psci_write_mem_protect,
+#endif
+#if CSS_USE_SCMI_SDS_DRIVER
+	.system_reset2		= css_system_reset2,
+#endif
 };

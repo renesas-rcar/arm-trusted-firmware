@@ -10,7 +10,7 @@
 #include "../qos_reg.h"
 #include "qos_init_e3_v10.h"
 
-#define	RCAR_QOS_VERSION		"rev.0.02"
+#define	RCAR_QOS_VERSION		"rev.0.03"
 
 #define QOSCTRL_EARLYR			(QOS_BASE1 + 0x0060U)
 #define QOSCTRL_FSS			(QOS_BASE1 + 0x0048U)
@@ -137,14 +137,6 @@ void qos_init_e3_v10(void)
 
 	/* AXI-IF arbitration setting */
 	//delete
-
-	/* 3DG bus Leaf setting */
-	io_write_32(GPU_ACT_GRD, 0x00001234U);
-	io_write_32(GPU_ACT0, 0x00000000U);
-	io_write_32(GPU_ACT1, 0x00000000U);
-	io_write_32(GPU_ACT2, 0x00000000U);
-	io_write_32(GPU_ACT3, 0x00000000U);
-	io_write_32(GPU_ACT_GRD, 0x00000000U);
 
 	/* RT bus Leaf setting */
 	io_write_32(RT_ACT0, 0x00000000U);

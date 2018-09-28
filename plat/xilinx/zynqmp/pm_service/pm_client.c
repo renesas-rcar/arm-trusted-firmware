@@ -11,16 +11,16 @@
 
 #include <assert.h>
 #include <bakery_lock.h>
-#include <gicv2.h>
-#include <gic_common.h>
 #include <bl_common.h>
+#include <gic_common.h>
+#include <gicv2.h>
 #include <mmio.h>
 #include <string.h>
 #include <utils.h>
+#include "../zynqmp_def.h"
 #include "pm_api_sys.h"
 #include "pm_client.h"
 #include "pm_ipi.h"
-#include "../zynqmp_def.h"
 
 #define IRQ_MAX		84
 #define NUM_GICD_ISENABLER	((IRQ_MAX >> 5) + 1)
@@ -31,7 +31,7 @@ DEFINE_BAKERY_LOCK(pm_client_secure_lock);
 extern const struct pm_ipi apu_ipi;
 
 /* Order in pm_procs_all array must match cpu ids */
-static const struct pm_proc const pm_procs_all[] = {
+static const struct pm_proc pm_procs_all[] = {
 	{
 		.node_id = NODE_APU_0,
 		.pwrdn_mask = APU_0_PWRCTL_CPUPWRDWNREQ_MASK,

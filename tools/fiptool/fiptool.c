@@ -9,18 +9,12 @@
 
 #include <assert.h>
 #include <errno.h>
-#include <getopt.h>
 #include <limits.h>
 #include <stdarg.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
-
-#include <openssl/sha.h>
-
-#include <firmware_image_package.h>
 
 #include "fiptool.h"
 #include "tbbr_config.h"
@@ -161,7 +155,7 @@ static void set_image_desc_action(image_desc_t *desc, int action,
 {
 	assert(desc != NULL);
 
-	if (desc->action_arg != DO_UNSPEC)
+	if (desc->action_arg != (char *)DO_UNSPEC)
 		free(desc->action_arg);
 	desc->action = action;
 	desc->action_arg = NULL;
@@ -278,14 +272,14 @@ static void uuid_from_str(uuid_t *u, const char *s)
 
 static int parse_fip(const char *filename, fip_toc_header_t *toc_header_out)
 {
-	struct stat st;
+	struct BLD_PLAT_STAT st;
 	FILE *fp;
 	char *buf, *bufend;
 	fip_toc_header_t *toc_header;
 	fip_toc_entry_t *toc_entry;
 	int terminated = 0;
 
-	fp = fopen(filename, "r");
+	fp = fopen(filename, "rb");
 	if (fp == NULL)
 		log_err("fopen %s", filename);
 
@@ -370,13 +364,14 @@ static int parse_fip(const char *filename, fip_toc_header_t *toc_header_out)
 
 static image_t *read_image_from_file(const uuid_t *uuid, const char *filename)
 {
-	struct stat st;
+	struct BLD_PLAT_STAT st;
 	image_t *image;
 	FILE *fp;
 
 	assert(uuid != NULL);
+	assert(filename != NULL);
 
-	fp = fopen(filename, "r");
+	fp = fopen(filename, "rb");
 	if (fp == NULL)
 		log_err("fopen %s", filename);
 
@@ -398,7 +393,7 @@ static int write_image_to_file(const image_t *image, const char *filename)
 {
 	FILE *fp;
 
-	fp = fopen(filename, "w");
+	fp = fopen(filename, "wb");
 	if (fp == NULL)
 		log_err("fopen");
 	xfwrite(image->buffer, image->toc_e.size, fp, filename);
@@ -469,6 +464,7 @@ static int info_cmd(int argc, char *argv[])
 		       (unsigned long long)image->toc_e.offset_address,
 		       (unsigned long long)image->toc_e.size,
 		       desc->cmdline_name);
+#ifndef _MSC_VER	/* We don't have SHA256 for Visual Studio. */
 		if (verbose) {
 			unsigned char md[SHA256_DIGEST_LENGTH];
 
@@ -476,6 +472,7 @@ static int info_cmd(int argc, char *argv[])
 			printf(", sha256=");
 			md_print(md, sizeof(md));
 		}
+#endif
 		putchar('\n');
 	}
 
@@ -495,7 +492,7 @@ static int pack_images(const char *filename, uint64_t toc_flags, unsigned long a
 	fip_toc_header_t *toc_header;
 	fip_toc_entry_t *toc_entry;
 	char *buf;
-	uint64_t entry_offset, buf_size, payload_size = 0;
+	uint64_t entry_offset, buf_size, payload_size = 0, pad_size;
 	size_t nr_images = 0;
 
 	for (desc = image_desc_head; desc != NULL; desc = desc->next)
@@ -529,12 +526,16 @@ static int pack_images(const char *filename, uint64_t toc_flags, unsigned long a
 		entry_offset += image->toc_e.size;
 	}
 
-	/* Append a null uuid entry to mark the end of ToC entries. */
+	/*
+	 * Append a null uuid entry to mark the end of ToC entries.
+	 * NOTE the offset address for the last toc_entry must match the fip
+	 * size.
+	 */
 	memset(toc_entry, 0, sizeof(*toc_entry));
-	toc_entry->offset_address = entry_offset;
+	toc_entry->offset_address = (entry_offset + align - 1) & ~(align - 1);
 
 	/* Generate the FIP file. */
-	fp = fopen(filename, "w");
+	fp = fopen(filename, "wb");
 	if (fp == NULL)
 		log_err("fopen %s", filename);
 
@@ -542,7 +543,6 @@ static int pack_images(const char *filename, uint64_t toc_flags, unsigned long a
 		log_dbgx("Metadata size: %zu bytes", buf_size);
 
 	xfwrite(buf, buf_size, fp, filename);
-	free(buf);
 
 	if (verbose)
 		log_dbgx("Payload size: %zu bytes", payload_size);
@@ -558,6 +558,14 @@ static int pack_images(const char *filename, uint64_t toc_flags, unsigned long a
 		xfwrite(image->buffer, image->toc_e.size, fp, filename);
 	}
 
+	if (fseek(fp, entry_offset, SEEK_SET))
+		log_errx("Failed to set file position");
+
+	pad_size = toc_entry->offset_address - entry_offset;
+	while (pad_size--)
+		fputc(0x0, fp);
+
+	free(buf);
 	fclose(fp);
 	return 0;
 }

@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2017, ARM Limited and Contributors. All rights reserved.
- * Copyright (c) 2015-2017, Renesas Electronics Corporation. All rights reserved.
+ * Copyright (c) 2015-2018, Renesas Electronics Corporation. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -157,6 +157,9 @@ void __dead2 opteed_synchronous_sp_exit(optee_context_t *optee_ctx, uint64_t ret
 void opteed_init_optee_ep_state(struct entry_point_info *optee_ep,
 				uint32_t rw,
 				uint64_t pc,
+				uint64_t pageable_part,
+				uint64_t mem_limit,
+				uint64_t dt_addr,
 				optee_context_t *optee_ctx);
 
 extern optee_context_t opteed_sp_context[OPTEED_CORE_COUNT];

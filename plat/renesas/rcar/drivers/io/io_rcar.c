@@ -62,10 +62,10 @@ typedef struct {
 #define RCAR_CERT_SIZE			(0x800U)	/* cert field size*/
 #define RCAR_CERT_INFO_SIZE_OFFSET	(0x264U)	/* byte address set : must 4byte alignment */
 #define RCAR_CERT_INFO_DST_OFFSET	(0x154U)	/* byte address set : must 4byte alignment */
-#define RCAR_CERT_INFO_SIZE_OFFSET1	(0x364U)	/* for Map Type-1 */
-#define RCAR_CERT_INFO_DST_OFFSET1	(0x1D4U)	/* for Map Type-1 */
-#define RCAR_CERT_INFO_SIZE_OFFSET2	(0x464U)	/* for Map Type-2 */
-#define RCAR_CERT_INFO_DST_OFFSET2	(0x254U)	/* for Map Type-2 */
+#define RCAR_CERT_INFO_SIZE_OFFSET1	(0x364U)
+#define RCAR_CERT_INFO_DST_OFFSET1	(0x1D4U)
+#define RCAR_CERT_INFO_SIZE_OFFSET2	(0x464U)
+#define RCAR_CERT_INFO_DST_OFFSET2	(0x254U)
 #define RCAR_CERT_LOAD			(1U)
 
 #define RCAR_FLASH_CERT_HEADER	RCAR_GET_FLASH_ADR(6U, 0U)

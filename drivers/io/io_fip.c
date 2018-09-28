@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2017, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2014-2018, ARM Limited and Contributors. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -28,10 +28,6 @@
 		x.node[4], x.node[5]
 
 typedef struct {
-	/* Put file_pos above the struct to allow {0} on static init.
-	 * It is a workaround for a known bug in GCC
-	 * http://gcc.gnu.org/bugzilla/show_bug.cgi?id=53119
-	 */
 	unsigned int file_pos;
 	fip_toc_entry_t entry;
 } file_state_t;
@@ -73,7 +69,7 @@ static inline int is_valid_header(fip_toc_header_t *header)
 
 
 /* Identify the device type as a virtual driver */
-io_type_t device_type_fip(void)
+static io_type_t device_type_fip(void)
 {
 	return IO_TYPE_FIRMWARE_IMAGE_PACKAGE;
 }

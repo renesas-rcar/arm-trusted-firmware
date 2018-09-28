@@ -9,22 +9,23 @@
 # Process flags
 
 PLAT_INCLUDES		:=	-Iinclude/common/tbbr				\
-				-Iinclude/plat/arm/common			\
 				-Iplat/renesas/rcar/drivers/iic_dvfs/		\
 				-Iplat/renesas/rcar/drivers/board/		\
+				-Iplat/renesas/rcar/drivers/memdrv/		\
+				-Iplat/renesas/rcar/drivers/cpld/		\
 				-Iplat/renesas/rcar/include			\
-				-Iplat/renesas/rcar							\
-				-Iplat/renesas/rcar/ddr						\
+				-Iplat/renesas/rcar				\
+				-Iplat/renesas/rcar/ddr				\
 				-Iplat/renesas/rcar/qos
 
-PLAT_BL_COMMON_SOURCES	:=	lib/xlat_tables/xlat_tables_common.c		\
-				lib/xlat_tables/aarch64/xlat_tables.c		\
-				plat/renesas/rcar/drivers/iic_dvfs/iic_dvfs.c
+include lib/xlat_tables_v2/xlat_tables.mk
 
+PLAT_BL_COMMON_SOURCES	:=	plat/renesas/rcar/drivers/iic_dvfs/iic_dvfs.c	\
+				${XLAT_TABLES_LIB_SRCS}
 
-RCAR_GIC_SOURCES	:=	drivers/arm/gic/common/gic_common.c	\
-				drivers/arm/gic/v2/gicv2_main.c		\
-				drivers/arm/gic/v2/gicv2_helpers.c	\
+RCAR_GIC_SOURCES	:=	drivers/arm/gic/common/gic_common.c		\
+				drivers/arm/gic/v2/gicv2_main.c			\
+				drivers/arm/gic/v2/gicv2_helpers.c		\
 				plat/common/plat_gicv2.c
 
 BL2_SOURCES		+=	${RCAR_GIC_SOURCES}				\
@@ -56,7 +57,8 @@ BL2_SOURCES		+=	${RCAR_GIC_SOURCES}				\
 				plat/renesas/rcar/drivers/board/board.c		\
 				plat/renesas/rcar/bl2_secure_setting.c		\
 				plat/renesas/rcar/bl2_cpg_init.c		\
-				plat/renesas/rcar/aarch64/bl2_reset.S
+				lib/cpus/aarch64/cortex_a53.S			\
+				lib/cpus/aarch64/cortex_a57.S
 
 BL31_SOURCES		+=	${RCAR_GIC_SOURCES}				\
 				drivers/arm/cci/cci.c				\
@@ -350,6 +352,9 @@ ifeq (${RCAR_SYSTEM_RESET_KEEPON_DDR},1)
   endif
 endif
 
+# Enable dynamic memory mapping
+PLAT_XLAT_TABLES_DYNAMIC := 1
+$(eval $(call add_define,PLAT_XLAT_TABLES_DYNAMIC))
 
 # Enable workarounds for selected Cortex-A53 erratas.
 ERRATA_A53_835769  := 1
@@ -358,6 +363,16 @@ ERRATA_A53_855873  := 1
 
 # Enable workarounds for selected Cortex-A57 erratas.
 ERRATA_A57_859972  := 1
+
+# Do not enable SVE
+ENABLE_SVE_FOR_NS  := 0
+
+# Non-TF Boot ROM
+#if IMAGE_BL2
+BL2_AT_EL3	:=	1
+PROGRAMMABLE_RESET_ADDRESS	:=	1
+COLD_BOOT_SINGLE_CPU		:=	1
+#endif /* IMAGE_BL2 */
 
 include plat/renesas/rcar/ddr/ddr.mk
 include plat/renesas/rcar/qos/qos.mk

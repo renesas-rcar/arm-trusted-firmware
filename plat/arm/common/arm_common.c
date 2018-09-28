@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2017, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2015-2018, ARM Limited and Contributors. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -11,6 +11,8 @@
 #include <mmio.h>
 #include <plat_arm.h>
 #include <platform_def.h>
+#include <platform.h>
+#include <secure_partition.h>
 
 extern const mmap_region_t plat_arm_mmap[];
 
@@ -77,6 +79,14 @@ void arm_setup_page_tables(uintptr_t total_base,
 	mmap_add_region(coh_start, coh_start,
 			coh_limit - coh_start,
 			MT_DEVICE | MT_RW | MT_SECURE);
+#endif
+
+#if ENABLE_SPM && defined(IMAGE_BL31)
+	/* The address of the following region is calculated by the linker. */
+	mmap_add_region(SP_IMAGE_XLAT_TABLES_START,
+			SP_IMAGE_XLAT_TABLES_START,
+			SP_IMAGE_XLAT_TABLES_SIZE,
+			MT_MEMORY | MT_RW | MT_SECURE);
 #endif
 
 	/* Now (re-)map the platform-specific memory regions */
@@ -195,3 +205,51 @@ unsigned int plat_get_syscnt_freq2(void)
 }
 
 #endif /* ARM_SYS_CNTCTL_BASE */
+
+#if SDEI_SUPPORT
+/*
+ * Translate SDEI entry point to PA, and perform standard ARM entry point
+ * validation on it.
+ */
+int plat_sdei_validate_entry_point(uintptr_t ep, unsigned int client_mode)
+{
+	uint64_t par, pa;
+	uint32_t scr_el3;
+
+	/* Doing Non-secure address translation requires SCR_EL3.NS set */
+	scr_el3 = read_scr_el3();
+	write_scr_el3(scr_el3 | SCR_NS_BIT);
+	isb();
+
+	assert((client_mode == MODE_EL2) || (client_mode == MODE_EL1));
+	if (client_mode == MODE_EL2) {
+		/*
+		 * Translate entry point to Physical Address using the EL2
+		 * translation regime.
+		 */
+		ats1e2r(ep);
+	} else {
+		/*
+		 * Translate entry point to Physical Address using the EL1&0
+		 * translation regime, including stage 2.
+		 */
+		ats12e1r(ep);
+	}
+	isb();
+	par = read_par_el1();
+
+	/* Restore original SCRL_EL3 */
+	write_scr_el3(scr_el3);
+	isb();
+
+	/* If the translation resulted in fault, return failure */
+	if ((par & PAR_F_MASK) != 0)
+		return -1;
+
+	/* Extract Physical Address from PAR */
+	pa = (par & (PAR_ADDR_MASK << PAR_ADDR_SHIFT));
+
+	/* Perform NS entry point validation on the physical address */
+	return arm_validate_ns_entrypoint(pa);
+}
+#endif

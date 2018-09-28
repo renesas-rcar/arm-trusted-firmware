@@ -5,16 +5,16 @@
  */
 
 #include <arch_helpers.h>
-#include <assert.h>
 #include <arm_gic.h>
+#include <assert.h>
 #include <bl_common.h>
 #include <debug.h>
 #include <gic_v2.h>
 #include <interrupt_mgmt.h>
 #include <platform.h>
 #include <stdint.h>
-#include <tegra_private.h>
 #include <tegra_def.h>
+#include <tegra_private.h>
 
 /* Value used to initialize Non-Secure IRQ priorities four at a time */
 #define GICD_IPRIORITYR_DEF_VAL \
@@ -237,10 +237,10 @@ static uint32_t tegra_gic_get_pending_interrupt_id(void)
 
 	id = gicc_read_hppir(TEGRA_GICC_BASE) & INT_ID_MASK;
 
-	if (id < 1022UL) {
+	if (id < 1022U) {
 		ret = id;
-	} else if (id == 1023UL) {
-		ret = 0xFFFFFFFFUL; /* INTR_ID_UNAVAILABLE */
+	} else if (id == 1023U) {
+		ret = 0xFFFFFFFFU; /* INTR_ID_UNAVAILABLE */
 	} else {
 		/*
 		 * Find out which non-secure interrupt it is under the assumption that

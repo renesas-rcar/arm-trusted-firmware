@@ -48,7 +48,15 @@ BL31_SOURCES		+=	${RK_GIC_SOURCES}				\
 				${RK_PLAT_SOC}/drivers/pmu/pmu.c		\
 				${RK_PLAT_SOC}/drivers/soc/soc.c
 
-ENABLE_PLAT_COMPAT 	:=      0
+ENABLE_PLAT_COMPAT 	:=	0
+MULTI_CONSOLE_API	:=	1
+
+include lib/coreboot/coreboot.mk
 
 $(eval $(call add_define,PLAT_EXTRA_LD_SCRIPT))
 $(eval $(call add_define,PLAT_SKIP_OPTEE_S_EL1_INT_REGISTER))
+
+# Do not enable SVE
+ENABLE_SVE_FOR_NS	:=	0
+
+WORKAROUND_CVE_2017_5715	:=	0

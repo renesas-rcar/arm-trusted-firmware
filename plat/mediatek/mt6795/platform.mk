@@ -61,8 +61,12 @@ $(eval $(call add_define,ARM_GIC_ARCH))
 ERRATA_A53_826319	:=	1
 ERRATA_A53_836870	:=	1
 
+WORKAROUND_CVE_2017_5715	:=	0
+
 # indicate the reset vector address can be programmed
 PROGRAMMABLE_RESET_ADDRESS	:=	1
 
 $(eval $(call add_define,MTK_SIP_KERNEL_BOOT_ENABLE))
 
+# Do not enable SVE
+ENABLE_SVE_FOR_NS	:=	0

@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2016, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2017-2018, Renesas Electronics Corporation. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */

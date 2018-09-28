@@ -43,13 +43,31 @@ int key_new(key_t *key)
 
 static int key_create_rsa(key_t *key)
 {
-	RSA *rsa;
+	BIGNUM *e;
+	RSA *rsa = NULL;
 
-	rsa = RSA_generate_key(RSA_KEY_BITS, RSA_F4, NULL, NULL);
+	e = BN_new();
+	if (e == NULL) {
+		printf("Cannot create RSA exponent\n");
+		goto err;
+	}
+
+	if (!BN_set_word(e, RSA_F4)) {
+		printf("Cannot assign RSA exponent\n");
+		goto err;
+	}
+
+	rsa = RSA_new();
 	if (rsa == NULL) {
 		printf("Cannot create RSA key\n");
 		goto err;
 	}
+
+	if (!RSA_generate_key_ex(rsa, RSA_KEY_BITS, e, NULL)) {
+		printf("Cannot generate RSA key\n");
+		goto err;
+	}
+
 	if (!EVP_PKEY_assign_RSA(key->key, rsa)) {
 		printf("Cannot assign RSA key\n");
 		goto err;
@@ -58,6 +76,7 @@ static int key_create_rsa(key_t *key)
 	return 1;
 err:
 	RSA_free(rsa);
+	BN_free(e);
 	return 0;
 }
 
@@ -91,9 +110,10 @@ err:
 
 typedef int (*key_create_fn_t)(key_t *key);
 static const key_create_fn_t key_create_fn[KEY_ALG_MAX_NUM] = {
-	key_create_rsa,
+	key_create_rsa, 	/* KEY_ALG_RSA */
+	key_create_rsa, 	/* KEY_ALG_RSA_1_5 */
 #ifndef OPENSSL_NO_EC
-	key_create_ecdsa,
+	key_create_ecdsa, 	/* KEY_ALG_ECDSA */
 #endif /* OPENSSL_NO_EC */
 };
 

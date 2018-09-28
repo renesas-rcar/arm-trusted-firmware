@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2015-2017, ARM Limited and Contributors. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -23,16 +23,20 @@
  * On a GICv2 system, the Group 1 secure interrupts are treated as Group 0
  * interrupts.
  *****************************************************************************/
-static const unsigned int g0_interrupt_array[] = {
-	PLAT_ARM_G1S_IRQS,
-	PLAT_ARM_G0_IRQS
+static const interrupt_prop_t arm_interrupt_props[] = {
+	PLAT_ARM_G1S_IRQ_PROPS(GICV2_INTR_GROUP0),
+	PLAT_ARM_G0_IRQ_PROPS(GICV2_INTR_GROUP0)
 };
+
+static unsigned int target_mask_array[PLATFORM_CORE_COUNT];
 
 static const gicv2_driver_data_t arm_gic_data = {
 	.gicd_base = PLAT_ARM_GICD_BASE,
 	.gicc_base = PLAT_ARM_GICC_BASE,
-	.g0_interrupt_num = ARRAY_SIZE(g0_interrupt_array),
-	.g0_interrupt_array = g0_interrupt_array,
+	.interrupt_props = arm_interrupt_props,
+	.interrupt_props_num = ARRAY_SIZE(arm_interrupt_props),
+	.target_masks = target_mask_array,
+	.target_masks_num = ARRAY_SIZE(target_mask_array),
 };
 
 /******************************************************************************
@@ -47,6 +51,7 @@ void plat_arm_gic_init(void)
 {
 	gicv2_distif_init();
 	gicv2_pcpu_distif_init();
+	gicv2_set_pe_target_mask(plat_my_core_pos());
 	gicv2_cpuif_enable();
 }
 
@@ -72,6 +77,7 @@ void plat_arm_gic_cpuif_disable(void)
 void plat_arm_gic_pcpu_init(void)
 {
 	gicv2_pcpu_distif_init();
+	gicv2_set_pe_target_mask(plat_my_core_pos());
 }
 
 /******************************************************************************
@@ -86,4 +92,22 @@ void plat_arm_gic_redistif_on(void)
 void plat_arm_gic_redistif_off(void)
 {
 	return;
+}
+
+
+/******************************************************************************
+ * ARM common helper to save & restore the GICv3 on resume from system suspend.
+ * The normal world currently takes care of saving and restoring the GICv2
+ * registers due to legacy reasons. Hence we just initialize the Distributor
+ * on resume from system suspend.
+ *****************************************************************************/
+void plat_arm_gic_save(void)
+{
+	return;
+}
+
+void plat_arm_gic_resume(void)
+{
+	gicv2_distif_init();
+	gicv2_pcpu_distif_init();
 }

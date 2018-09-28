@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2017, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2015-2018, ARM Limited and Contributors. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -7,10 +7,12 @@
 #include <arch.h>
 #include <arm_def.h>
 #include <arm_xlat_tables.h>
+#include <bl1.h>
 #include <bl_common.h>
 #include <console.h>
-#include <platform_def.h>
 #include <plat_arm.h>
+#include <platform.h>
+#include <platform_def.h>
 #include <sp805.h>
 #include <utils.h>
 #include "../../../bl1/bl1_private.h"
@@ -115,6 +117,9 @@ void arm_bl1_platform_setup(void)
 {
 	/* Initialise the IO layer and register platform IO devices */
 	plat_arm_io_setup();
+#if LOAD_IMAGE_V2
+	arm_load_tb_fw_config();
+#endif
 }
 
 void bl1_platform_setup(void)
@@ -139,4 +144,16 @@ void bl1_plat_prepare_exit(entry_point_info_t *ep_info)
 	dsbsy();
 	sev();
 #endif
+}
+
+/*******************************************************************************
+ * The following function checks if Firmware update is needed,
+ * by checking if TOC in FIP image is valid or not.
+ ******************************************************************************/
+unsigned int bl1_plat_get_next_image_id(void)
+{
+	if (!arm_io_is_toc_valid())
+		return NS_BL1U_IMAGE_ID;
+
+	return BL2_IMAGE_ID;
 }

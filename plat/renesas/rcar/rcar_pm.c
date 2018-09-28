@@ -1,13 +1,12 @@
 /*
  * Copyright (c) 2013-2014, ARM Limited and Contributors. All rights reserved.
- * Copyright (c) 2015-2017, Renesas Electronics Corporation. All rights reserved.
+ * Copyright (c) 2015-2018, Renesas Electronics Corporation. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
 #include <arch_helpers.h>
 #include <gicv2.h>
-#include <plat_arm.h>
 #include <bl_common.h>
 #include <bakery_lock.h>
 #include <cci.h>
@@ -22,6 +21,7 @@
 #include "rcar_def.h"
 #include "rcar_private.h"
 #include "rcar_pm.h"
+#include "ulcb_cpld.h"
 
 static void rcar_program_mailbox(uint64_t mpidr, uint64_t address);
 static int32_t rcar_do_plat_actions(unsigned int afflvl, unsigned int state);
@@ -30,7 +30,6 @@ static void rcar_cluster_pwrdwn_common(void);
 static void __dead2 rcar_system_off(void);
 static void __dead2 rcar_system_reset(void);
 static int32_t cpu_on_check(uint64_t mpidr) __unused;
-extern void cpld_reset_cpu(void);
 
 #define	RCAR_GENERIC_TIMER_STACK	(0x300)
 #define	RCAR_BOOT_MODE			(0x01U)
@@ -498,7 +497,7 @@ int rcar_validate_power_state(unsigned int power_state)
 	return PSCI_E_SUCCESS;
 }
 #if RCAR_SYSTEM_SUSPEND
-unsigned int rcar_get_sys_suspend_power_state(void)
+uint32_t rcar_get_sys_suspend_power_state(void)
 {
 	return psci_make_powerstate(0, PSTATE_TYPE_POWERDOWN,
 			PLATFORM_MAX_AFFLVL);

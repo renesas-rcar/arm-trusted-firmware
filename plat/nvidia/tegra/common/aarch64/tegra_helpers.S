@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2015-2017, ARM Limited and Contributors. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -7,8 +7,8 @@
 #include <asm_macros.S>
 #include <assert_macros.S>
 #include <cpu_macros.S>
-#include <cortex_a57.h>
 #include <cortex_a53.h>
+#include <cortex_a57.h>
 #include <platform_def.h>
 #include <tegra_def.h>
 
@@ -307,8 +307,7 @@ endfunc plat_reset_handler
 	 * Secure entrypoint function for CPU boot
 	 * ----------------------------------------
 	 */
-	.align 6
-func tegra_secure_entrypoint
+func tegra_secure_entrypoint _align=6
 
 #if ERRATA_TEGRA_INVALIDATE_BTB_AT_BOOT
 
@@ -317,18 +316,18 @@ func tegra_secure_entrypoint
 	 * entries from the branch predictor array.
 	 * -------------------------------------------------------
 	 */
-	mrs	x0, CORTEX_A57_ACTLR_EL1
+	mrs	x0, CORTEX_A57_CPUACTLR_EL1
 	orr	x0, x0, #1
-	msr	CORTEX_A57_ACTLR_EL1, x0	/* invalidate BTB and I$ together */
+	msr	CORTEX_A57_CPUACTLR_EL1, x0	/* invalidate BTB and I$ together */
 	dsb	sy
 	isb
 	ic	iallu			/* actual invalidate */
 	dsb	sy
 	isb
 
-	mrs	x0, CORTEX_A57_ACTLR_EL1
+	mrs	x0, CORTEX_A57_CPUACTLR_EL1
 	bic	x0, x0, #1
-	msr	CORTEX_A57_ACTLR_EL1, X0	/* restore original CPUACTLR_EL1 */
+	msr	CORTEX_A57_CPUACTLR_EL1, X0	/* restore original CPUACTLR_EL1 */
 	dsb	sy
 	isb
 
@@ -352,7 +351,7 @@ func tegra_secure_entrypoint
 	msr	oslar_el1, x0		/* os lock stays 0 across warm reset */
 	mov	x3, #3
 	movz	x4, #0x8000, lsl #48
-	msr	CORTEX_A57_ACTLR_EL1, x4	/* turn off RCG */
+	msr	CORTEX_A57_CPUACTLR_EL1, x4	/* turn off RCG */
 	isb
 	msr	rmr_el3, x3		/* request warm reset */
 	isb

@@ -69,6 +69,7 @@
 /* NOR Flash */
 #define V2M_FLASH0_BASE			0x08000000
 #define V2M_FLASH0_SIZE			0x04000000
+#define V2M_FLASH_BLOCK_SIZE		0x00040000	/* 256 KB */
 
 #define V2M_IOFPGA_BASE			0x1c000000
 #define V2M_IOFPGA_SIZE			0x03000000
@@ -120,6 +121,11 @@
 						V2M_IOFPGA_SIZE,		\
 						MT_DEVICE | MT_RW | MT_SECURE)
 
+/* Region equivalent to V2M_MAP_IOFPGA suitable for mapping at EL0 */
+#define V2M_MAP_IOFPGA_EL0		MAP_REGION_FLAT(		\
+						V2M_IOFPGA_BASE,	\
+						V2M_IOFPGA_SIZE,	\
+						MT_DEVICE | MT_RW | MT_SECURE | MT_USER)
 
 
 #endif /* __V2M_DEF_H__ */

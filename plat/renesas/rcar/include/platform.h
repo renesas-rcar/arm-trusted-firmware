@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2014, ARM Limited and Contributors. All rights reserved.
- * Copyright (c) 2015-2017, Renesas Electronics Corporation. All rights reserved.
+ * Copyright (c) 2015-2018, Renesas Electronics Corporation. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -76,10 +76,7 @@ void bl1_init_bl2_mem_layout(const struct meminfo *bl1_mem_layout,
 /*******************************************************************************
  * Mandatory BL2 functions
  ******************************************************************************/
-void bl2_early_platform_setup(struct meminfo *mem_layout);
-void bl2_plat_arch_setup(void);
 void bl2_platform_setup(void);
-struct meminfo *bl2_plat_sec_mem_layout(void);
 
 /*
  * This function returns a pointer to the shared memory that the platform has
@@ -140,13 +137,10 @@ void bl2_plat_get_bl32_meminfo(struct meminfo *mem_info);
 /*******************************************************************************
  * Optional BL2 functions (may be overridden)
  ******************************************************************************/
-void bl2_init_generic_timer(void);
 
 /*******************************************************************************
  * Mandatory BL3-1 functions
  ******************************************************************************/
-void bl31_early_platform_setup(struct bl31_params *from_bl2,
-				void *plat_params_from_bl2);
 void bl31_plat_arch_setup(void);
 void bl31_platform_setup(void);
 struct entry_point_info *bl31_plat_get_next_image_ep_info(uint32_t type);

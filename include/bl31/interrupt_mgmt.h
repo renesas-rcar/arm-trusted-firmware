@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2014-2018, ARM Limited and Contributors. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -17,6 +17,11 @@
 #define INTR_TYPE_NS			U(2)
 #define MAX_INTR_TYPES			U(3)
 #define INTR_TYPE_INVAL			MAX_INTR_TYPES
+
+/* Interrupt routing modes */
+#define INTR_ROUTING_MODE_PE		0
+#define INTR_ROUTING_MODE_ANY		1
+
 /*
  * Constant passed to the interrupt handler in the 'id' field when the
  * framework does not read the gic registers to determine the interrupt id.
@@ -75,9 +80,19 @@
 					 ((x) == INTR_NS_VALID_RM1 ? 0 :\
 					  -EINVAL))
 
+#if EL3_EXCEPTION_HANDLING
+/*
+ * With EL3 exception handling, EL3 interrupts are always routed to EL3 from
+ * both Secure and Non-secure, and therefore INTR_EL3_VALID_RM1 is the only
+ * valid routing model.
+ */
+#define validate_el3_interrupt_rm(x)	((x) == INTR_EL3_VALID_RM1 ? 0 : \
+					 -EINVAL)
+#else
 #define validate_el3_interrupt_rm(x)	((x) == INTR_EL3_VALID_RM0 ? 0 : \
 					 ((x) == INTR_EL3_VALID_RM1 ? 0 :\
 					  -EINVAL))
+#endif
 
 /*******************************************************************************
  * Macros to set the 'flags' parameter passed to an interrupt type handler. Only
@@ -93,6 +108,8 @@
 
 #ifndef __ASSEMBLY__
 
+#include <stdint.h>
+
 /* Prototype for defining a handler for an interrupt type */
 typedef uint64_t (*interrupt_type_handler_t)(uint32_t id,
 					     uint32_t flags,
@@ -107,7 +124,7 @@ int32_t set_routing_model(uint32_t type, uint32_t flags);
 int32_t register_interrupt_type_handler(uint32_t type,
 					interrupt_type_handler_t handler,
 					uint32_t flags);
-interrupt_type_handler_t get_interrupt_type_handler(uint32_t interrupt_type);
+interrupt_type_handler_t get_interrupt_type_handler(uint32_t type);
 int disable_intr_rm_local(uint32_t type, uint32_t security_state);
 int enable_intr_rm_local(uint32_t type, uint32_t security_state);
 

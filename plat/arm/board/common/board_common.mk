@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2015-2016, ARM Limited and Contributors. All rights reserved.
+# Copyright (c) 2015-2017, ARM Limited and Contributors. All rights reserved.
 #
 # SPDX-License-Identifier: BSD-3-Clause
 #
@@ -12,9 +12,13 @@ PLAT_BL_COMMON_SOURCES	+=	drivers/arm/pl011/${ARCH}/pl011_console.S		\
 
 BL1_SOURCES		+=	plat/arm/board/common/drivers/norflash/norflash.c
 
-BL2_SOURCES		+=	plat/arm/board/common/drivers/norflash/norflash.c
+BL2_SOURCES		+=	lib/utils/mem_region.c					\
+				plat/arm/common/arm_nor_psci_mem_protect.c		\
+				plat/arm/board/common/drivers/norflash/norflash.c
 
-#BL31_SOURCES		+=
+BL31_SOURCES		+=	lib/utils/mem_region.c					\
+				plat/arm/board/common/drivers/norflash/norflash.c	\
+				plat/arm/common/arm_nor_psci_mem_protect.c
 
 ifneq (${TRUSTED_BOARD_BOOT},0)
   ifneq (${ARM_CRYPTOCELL_INTEG}, 1)
@@ -22,7 +26,11 @@ ifneq (${TRUSTED_BOARD_BOOT},0)
     ifeq (${ARM_ROTPK_LOCATION}, regs)
         ARM_ROTPK_LOCATION_ID = ARM_ROTPK_REGS_ID
     else ifeq (${ARM_ROTPK_LOCATION}, devel_rsa)
+        KEY_ALG := rsa
         ARM_ROTPK_LOCATION_ID = ARM_ROTPK_DEVEL_RSA_ID
+    else ifeq (${ARM_ROTPK_LOCATION}, devel_ecdsa)
+        KEY_ALG := ecdsa
+        ARM_ROTPK_LOCATION_ID = ARM_ROTPK_DEVEL_ECDSA_ID
     else
         $(error "Unsupported ARM_ROTPK_LOCATION value")
     endif

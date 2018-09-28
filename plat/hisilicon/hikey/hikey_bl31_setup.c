@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2017-2018, ARM Limited and Contributors. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -16,6 +16,7 @@
 #include <hi6220.h>
 #include <hisi_ipc.h>
 #include <hisi_pwrc.h>
+#include <mmio.h>
 #include <platform_def.h>
 
 #include "hikey_def.h"
@@ -69,7 +70,7 @@ static const int cci_map[] = {
 	CCI400_SL_IFACE4_CLUSTER_IX
 };
 
-entry_point_info_t *bl31_plat_get_next_image_ep_info(unsigned int type)
+entry_point_info_t *bl31_plat_get_next_image_ep_info(uint32_t type)
 {
 	entry_point_info_t *next_image_info;
 
@@ -81,7 +82,7 @@ entry_point_info_t *bl31_plat_get_next_image_ep_info(unsigned int type)
 	return NULL;
 }
 
-void bl31_early_platform_setup(bl31_params_t *from_bl2,
+void bl31_early_platform_setup(void *from_bl2,
 			       void *plat_params_from_bl2)
 {
 	/* Initialize the console to provide early debug support */
@@ -92,11 +93,31 @@ void bl31_early_platform_setup(bl31_params_t *from_bl2,
 	cci_enable_snoop_dvm_reqs(MPIDR_AFFLVL1_VAL(read_mpidr_el1()));
 
 	/*
-	 * Copy BL3-2 and BL3-3 entry point information.
+	 * Check params passed from BL2 should not be NULL,
+	 */
+	bl_params_t *params_from_bl2 = (bl_params_t *)from_bl2;
+	assert(params_from_bl2 != NULL);
+	assert(params_from_bl2->h.type == PARAM_BL_PARAMS);
+	assert(params_from_bl2->h.version >= VERSION_2);
+
+	bl_params_node_t *bl_params = params_from_bl2->head;
+
+	/*
+	 * Copy BL33 and BL32 (if present), entry point information.
 	 * They are stored in Secure RAM, in BL2's address space.
 	 */
-	bl32_ep_info = *from_bl2->bl32_ep_info;
-	bl33_ep_info = *from_bl2->bl33_ep_info;
+	while (bl_params) {
+		if (bl_params->image_id == BL32_IMAGE_ID)
+			bl32_ep_info = *bl_params->ep_info;
+
+		if (bl_params->image_id == BL33_IMAGE_ID)
+			bl33_ep_info = *bl_params->ep_info;
+
+		bl_params = bl_params->next_params_info;
+	}
+
+	if (bl33_ep_info.pc == 0)
+		panic();
 }
 
 void bl31_plat_arch_setup(void)
@@ -109,6 +130,20 @@ void bl31_plat_arch_setup(void)
 			   BL31_COHERENT_RAM_LIMIT);
 }
 
+/* Initialize EDMAC controller with non-secure mode. */
+static void hikey_edma_init(void)
+{
+	int i;
+	uint32_t non_secure;
+
+	non_secure = EDMAC_SEC_CTRL_INTR_SEC | EDMAC_SEC_CTRL_GLOBAL_SEC;
+	mmio_write_32(EDMAC_SEC_CTRL, non_secure);
+
+	for (i = 0; i < EDMAC_CHANNEL_NUMS; i++) {
+		mmio_write_32(EDMAC_AXI_CONF(i), (1 << 6) | (1 << 18));
+	}
+}
+
 void bl31_platform_setup(void)
 {
 	/* Initialize the GIC driver, cpu and distributor interfaces */
@@ -116,6 +151,8 @@ void bl31_platform_setup(void)
 	gicv2_distif_init();
 	gicv2_pcpu_distif_init();
 	gicv2_cpuif_enable();
+
+	hikey_edma_init();
 
 	hisi_ipc_init();
 	hisi_pwrc_setup();

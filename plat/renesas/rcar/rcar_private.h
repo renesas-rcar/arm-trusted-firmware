@@ -141,6 +141,9 @@ void rcar_affinst_suspend(unsigned long sec_entrypoint, unsigned int afflvl,
 void rcar_affinst_on_finish(unsigned int afflvl, unsigned int state);
 void rcar_affinst_suspend_finish(unsigned int afflvl, unsigned int state);
 int rcar_validate_power_state(unsigned int power_state);
+#if RCAR_SYSTEM_SUSPEND
+uint32_t rcar_get_sys_suspend_power_state(void);
+#endif /* RCAR_SYSTEM_SUSPEND */
 
 /* Function prototypes for read and write to the CPU system registers */
 void iciallu(void);
@@ -148,5 +151,14 @@ void iciallu(void);
 /* Function prototypes for MSTP write */
 void cpg_write(uintptr_t regadr, uint32_t regval);
 void mstpcr_write(uint32_t mstpcr, uint32_t mstpsr, uint32_t target_bit);
+
+/* Function prototypes for run next BL image */
+void bl2_run_next_image(const struct entry_point_info *bl_ep_info);
+
+void plat_arm_gic_driver_init(void);
+void plat_arm_gic_init(void);
+
+extern RCAR_INSTANTIATE_LOCK
+extern uint32_t rcar_boot_kind_flag;
 
 #endif /* RCAR_PRIVATE_H__ */

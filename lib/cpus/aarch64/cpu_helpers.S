@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2017, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2014-2018, ARM Limited and Contributors. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -7,15 +7,13 @@
 #include <arch.h>
 #include <asm_macros.S>
 #include <assert_macros.S>
-#ifdef IMAGE_BL31
 #include <cpu_data.h>
-#endif
 #include <cpu_macros.S>
 #include <debug.h>
 #include <errata_report.h>
 
  /* Reset fn is needed in BL at reset vector */
-#if defined(IMAGE_BL1) || defined(IMAGE_BL31)
+#if defined(IMAGE_BL1) || defined(IMAGE_BL31) || (defined(IMAGE_BL2) && BL2_AT_EL3)
 	/*
 	 * The reset handler common to all platforms.  After a matching
 	 * cpu_ops structure entry is found, the correponding reset_handler
@@ -47,7 +45,7 @@ func reset_handler
 	ret
 endfunc reset_handler
 
-#endif /* IMAGE_BL1 || IMAGE_BL31 */
+#endif
 
 #ifdef IMAGE_BL31 /* The power down core and cluster is needed only in  BL31 */
 	/*
@@ -281,3 +279,60 @@ func print_errata_status
 	br	x1
 endfunc print_errata_status
 #endif
+
+/*
+ * int check_wa_cve_2017_5715(void);
+ *
+ * This function returns:
+ *  - ERRATA_APPLIES when firmware mitigation is required.
+ *  - ERRATA_NOT_APPLIES when firmware mitigation is _not_ required.
+ *  - ERRATA_MISSING when firmware mitigation would be required but
+ *    is not compiled in.
+ *
+ * NOTE: Must be called only after cpu_ops have been initialized
+ *       in per-CPU data.
+ */
+	.globl	check_wa_cve_2017_5715
+func check_wa_cve_2017_5715
+	mrs	x0, tpidr_el3
+#if ENABLE_ASSERTIONS
+	cmp	x0, #0
+	ASM_ASSERT(ne)
+#endif
+	ldr	x0, [x0, #CPU_DATA_CPU_OPS_PTR]
+	ldr	x0, [x0, #CPU_EXTRA1_FUNC]
+	/*
+	 * If the reserved function pointer is NULL, this CPU
+	 * is unaffected by CVE-2017-5715 so bail out.
+	 */
+	cmp	x0, #0
+	beq	1f
+	br	x0
+1:
+	mov	x0, #ERRATA_NOT_APPLIES
+	ret
+endfunc check_wa_cve_2017_5715
+
+/*
+ * void *wa_cve_2018_3639_get_disable_ptr(void);
+ *
+ * Returns a function pointer which is used to disable mitigation
+ * for CVE-2018-3639.
+ * The function pointer is only returned on cores that employ
+ * dynamic mitigation.  If the core uses static mitigation or is
+ * unaffected by CVE-2018-3639 this function returns NULL.
+ *
+ * NOTE: Must be called only after cpu_ops have been initialized
+ *       in per-CPU data.
+ */
+	.globl	wa_cve_2018_3639_get_disable_ptr
+func wa_cve_2018_3639_get_disable_ptr
+	mrs	x0, tpidr_el3
+#if ENABLE_ASSERTIONS
+	cmp	x0, #0
+	ASM_ASSERT(ne)
+#endif
+	ldr	x0, [x0, #CPU_DATA_CPU_OPS_PTR]
+	ldr	x0, [x0, #CPU_EXTRA2_FUNC]
+	ret
+endfunc wa_cve_2018_3639_get_disable_ptr

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2016, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2015-2017, ARM Limited and Contributors. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -11,6 +11,7 @@
 #include <console.h>
 #include <errno.h>
 #include <plat_arm.h>
+#include <platform.h>
 #include <platform_def.h>
 #include <psci.h>
 
@@ -111,7 +112,7 @@ int arm_validate_power_state(unsigned int power_state,
 
 /*******************************************************************************
  * ARM standard platform handler called to check the validity of the non secure
- * entrypoint.
+ * entrypoint. Returns 0 if the entrypoint is valid, or -1 otherwise.
  ******************************************************************************/
 int arm_validate_ns_entrypoint(uintptr_t entrypoint)
 {
@@ -120,15 +121,23 @@ int arm_validate_ns_entrypoint(uintptr_t entrypoint)
 	 * secure DRAM.
 	 */
 	if ((entrypoint >= ARM_NS_DRAM1_BASE) && (entrypoint <
-			(ARM_NS_DRAM1_BASE + ARM_NS_DRAM1_SIZE)))
-		return PSCI_E_SUCCESS;
+			(ARM_NS_DRAM1_BASE + ARM_NS_DRAM1_SIZE))) {
+		return 0;
+	}
 #ifndef AARCH32
 	if ((entrypoint >= ARM_DRAM2_BASE) && (entrypoint <
-			(ARM_DRAM2_BASE + ARM_DRAM2_SIZE)))
-		return PSCI_E_SUCCESS;
+			(ARM_DRAM2_BASE + ARM_DRAM2_SIZE))) {
+		return 0;
+	}
 #endif
 
-	return PSCI_E_INVALID_ADDRESS;
+	return -1;
+}
+
+int arm_validate_psci_entrypoint(uintptr_t entrypoint)
+{
+	return arm_validate_ns_entrypoint(entrypoint) == 0 ? PSCI_E_SUCCESS :
+		PSCI_E_INVALID_ADDRESS;
 }
 
 /******************************************************************************
@@ -137,6 +146,24 @@ int arm_validate_ns_entrypoint(uintptr_t entrypoint)
 const plat_psci_ops_t *plat_arm_psci_override_pm_ops(plat_psci_ops_t *ops)
 {
 	return ops;
+}
+
+/******************************************************************************
+ * Helper function to save the platform state before a system suspend. Save the
+ * state of the system components which are not in the Always ON power domain.
+ *****************************************************************************/
+void arm_system_pwr_domain_save(void)
+{
+	/* Assert system power domain is available on the platform */
+	assert(PLAT_MAX_PWR_LVL >= ARM_PWR_LVL2);
+
+	plat_arm_gic_save();
+
+	/*
+	 * All the other peripheral which are configured by ARM TF are
+	 * re-initialized on resume from system suspend. Hence we
+	 * don't save their state here.
+	 */
 }
 
 /******************************************************************************
@@ -153,12 +180,8 @@ void arm_system_pwr_domain_resume(void)
 	/* Assert system power domain is available on the platform */
 	assert(PLAT_MAX_PWR_LVL >= ARM_PWR_LVL2);
 
-	/*
-	 * TODO: On GICv3 systems, figure out whether the core that wakes up
-	 * first from system suspend need to initialize the re-distributor
-	 * interface of all the other suspended cores.
-	 */
-	plat_arm_gic_init();
+	plat_arm_gic_resume();
+
 	plat_arm_security_setup();
 	arm_configure_sys_timer();
 }

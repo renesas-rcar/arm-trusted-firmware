@@ -107,7 +107,7 @@ EMMC_ERROR_CODE emmc_terminate (void)
 static EMMC_ERROR_CODE emmc_reset_controller(void)
 {
 	EMMC_ERROR_CODE retult;
-	
+
     /* initialize mmc driver */
     emmc_drv_init();
 
@@ -217,7 +217,7 @@ static EMMC_ERROR_CODE emmc_dev_init(void)
 {
 	/* Enable clock supply to eMMC. */
 	mstpcr_write(CPG_SMSTPCR3, CPG_MSTPSR3, CPG_MSTP_MMC);
-	
+
 	/* Set SD clock */
 	mmio_write_32(CPG_CPGWPR, ~((uint32_t)(BIT9|BIT0)));	//SD phy 200MHz
 	/* Stop SDnH clock & SDn=200MHz */

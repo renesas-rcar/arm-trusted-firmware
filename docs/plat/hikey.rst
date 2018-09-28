@@ -11,8 +11,11 @@ How to build
 Code Locations
 --------------
 
--  ARM Trusted Firmware:
+-  Trusted Firmware-A:
    `link <https://github.com/ARM-software/arm-trusted-firmware>`__
+
+-  OP-TEE
+   `link <https://github.com/OP-TEE/optee_os>`__
 
 -  edk2:
    `link <https://github.com/96boards-hikey/edk2/tree/testing/hikey960_v2.5>`__
@@ -24,7 +27,7 @@ Code Locations
    `link <https://github.com/96boards-hikey/l-loader/tree/testing/hikey960_v1.2>`__
 
 -  uefi-tools:
-   `link <https://github.com/96boards-hikey/uefi-tools/tree/testing/hikey960_v1>`__
+   `link <https://git.linaro.org/uefi/uefi-tools.git>`__
 
 -  atf-fastboot:
    `link <https://github.com/96boards-hikey/atf-fastboot/tree/master>`__
@@ -34,6 +37,16 @@ Build Procedure
 
 -  Fetch all the above repositories into local host.
    Make all the repositories in the same ${BUILD\_PATH}.
+
+  .. code:: shell
+
+       git clone https://github.com/ARM-software/arm-trusted-firmware -b integration
+       git clone https://github.com/OP-TEE/optee_os
+       git clone https://github.com/96boards-hikey/edk2 -b testing/hikey960_v2.5
+       git clone https://github.com/96boards-hikey/OpenPlatformPkg -b testing/hikey960_v1.3.4
+       git clone https://github.com/96boards-hikey/l-loader -b testing/hikey960_v1.2
+       git clone https://git.linaro.org/uefi/uefi-tools
+       git clone https://github.com/96boards-hikey/atf-fastboot
 
 -  Create the symbol link to OpenPlatformPkg in edk2.
 
@@ -52,7 +65,7 @@ Build Procedure
 
        BUILDFLAGS=-DSERIAL_BASE=0xF8015000
 
-   If your hikey hardware is built by LeMarker, nothing to do.
+   If your hikey hardware is built by LeMaker, nothing to do.
 
 -  Build it as debug mode. Create your own build script file or you could refer to **build\_uefi.sh** in l-loader git repository.
 
@@ -63,30 +76,24 @@ Build Procedure
        export UEFI_TOOLS_DIR=${BUILD_PATH}/uefi-tools
        export EDK2_DIR=${BUILD_PATH}/edk2
        EDK2_OUTPUT_DIR=${EDK2_DIR}/Build/HiKey/${BUILD_OPTION}_${AARCH64_TOOLCHAIN}
-       # Build fastboot for ARM Trust Firmware. It's used for recovery mode.
+       # Build fastboot for Trusted Firmware-A. It's used for recovery mode.
        cd ${BUILD_PATH}/atf-fastboot
        CROSS_COMPILE=aarch64-linux-gnu- make PLAT=hikey DEBUG=1
        # Convert DEBUG/RELEASE to debug/release
        FASTBOOT_BUILD_OPTION=$(echo ${BUILD_OPTION} | tr '[A-Z]' '[a-z]')
        cd ${EDK2_DIR}
-       # Build UEFI & ARM Trust Firmware
-       ${UEFI_TOOLS_DIR}/uefi-build.sh -b ${BUILD_OPTION} -a ../arm-trusted-firmware hikey
-       # Generate l-loader.bin
-       cd ${BUILD_PATH}/l-loader
-       ln -sf ${EDK2_OUTPUT_DIR}/FV/bl1.bin
-       ln -sf ${EDK2_OUTPUT_DIR}/FV/fip.bin
-       ln -sf ${BUILD_PATH}/atf-fastboot/build/hikey/${FASTBOOT_BUILD_OPTION}/bl1.bin fastboot.bin
-       python gen_loader.py -o l-loader.bin --img_bl1=bl1.bin --img_ns_bl1u=BL33_AP_UEFI.fd
-       arm-linux-gnueabihf-gcc -c -o start.o start.S
-       arm-linux-gnueabihf-ld -Bstatic -Tl-loader.lds -Ttext 0xf9800800 start.o -o loader
-       arm-linux-gnueabihf-objcopy -O binary loader temp
-       python gen_loader_hikey.py -o l-loader.bin --img_loader=temp --img_bl1=bl1.bin --img_ns_bl1u=fastboot.bin
+       # Build UEFI & Trusted Firmware-A
+       ${UEFI_TOOLS_DIR}/uefi-build.sh -b ${BUILD_OPTION} -a ../arm-trusted-firmware -s ../optee_os hikey
 
--  Generate partition table for aosp. The eMMC capacity is either 4GB or 8GB. Just change "aosp-4g" to "linux-4g" for debian.
+-  Generate l-loader.bin and partition table for aosp. The eMMC capacity is either 8GB or 4GB. Just change "aosp-8g" to "linux-8g" for debian.
 
    .. code:: shell
 
-       $PTABLE=aosp-4g SECTOR_SIZE=512 bash -x generate_ptable.sh
+       cd ${BUILD_PATH}/l-loader
+       ln -sf ${EDK2_OUTPUT_DIR}/FV/bl1.bin
+       ln -sf ${EDK2_OUTPUT_DIR}/FV/bl2.bin
+       ln -sf ${BUILD_PATH}/atf-fastboot/build/hikey/${FASTBOOT_BUILD_OPTION}/bl1.bin fastboot.bin
+       make hikey PTABLE_LST=aosp-8g
 
 Setup Console
 -------------
@@ -110,6 +117,13 @@ Setup Console
 
        2004:telnet:0:/dev/ttyUSB0:115200 8DATABITS NONE 1STOPBIT banner
 
+-  Start ser2net
+
+   .. code:: shell
+
+       $sudo killall ser2net
+       $sudo ser2net -u
+
 -  Open the console.
 
    .. code:: shell
@@ -118,7 +132,7 @@ Setup Console
 
    And you could open the console remotely, too.
 
-Flush images in recovery mode
+Flash images in recovery mode
 -----------------------------
 
 -  Make sure Pin3-Pin4 on J15 are connected for recovery mode. Then power on HiKey.
@@ -129,17 +143,18 @@ Flush images in recovery mode
 
        $sudo apt-get purge modemmanager
 
--  Run the command to download l-loader.bin into HiKey.
+-  Run the command to download recovery.bin into HiKey.
 
    .. code:: shell
 
-       $sudo python hisi-idt.py -d /dev/ttyUSB1 --img1 l-loader.bin
+       $sudo python hisi-idt.py -d /dev/ttyUSB1 --img1 recovery.bin
 
 -  Update images. All aosp or debian images could be fetched from `link <https://builds.96boards.org/>`__.
 
    .. code:: shell
 
        $sudo fastboot flash ptable prm_ptable.img
+       $sudo fastboot flash loader l-loader.bin
        $sudo fastboot flash fastboot fip.bin
        $sudo fastboot flash boot boot.img
        $sudo fastboot flash cache cache.img

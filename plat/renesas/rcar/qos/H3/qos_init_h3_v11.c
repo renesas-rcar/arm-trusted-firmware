@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2017, Renesas Electronics Corporation. All rights reserved.
+ * Copyright (c) 2015-2018, Renesas Electronics Corporation. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -579,13 +579,13 @@ void qos_init_h3_v11(void)
 
 	/* CCI bus Leaf setting */
 	{
-	
+
 		uint32_t modemr = io_read_32(RCAR_MODEMR);
 
 		modemr &= MODEMR_BOOT_CPU_MASK;
 
 	if((modemr == MODEMR_BOOT_CPU_CA57) ||
-	   (modemr == MODEMR_BOOT_CPU_CA53)) { 
+	   (modemr == MODEMR_BOOT_CPU_CA53)) {
 		io_write_32(0xF1300800, 0x00000001U);
 		io_write_32(0xF1340800, 0x00000001U);
 		io_write_32(0xF1380800, 0x00000001U);

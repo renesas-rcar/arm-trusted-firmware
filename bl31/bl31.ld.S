@@ -1,11 +1,12 @@
 /*
- * Copyright (c) 2013-2017, ARM Limited and Contributors. All rights reserved.
- * Copyright (c) 2015-2017, Renesas Electronics Corporation. All rights reserved.
+ * Copyright (c) 2013-2018, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2015-2018, Renesas Electronics Corporation. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
 #include <platform_def.h>
+#include <xlat_tables_defs.h>
 
 OUTPUT_FORMAT(PLATFORM_LINKER_FORMAT)
 OUTPUT_ARCH(PLATFORM_LINKER_ARCH)
@@ -26,7 +27,7 @@ MEMORY {
 SECTIONS
 {
     . = BL31_BASE;
-    ASSERT(. == ALIGN(4096),
+    ASSERT(. == ALIGN(PAGE_SIZE),
            "BL31_BASE address is not aligned on a page boundary.")
 
 #if SEPARATE_CODE_AND_RODATA
@@ -35,7 +36,7 @@ SECTIONS
         *bl31_entrypoint.o(.text*)
         *(.text*)
         *(.vectors)
-        . = NEXT(4096);
+        . = NEXT(PAGE_SIZE);
         __TEXT_END__ = .;
     } >RAM
 
@@ -66,7 +67,11 @@ SECTIONS
         KEEP(*(cpu_ops))
         __CPU_OPS_END__ = .;
 
-        . = NEXT(4096);
+        /* Place pubsub sections for events */
+        . = ALIGN(8);
+#include <pubsub_events.h>
+
+        . = NEXT(PAGE_SIZE);
         __RODATA_END__ = .;
     } >RAM
 #else
@@ -114,6 +119,10 @@ SECTIONS
         KEEP(*(cpu_ops))
         __CPU_OPS_END__ = .;
 
+        /* Place pubsub sections for events */
+        . = ALIGN(8);
+#include <pubsub_events.h>
+
         *(.vectors)
         __RO_END_UNALIGNED__ = .;
         /*
@@ -121,13 +130,30 @@ SECTIONS
          * executable.  No RW data from the next section must creep in.
          * Ensure the rest of the current memory page is unused.
          */
-        . = NEXT(4096);
+        . = NEXT(PAGE_SIZE);
         __RO_END__ = .;
     } >RAM
 #endif
 
     ASSERT(__CPU_OPS_END__ > __CPU_OPS_START__,
            "cpu_ops not defined for this platform.")
+
+#if ENABLE_SPM
+    /*
+     * Exception vectors of the SPM shim layer. They must be aligned to a 2K
+     * address, but we need to place them in a separate page so that we can set
+     * individual permissions to them, so the actual alignment needed is 4K.
+     *
+     * There's no need to include this into the RO section of BL31 because it
+     * doesn't need to be accessed by BL31.
+     */
+    spm_shim_exceptions : ALIGN(PAGE_SIZE) {
+        __SPM_SHIM_EXCEPTIONS_START__ = .;
+        *(.spm_shim_exceptions)
+        . = NEXT(PAGE_SIZE);
+        __SPM_SHIM_EXCEPTIONS_END__ = .;
+    } >RAM
+#endif
 
     /*
      * Define a linker symbol to mark start of the RW memory area for this
@@ -210,9 +236,17 @@ SECTIONS
     /*
      * The xlat_table section is for full, aligned page tables (4K).
      * Removing them from .bss avoids forcing 4K alignment on
-     * the .bss section and eliminates the unecessary zero init
+     * the .bss section. The tables are initialized to zero by the translation
+     * tables library.
      */
     xlat_table (NOLOAD) : {
+#if ENABLE_SPM
+        __SP_IMAGE_XLAT_TABLES_START__ = .;
+        *secure_partition*.o(xlat_table)
+        /* Make sure that the rest of the page is empty. */
+        . = NEXT(PAGE_SIZE);
+        __SP_IMAGE_XLAT_TABLES_END__ = .;
+#endif
         *(xlat_table)
     } >RAM
 
@@ -223,7 +257,7 @@ SECTIONS
      * are not mixed with normal data.  This is required to set up the correct
      * memory attributes for the coherent data page tables.
      */
-    coherent_ram (NOLOAD) : ALIGN(4096) {
+    coherent_ram (NOLOAD) : ALIGN(PAGE_SIZE) {
         __COHERENT_RAM_START__ = .;
         /*
          * Bakery locks are stored in coherent memory
@@ -238,7 +272,7 @@ SECTIONS
          * as device memory.  No other unexpected data must creep in.
          * Ensure the rest of the current memory page is unused.
          */
-        . = NEXT(4096);
+        . = NEXT(PAGE_SIZE);
         __COHERENT_RAM_END__ = .;
     } >RAM
 #endif

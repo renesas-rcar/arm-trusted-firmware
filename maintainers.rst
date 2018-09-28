@@ -1,7 +1,7 @@
-ARM Trusted Firmware Maintainers
-================================
+Trusted Firmware-A maintainers
+==============================
 
-ARM Trusted Firmware is an ARM maintained project. All contributions are
+Trusted Firmware-A (TF-A) is an Arm maintained project. All contributions are
 ultimately merged by the maintainers listed below. Technical ownership of some
 parts of the codebase is delegated to the sub-maintainers listed below. An
 acknowledgement from these sub-maintainers may be required before the
@@ -21,8 +21,8 @@ Jens Wiklander (jens.wiklander@linaro.org, `jenswi-linaro`_)
 
 Files:
 
--  docs/spd/optee-dispatcher.md
--  docs/plat/qemu.md
+-  docs/plat/qemu.rst
+-  docs/spd/optee-dispatcher.rst
 -  services/spd/opteed/\*
 -  plat/qemu/\*
 
@@ -33,8 +33,9 @@ Varun Wadekar (vwadekar@nvidia.com, `vwadekar`_)
 
 Files:
 
--  docs/spd/tlk-dispatcher.md
--  docs/spd/trusty-dispatcher.md
+-  docs/plat/nvidia-tegra.rst
+-  docs/spd/tlk-dispatcher.rst
+-  docs/spd/trusty-dispatcher.rst
 -  include/bl32/payloads/tlk.h
 -  include/lib/cpus/aarch64/denver.h
 -  lib/cpus/aarch64/denver.S
@@ -42,15 +43,15 @@ Files:
 -  services/spd/trusty/\*
 -  plat/nvidia/\*
 
-eMMC/UFS drivers and HiSilicon platform sub-maintainer
-------------------------------------------------------
+eMMC/UFS drivers and HiSilicon HiKey and HiKey960 platform sub-maintainer
+-------------------------------------------------------------------------
 
 Haojian Zhuang (haojian.zhuang@linaro.org, `hzhuang1`_)
 
 Files:
 
--  docs/plat/hikey.md
--  docs/plat/hikey960.md
+-  docs/plat/hikey.rst
+-  docs/plat/hikey960.rst
 -  drivers/emmc/\*
 -  drivers/partition/\*
 -  drivers/synopsys/emmc/\*
@@ -60,7 +61,18 @@ Files:
 -  include/drivers/emmc.h
 -  include/drivers/ufs.h
 -  include/drivers/synopsys/dw\_mmc.h
--  plat/hisilicon/\*
+-  plat/hisilicon/hikey/\*
+-  plat/hisilicon/hikey960/\*
+
+HiSilicon Poplar platform sub-maintainer
+----------------------------------------
+
+Shawn Guo (shawn.guo@linaro.org, `shawnguo2`_)
+
+Files:
+
+-  docs/plat/poplar.rst
+-  plat/hisilicon/poplar/\*
 
 MediaTek platform sub-maintainer
 --------------------------------
@@ -71,32 +83,61 @@ Files:
 
 -  plat/mediatek/\*
 
+Raspberry Pi 3 platform sub-maintainer
+--------------------------------------
+
+Antonio Niño Díaz (antonio.ninodiaz@arm.com, `antonio-nino-diaz-arm`_)
+
+Files:
+
+-  docs/plat/rpi3.rst
+-  plat/rpi3/\*
+
 RockChip platform sub-maintainer
 --------------------------------
 
 Tony Xie (tony.xie@rock-chips.com, `TonyXie06`_
-or `rkchrome`_)
+or `rockchip-linux`_)
 
 Files:
 
 -  plat/rockchip/\*
 
-Xilinx platform sub-maintainer
-------------------------------
+UniPhier platform sub-maintainer
+--------------------------------
 
-Sören Brinkmann (soren.brinkmann@xilinx.com, `sorenb-xlnx`_)
+Masahiro Yamada (yamada.masahiro@socionext.com, `masahir0y`_)
 
 Files:
 
--  docs/plat/xilinx-zynqmp.md
+- docs/plat/socionext-uniphier.rst
+- plat/socionext/\*
+
+Xilinx platform sub-maintainer
+------------------------------
+
+Siva Durga Prasad Paladugu (siva.durga.paladugu@xilinx.com, `sivadur`_)
+
+Files:
+
+-  docs/plat/xilinx-zynqmp.rst
 -  plat/xilinx/\*
 
+Armv7-A architecture sub-maintainer
+-----------------------------------
+
+Etienne Carriere (etienne.carriere@linaro.org, `etienne-lms`_)
+
+.. _antonio-nino-diaz-arm: https://github.com/antonio-nino-diaz-arm
 .. _danh-arm: https://github.com/danh-arm
 .. _davidcunado-arm: https://github.com/davidcunado-arm
 .. _jenswi-linaro: https://github.com/jenswi-linaro
 .. _vwadekar: https://github.com/vwadekar
 .. _hzhuang1: https://github.com/hzhuang1
+.. _shawnguo2: https://github.com/shawnguo2
+.. _masahir0y: https://github.com/masahir0y
 .. _mtk09422: https://github.com/mtk09422
 .. _TonyXie06: https://github.com/TonyXie06
-.. _rkchrome: https://github.com/rkchrome
-.. _sorenb-xlnx: https://github.com/sorenb-xlnx
+.. _sivadur: https://github.com/sivadur
+.. _rockchip-linux: https://github.com/rockchip-linux
+.. _etienne-lms: https://github.com/etienne-lms

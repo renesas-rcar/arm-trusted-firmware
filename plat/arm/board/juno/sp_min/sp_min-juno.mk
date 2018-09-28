@@ -8,15 +8,14 @@
 BL32_SOURCES	+=	lib/cpus/aarch32/cortex_a53.S		\
 			lib/cpus/aarch32/cortex_a57.S		\
 			lib/cpus/aarch32/cortex_a72.S		\
+			lib/utils/mem_region.c			\
+			plat/arm/board/common/drivers/norflash/norflash.c	\
 			plat/arm/board/juno/juno_topology.c	\
-			plat/arm/css/common/css_pm.c		\
-			plat/arm/css/common/css_topology.c	\
+			plat/arm/common/arm_nor_psci_mem_protect.c	\
 			plat/arm/soc/common/soc_css_security.c	\
-			plat/arm/css/drivers/scp/css_pm_scpi.c	\
-			plat/arm/css/drivers/scpi/css_mhu.c	\
-			plat/arm/css/drivers/scpi/css_scpi.c	\
 			${JUNO_GIC_SOURCES}			\
 			${JUNO_INTERCONNECT_SOURCES}		\
 			${JUNO_SECURITY_SOURCES}
 
 include plat/arm/common/sp_min/arm_sp_min.mk
+include plat/arm/css/common/sp_min/css_sp_min.mk

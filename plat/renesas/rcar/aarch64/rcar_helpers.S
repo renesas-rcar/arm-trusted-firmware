@@ -165,15 +165,17 @@ endfunc platform_get_entrypoint
 	 * -----------------------------------------------------
 	 */
 func platform_mem_init
+#if IMAGE_BL31
 	ldr	x0, =MBOX_BASE
 	mov	w1, #PLATFORM_CORE_COUNT
 loop:
 	str	xzr, [x0], #CACHE_WRITEBACK_GRANULE
 	subs	w1, w1, #1
 	b.gt	loop
-	/* for R-Car Gen3		*/
+	/* for R-Car Series, 3rd Generation	*/
 	ldr	x0, =rcar_boot_kind_flag
 	str	w21, [x0]
+#endif
 	ret
 endfunc platform_mem_init
 
@@ -185,7 +187,7 @@ endfunc platform_mem_init
 	 */
 func plat_report_exception
 #if IMAGE_BL2
-	mov	w1, #FIQ_SP_ELX
+	mov	w1, #FIQ_SP_EL0
 	cmp	w0, w1
 	beq	rep_exec_fiq_elx
 /*
@@ -199,7 +201,7 @@ rep_exec_fiq_elx:
 	mov	x1, #ARM_IRQ_SEC_WDT
 	cmp	x0, x1
 	bne	rep_exec_panic_id
-	mrs	x0, ELR_EL1
+	mrs	x0, ELR_EL3
 	b	bl2_swdt_exec
 rep_exec_panic_type:	/* interrupt type error	*/
 	/* x0 is interrupt TYPE */
@@ -323,12 +325,6 @@ A57:
 	 * Cortex-A57 specific settings
 	 * --------------------------------------------------------------------
 	 */
-	mrs	x0, CORTEX_A57_CPUACTLR_EL1		/* Get data from CPUACTLR_EL1	*/
-	orr	x0, x0, #RCAR_CA57_DIS_LOAD_PASS_STORE	/* Disable Load pass store 	*/
-	msr	CORTEX_A57_CPUACTLR_EL1, x0		/* Store data to CPUACTLR_EL1 	*/
-	isb
-	dsb	sy
-
 	mrs	x0, CORTEX_A57_L2CTLR_EL1		/* Get data from CORTEX_A57_L2CTLR_EL1		*/
 	/*
 	 * On R-Car H3/M3/M3N

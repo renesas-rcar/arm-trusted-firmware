@@ -10,7 +10,7 @@
 #include <cpu_data.h>
 #include <cpu_macros.S>
 
-#if defined(IMAGE_BL1) || defined(IMAGE_BL32)
+#if defined(IMAGE_BL1) || defined(IMAGE_BL32) || (defined(IMAGE_BL2) && BL2_AT_EL3)
 	/*
 	 * The reset handler common to all platforms.  After a matching
 	 * cpu_ops structure entry is found, the correponding reset_handler
@@ -42,7 +42,7 @@ func reset_handler
 	bx	lr
 endfunc reset_handler
 
-#endif /* IMAGE_BL1 || IMAGE_BL32 */
+#endif
 
 #ifdef IMAGE_BL32 /* The power down core and cluster is needed only in  BL32 */
 	/*
@@ -206,7 +206,8 @@ endfunc cpu_rev_var_hs
  */
 	.globl print_errata_status
 func print_errata_status
-	push	{r4, lr}
+	/* r12 is pushed only for the sake of 8-byte stack alignment */
+	push	{r4, r5, r12, lr}
 #ifdef IMAGE_BL1
 	/*
 	 * BL1 doesn't have per-CPU data. So retrieve the CPU operations
@@ -241,6 +242,6 @@ func print_errata_status
 	blxne	r4
 1:
 #endif
-	pop	{r4, pc}
+	pop	{r4, r5, r12, pc}
 endfunc print_errata_status
 #endif

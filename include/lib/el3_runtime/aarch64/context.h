@@ -87,22 +87,22 @@
 #define CTX_AFSR1_EL1		U(0x98)
 #define CTX_CONTEXTIDR_EL1	U(0xa0)
 #define CTX_VBAR_EL1		U(0xa8)
+#define CTX_PMCR_EL0		U(0xb0)
 
 /*
  * If the platform is AArch64-only, there is no need to save and restore these
  * AArch32 registers.
  */
 #if CTX_INCLUDE_AARCH32_REGS
-#define CTX_SPSR_ABT		U(0xb0)
-#define CTX_SPSR_UND		U(0xb8)
-#define CTX_SPSR_IRQ		U(0xc0)
-#define CTX_SPSR_FIQ		U(0xc8)
-#define CTX_DACR32_EL2		U(0xd0)
-#define CTX_IFSR32_EL2		U(0xd8)
-#define CTX_FP_FPEXC32_EL2	U(0xe0)
-#define CTX_TIMER_SYSREGS_OFF		U(0xf0) /* Align to the next 16 byte boundary */
+#define CTX_SPSR_ABT		U(0xc0)  /* Align to the next 16 byte boundary */
+#define CTX_SPSR_UND		U(0xc8)
+#define CTX_SPSR_IRQ		U(0xd0)
+#define CTX_SPSR_FIQ		U(0xd8)
+#define CTX_DACR32_EL2		U(0xe0)
+#define CTX_IFSR32_EL2		U(0xe8)
+#define CTX_TIMER_SYSREGS_OFF	U(0xf0) /* Align to the next 16 byte boundary */
 #else
-#define CTX_TIMER_SYSREGS_OFF		U(0xb0)
+#define CTX_TIMER_SYSREGS_OFF	U(0xc0)  /* Align to the next 16 byte boundary */
 #endif /* __CTX_INCLUDE_AARCH32_REGS__ */
 
 /*
@@ -124,8 +124,8 @@
  * Constants that allow assembler code to access members of and the 'fp_regs'
  * structure at their correct offsets.
  ******************************************************************************/
-#if CTX_INCLUDE_FPREGS
 #define CTX_FPREGS_OFFSET	(CTX_SYSREGS_OFFSET + CTX_SYSREGS_END)
+#if CTX_INCLUDE_FPREGS
 #define CTX_FP_Q0		U(0x0)
 #define CTX_FP_Q1		U(0x10)
 #define CTX_FP_Q2		U(0x20)
@@ -160,8 +160,19 @@
 #define CTX_FP_Q31		U(0x1f0)
 #define CTX_FP_FPSR		U(0x200)
 #define CTX_FP_FPCR		U(0x208)
-#define CTX_FPREGS_END		U(0x210)
+#if CTX_INCLUDE_AARCH32_REGS
+#define CTX_FP_FPEXC32_EL2	U(0x210)
+#define CTX_FPREGS_END		U(0x220) /* Align to the next 16 byte boundary */
+#else
+#define CTX_FPREGS_END		U(0x210) /* Align to the next 16 byte boundary */
 #endif
+#else
+#define CTX_FPREGS_END		U(0)
+#endif
+
+#define CTX_CVE_2018_3639_OFFSET	(CTX_FPREGS_OFFSET + CTX_FPREGS_END)
+#define CTX_CVE_2018_3639_DISABLE	U(0)
+#define CTX_CVE_2018_3639_END		U(0x10) /* Align to the next 16 byte boundary */
 
 #ifndef __ASSEMBLY__
 
@@ -186,6 +197,7 @@
 #define CTX_FPREG_ALL		(CTX_FPREGS_END >> DWORD_SHIFT)
 #endif
 #define CTX_EL3STATE_ALL	(CTX_EL3STATE_END >> DWORD_SHIFT)
+#define CTX_CVE_2018_3639_ALL	(CTX_CVE_2018_3639_END >> DWORD_SHIFT)
 
 /*
  * AArch64 general purpose register context structure. Usually x0-x18,
@@ -218,6 +230,9 @@ DEFINE_REG_STRUCT(fp_regs, CTX_FPREG_ALL);
  */
 DEFINE_REG_STRUCT(el3_state, CTX_EL3STATE_ALL);
 
+/* Function pointer used by CVE-2018-3639 dynamic mitigation */
+DEFINE_REG_STRUCT(cve_2018_3639, CTX_CVE_2018_3639_ALL);
+
 /*
  * Macros to access members of any of the above structures using their
  * offsets
@@ -242,6 +257,7 @@ typedef struct cpu_context {
 #if CTX_INCLUDE_FPREGS
 	fp_regs_t fpregs_ctx;
 #endif
+	cve_2018_3639_t cve_2018_3639_ctx;
 } cpu_context_t;
 
 /* Macros to access members of the 'cpu_context_t' structure */
@@ -251,6 +267,7 @@ typedef struct cpu_context {
 #endif
 #define get_sysregs_ctx(h)	(&((cpu_context_t *) h)->sysregs_ctx)
 #define get_gpregs_ctx(h)	(&((cpu_context_t *) h)->gpregs_ctx)
+#define get_cve_2018_3639_ctx(h)	(&((cpu_context_t *) h)->cve_2018_3639_ctx)
 
 /*
  * Compile time assertions related to the 'cpu_context' structure to
@@ -267,6 +284,8 @@ CASSERT(CTX_FPREGS_OFFSET == __builtin_offsetof(cpu_context_t, fpregs_ctx), \
 #endif
 CASSERT(CTX_EL3STATE_OFFSET == __builtin_offsetof(cpu_context_t, el3state_ctx), \
 	assert_core_context_el3state_offset_mismatch);
+CASSERT(CTX_CVE_2018_3639_OFFSET == __builtin_offsetof(cpu_context_t, cve_2018_3639_ctx), \
+	assert_core_context_cve_2018_3639_offset_mismatch);
 
 /*
  * Helper macro to set the general purpose registers that correspond to
@@ -308,7 +327,6 @@ CASSERT(CTX_EL3STATE_OFFSET == __builtin_offsetof(cpu_context_t, el3state_ctx), 
  * Function prototypes
  ******************************************************************************/
 void el1_sysregs_context_save(el1_sys_regs_t *regs);
-void el1_sysregs_context_save_post_ops(void);
 void el1_sysregs_context_restore(el1_sys_regs_t *regs);
 #if CTX_INCLUDE_FPREGS
 void fpregs_context_save(fp_regs_t *regs);

@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2015-2017, ARM Limited and Contributors. All rights reserved.
+# Copyright (c) 2015-2018, ARM Limited and Contributors. All rights reserved.
 #
 # SPDX-License-Identifier: BSD-3-Clause
 #
@@ -7,9 +7,10 @@
 ifeq (${ARCH}, aarch64)
   # On ARM standard platorms, the TSP can execute from Trusted SRAM, Trusted
   # DRAM (if available) or the TZC secured area of DRAM.
-  # Trusted SRAM is the default.
+  # TZC secured DRAM is the default.
 
-  ARM_TSP_RAM_LOCATION	:=	tsram
+  ARM_TSP_RAM_LOCATION	?=	dram
+
   ifeq (${ARM_TSP_RAM_LOCATION}, tsram)
     ARM_TSP_RAM_LOCATION_ID = ARM_TRUSTED_SRAM_ID
   else ifeq (${ARM_TSP_RAM_LOCATION}, tdram)
@@ -21,13 +22,16 @@ ifeq (${ARCH}, aarch64)
   endif
 
   # Process flags
-  $(eval $(call add_define,ARM_TSP_RAM_LOCATION_ID))
-
   # Process ARM_BL31_IN_DRAM flag
   ARM_BL31_IN_DRAM		:=	0
   $(eval $(call assert_boolean,ARM_BL31_IN_DRAM))
   $(eval $(call add_define,ARM_BL31_IN_DRAM))
+else
+  ARM_TSP_RAM_LOCATION_ID = ARM_TRUSTED_SRAM_ID
 endif
+
+$(eval $(call add_define,ARM_TSP_RAM_LOCATION_ID))
+
 
 # For the original power-state parameter format, the State-ID can be encoded
 # according to the recommended encoding or zero. This flag determines which
@@ -80,6 +84,15 @@ $(eval $(call add_define,ARM_XLAT_TABLES_LIB_V1))
 # speed.
 $(eval $(call add_define,MBEDTLS_SHA256_SMALLER))
 
+# Add the build options to pack Trusted OS Extra1 and Trusted OS Extra2 images
+# in the FIP if the platform requires.
+ifneq ($(BL32_EXTRA1),)
+$(eval $(call TOOL_ADD_IMG,bl32_extra1,--tos-fw-extra1))
+endif
+ifneq ($(BL32_EXTRA2),)
+$(eval $(call TOOL_ADD_IMG,bl32_extra2,--tos-fw-extra2))
+endif
+
 # Enable PSCI_STAT_COUNT/RESIDENCY APIs on ARM platforms
 ENABLE_PSCI_STAT		:=	1
 ENABLE_PMF			:=	1
@@ -123,6 +136,8 @@ BL1_SOURCES		+=	drivers/arm/sp805/sp805.c			\
 				drivers/io/io_memmap.c				\
 				drivers/io/io_storage.c				\
 				plat/arm/common/arm_bl1_setup.c			\
+				plat/arm/common/arm_dyn_cfg.c			\
+				plat/arm/common/arm_err.c			\
 				plat/arm/common/arm_io_storage.c
 ifdef EL3_PAYLOAD_BASE
 # Need the arm_program_trusted_mailbox() function to release secondary CPUs from
@@ -130,11 +145,26 @@ ifdef EL3_PAYLOAD_BASE
 BL1_SOURCES		+=	plat/arm/common/arm_pm.c
 endif
 
-BL2_SOURCES		+=	drivers/io/io_fip.c				\
+BL2_SOURCES		+=	drivers/delay_timer/delay_timer.c		\
+				drivers/delay_timer/generic_delay_timer.c	\
+				drivers/io/io_fip.c				\
 				drivers/io/io_memmap.c				\
 				drivers/io/io_storage.c				\
 				plat/arm/common/arm_bl2_setup.c			\
+				plat/arm/common/arm_err.c			\
 				plat/arm/common/arm_io_storage.c
+
+# Add `libfdt` and Arm common helpers required for Dynamic Config
+include lib/libfdt/libfdt.mk
+BL2_SOURCES		+=	plat/arm/common/arm_dyn_cfg.c		\
+				plat/arm/common/arm_dyn_cfg_helpers.c	\
+				common/fdt_wrappers.c			\
+				${LIBFDT_SRCS}
+
+ifeq (${BL2_AT_EL3},1)
+BL2_SOURCES		+=	plat/arm/common/arm_bl2_el3_setup.c
+endif
+
 ifeq (${LOAD_IMAGE_V2},1)
 # Because BL1/BL2 execute in AArch64 mode but BL32 in AArch32 we need to use
 # the AArch32 descriptors.
@@ -145,9 +175,14 @@ BL2_SOURCES		+=	plat/arm/common/${ARCH}/arm_bl2_mem_params_desc.c
 endif
 BL2_SOURCES		+=	plat/arm/common/arm_image_load.c		\
 				common/desc_image_load.c
+ifeq (${SPD},opteed)
+BL2_SOURCES		+=	lib/optee/optee_utils.c
+endif
 endif
 
-BL2U_SOURCES		+=	plat/arm/common/arm_bl2u_setup.c
+BL2U_SOURCES		+=	drivers/delay_timer/delay_timer.c		\
+				drivers/delay_timer/generic_delay_timer.c	\
+				plat/arm/common/arm_bl2u_setup.c
 
 BL31_SOURCES		+=	plat/arm/common/arm_bl31_setup.c		\
 				plat/arm/common/arm_pm.c			\
@@ -160,10 +195,15 @@ BL31_SOURCES		+=	plat/arm/common/arm_sip_svc.c			\
 				lib/pmf/pmf_smc.c
 endif
 
-ifneq (${TRUSTED_BOARD_BOOT},0)
+ifeq (${EL3_EXCEPTION_HANDLING},1)
+BL31_SOURCES		+=	plat/arm/common/aarch64/arm_ehf.c
+endif
 
-    # By default, ARM platforms use RSA keys
-    KEY_ALG		:=	rsa
+ifeq (${SDEI_SUPPORT},1)
+BL31_SOURCES		+=	plat/arm/common/aarch64/arm_sdei.c
+endif
+
+ifneq (${TRUSTED_BOARD_BOOT},0)
 
     # Include common TBB sources
     AUTH_SOURCES	:=	drivers/auth/auth_mod.c				\
@@ -181,9 +221,7 @@ ifneq (${TRUSTED_BOARD_BOOT},0)
     BL2_SOURCES		+=	${AUTH_SOURCES}					\
 				plat/common/tbbr/plat_tbbr.c
 
-    $(eval $(call FWU_FIP_ADD_IMG,NS_BL2U,--fwu))
-
-    TF_MBEDTLS_KEY_ALG	:=	${KEY_ALG}
+    $(eval $(call TOOL_ADD_IMG,ns_bl2u,--fwu,FWU_))
 
     # We expect to locate the *.mk files under the directories specified below
 ifeq (${ARM_CRYPTOCELL_INTEG},0)

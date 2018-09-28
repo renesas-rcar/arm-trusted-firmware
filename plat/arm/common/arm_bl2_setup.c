@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2017, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2015-2018, ARM Limited and Contributors. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -11,17 +11,35 @@
 #include <console.h>
 #include <debug.h>
 #include <desc_image_load.h>
+#include <generic_delay_timer.h>
+#ifdef SPD_opteed
+#include <optee_utils.h>
+#endif
 #include <plat_arm.h>
-#include <platform_def.h>
 #include <platform.h>
+#include <platform_def.h>
 #include <string.h>
 #include <utils.h>
 
 /* Data structure which holds the extents of the trusted SRAM for BL2 */
 static meminfo_t bl2_tzram_layout __aligned(CACHE_WRITEBACK_GRANULE);
 
+/*
+ * Check that BL2_BASE is atleast a page over ARM_BL_RAM_BASE. The page is for
+ * `meminfo_t` data structure and TB_FW_CONFIG passed from BL1. Not needed
+ * when BL2 is compiled for BL_AT_EL3 as BL2 doesn't need any info from BL1 and
+ * BL2 is loaded at base of usable SRAM.
+ */
+#if BL2_AT_EL3
+#define BL1_MEMINFO_OFFSET	0x0
+#else
+#define BL1_MEMINFO_OFFSET	PAGE_SIZE
+#endif
+
+CASSERT(BL2_BASE >= (ARM_BL_RAM_BASE + BL1_MEMINFO_OFFSET), assert_bl2_base_overflows);
+
 /* Weak definitions may be overridden in specific ARM standard platform */
-#pragma weak bl2_early_platform_setup
+#pragma weak bl2_early_platform_setup2
 #pragma weak bl2_platform_setup
 #pragma weak bl2_plat_arch_setup
 #pragma weak bl2_plat_sec_mem_layout
@@ -151,7 +169,7 @@ void bl2_plat_flush_bl31_params(void)
 struct entry_point_info *bl2_plat_get_bl31_ep_info(void)
 {
 #if DEBUG
-	bl31_params_mem.bl31_ep_info.args.arg1 = ARM_BL31_PLAT_PARAM_VAL;
+	bl31_params_mem.bl31_ep_info.args.arg3 = ARM_BL31_PLAT_PARAM_VAL;
 #endif
 
 	return &bl31_params_mem.bl31_ep_info;
@@ -163,7 +181,7 @@ struct entry_point_info *bl2_plat_get_bl31_ep_info(void)
  * in x0. This memory layout is sitting at the base of the free trusted SRAM.
  * Copy it to a safe location before its reclaimed by later BL2 functionality.
  ******************************************************************************/
-void arm_bl2_early_platform_setup(meminfo_t *mem_layout)
+void arm_bl2_early_platform_setup(uintptr_t tb_fw_config, meminfo_t *mem_layout)
 {
 	/* Initialize the console to provide early debug support */
 	console_init(PLAT_ARM_BOOT_UART_BASE, PLAT_ARM_BOOT_UART_CLK_IN_HZ,
@@ -174,11 +192,18 @@ void arm_bl2_early_platform_setup(meminfo_t *mem_layout)
 
 	/* Initialise the IO layer and register platform IO devices */
 	plat_arm_io_setup();
+
+#if LOAD_IMAGE_V2
+	if (tb_fw_config != 0U)
+		arm_bl2_set_tb_cfg_addr((void *)tb_fw_config);
+#endif
 }
 
-void bl2_early_platform_setup(meminfo_t *mem_layout)
+void bl2_early_platform_setup2(u_register_t arg0, u_register_t arg1, u_register_t arg2, u_register_t arg3)
 {
-	arm_bl2_early_platform_setup(mem_layout);
+	arm_bl2_early_platform_setup((uintptr_t)arg0, (meminfo_t *)arg1);
+
+	generic_delay_timer_init();
 }
 
 /*
@@ -186,8 +211,16 @@ void bl2_early_platform_setup(meminfo_t *mem_layout)
  */
 void arm_bl2_platform_setup(void)
 {
+#if LOAD_IMAGE_V2
+	arm_bl2_dyn_cfg_init();
+#endif
+
 	/* Initialize the secure environment */
 	plat_arm_security_setup();
+
+#if defined(PLAT_ARM_MEM_PROT_ADDR)
+	arm_nor_psci_do_mem_protect();
+#endif
 }
 
 void bl2_platform_setup(void)
@@ -230,11 +263,29 @@ int arm_bl2_handle_post_image_load(unsigned int image_id)
 {
 	int err = 0;
 	bl_mem_params_node_t *bl_mem_params = get_bl_mem_params_node(image_id);
+#ifdef SPD_opteed
+	bl_mem_params_node_t *pager_mem_params = NULL;
+	bl_mem_params_node_t *paged_mem_params = NULL;
+#endif
 	assert(bl_mem_params);
 
 	switch (image_id) {
 #ifdef AARCH64
 	case BL32_IMAGE_ID:
+#ifdef SPD_opteed
+		pager_mem_params = get_bl_mem_params_node(BL32_EXTRA1_IMAGE_ID);
+		assert(pager_mem_params);
+
+		paged_mem_params = get_bl_mem_params_node(BL32_EXTRA2_IMAGE_ID);
+		assert(paged_mem_params);
+
+		err = parse_optee_header(&bl_mem_params->ep_info,
+				&pager_mem_params->image_info,
+				&paged_mem_params->image_info);
+		if (err != 0) {
+			WARN("OPTEE header parse error.\n");
+		}
+#endif
 		bl_mem_params->ep_info.spsr = arm_get_spsr_for_bl32_entry();
 		break;
 #endif

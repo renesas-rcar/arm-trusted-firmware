@@ -12,8 +12,8 @@ Guide to migrate to new Platform porting interface
 Introduction
 ------------
 
-The PSCI implementation in Trusted Firmware has undergone a redesign because of
-three requirements that the PSCI 1.0 specification introduced :
+The PSCI implementation in TF-A has undergone a redesign because of three
+requirements that the PSCI 1.0 specification introduced :
 
 -  Removing the framework assumption about the structure of the MPIDR, and
    its relation to the power topology enables support for deeper and more
@@ -146,6 +146,7 @@ for the ``plat_psci_ops`` structure which is declared as :
         void (*cpu_standby)(plat_local_state_t cpu_state);
         int (*pwr_domain_on)(u_register_t mpidr);
         void (*pwr_domain_off)(const psci_power_state_t *target_state);
+        void (*pwr_domain_suspend_early)(const psci_power_state_t *target_state);
         void (*pwr_domain_suspend)(const psci_power_state_t *target_state);
         void (*pwr_domain_on_finish)(const psci_power_state_t *target_state);
         void (*pwr_domain_suspend_finish)(
@@ -157,6 +158,17 @@ for the ``plat_psci_ops`` structure which is declared as :
         int (*validate_ns_entrypoint)(unsigned long ns_entrypoint);
         void (*get_sys_suspend_power_state)(
                         psci_power_state_t *req_state);
+        int (*get_pwr_lvl_state_idx)(plat_local_state_t pwr_domain_state,
+                                    int pwrlvl);
+        int (*translate_power_state_by_mpidr)(u_register_t mpidr,
+                                    unsigned int power_state,
+                                    psci_power_state_t *output_state);
+        int (*get_node_hw_state)(u_register_t mpidr, unsigned int power_level);
+        int (*mem_protect_chk)(uintptr_t base, u_register_t length);
+        int (*read_mem_protect)(int *val);
+        int (*write_mem_protect)(int val);
+        int (*system_reset2)(int is_vendor,
+                                int reset_type, u_register_t cookie);
     } plat_psci_ops_t;
 
 The description of these handlers can be found in the `Porting Guide <porting-guide.rst#user-content-function--plat_setup_psci_ops-mandatory>`__.
@@ -170,12 +182,12 @@ convert the power-state parameter (possibly encoding a composite power state)
 passed in a PSCI ``CPU_SUSPEND`` to the ``psci_power_state`` format. This handler
 is now mandatory for PSCI ``CPU_SUSPEND`` support.
 
-The ``plat_psci_ops`` handlers, ``pwr_domain_off`` and ``pwr_domain_suspend``, are
-passed the target local state for each affected power domain. The platform
-must execute operations specific to these target states. Similarly,
-``pwr_domain_on_finish`` and ``pwr_domain_suspend_finish`` are passed the local
-states of the affected power domains before wakeup. The platform
-must execute actions to restore these power domains from these specific
+The ``plat_psci_ops`` handlers, ``pwr_domain_off``, ``pwr_domain_suspend_early``
+and ``pwr_domain_suspend``, are passed the target local state for each affected
+power domain. The platform must execute operations specific to these target
+states. Similarly, ``pwr_domain_on_finish`` and ``pwr_domain_suspend_finish``
+are passed the local states of the affected power domains before wakeup. The
+platform must execute actions to restore these power domains from these specific
 local states.
 
 -  Difference in invocation
@@ -205,7 +217,7 @@ layer and the platform layer.
 
 Refer `plat/arm/board/fvp/fvp\_pm.c`_ for the implementation details of
 these handlers for the FVP. The commit `38dce70f51fb83b27958ba3e2ad15f5635cb1061`_
-demonstrates the migration of ARM reference platforms to the new platform API.
+demonstrates the migration of Arm reference platforms to the new platform API.
 
 Miscellaneous modifications
 ---------------------------
@@ -259,7 +271,7 @@ within its domain. It does so by storing the core index of first core
 within it and number of core indexes following it. This means that core
 indices returned by ``platform_get_core_pos()`` for cores within a particular
 power domain must be consecutive. We expect that this is the case for most
-platform ports including ARM reference platforms.
+platform ports including Arm reference platforms.
 
 The old PSCI helpers like ``psci_get_suspend_powerstate()``,
 ``psci_get_suspend_stateid()``, ``psci_get_suspend_stateid_by_mpidr()``,
@@ -286,7 +298,7 @@ The mandatory macros to be defined by the platform port in ``platform_def.h``
 -  **#define : PLATFORM\_MAX\_AFFLVL**
 
    Defines the maximum affinity level that the power management operations
-   should apply to. ARMv8-A has support for four affinity levels. It is likely
+   should apply to. Armv8-A has support for four affinity levels. It is likely
    that hardware will implement fewer affinity levels. This macro allows the
    PSCI implementation to consider only those affinity levels in the system
    that the platform implements. For example, the Base AEM FVP implements two
@@ -317,7 +329,7 @@ to handle the condition where the core has been warm reset but there is no
 entrypoint to jump to.
 
 This function does not follow the Procedure Call Standard used by the
-Application Binary Interface for the ARM 64-bit architecture. The caller should
+Application Binary Interface for the Arm 64-bit architecture. The caller should
 not assume that callee saved registers are preserved across a call to this
 function.
 
@@ -398,7 +410,7 @@ Modifications for Power State Coordination Interface (in BL31)
 --------------------------------------------------------------
 
 The following functions must be implemented to initialize PSCI functionality in
-the ARM Trusted Firmware.
+TF-A.
 
 Function : plat\_get\_aff\_count() [mandatory]
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -583,7 +595,7 @@ PSCI specification for the CPU\_SUSPEND API.
 
 --------------
 
-*Copyright (c) 2015, ARM Limited and Contributors. All rights reserved.*
+*Copyright (c) 2015-2018, Arm Limited and Contributors. All rights reserved.*
 
 .. _PSCI: http://infocenter.arm.com/help/topic/com.arm.doc.den0022c/DEN0022C_Power_State_Coordination_Interface.pdf
 .. _Porting Guide: porting-guide.rst#user-content-function--plat_my_core_pos

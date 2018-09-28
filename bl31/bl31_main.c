@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2017, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2013-2018, ARM Limited and Contributors. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -7,15 +7,17 @@
 #include <arch.h>
 #include <arch_helpers.h>
 #include <assert.h>
-#include <bl_common.h>
 #include <bl31.h>
+#include <bl_common.h>
 #include <console.h>
 #include <context_mgmt.h>
 #include <debug.h>
+#include <ehf.h>
 #include <platform.h>
 #include <pmf.h>
 #include <runtime_instr.h>
 #include <runtime_svc.h>
+#include <std_svc.h>
 #include <string.h>
 
 #if ENABLE_RUNTIME_INSTRUMENTATION
@@ -78,6 +80,11 @@ void bl31_main(void)
 
 	/* Initialise helper libraries */
 	bl31_lib_init();
+
+#if EL3_EXCEPTION_HANDLING
+	INFO("BL31: Initialising Exception Handling Framework\n");
+	ehf_init();
+#endif
 
 	/* Initialize the runtime services e.g. psci. */
 	INFO("BL31: Initializing runtime services\n");

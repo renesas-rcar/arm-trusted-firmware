@@ -1,12 +1,13 @@
 /*
  * Copyright (c) 2013-2014, ARM Limited and Contributors. All rights reserved.
- * Copyright (c) 2015-2017, Renesas Electronics Corporation. All rights reserved.
+ * Copyright (c) 2015-2018, Renesas Electronics Corporation. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
 #include <arch.h>
 #include <arch_helpers.h>
+#include <gic_common.h>
 #include <gicv2.h>
 #include <bl_common.h>
 #include <cci.h>
@@ -14,10 +15,14 @@
 #include <mmio.h>
 #include <platform.h>
 #include <platform_def.h>
-#include <xlat_tables.h>
+#include <xlat_tables_v2.h>
 #include "rcar_def.h"
 #include "rcar_private.h"
 #include "rcar_version.h"
+#if (IMAGE_BL2)
+#include <io_driver.h>
+#include "io_rcar.h"
+#endif /* IMAGE_BL2 */
 
 const uint8_t version_of_renesas[VERSION_OF_RENESAS_MAXLEN]
 	__attribute__((__section__(".version"))) = VERSION_OF_RENESAS;
@@ -47,15 +52,6 @@ const uint8_t version_of_renesas[VERSION_OF_RENESAS_MAXLEN]
 #define MAP_DEVICE_RCAR2	MAP_REGION_FLAT(DEVICE_RCAR_BASE2,	\
 					DEVICE_RCAR_SIZE2,		\
 					MT_DEVICE | MT_RW | MT_SECURE)
-
-#define MAP_SRAM	MAP_REGION_FLAT(DEVICE_SRAM_BASE,		\
-					DEVICE_SRAM_SIZE,		\
-					MT_MEMORY | MT_RO | MT_SECURE)
-
-#define MAP_SRAM_SHADOW	MAP_REGION(DEVICE_SRAM_BASE,			\
-					DEVICE_SRAM_SHADOW_BASE,	\
-					DEVICE_SRAM_SIZE,		\
-					MT_MEMORY | MT_RW | MT_SECURE)
 
 #define MAP_SRAM_STACK	MAP_REGION_FLAT(DEVICE_SRAM_STACK_BASE,		\
 					DEVICE_SRAM_STACK_SIZE,		\
@@ -105,7 +101,7 @@ const uint8_t version_of_renesas[VERSION_OF_RENESAS_MAXLEN]
  * configure_mmu_elx() will give the available subset of that,
  */
 #if IMAGE_BL1
-const mmap_region_t rcar_mmap[] = {
+static const mmap_region_t rcar_mmap[] = {
 	MAP_SHARED_RAM,
 	MAP_FLASH0,
 	MAP_DEVICE0,
@@ -114,7 +110,7 @@ const mmap_region_t rcar_mmap[] = {
 };
 #endif
 #if IMAGE_BL2
-const mmap_region_t rcar_mmap[] = {
+static const mmap_region_t rcar_mmap[] = {
 	MAP_FLASH0,	/*   0x08000000 -   0x0BFFFFFF  RPC area            */
 	MAP_DRAM0,	/*   0x40000000 -   0xBFFFFFFF  DRAM area(Legacy)   */
 	MAP_REG0,	/*   0xE6000000 -   0xE62FFFFF  SoC register area   */
@@ -127,20 +123,18 @@ const mmap_region_t rcar_mmap[] = {
 };
 #endif
 #if IMAGE_BL31
-const mmap_region_t rcar_mmap[] = {
+static const mmap_region_t rcar_mmap[] = {
 	MAP_SHARED_RAM,
 	MAP_ATFW_CRASH,
 	MAP_ATFW_LOG,
 	MAP_DEVICE_RCAR,
 	MAP_DEVICE_RCAR2,
-	MAP_SRAM,
-	MAP_SRAM_SHADOW,
 	MAP_SRAM_STACK,
 	{	0}
 };
 #endif
 #if IMAGE_BL32
-const mmap_region_t rcar_mmap[] = {
+static const mmap_region_t rcar_mmap[] = {
 	MAP_DEVICE0,
 	MAP_DEVICE1,
 	{	0}
@@ -198,13 +192,7 @@ CASSERT(ARRAY_SIZE(rcar_mmap) + RCAR_BL_REGIONS \
 #endif
 
 /* Define EL1 and EL3 variants of the function initialising the MMU */
-DEFINE_CONFIGURE_MMU_EL(1)
 DEFINE_CONFIGURE_MMU_EL(3)
-
-#if (IMAGE_BL2)
-extern int32_t file_to_cert(const int32_t filename, uint32_t *cert_addr);
-extern void get_info_from_cert(uint64_t cert_addr, uint32_t *size, uintptr_t *dest_addr);
-#endif
 
 uintptr_t plat_get_ns_image_entrypoint(void)
 {
@@ -303,36 +291,58 @@ uint32_t rcar_get_spsr_for_bl33_entry(void)
 
 /* Array of secure interrupts to be configured by the gic driver */
 #if IMAGE_BL2
-static const unsigned int irq_sec_array[] = {
-	ARM_IRQ_SEC_WDT			/* 173          */
-};
+#define PLATFORM_G1S_PROPS(grp)						\
+	INTR_PROP_DESC(ARM_IRQ_SEC_WDT, GIC_HIGHEST_SEC_PRIORITY,	\
+					   grp, GIC_INTR_CFG_LEVEL)
 #endif
 #if IMAGE_BL31
-static const unsigned int irq_sec_array[] = {
-	ARM_IRQ_SEC_PHY_TIMER,		/* 29		*/
-	ARM_IRQ_SEC_SGI_0,		/* 8		*/
-	ARM_IRQ_SEC_SGI_1,		/* 9		*/
-	ARM_IRQ_SEC_SGI_2,		/* 10		*/
-	ARM_IRQ_SEC_SGI_3,		/* 11		*/
-	ARM_IRQ_SEC_SGI_4,		/* 12		*/
-	ARM_IRQ_SEC_SGI_5,		/* 13		*/
-	ARM_IRQ_SEC_SGI_6,		/* 14		*/
-	ARM_IRQ_SEC_SGI_7,		/* 15		*/
-	ARM_IRQ_SEC_RPC,		/* 70		*/
-	ARM_IRQ_SEC_TIMER,		/* 166		*/
-	ARM_IRQ_SEC_TIMER_UP,		/* 171		*/
-	ARM_IRQ_SEC_WDT,		/* 173		*/
-	ARM_IRQ_SEC_CRYPT,		/* 102		*/
-	ARM_IRQ_SEC_CRYPT_SecPKA,	/* 97		*/
-	ARM_IRQ_SEC_CRYPT_PubPKA	/* 98		*/
-};
+#define PLATFORM_G1S_PROPS(grp)							\
+	INTR_PROP_DESC(ARM_IRQ_SEC_PHY_TIMER, GIC_HIGHEST_SEC_PRIORITY,		\
+					   grp, GIC_INTR_CFG_LEVEL),		\
+	INTR_PROP_DESC(ARM_IRQ_SEC_SGI_0, GIC_HIGHEST_SEC_PRIORITY,		\
+					   grp, GIC_INTR_CFG_EDGE),		\
+	INTR_PROP_DESC(ARM_IRQ_SEC_SGI_1, GIC_HIGHEST_SEC_PRIORITY,		\
+					   grp, GIC_INTR_CFG_EDGE),		\
+	INTR_PROP_DESC(ARM_IRQ_SEC_SGI_2, GIC_HIGHEST_SEC_PRIORITY,		\
+					   grp, GIC_INTR_CFG_EDGE),		\
+	INTR_PROP_DESC(ARM_IRQ_SEC_SGI_3, GIC_HIGHEST_SEC_PRIORITY,		\
+					   grp, GIC_INTR_CFG_EDGE),		\
+	INTR_PROP_DESC(ARM_IRQ_SEC_SGI_4, GIC_HIGHEST_SEC_PRIORITY,		\
+					   grp, GIC_INTR_CFG_EDGE),		\
+	INTR_PROP_DESC(ARM_IRQ_SEC_SGI_5, GIC_HIGHEST_SEC_PRIORITY,		\
+					   grp, GIC_INTR_CFG_EDGE),		\
+	INTR_PROP_DESC(ARM_IRQ_SEC_SGI_6, GIC_HIGHEST_SEC_PRIORITY,		\
+					   grp, GIC_INTR_CFG_EDGE),		\
+	INTR_PROP_DESC(ARM_IRQ_SEC_SGI_7, GIC_HIGHEST_SEC_PRIORITY,		\
+					   grp, GIC_INTR_CFG_EDGE),		\
+	INTR_PROP_DESC(ARM_IRQ_SEC_RPC, GIC_HIGHEST_SEC_PRIORITY,		\
+					   grp, GIC_INTR_CFG_LEVEL),		\
+	INTR_PROP_DESC(ARM_IRQ_SEC_TIMER, GIC_HIGHEST_SEC_PRIORITY,		\
+					   grp, GIC_INTR_CFG_LEVEL),		\
+	INTR_PROP_DESC(ARM_IRQ_SEC_TIMER_UP, GIC_HIGHEST_SEC_PRIORITY,		\
+					   grp, GIC_INTR_CFG_LEVEL),		\
+	INTR_PROP_DESC(ARM_IRQ_SEC_WDT, GIC_HIGHEST_SEC_PRIORITY,		\
+					   grp, GIC_INTR_CFG_LEVEL),		\
+	INTR_PROP_DESC(ARM_IRQ_SEC_CRYPT, GIC_HIGHEST_SEC_PRIORITY,		\
+					   grp, GIC_INTR_CFG_LEVEL),		\
+	INTR_PROP_DESC(ARM_IRQ_SEC_CRYPT_SecPKA, GIC_HIGHEST_SEC_PRIORITY,	\
+					   grp, GIC_INTR_CFG_LEVEL),		\
+	INTR_PROP_DESC(ARM_IRQ_SEC_CRYPT_PubPKA, GIC_HIGHEST_SEC_PRIORITY,	\
+					   grp, GIC_INTR_CFG_LEVEL)
 #endif
+
+#define PLATFORM_G0_PROPS(grp)
+
+static const interrupt_prop_t rcar_interrupt_props[] = {
+	PLATFORM_G1S_PROPS(GICV2_INTR_GROUP0),
+	PLATFORM_G0_PROPS(GICV2_INTR_GROUP0)
+};
 
 static const struct gicv2_driver_data plat_gicv2_driver_data = {
 	.gicd_base = RCAR_GICD_BASE,
 	.gicc_base = RCAR_GICC_BASE,
-	.g0_interrupt_num = (uint32_t)ARRAY_SIZE(irq_sec_array),
-	.g0_interrupt_array = irq_sec_array,
+	.interrupt_props = rcar_interrupt_props,
+	.interrupt_props_num = ARRAY_SIZE(rcar_interrupt_props),
 };
 
 /******************************************************************************

@@ -1,9 +1,10 @@
 /*
- * Copyright (c) 2013-2017, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2013-2018, ARM Limited and Contributors. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
+#include <amu.h>
 #include <arch.h>
 #include <arch_helpers.h>
 #include <assert.h>
@@ -13,8 +14,11 @@
 #include <interrupt_mgmt.h>
 #include <platform.h>
 #include <platform_def.h>
-#include <smcc_helpers.h>
+#include <pubsub_events.h>
+#include <smccc_helpers.h>
+#include <spe.h>
 #include <string.h>
+#include <sve.h>
 #include <utils.h>
 
 
@@ -58,7 +62,7 @@ void cm_init(void)
 static void cm_init_context_common(cpu_context_t *ctx, const entry_point_info_t *ep)
 {
 	unsigned int security_state;
-	uint32_t scr_el3;
+	uint32_t scr_el3, pmcr_el0;
 	el3_state_t *state;
 	gp_regs_t *gp_regs;
 	unsigned long sctlr_elx;
@@ -164,10 +168,34 @@ static void cm_init_context_common(cpu_context_t *ctx, const entry_point_info_t 
 
 	/*
 	 * Store the initialised SCTLR_EL1 value in the cpu_context - SCTLR_EL2
-	 * and other EL2 resgisters are set up by cm_preapre_ns_entry() as they
+	 * and other EL2 registers are set up by cm_preapre_ns_entry() as they
 	 * are not part of the stored cpu_context.
 	 */
 	write_ctx_reg(get_sysregs_ctx(ctx), CTX_SCTLR_EL1, sctlr_elx);
+
+	if (security_state == SECURE) {
+		/*
+		 * Initialise PMCR_EL0 for secure context only, setting all
+		 * fields rather than relying on hw. Some fields are
+		 * architecturally UNKNOWN on reset.
+		 *
+		 * PMCR_EL0.LC: Set to one so that cycle counter overflow, that
+		 *  is recorded in PMOVSCLR_EL0[31], occurs on the increment
+		 *  that changes PMCCNTR_EL0[63] from 1 to 0.
+		 *
+		 * PMCR_EL0.DP: Set to one so that the cycle counter,
+		 *  PMCCNTR_EL0 does not count when event counting is prohibited.
+		 *
+		 * PMCR_EL0.X: Set to zero to disable export of events.
+		 *
+		 * PMCR_EL0.D: Set to zero so that, when enabled, PMCCNTR_EL0
+		 *  counts on every clock cycle.
+		 */
+		pmcr_el0 = ((PMCR_EL0_RESET_VAL | PMCR_EL0_LC_BIT
+				| PMCR_EL0_DP_BIT)
+				& ~(PMCR_EL0_X_BIT | PMCR_EL0_D_BIT));
+		write_ctx_reg(get_sysregs_ctx(ctx), CTX_PMCR_EL0, pmcr_el0);
+	}
 
 	/* Populate EL3 state so that we've the right context before doing ERET */
 	state = get_el3state_ctx(ctx);
@@ -181,6 +209,28 @@ static void cm_init_context_common(cpu_context_t *ctx, const entry_point_info_t 
 	 */
 	gp_regs = get_gpregs_ctx(ctx);
 	memcpy(gp_regs, (void *)&ep->args, sizeof(aapcs64_params_t));
+}
+
+/*******************************************************************************
+ * Enable architecture extensions on first entry to Non-secure world.
+ * When EL2 is implemented but unused `el2_unused` is non-zero, otherwise
+ * it is zero.
+ ******************************************************************************/
+static void enable_extensions_nonsecure(int el2_unused)
+{
+#if IMAGE_BL31
+#if ENABLE_SPE_FOR_LOWER_ELS
+	spe_enable(el2_unused);
+#endif
+
+#if ENABLE_AMU
+	amu_enable(el2_unused);
+#endif
+
+#if ENABLE_SVE_FOR_NS
+	sve_enable(el2_unused);
+#endif
+#endif
 }
 
 /*******************************************************************************
@@ -220,6 +270,7 @@ void cm_prepare_el3_exit(uint32_t security_state)
 {
 	uint32_t sctlr_elx, scr_el3, mdcr_el2;
 	cpu_context_t *ctx = cm_get_context(security_state);
+	int el2_unused = 0;
 
 	assert(ctx);
 
@@ -229,10 +280,12 @@ void cm_prepare_el3_exit(uint32_t security_state)
 			/* Use SCTLR_EL1.EE value to initialise sctlr_el2 */
 			sctlr_elx = read_ctx_reg(get_sysregs_ctx(ctx),
 						 CTX_SCTLR_EL1);
-			sctlr_elx &= ~SCTLR_EE_BIT;
+			sctlr_elx &= SCTLR_EE_BIT;
 			sctlr_elx |= SCTLR_EL2_RES1;
 			write_sctlr_el2(sctlr_elx);
 		} else if (EL_IMPLEMENTED(2)) {
+			el2_unused = 1;
+
 			/*
 			 * EL2 present but unused, need to disable safely.
 			 * SCTLR_EL2 can be ignored in this case.
@@ -315,13 +368,6 @@ void cm_prepare_el3_exit(uint32_t security_state)
 			 * relying on hw. Some fields are architecturally
 			 * UNKNOWN on reset.
 			 *
-			 * MDCR_EL2.TPMS (ARM v8.2): Do not trap statistical
-			 * profiling controls to EL2.
-			 *
-			 * MDCR_EL2.E2PB (ARM v8.2): SPE enabled in non-secure
-			 * state. Accesses to profiling buffer controls at
-			 * non-secure EL1 are not trapped to EL2.
-			 *
 			 * MDCR_EL2.TDRA: Set to zero so that Non-secure EL0 and
 			 *  EL1 System register accesses to the Debug ROM
 			 *  registers are not trapped to EL2.
@@ -358,22 +404,6 @@ void cm_prepare_el3_exit(uint32_t security_state)
 					| MDCR_EL2_HPME_BIT | MDCR_EL2_TPM_BIT
 					| MDCR_EL2_TPMCR_BIT));
 
-#if ENABLE_SPE_FOR_LOWER_ELS
-			uint64_t id_aa64dfr0_el1;
-
-			/* Detect if SPE is implemented */
-			id_aa64dfr0_el1 = read_id_aa64dfr0_el1() >>
-				ID_AA64DFR0_PMS_SHIFT;
-			if ((id_aa64dfr0_el1 & ID_AA64DFR0_PMS_MASK) == 1) {
-				/*
-				 * Make sure traps to EL2 are not generated if
-				 * EL2 is implemented but not used.
-				 */
-				mdcr_el2 &= ~MDCR_EL2_TPMS;
-				mdcr_el2 |= MDCR_EL2_E2PB(MDCR_EL2_E2PB_EL1);
-			}
-#endif
-
 			write_mdcr_el2(mdcr_el2);
 
 			/*
@@ -395,11 +425,11 @@ void cm_prepare_el3_exit(uint32_t security_state)
 			write_cnthp_ctl_el2(CNTHP_CTL_RESET_VAL &
 						~(CNTHP_CTL_ENABLE_BIT));
 		}
+		enable_extensions_nonsecure(el2_unused);
 	}
 
-	el1_sysregs_context_restore(get_sysregs_ctx(ctx));
-
-	cm_set_next_context(ctx);
+	cm_el1_sysregs_context_restore(security_state);
+	cm_set_next_eret_context(security_state);
 }
 
 /*******************************************************************************
@@ -415,7 +445,13 @@ void cm_el1_sysregs_context_save(uint32_t security_state)
 	assert(ctx);
 
 	el1_sysregs_context_save(get_sysregs_ctx(ctx));
-	el1_sysregs_context_save_post_ops();
+
+#if IMAGE_BL31
+	if (security_state == SECURE)
+		PUBLISH_EVENT(cm_exited_secure_world);
+	else
+		PUBLISH_EVENT(cm_exited_normal_world);
+#endif
 }
 
 void cm_el1_sysregs_context_restore(uint32_t security_state)
@@ -426,6 +462,13 @@ void cm_el1_sysregs_context_restore(uint32_t security_state)
 	assert(ctx);
 
 	el1_sysregs_context_restore(get_sysregs_ctx(ctx));
+
+#if IMAGE_BL31
+	if (security_state == SECURE)
+		PUBLISH_EVENT(cm_entering_secure_world);
+	else
+		PUBLISH_EVENT(cm_entering_normal_world);
+#endif
 }
 
 /*******************************************************************************

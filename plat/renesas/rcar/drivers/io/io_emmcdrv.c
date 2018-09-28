@@ -205,7 +205,7 @@ static int32_t emmcdrv_block_read(io_entity_t *entity, uintptr_t buffer,
 	if ((uint64_t)(buffer + length -1U) <= UINT32_MAX ) {
 		emmc_dma = LOADIMAGE_FLAGS_DMA_ENABLE;
 	}
-	
+
 	if (emmc_read_sector((uint32_t *)buffer, sector_add, sector_num,
 			emmc_dma) != EMMC_SUCCESS) {
 		result = IO_FAIL;

@@ -200,14 +200,14 @@ size_t image_size(unsigned int image_id)
 #if LOAD_IMAGE_V2
 
 /*******************************************************************************
- * Generic function to load an image at a specific address given
+ * Internal function to load an image at a specific address given
  * an image ID and extents of free memory.
  *
  * If the load is successful then the image information is updated.
  *
  * Returns 0 on success, a negative error code otherwise.
  ******************************************************************************/
-int load_image(unsigned int image_id, image_info_t *image_data)
+static int load_image(unsigned int image_id, image_info_t *image_data)
 {
 	uintptr_t dev_handle;
 	uintptr_t image_handle;
@@ -266,17 +266,6 @@ int load_image(unsigned int image_id, image_info_t *image_data)
 		goto exit;
 	}
 
-#if !TRUSTED_BOARD_BOOT
-	/*
-	 * File has been successfully loaded.
-	 * Flush the image to main memory so that it can be executed later by
-	 * any CPU, regardless of cache and MMU state.
-	 * When TBB is enabled the image is flushed later, after image
-	 * authentication.
-	 */
-	flush_dcache_range(image_base, image_size);
-#endif /* TRUSTED_BOARD_BOOT */
-
 	INFO("Image id=%u loaded: %p - %p\n", image_id, (void *) image_base,
 	     (void *) (image_base + image_size));
 
@@ -329,18 +318,19 @@ static int load_auth_image_internal(unsigned int image_id,
 				   image_data->image_size);
 		return -EAUTH;
 	}
+#endif /* TRUSTED_BOARD_BOOT */
 
 	/*
-	 * File has been successfully loaded and authenticated.
 	 * Flush the image to main memory so that it can be executed later by
-	 * any CPU, regardless of cache and MMU state.
-	 * Do it only for child images, not for the parents (certificates).
+	 * any CPU, regardless of cache and MMU state. If TBB is enabled, then
+	 * the file has been successfully loaded and authenticated and flush
+	 * only for child images, not for the parents (certificates).
 	 */
 	if (!is_parent_image) {
 		flush_dcache_range(image_data->image_base,
 				   image_data->image_size);
 	}
-#endif /* TRUSTED_BOARD_BOOT */
+
 
 	return 0;
 }
@@ -354,7 +344,13 @@ static int load_auth_image_internal(unsigned int image_id,
  ******************************************************************************/
 int load_auth_image(unsigned int image_id, image_info_t *image_data)
 {
-	return load_auth_image_internal(image_id, image_data, 0);
+	int err;
+
+	do {
+		err = load_auth_image_internal(image_id, image_data, 0);
+	} while (err != 0 && plat_try_next_boot_source());
+
+	return err;
 }
 
 #else /* LOAD_IMAGE_V2 */
@@ -553,8 +549,14 @@ int load_auth_image(meminfo_t *mem_layout,
 		    image_info_t *image_data,
 		    entry_point_info_t *entry_point_info)
 {
-	return load_auth_image_internal(mem_layout, image_id, image_base,
-					image_data, entry_point_info, 0);
+	int err;
+
+	do {
+		err = load_auth_image_internal(mem_layout, image_id, image_base,
+					       image_data, entry_point_info, 0);
+	} while (err != 0 && plat_try_next_boot_source());
+
+	return err;
 }
 
 #endif /* LOAD_IMAGE_V2 */

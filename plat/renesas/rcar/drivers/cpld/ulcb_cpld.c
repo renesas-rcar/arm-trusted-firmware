@@ -1,12 +1,13 @@
 /*
  * Copyright (c) 2017, ARM Limited and Contributors. All rights reserved.
- * Copyright (c) 2017, Renesas Electronics Corporation. All rights reserved.
+ * Copyright (c) 2017-2018, Renesas Electronics Corporation. All rights reserved.
  * Copyright (C) 2017, Cogent Embedded, Inc.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
 #include <mmio.h>
+#include "ulcb_cpld.h"
 
 #define SCLK			8 /* GP_6_8 */
 #define SSTBZ			3 /* GP_2_3 */

@@ -69,7 +69,8 @@
 	b.eq	smc_handler64
 
 	/* Other kinds of synchronous exceptions are not handled */
-	no_ret	report_unhandled_exception
+	ldr	x30, [sp, #CTX_GPREGS_OFFSET + CTX_GPREG_LR]
+	b	report_unhandled_exception
 	.endm
 
 
@@ -179,7 +180,7 @@ vector_base runtime_exceptions
 	 */
 vector_entry sync_exception_sp_el0
 	/* We don't expect any synchronous exceptions from EL3 */
-	no_ret	report_unhandled_exception
+	b	report_unhandled_exception
 	check_vector_size sync_exception_sp_el0
 
 vector_entry irq_sp_el0
@@ -187,17 +188,17 @@ vector_entry irq_sp_el0
 	 * EL3 code is non-reentrant. Any asynchronous exception is a serious
 	 * error. Loop infinitely.
 	 */
-	no_ret	report_unhandled_interrupt
+	b	report_unhandled_interrupt
 	check_vector_size irq_sp_el0
 
 
 vector_entry fiq_sp_el0
-	no_ret	report_unhandled_interrupt
+	b	report_unhandled_interrupt
 	check_vector_size fiq_sp_el0
 
 
 vector_entry serror_sp_el0
-	no_ret	report_unhandled_exception
+	b	report_unhandled_exception
 	check_vector_size serror_sp_el0
 
 	/* ---------------------------------------------------------------------
@@ -211,19 +212,19 @@ vector_entry sync_exception_sp_elx
 	 * synchronous exception. There is a high probability that SP_EL3 is
 	 * corrupted.
 	 */
-	no_ret	report_unhandled_exception
+	b	report_unhandled_exception
 	check_vector_size sync_exception_sp_elx
 
 vector_entry irq_sp_elx
-	no_ret	report_unhandled_interrupt
+	b	report_unhandled_interrupt
 	check_vector_size irq_sp_elx
 
 vector_entry fiq_sp_elx
-	no_ret	report_unhandled_interrupt
+	b	report_unhandled_interrupt
 	check_vector_size fiq_sp_elx
 
 vector_entry serror_sp_elx
-	no_ret	report_unhandled_exception
+	b	report_unhandled_exception
 	check_vector_size serror_sp_elx
 
 	/* ---------------------------------------------------------------------
@@ -253,7 +254,7 @@ vector_entry serror_aarch64
 	 * SError exceptions from lower ELs are not currently supported.
 	 * Report their occurrence.
 	 */
-	no_ret	report_unhandled_exception
+	b	report_unhandled_exception
 	check_vector_size serror_aarch64
 
 	/* ---------------------------------------------------------------------
@@ -283,7 +284,7 @@ vector_entry serror_aarch32
 	 * SError exceptions from lower ELs are not currently supported.
 	 * Report their occurrence.
 	 */
-	no_ret	report_unhandled_exception
+	b	report_unhandled_exception
 	check_vector_size serror_aarch32
 
 
@@ -389,12 +390,12 @@ smc_unknown:
 	 * content). Either way, we aren't leaking any secure information
 	 * through them.
 	 */
-	mov	w0, #SMC_UNK
+	mov	x0, #SMC_UNK
 	b	restore_gp_registers_callee_eret
 
 smc_prohibited:
 	ldr	x30, [sp, #CTX_GPREGS_OFFSET + CTX_GPREG_LR]
-	mov	w0, #SMC_UNK
+	mov	x0, #SMC_UNK
 	eret
 
 rt_svc_fw_critical_error:

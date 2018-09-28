@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2017, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2013-2018, ARM Limited and Contributors. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -9,6 +9,7 @@
 
 #include <ep_info.h>
 #include <param_header.h>
+#include <utils_def.h>
 
 #define UP	1
 #define DOWN	0
@@ -31,10 +32,10 @@
 #define IMAGE_STATE_EXECUTED			4
 #define IMAGE_STATE_INTERRUPTED			5
 
-#define IMAGE_ATTRIB_SKIP_LOADING	0x02
-#define IMAGE_ATTRIB_PLAT_SETUP		0x04
+#define IMAGE_ATTRIB_SKIP_LOADING	U(0x02)
+#define IMAGE_ATTRIB_PLAT_SETUP		U(0x04)
 
-#define INVALID_IMAGE_ID		(0xFFFFFFFF)
+#define INVALID_IMAGE_ID		U(0xFFFFFFFF)
 
 /*******************************************************************************
  * Constants to indicate type of exception to the common exception handler.
@@ -205,12 +206,10 @@ int is_mem_free(uintptr_t free_base, size_t free_size,
 
 #if LOAD_IMAGE_V2
 
-int load_image(unsigned int image_id, image_info_t *image_data);
 int load_auth_image(unsigned int image_id, image_info_t *image_data);
 
 #else
 
-uintptr_t page_align(uintptr_t, unsigned);
 int load_image(meminfo_t *mem_layout,
 	       unsigned int image_id,
 	       uintptr_t image_base,
@@ -230,6 +229,7 @@ extern const char build_message[];
 extern const char version_string[];
 
 void print_entry_point_info(const entry_point_info_t *ep_info);
+uintptr_t page_align(uintptr_t value, unsigned dir);
 
 #endif /*__ASSEMBLY__*/
 

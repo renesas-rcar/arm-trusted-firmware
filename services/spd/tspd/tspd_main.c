@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2017, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2013-2018, ARM Limited and Contributors. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -16,10 +16,11 @@
  ******************************************************************************/
 #include <arch_helpers.h>
 #include <assert.h>
-#include <bl_common.h>
 #include <bl31.h>
+#include <bl_common.h>
 #include <context_mgmt.h>
 #include <debug.h>
+#include <ehf.h>
 #include <errno.h>
 #include <platform.h>
 #include <runtime_svc.h>
@@ -540,6 +541,19 @@ uint64_t tspd_smc_handler(uint32_t smc_fid,
 				 */
 				enable_intr_rm_local(INTR_TYPE_NS, SECURE);
 #endif
+
+#if EL3_EXCEPTION_HANDLING
+				/*
+				 * With EL3 exception handling, while an SMC is
+				 * being processed, Non-secure interrupts can't
+				 * preempt Secure execution. However, for
+				 * yielding SMCs, we want preemption to happen;
+				 * so explicitly allow NS preemption in this
+				 * case, and supply the preemption return code
+				 * for TSP.
+				 */
+				ehf_allow_ns_preemption(TSP_PREEMPTED);
+#endif
 			}
 
 			cm_el1_sysregs_context_restore(SECURE);
@@ -646,7 +660,14 @@ uint64_t tspd_smc_handler(uint32_t smc_fid,
 		enable_intr_rm_local(INTR_TYPE_NS, SECURE);
 #endif
 
-
+#if EL3_EXCEPTION_HANDLING
+		/*
+		 * Allow the resumed yielding SMC processing to be preempted by
+		 * Non-secure interrupts. Also, supply the preemption return
+		 * code for TSP.
+		 */
+		ehf_allow_ns_preemption(TSP_PREEMPTED);
+#endif
 
 		/* We just need to return to the preempted point in
 		 * TSP and the execution will resume as normal.

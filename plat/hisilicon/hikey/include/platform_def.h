@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2017-2018, ARM Limited and Contributors. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -10,12 +10,8 @@
 #include <arch.h>
 #include "../hikey_def.h"
 
-/*
- * Platform binary types for linking
- */
-#define PLATFORM_LINKER_FORMAT          "elf64-littleaarch64"
-#define PLATFORM_LINKER_ARCH            aarch64
-
+/* Special value used to verify platform parameters from BL2 to BL3-1 */
+#define HIKEY_BL31_PLAT_PARAM_VAL	0x0f1e2d3c4b5a6978ULL
 
 /*
  * Generic platform constants
@@ -84,9 +80,18 @@
 
 /*
  * BL2 specific defines.
+ *
+ * Both loader and BL2 region stay in SRAM.
+ * Loader is used to switch Hi6220 SoC from 32-bit to 64-bit mode.
+ *
+ * ++++++++++ 0xF980_0000
+ * + loader +
+ * ++++++++++ 0xF980_1000
+ * +  BL2   +
+ * ++++++++++ 0xF981_8000
  */
-#define BL2_BASE			(BL1_RW_BASE + 0x8000)	/* 0xf981_8000 */
-#define BL2_LIMIT			(BL2_BASE + 0x40000)
+#define BL2_BASE			(BL1_RO_BASE)		/* 0xf980_1000 */
+#define BL2_LIMIT			(0xF9818000)		/* 0xf981_8000 */
 
 /*
  * SCP_BL2 specific defines.
@@ -101,20 +106,68 @@
 /*
  * BL31 specific defines.
  */
-#define BL31_BASE			BL2_LIMIT
-#define BL31_LIMIT			0xF9898000
+#define BL31_BASE			(0xF9858000)		/* 0xf985_8000 */
+#define BL31_LIMIT			(0xF9898000)
 
-#define NS_BL1U_BASE			(BL2_BASE)
+/*
+ * BL3-2 specific defines.
+ */
+
+/*
+ * The TSP currently executes from TZC secured area of DRAM or SRAM.
+ */
+#define BL32_SRAM_BASE			BL31_LIMIT
+#define BL32_SRAM_LIMIT			(BL31_LIMIT+0x80000) /* 512K */
+
+#define BL32_DRAM_BASE			DDR_SEC_BASE
+#define BL32_DRAM_LIMIT			(DDR_SEC_BASE+DDR_SEC_SIZE)
+
+#ifdef SPD_opteed
+/* Load pageable part of OP-TEE at end of allocated DRAM space for BL32 */
+#define HIKEY_OPTEE_PAGEABLE_LOAD_BASE	(BL32_DRAM_LIMIT - HIKEY_OPTEE_PAGEABLE_LOAD_SIZE) /* 0x3FC0_0000 */
+#define HIKEY_OPTEE_PAGEABLE_LOAD_SIZE	0x400000 /* 4MB */
+#endif
+
+#if (HIKEY_TSP_RAM_LOCATION_ID == HIKEY_DRAM_ID)
+#define TSP_SEC_MEM_BASE		BL32_DRAM_BASE
+#define TSP_SEC_MEM_SIZE		(BL32_DRAM_LIMIT - BL32_DRAM_BASE)
+#define BL32_BASE			BL32_DRAM_BASE
+#define BL32_LIMIT			BL32_DRAM_LIMIT
+#elif (HIKEY_TSP_RAM_LOCATION_ID == HIKEY_SRAM_ID)
+#define TSP_SEC_MEM_BASE		BL32_SRAM_BASE
+#define TSP_SEC_MEM_SIZE		(BL32_SRAM_LIMIT - BL32_SRAM_BASE)
+#define BL32_BASE			BL32_SRAM_BASE
+#define BL32_LIMIT			BL32_SRAM_LIMIT
+#else
+#error "Currently unsupported HIKEY_TSP_LOCATION_ID value"
+#endif
+
+/* BL32 is mandatory in AArch32 */
+#ifndef AARCH32
+#ifdef SPD_none
+#undef BL32_BASE
+#endif /* SPD_none */
+#endif
+
+#define NS_BL1U_BASE			(0xf9818000)
 #define NS_BL1U_SIZE			(0x00010000)
 #define NS_BL1U_LIMIT			(NS_BL1U_BASE + NS_BL1U_SIZE)
 
 /*
  * Platform specific page table and MMU setup constants
  */
-#define ADDR_SPACE_SIZE			(1ull << 32)
+#define ADDR_SPACE_SIZE			(1ULL << 32)
 
-#if IMAGE_BL1 || IMAGE_BL2 || IMAGE_BL31
+#if defined(IMAGE_BL1) || defined(IMAGE_BL32)
 #define MAX_XLAT_TABLES			3
+#endif
+
+#ifdef IMAGE_BL31
+#define MAX_XLAT_TABLES			4
+#endif
+
+#ifdef IMAGE_BL2
+#define MAX_XLAT_TABLES			4
 #endif
 
 #define MAX_MMAP_REGIONS		16

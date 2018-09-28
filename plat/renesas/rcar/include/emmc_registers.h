@@ -203,7 +203,7 @@
 #define MMC_100MHZ			2UL			/* 200MHz * 1/2   = 100 MHz				*/
 #define MMC_200MHZ			1UL			/* 200MHz * 1/1   = 200 MHz				*/
 
-	
+
 #define MMC_FREQ_52MHZ		52000000UL
 #define MMC_FREQ_26MHZ		26000000UL
 #define MMC_FREQ_20MHZ		20000000UL

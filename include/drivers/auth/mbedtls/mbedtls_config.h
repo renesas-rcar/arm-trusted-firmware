@@ -9,8 +9,16 @@
 /*
  * Key algorithms currently supported on mbed TLS libraries
  */
-#define TF_MBEDTLS_RSA		1
-#define TF_MBEDTLS_ECDSA	2
+#define TF_MBEDTLS_RSA			1
+#define TF_MBEDTLS_ECDSA		2
+#define TF_MBEDTLS_RSA_AND_ECDSA	3
+
+/*
+ * Hash algorithms currently supported on mbed TLS libraries
+ */
+#define TF_MBEDTLS_SHA256		1
+#define TF_MBEDTLS_SHA384		2
+#define TF_MBEDTLS_SHA512		3
 
 /*
  * Configuration file to build mbed TLS with the required features for
@@ -30,7 +38,6 @@
 #define MBEDTLS_X509_ALLOW_UNSUPPORTED_CRITICAL_EXTENSION
 #define MBEDTLS_X509_CHECK_KEY_USAGE
 #define MBEDTLS_X509_CHECK_EXTENDED_KEY_USAGE
-#define MBEDTLS_X509_RSASSA_PSS_SUPPORT
 
 #define MBEDTLS_ASN1_PARSE_C
 #define MBEDTLS_ASN1_WRITE_C
@@ -56,9 +63,19 @@
 #define MBEDTLS_ECP_DP_SECP256R1_ENABLED
 #elif (TF_MBEDTLS_KEY_ALG_ID == TF_MBEDTLS_RSA)
 #define MBEDTLS_RSA_C
+#define MBEDTLS_X509_RSASSA_PSS_SUPPORT
+#elif (TF_MBEDTLS_KEY_ALG_ID == TF_MBEDTLS_RSA_AND_ECDSA)
+#define MBEDTLS_RSA_C
+#define MBEDTLS_X509_RSASSA_PSS_SUPPORT
+#define MBEDTLS_ECDSA_C
+#define MBEDTLS_ECP_C
+#define MBEDTLS_ECP_DP_SECP256R1_ENABLED
 #endif
 
 #define MBEDTLS_SHA256_C
+#if (TF_MBEDTLS_HASH_ALG_ID != TF_MBEDTLS_SHA256)
+#define MBEDTLS_SHA512_C
+#endif
 
 #define MBEDTLS_VERSION_C
 
@@ -72,9 +89,10 @@
 /* Memory buffer allocator options */
 #define MBEDTLS_MEMORY_ALIGN_MULTIPLE        8
 
-#include "mbedtls/check_config.h"
-
+#ifndef __ASSEMBLY__
 /* System headers required to build mbed TLS with the current configuration */
 #include <stdlib.h>
+#include "mbedtls/check_config.h"
+#endif
 
 #endif /* __MBEDTLS_CONFIG_H__ */

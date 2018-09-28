@@ -16,8 +16,8 @@
  ******************************************************************************/
 #include <arch_helpers.h>
 #include <assert.h>
-#include <bl_common.h>
 #include <bl31.h>
+#include <bl_common.h>
 #include <context_mgmt.h>
 #include <debug.h>
 #include <errno.h>
@@ -26,8 +26,9 @@
 #include <stddef.h>
 #include <uuid.h>
 #include "opteed_private.h"
-#include "teesmc_opteed_macros.h"
 #include "teesmc_opteed.h"
+#include "teesmc_opteed_macros.h"
+
 
 /*******************************************************************************
  * Address of the entrypoint vector table in OPTEE. It is
@@ -40,8 +41,6 @@ optee_vectors_t *optee_vectors;
  ******************************************************************************/
 optee_context_t opteed_sp_context[OPTEED_CORE_COUNT];
 uint32_t opteed_rw;
-
-
 
 static int32_t opteed_init(void);
 
@@ -95,6 +94,9 @@ int32_t opteed_setup(void)
 {
 	entry_point_info_t *optee_ep_info;
 	uint32_t linear_id;
+	uint64_t opteed_pageable_part;
+	uint64_t opteed_mem_limit;
+	uint64_t dt_addr;
 
 	linear_id = plat_my_core_pos();
 
@@ -119,15 +121,17 @@ int32_t opteed_setup(void)
 	if (!optee_ep_info->pc)
 		return 1;
 
-	/*
-	 * We could inspect the SP image and determine it's execution
-	 * state i.e whether AArch32 or AArch64. Assuming it's AArch32
-	 * for the time being.
-	 */
-	opteed_rw = OPTEE_AARCH64;
+	opteed_rw = optee_ep_info->args.arg0;
+	opteed_pageable_part = optee_ep_info->args.arg1;
+	opteed_mem_limit = optee_ep_info->args.arg2;
+	dt_addr = optee_ep_info->args.arg3;
+
 	opteed_init_optee_ep_state(optee_ep_info,
 				opteed_rw,
 				optee_ep_info->pc,
+				opteed_pageable_part,
+				opteed_mem_limit,
+				dt_addr,
 				&opteed_sp_context[linear_id]);
 
 	/*

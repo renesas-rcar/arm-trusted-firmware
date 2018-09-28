@@ -1,20 +1,21 @@
 /*
  * Copyright (c) 2013-2017, ARM Limited and Contributors. All rights reserved.
- * Copyright (c) 2015-2017, Renesas Electronics Corporation. All rights reserved.
+ * Copyright (c) 2015-2018, Renesas Electronics Corporation. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
-#include <assert.h>
-#include <bl_common.h>
 #include <arch.h>
 #include <arch_helpers.h>
+#include <assert.h>
+#include <bl_common.h>
 #include <context.h>
 #include <context_mgmt.h>
 #include <cpu_data.h>
 #include <debug.h>
 #include <platform.h>
 #include <pmf.h>
+#include <pubsub_events.h>
 #include <runtime_instr.h>
 #include <stddef.h>
 #include "psci_private.h"
@@ -37,6 +38,11 @@ static void psci_suspend_to_standby_finisher(unsigned int cpu_idx,
 	 * state as a result of state coordination amongst other CPUs post wfi.
 	 */
 	psci_get_target_local_pwr_states(end_pwrlvl, &state_info);
+
+#if ENABLE_PSCI_STAT
+	plat_psci_stat_accounting_stop(&state_info);
+	psci_stats_update_pwr_up(end_pwrlvl, &state_info);
+#endif
 
 	/*
 	 * Plat. management: Allow the platform to do operations
@@ -64,6 +70,8 @@ static void psci_suspend_to_pwrdown_start(unsigned int end_pwrlvl,
 {
 	unsigned int max_off_lvl = psci_find_max_off_lvl(state_info);
 
+	PUBLISH_EVENT(psci_suspend_pwrdown_start);
+
 	/* Save PSCI target power level for the suspend finisher handler */
 	psci_set_suspend_pwrlvl(end_pwrlvl);
 
@@ -80,6 +88,17 @@ static void psci_suspend_to_pwrdown_start(unsigned int end_pwrlvl,
 	 */
 	if (psci_spd_pm && psci_spd_pm->svc_suspend)
 		psci_spd_pm->svc_suspend(max_off_lvl);
+
+#if !HW_ASSISTED_COHERENCY
+	/*
+	 * Plat. management: Allow the platform to perform any early
+	 * actions required to power down the CPU. This might be useful for
+	 * HW_ASSISTED_COHERENCY = 0 platforms that can safely perform these
+	 * actions with data caches enabled.
+	 */
+	if (psci_plat_pm_ops->pwr_domain_suspend_pwrdown_early)
+		psci_plat_pm_ops->pwr_domain_suspend_pwrdown_early(state_info);
+#endif
 
 	/*
 	 * Store the re-entry information for the non-secure world.
@@ -231,21 +250,12 @@ exit:
 	    PMF_NO_CACHE_MAINT);
 #endif
 
-#if ENABLE_PSCI_STAT
-	plat_psci_stat_accounting_start(state_info);
-#endif
-
 	/*
 	 * We will reach here if only retention/standby states have been
 	 * requested at multiple power levels. This means that the cpu
 	 * context will be preserved.
 	 */
 	wfi();
-
-#if ENABLE_PSCI_STAT
-	plat_psci_stat_accounting_stop(state_info);
-	psci_stats_update_pwr_up(end_pwrlvl, state_info);
-#endif
 
 #if ENABLE_RUNTIME_INSTRUMENTATION
 	PMF_CAPTURE_TIMESTAMP(rt_instr_svc,
@@ -306,6 +316,8 @@ void psci_cpu_suspend_finish(unsigned int cpu_idx,
 
 	/* Invalidate the suspend level for the cpu */
 	psci_set_suspend_pwrlvl(PSCI_INVALID_PWR_LVL);
+
+	PUBLISH_EVENT(psci_suspend_pwrdown_finish);
 
 	/*
 	 * Generic management: Now we just need to retrieve the

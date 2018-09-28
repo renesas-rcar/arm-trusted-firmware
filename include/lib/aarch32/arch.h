@@ -7,6 +7,8 @@
 #ifndef __ARCH_H__
 #define __ARCH_H__
 
+#include <utils_def.h>
+
 /*******************************************************************************
  * MIDR bit definitions
  ******************************************************************************/
@@ -42,6 +44,7 @@
 		(((mpidr) >> MPIDR_AFF1_SHIFT) & MPIDR_AFFLVL_MASK)
 #define MPIDR_AFFLVL2_VAL(mpidr) \
 		(((mpidr) >> MPIDR_AFF2_SHIFT) & MPIDR_AFFLVL_MASK)
+#define MPIDR_AFFLVL3_VAL(mpidr)	0
 
 /*
  * The MPIDR_MAX_AFFLVL count starts from 0. Take care to
@@ -75,6 +78,11 @@
 /* CSSELR definitions */
 #define LEVEL_SHIFT		1
 
+/* ID_PFR0 definitions */
+#define ID_PFR0_AMU_SHIFT	U(20)
+#define ID_PFR0_AMU_LENGTH	U(4)
+#define ID_PFR0_AMU_MASK	U(0xf)
+
 /* ID_PFR1 definitions */
 #define ID_PFR1_VIRTEXT_SHIFT	12
 #define ID_PFR1_VIRTEXT_MASK	0xf
@@ -84,15 +92,21 @@
 #define ID_PFR1_GIC_MASK	0xf
 
 /* SCTLR definitions */
-#define SCTLR_RES1	((1 << 23) | (1 << 22) | (1 << 11) | (1 << 4) | \
-			(1 << 3))
+#define SCTLR_RES1_DEF		((1 << 23) | (1 << 22) | (1 << 4) | (1 << 3))
+#if ARM_ARCH_MAJOR == 7
+#define SCTLR_RES1		SCTLR_RES1_DEF
+#else
+#define SCTLR_RES1		(SCTLR_RES1_DEF | (1 << 11))
+#endif
 #define SCTLR_M_BIT		(1 << 0)
 #define SCTLR_A_BIT		(1 << 1)
 #define SCTLR_C_BIT		(1 << 2)
 #define SCTLR_CP15BEN_BIT	(1 << 5)
 #define SCTLR_ITD_BIT		(1 << 7)
+#define SCTLR_Z_BIT		(1 << 11)
 #define SCTLR_I_BIT		(1 << 12)
 #define SCTLR_V_BIT		(1 << 13)
+#define SCTLR_RR_BIT		(1 << 14)
 #define SCTLR_NTWI_BIT		(1 << 16)
 #define SCTLR_NTWE_BIT		(1 << 18)
 #define SCTLR_WXN_BIT		(1 << 19)
@@ -178,6 +192,7 @@
 /* HCPTR definitions */
 #define HCPTR_RES1		((1 << 13) | (1<<12) | 0x3ff)
 #define TCPAC_BIT		(1 << 31)
+#define TAM_BIT			(1 << 30)
 #define TTA_BIT			(1 << 20)
 #define TCP11_BIT		(1 << 10)
 #define TCP10_BIT		(1 << 10)
@@ -323,6 +338,11 @@
 	((aif) & SPSR_AIF_MASK) << SPSR_AIF_SHIFT)
 
 /*
+ * TTBR definitions
+ */
+#define TTBR_CNP_BIT		0x1
+
+/*
  * CTR definitions
  */
 #define CTR_CWG_SHIFT		24
@@ -343,6 +363,8 @@
 #define PMCR_N_SHIFT		11
 #define PMCR_N_MASK		0x1f
 #define PMCR_N_BITS		(PMCR_N_MASK << PMCR_N_SHIFT)
+#define PMCR_LC_BIT		(1 << 6)
+#define PMCR_DP_BIT		(1 << 5)
 
 /*******************************************************************************
  * Definitions of register offsets, fields and macros for CPU system
@@ -375,6 +397,7 @@
 /* System register defines The format is: coproc, opt1, CRn, CRm, opt2 */
 #define SCR		p15, 0, c1, c1, 0
 #define SCTLR		p15, 0, c1, c0, 0
+#define ACTLR		p15, 0, c1, c0, 1
 #define SDCR		p15, 0, c1, c3, 1
 #define MPIDR		p15, 0, c0, c0, 5
 #define MIDR		p15, 0, c0, c0, 0
@@ -390,6 +413,7 @@
 #define DCISW		p15, 0, c7, c6, 2
 #define CTR		p15, 0, c0, c0, 1
 #define CNTFRQ		p15, 0, c14, c0, 0
+#define ID_PFR0		p15, 0, c0, c1, 0
 #define ID_PFR1		p15, 0, c0, c1, 1
 #define MAIR0		p15, 0, c10, c2, 0
 #define MAIR1		p15, 0, c10, c2, 1
@@ -423,6 +447,11 @@
 #define PMCR		p15, 0, c9, c12, 0
 #define CNTHP_CTL	p15, 4, c14, c2, 1
 
+/* AArch32 coproc registers for 32bit MMU descriptor support */
+#define PRRR		p15, 0, c10, c2, 0
+#define NMRR		p15, 0, c10, c2, 1
+#define DACR		p15, 0, c3, c0, 0
+
 /* GICv3 CPU Interface system register defines. The format is: coproc, opt1, CRn, CRm, opt2 */
 #define ICC_IAR1	p15, 0, c12, c12, 0
 #define ICC_IAR0	p15, 0, c12, c8, 0
@@ -455,5 +484,114 @@
 #define ICC_SGI1R_EL1_64	p15, 0, c12
 #define ICC_ASGI1R_EL1_64	p15, 1, c12
 #define ICC_SGI0R_EL1_64	p15, 2, c12
+
+/*******************************************************************************
+ * Definitions of MAIR encodings for device and normal memory
+ ******************************************************************************/
+/*
+ * MAIR encodings for device memory attributes.
+ */
+#define MAIR_DEV_nGnRnE		U(0x0)
+#define MAIR_DEV_nGnRE		U(0x4)
+#define MAIR_DEV_nGRE		U(0x8)
+#define MAIR_DEV_GRE		U(0xc)
+
+/*
+ * MAIR encodings for normal memory attributes.
+ *
+ * Cache Policy
+ *  WT:	 Write Through
+ *  WB:	 Write Back
+ *  NC:	 Non-Cacheable
+ *
+ * Transient Hint
+ *  NTR: Non-Transient
+ *  TR:	 Transient
+ *
+ * Allocation Policy
+ *  RA:	 Read Allocate
+ *  WA:	 Write Allocate
+ *  RWA: Read and Write Allocate
+ *  NA:	 No Allocation
+ */
+#define MAIR_NORM_WT_TR_WA	U(0x1)
+#define MAIR_NORM_WT_TR_RA	U(0x2)
+#define MAIR_NORM_WT_TR_RWA	U(0x3)
+#define MAIR_NORM_NC		U(0x4)
+#define MAIR_NORM_WB_TR_WA	U(0x5)
+#define MAIR_NORM_WB_TR_RA	U(0x6)
+#define MAIR_NORM_WB_TR_RWA	U(0x7)
+#define MAIR_NORM_WT_NTR_NA	U(0x8)
+#define MAIR_NORM_WT_NTR_WA	U(0x9)
+#define MAIR_NORM_WT_NTR_RA	U(0xa)
+#define MAIR_NORM_WT_NTR_RWA	U(0xb)
+#define MAIR_NORM_WB_NTR_NA	U(0xc)
+#define MAIR_NORM_WB_NTR_WA	U(0xd)
+#define MAIR_NORM_WB_NTR_RA	U(0xe)
+#define MAIR_NORM_WB_NTR_RWA	U(0xf)
+
+#define MAIR_NORM_OUTER_SHIFT	4
+
+#define MAKE_MAIR_NORMAL_MEMORY(inner, outer)	((inner) | ((outer) << MAIR_NORM_OUTER_SHIFT))
+
+/*******************************************************************************
+ * Definitions for system register interface to AMU for ARMv8.4 onwards
+ ******************************************************************************/
+#define AMCR		p15, 0, c13, c2, 0
+#define AMCFGR		p15, 0, c13, c2, 1
+#define AMCGCR		p15, 0, c13, c2, 2
+#define AMUSERENR	p15, 0, c13, c2, 3
+#define AMCNTENCLR0	p15, 0, c13, c2, 4
+#define AMCNTENSET0	p15, 0, c13, c2, 5
+#define AMCNTENCLR1	p15, 0, c13, c3, 0
+#define AMCNTENSET1	p15, 0, c13, c3, 1
+
+/* Activity Monitor Group 0 Event Counter Registers */
+#define AMEVCNTR00	p15, 0, c0
+#define AMEVCNTR01	p15, 1, c0
+#define AMEVCNTR02	p15, 2, c0
+#define AMEVCNTR03	p15, 3, c0
+
+/* Activity Monitor Group 0 Event Type Registers */
+#define AMEVTYPER00	p15, 0, c13, c6, 0
+#define AMEVTYPER01	p15, 0, c13, c6, 1
+#define AMEVTYPER02	p15, 0, c13, c6, 2
+#define AMEVTYPER03	p15, 0, c13, c6, 3
+
+/* Activity Monitor Group 1 Event Counter Registers */
+#define AMEVCNTR10	p15, 0, c4
+#define AMEVCNTR11	p15, 1, c4
+#define AMEVCNTR12	p15, 2, c4
+#define AMEVCNTR13	p15, 3, c4
+#define AMEVCNTR14	p15, 4, c4
+#define AMEVCNTR15	p15, 5, c4
+#define AMEVCNTR16	p15, 6, c4
+#define AMEVCNTR17	p15, 7, c4
+#define AMEVCNTR18	p15, 0, c5
+#define AMEVCNTR19	p15, 1, c5
+#define AMEVCNTR1A	p15, 2, c5
+#define AMEVCNTR1B	p15, 3, c5
+#define AMEVCNTR1C	p15, 4, c5
+#define AMEVCNTR1D	p15, 5, c5
+#define AMEVCNTR1E	p15, 6, c5
+#define AMEVCNTR1F	p15, 7, c5
+
+/* Activity Monitor Group 1 Event Type Registers */
+#define AMEVTYPER10	p15, 0, c13, c14, 0
+#define AMEVTYPER11	p15, 0, c13, c14, 1
+#define AMEVTYPER12	p15, 0, c13, c14, 2
+#define AMEVTYPER13	p15, 0, c13, c14, 3
+#define AMEVTYPER14	p15, 0, c13, c14, 4
+#define AMEVTYPER15	p15, 0, c13, c14, 5
+#define AMEVTYPER16	p15, 0, c13, c14, 6
+#define AMEVTYPER17	p15, 0, c13, c14, 7
+#define AMEVTYPER18	p15, 0, c13, c15, 0
+#define AMEVTYPER19	p15, 0, c13, c15, 1
+#define AMEVTYPER1A	p15, 0, c13, c15, 2
+#define AMEVTYPER1B	p15, 0, c13, c15, 3
+#define AMEVTYPER1C	p15, 0, c13, c15, 4
+#define AMEVTYPER1D	p15, 0, c13, c15, 5
+#define AMEVTYPER1E	p15, 0, c13, c15, 6
+#define AMEVTYPER1F	p15, 0, c13, c15, 7
 
 #endif /* __ARCH_H__ */

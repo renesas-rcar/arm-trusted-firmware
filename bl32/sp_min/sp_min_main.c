@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2017, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2016-2018, ARM Limited and Contributors. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -17,7 +17,7 @@
 #include <platform_sp_min.h>
 #include <psci.h>
 #include <runtime_svc.h>
-#include <smcc_helpers.h>
+#include <smccc_helpers.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
@@ -32,7 +32,7 @@ static void *sp_min_cpu_ctx_ptr[PLATFORM_CORE_COUNT];
 static smc_ctx_t sp_min_smc_context[PLATFORM_CORE_COUNT];
 
 /******************************************************************************
- * Define the smcc helper library API's
+ * Define the smccc helper library API's
  *****************************************************************************/
 void *smc_get_ctx(unsigned int security_state)
 {
@@ -196,6 +196,8 @@ void sp_min_main(void)
 void sp_min_warm_boot(void)
 {
 	smc_ctx_t *next_smc_ctx;
+	cpu_context_t *ctx = cm_get_context(NON_SECURE);
+	u_register_t ns_sctlr;
 
 	psci_warmboot_entrypoint();
 
@@ -206,4 +208,30 @@ void sp_min_warm_boot(void)
 
 	copy_cpu_ctx_to_smc_stx(get_regs_ctx(cm_get_context(NON_SECURE)),
 			next_smc_ctx);
+
+	/* Temporarily set the NS bit to access NS SCTLR */
+	write_scr(read_scr() | SCR_NS_BIT);
+	isb();
+	ns_sctlr = read_ctx_reg(get_regs_ctx(ctx), CTX_NS_SCTLR);
+	write_sctlr(ns_sctlr);
+	isb();
+
+	write_scr(read_scr() & ~SCR_NS_BIT);
+	isb();
 }
+
+#if SP_MIN_WITH_SECURE_FIQ
+/******************************************************************************
+ * This function is invoked on secure interrupts. By construction of the
+ * SP_MIN, secure interrupts can only be handled when core executes in non
+ * secure state.
+ *****************************************************************************/
+void sp_min_fiq(void)
+{
+	uint32_t id;
+
+	id = plat_ic_acknowledge_interrupt();
+	sp_min_plat_fiq_handler(id);
+	plat_ic_end_of_interrupt(id);
+}
+#endif /* SP_MIN_WITH_SECURE_FIQ */

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2015-2017, ARM Limited and Contributors. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -22,11 +22,19 @@ enum {
 
 /* Supported key algorithms */
 enum {
-	KEY_ALG_RSA,
+	KEY_ALG_RSA,		/* RSA PSS as defined by PKCS#1 v2.1 (default) */
+	KEY_ALG_RSA_1_5,	/* RSA as defined by PKCS#1 v1.5 */
 #ifndef OPENSSL_NO_EC
 	KEY_ALG_ECDSA,
 #endif /* OPENSSL_NO_EC */
 	KEY_ALG_MAX_NUM
+};
+
+/* Supported hash algorithms */
+enum{
+	HASH_ALG_SHA256,
+	HASH_ALG_SHA384,
+	HASH_ALG_SHA512,
 };
 
 /*

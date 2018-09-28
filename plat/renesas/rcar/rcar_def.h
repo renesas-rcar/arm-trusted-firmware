@@ -23,8 +23,8 @@
 #define RCAR_SHARED_MEM_SIZE	U(0x00001000)	/* 4 KB */
 
 /* The remaining Trusted SRAM is used to load the BL images */
-#define RCAR_TRUSTED_SRAM_BASE	0x44000000	/* Trusted Firmware Image */
-#define RCAR_TRUSTED_SRAM_SIZE	0x0003E000	/* 248 KB */
+#define RCAR_TRUSTED_SRAM_BASE	U(0x44000000)	/* Trusted Firmware Image */
+#define RCAR_TRUSTED_SRAM_SIZE	U(0x0003E000)	/* 248 KB */
 
 #define FLASH0_BASE		U(0x08000000)	/* LBSC RPC address */
 #define FLASH0_SIZE		U(0x04000000)	/* 64MB */
@@ -40,9 +40,8 @@
 
 #define DEVICE_SRAM_BASE	U(0xE6310000)
 #define DEVICE_SRAM_SIZE	U(0x00002000)
-#define DEVICE_SRAM_SHADOW_BASE	(DEVICE_SRAM_BASE + DEVICE_SRAM_SIZE)
 
-#define DEVICE_SRAM_STACK_BASE	(DEVICE_SRAM_SHADOW_BASE + DEVICE_SRAM_SIZE)
+#define DEVICE_SRAM_STACK_BASE	(DEVICE_SRAM_BASE + DEVICE_SRAM_SIZE)
 #define DEVICE_SRAM_STACK_SIZE	U(0x00001000)
 
 
@@ -147,21 +146,21 @@
 
 /****************************************************************************************************************************************************************/
 /*																				*/
-/*	New definition for R-CarGen3																*/
+/*	New definition for R-Car Series, 3rd Generation														*/
 /*																				*/
 /****************************************************************************************************************************************************************/
-#define	RCAR_DEVICE_BASE		(0xE6000000)					/* Start address of BL31 register area					*/
-#define	RCAR_DEVICE_SIZE		(0x1A000000)					/* Size of BL31 register area						*/
-#define	RCAR_LOG_RES_SIZE		(512/8)						/* Size of reservation in log area					*/
-#define	RCAR_LOG_HEADER_SIZE		(16)						/* Size of LOG header							*/
+#define	RCAR_DEVICE_BASE		U(0xE6000000)					/* Start address of BL31 register area					*/
+#define	RCAR_DEVICE_SIZE		U(0x1A000000)					/* Size of BL31 register area						*/
+#define	RCAR_LOG_RES_SIZE		(U(512)/U(8))					/* Size of reservation in log area					*/
+#define	RCAR_LOG_HEADER_SIZE		U(16)						/* Size of LOG header							*/
 #define	RCAR_LOG_OTHER_SIZE		(RCAR_LOG_HEADER_SIZE+RCAR_LOG_RES_SIZE)	/* Size of write pointer, log header, reservation			*/
 #define	RCAR_BL31_LOG_MAX		(RCAR_BL31_LOG_SIZE - RCAR_LOG_OTHER_SIZE)	/* MAX log size								*/
 
-#define	RCAR_CRASH_STACK		(0x4403F800)					/* Temporary stack for crash						*/
+#define	RCAR_CRASH_STACK		U(0x4403F800)					/* Temporary stack for crash						*/
 
 /****************************************************************************************************************************************************************/
 /*																				*/
-/*	Definition of R-CarGen3 register address														*/
+/*	Definition of R-Car Series, 3rd Generation register address												*/
 /*																				*/
 /****************************************************************************************************************************************************************/
 /* Timer	*/
@@ -285,11 +284,5 @@
 #define	EXTAL_MD14_MD13_TYPE_3	U(16666600)	/* When MD14=1 MD13=1 */
 #define	EXTAL_SALVATOR_XS	U(8320000)	/* When board is Salvator-XS */
 #define EXTAL_EBISU		U(24000000)	/* When board is Ebisu */
-
-/*******************************************************************************
- * CPU Auxiliary Control Register specific definitions.
- ******************************************************************************/
-
-#define RCAR_CA57_DIS_LOAD_PASS_STORE	(ULL(1) << 55)
 
 #endif /* RCAR_DEF_H__ */

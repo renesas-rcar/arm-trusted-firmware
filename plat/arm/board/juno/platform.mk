@@ -31,17 +31,28 @@ JUNO_AARCH32_EL3_RUNTIME	:=	0
 $(eval $(call assert_boolean,JUNO_AARCH32_EL3_RUNTIME))
 $(eval $(call add_define,JUNO_AARCH32_EL3_RUNTIME))
 
+ifeq (${JUNO_AARCH32_EL3_RUNTIME}, 1)
+# Include BL32 in FIP
+NEED_BL32		:= yes
+# BL31 is not required
+override BL31_SOURCES =
+
+# The BL32 needs to be built separately invoking the AARCH32 compiler and
+# be specifed via `BL32` build option.
+  ifneq (${ARCH}, aarch32)
+    override BL32_SOURCES =
+  endif
+endif
+
 ifeq (${ARCH},aarch64)
 BL1_SOURCES		+=	lib/cpus/aarch64/cortex_a53.S		\
 				lib/cpus/aarch64/cortex_a57.S		\
 				lib/cpus/aarch64/cortex_a72.S		\
 				plat/arm/board/juno/juno_bl1_setup.c	\
-				plat/arm/board/juno/juno_err.c		\
 				${JUNO_INTERCONNECT_SOURCES}		\
 				${JUNO_SECURITY_SOURCES}
 
-BL2_SOURCES		+=	plat/arm/board/juno/juno_err.c		\
-				plat/arm/board/juno/juno_bl2_setup.c	\
+BL2_SOURCES		+=	plat/arm/board/juno/juno_bl2_setup.c	\
 				${JUNO_SECURITY_SOURCES}
 
 BL2U_SOURCES		+=	${JUNO_SECURITY_SOURCES}
@@ -55,10 +66,14 @@ BL31_SOURCES		+=	lib/cpus/aarch64/cortex_a53.S		\
 				${JUNO_SECURITY_SOURCES}
 endif
 
-# Enable workarounds for selected Cortex-A53 and A57 errata.
+# Errata workarounds for Cortex-A53:
+ERRATA_A53_826319		:=	1
 ERRATA_A53_835769		:=	1
+ERRATA_A53_836870		:=	1
 ERRATA_A53_843419		:=	1
 ERRATA_A53_855873		:=	1
+
+# Errata workarounds for Cortex-A57:
 ERRATA_A57_806969		:=	0
 ERRATA_A57_813419		:=	1
 ERRATA_A57_813420		:=	1
@@ -67,10 +82,10 @@ ERRATA_A57_826977		:=	1
 ERRATA_A57_828024		:=	1
 ERRATA_A57_829520		:=	1
 ERRATA_A57_833471		:=	1
+ERRATA_A57_859972		:=	0
 
-# Enable workarounds for selected Cortex-A53 errata.
-ERRATA_A53_826319		:=	1
-ERRATA_A53_836870		:=	1
+# Errata workarounds for Cortex-A72:
+ERRATA_A72_859971		:=	0
 
 # Enable option to skip L1 data cache flush during the Cortex-A57 cluster
 # power down sequence
@@ -82,11 +97,15 @@ ENABLE_PLAT_COMPAT		:= 	0
 # Enable memory map related constants optimisation
 ARM_BOARD_OPTIMISE_MEM		:=	1
 
+# Do not enable SVE
+ENABLE_SVE_FOR_NS		:=	0
+
+# Select SCMI/SDS drivers instead of SCPI/BOM driver for communicating with the
+# SCP during power management operations and for SCP RAM Firmware transfer.
+CSS_USE_SCMI_SDS_DRIVER		:=	1
+
 include plat/arm/board/common/board_css.mk
 include plat/arm/common/arm_common.mk
 include plat/arm/soc/common/soc_css.mk
 include plat/arm/css/common/css_common.mk
 
-ifeq (${KEY_ALG},ecdsa)
-    $(error "ECDSA key algorithm is not fully supported on Juno.")
-endif

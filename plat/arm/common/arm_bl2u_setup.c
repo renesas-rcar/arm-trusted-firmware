@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2016, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2015-2018, ARM Limited and Contributors. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -8,8 +8,10 @@
 #include <arm_def.h>
 #include <bl_common.h>
 #include <console.h>
-#include <platform_def.h>
+#include <generic_delay_timer.h>
 #include <plat_arm.h>
+#include <platform_def.h>
+#include <platform.h>
 #include <string.h>
 
 /* Weak definitions may be overridden in specific ARM standard platform */
@@ -36,6 +38,7 @@ void arm_bl2u_early_platform_setup(meminfo_t *mem_layout, void *plat_info)
 	/* Initialize the console to provide early debug support */
 	console_init(PLAT_ARM_BOOT_UART_BASE, PLAT_ARM_BOOT_UART_CLK_IN_HZ,
 			ARM_CONSOLE_BAUDRATE);
+	generic_delay_timer_init();
 }
 
 /*******************************************************************************

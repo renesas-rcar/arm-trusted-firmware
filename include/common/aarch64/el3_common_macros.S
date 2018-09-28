@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2015-2017, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2018, Renesas Electronics Corporation. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -87,10 +88,6 @@
 	 * MDCR_EL3.SPD32: Set to 0b10 to disable AArch32 Secure self-hosted
 	 *  privileged debug from S-EL1.
 	 *
-	 * MDCR_EL3.NSPB (ARM v8.2): SPE enabled in non-secure state and
-	 * disabled in secure state. Accesses to SPE registers at SEL1 generate
-	 * trap exceptions to EL3.
-	 *
 	 * MDCR_EL3.TDOSA: Set to zero so that EL2 and EL2 System register
 	 *  access to the powerdown debug registers do not trap to EL3.
 	 *
@@ -104,19 +101,6 @@
 	 */
 	mov_imm	x0, ((MDCR_EL3_RESET_VAL | MDCR_SDD_BIT | MDCR_SPD32(MDCR_SPD32_DISABLE)) \
 			& ~(MDCR_TDOSA_BIT | MDCR_TDA_BIT | MDCR_TPM_BIT))
-
-#if ENABLE_SPE_FOR_LOWER_ELS
-	/* Detect if SPE is implemented */
-	mrs	x1, id_aa64dfr0_el1
-	ubfx	x1, x1, #ID_AA64DFR0_PMS_SHIFT, #ID_AA64DFR0_PMS_LENGTH
-	cmp	x1, #0x1
-	b.ne	1f
-
-	/* Enable SPE for use by normal world */
-	orr	x0, x0, #MDCR_NSPB(MDCR_NSPB_EL1)
-1:
-#endif
-
 	msr	mdcr_el3, x0
 
 	/* ---------------------------------------------------------------------
@@ -136,9 +120,9 @@
 	 * CPTR_EL3.TTA: Set to zero so that System register accesses to the
 	 *  trace registers do not trap to EL3.
 	 *
-	 * CPTR_EL3.TFP: Set to zero so that accesses to Advanced SIMD and
-	 *  floating-point functionality do not trap to EL3.
-	 * ---------------------------------------------------------------------
+	 * CPTR_EL3.TFP: Set to zero so that accesses to the V- or Z- registers
+	 *  by Advanced SIMD, floating-point or SVE instructions (if implemented)
+	 *  do not trap to EL3.
 	 */
 	mov_imm x0, (CPTR_EL3_RESET_VAL & ~(TCPAC_BIT | TTA_BIT | TFP_BIT))
 	msr	cptr_el3, x0
@@ -237,6 +221,20 @@
 	msr	vbar_el3, x0
 	isb
 
+#if (IMAGE_BL2 && PLAT_rcar)
+	/* ---------------------------------------------
+	 * If SError is vaild, enable SError exception(clear PSTATE.A bit)
+	 * and clear SError exception.
+	 * ---------------------------------------------
+	 */
+	mov	x0, #(SCR_RES1_BITS | SCR_EA_BIT | SCR_SIF_BIT)
+	msr	scr_el3, x0
+
+	msr	daifclr, #DAIF_ABT_BIT
+	nop
+	msr	daifset, #DAIF_ABT_BIT
+#endif /* (IMAGE_BL2 && PLAT_rcar) */
+
 	/* ---------------------------------------------------------------------
 	 * It is a cold boot.
 	 * Perform any processor specific actions upon reset e.g. cache, TLB
@@ -286,7 +284,7 @@
 	 * ---------------------------------------------------------------------
 	 */
 	.if \_init_c_runtime
-#ifdef IMAGE_BL31
+#if defined(IMAGE_BL31) || (defined(IMAGE_BL2) && BL2_AT_EL3)
 		/* -------------------------------------------------------------
 		 * Invalidate the RW memory used by the BL31 image. This
 		 * includes the data and NOBITS sections. This is done to
@@ -299,7 +297,7 @@
 		adr	x1, __RW_END__
 		sub	x1, x1, x0
 		bl	inv_dcache_range
-#endif /* IMAGE_BL31 */
+#endif
 
 		ldr	x0, =__BSS_START__
 		ldr	x1, =__BSS_SIZE__

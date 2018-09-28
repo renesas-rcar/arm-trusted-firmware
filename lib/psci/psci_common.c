@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2017, ARM Limited and Contributors. All rights reserved.
- * Copyright (c) 2015-2017, Renesas Electronics Corporation. All rights reserved.
+ * Copyright (c) 2015-2018, Renesas Electronics Corporation. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -195,8 +195,15 @@ static void psci_set_req_local_pwr_state(unsigned int pwrlvl,
 					 unsigned int cpu_idx,
 					 plat_local_state_t req_pwr_state)
 {
+	/*
+	 * This should never happen, we have this here to avoid
+	 * "array subscript is above array bounds" errors in GCC.
+	 */
 	assert(pwrlvl > PSCI_CPU_PWR_LVL);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Warray-bounds"
 	psci_req_local_pwr_states[pwrlvl - 1][cpu_idx] = req_pwr_state;
+#pragma GCC diagnostic pop
 }
 
 /******************************************************************************
@@ -761,11 +768,11 @@ void psci_warmboot_entrypoint(void)
 	psci_acquire_pwr_domain_locks(end_pwrlvl,
 				      cpu_idx);
 
+	psci_get_target_local_pwr_states(end_pwrlvl, &state_info);
+
 #if ENABLE_PSCI_STAT
 	plat_psci_stat_accounting_stop(&state_info);
 #endif
-
-	psci_get_target_local_pwr_states(end_pwrlvl, &state_info);
 
 	/*
 	 * This CPU could be resuming from suspend or it could have just been

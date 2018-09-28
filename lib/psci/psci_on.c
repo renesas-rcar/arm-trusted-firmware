@@ -8,9 +8,10 @@
 #include <arch_helpers.h>
 #include <assert.h>
 #include <bl_common.h>
-#include <debug.h>
 #include <context_mgmt.h>
+#include <debug.h>
 #include <platform.h>
+#include <pubsub_events.h>
 #include <stddef.h>
 #include "psci_private.h"
 
@@ -64,7 +65,20 @@ int psci_cpu_on_start(u_register_t target_cpu,
 	/*
 	 * Generic management: Ensure that the cpu is off to be
 	 * turned on.
+	 * Perform cache maintanence ahead of reading the target CPU state to
+	 * ensure that the data is not stale.
+	 * There is a theoretical edge case where the cache may contain stale
+	 * data for the target CPU data - this can occur under the following
+	 * conditions:
+	 * - the target CPU is in another cluster from the current
+	 * - the target CPU was the last CPU to shutdown on its cluster
+	 * - the cluster was removed from coherency as part of the CPU shutdown
+	 *
+	 * In this case the cache maintenace that was performed as part of the
+	 * target CPUs shutdown was not seen by the current CPU's cluster. And
+	 * so the cache may contain stale data for the target CPU.
 	 */
+	flush_cpu_data_by_index(target_idx, psci_svc_cpu_data.aff_info_state);
 	rc = cpu_on_validate_state(psci_get_aff_info_state_by_idx(target_idx));
 	if (rc != PSCI_E_SUCCESS)
 		goto exit;
@@ -174,6 +188,8 @@ void psci_cpu_on_finish(unsigned int cpu_idx,
 	 */
 	if (psci_spd_pm && psci_spd_pm->svc_on_finish)
 		psci_spd_pm->svc_on_finish(0);
+
+	PUBLISH_EVENT(psci_cpu_on_finish);
 
 	/* Populate the mpidr field within the cpu node array */
 	/* This needs to be done only once */

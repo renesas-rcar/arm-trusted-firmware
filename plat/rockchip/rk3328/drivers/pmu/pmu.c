@@ -5,20 +5,20 @@
  */
 
 #include <arch_helpers.h>
-#include <debug.h>
 #include <assert.h>
 #include <bakery_lock.h>
 #include <bl31.h>
 #include <console.h>
+#include <debug.h>
 #include <delay_timer.h>
 #include <errno.h>
 #include <mmio.h>
+#include <plat_private.h>
 #include <platform.h>
 #include <platform_def.h>
-#include <plat_private.h>
 #include <pmu.h>
-#include <rk3328_def.h>
 #include <pmu_com.h>
+#include <rk3328_def.h>
 
 DEFINE_BAKERY_LOCK(rockchip_pd_lock);
 
@@ -591,8 +591,10 @@ err_loop:
 __sramfunc void sram_suspend(void)
 {
 	/* disable mmu and icache */
-	tlbialle3();
 	disable_mmu_icache_el3();
+	tlbialle3();
+	dsbsy();
+	isb();
 
 	mmio_write_32(SGRF_BASE + SGRF_SOC_CON(1),
 		      ((uintptr_t)&pmu_cpuson_entrypoint >> CPU_BOOT_ADDR_ALIGN) |

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2016, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2014-2018, ARM Limited and Contributors. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -11,7 +11,9 @@
 #include <psci.h>
 #include <runtime_instr.h>
 #include <runtime_svc.h>
-#include <smcc_helpers.h>
+#include <sdei.h>
+#include <smccc_helpers.h>
+#include <spm_svc.h>
 #include <std_svc.h>
 #include <stdint.h>
 #include <uuid.h>
@@ -25,22 +27,38 @@ DEFINE_SVC_UUID(arm_svc_uid,
 static int32_t std_svc_setup(void)
 {
 	uintptr_t svc_arg;
+	int ret = 0;
 
 	svc_arg = get_arm_std_svc_args(PSCI_FID_MASK);
 	assert(svc_arg);
 
 	/*
-	 * PSCI is the only specification implemented as a Standard Service.
+	 * PSCI is one of the specifications implemented as a Standard Service.
 	 * The `psci_setup()` also does EL3 architectural setup.
 	 */
-	return psci_setup((const psci_lib_args_t *)svc_arg);
+	if (psci_setup((const psci_lib_args_t *)svc_arg) != PSCI_E_SUCCESS) {
+		ret = 1;
+	}
+
+#if ENABLE_SPM
+	if (spm_setup() != 0) {
+		ret = 1;
+	}
+#endif
+
+#if SDEI_SUPPORT
+	/* SDEI initialisation */
+	sdei_init();
+#endif
+
+	return ret;
 }
 
 /*
  * Top-level Standard Service SMC handler. This handler will in turn dispatch
  * calls to PSCI SMC handler
  */
-uintptr_t std_svc_smc_handler(uint32_t smc_fid,
+static uintptr_t std_svc_smc_handler(uint32_t smc_fid,
 			     u_register_t x1,
 			     u_register_t x2,
 			     u_register_t x3,
@@ -79,6 +97,24 @@ uintptr_t std_svc_smc_handler(uint32_t smc_fid,
 
 		SMC_RET1(handle, ret);
 	}
+
+#if ENABLE_SPM
+	/*
+	 * Dispatch SPM calls to SPM SMC handler and return its return
+	 * value
+	 */
+	if (is_spm_fid(smc_fid)) {
+		return spm_smc_handler(smc_fid, x1, x2, x3, x4, cookie,
+				       handle, flags);
+	}
+#endif
+
+#if SDEI_SUPPORT
+	if (is_sdei_fid(smc_fid)) {
+		return sdei_smc_handler(smc_fid, x1, x2, x3, x4, cookie, handle,
+				flags);
+	}
+#endif
 
 	switch (smc_fid) {
 	case ARM_STD_SVC_CALL_COUNT:

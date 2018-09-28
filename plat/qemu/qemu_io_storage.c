@@ -21,17 +21,19 @@
 #define BL2_IMAGE_NAME			"bl2.bin"
 #define BL31_IMAGE_NAME			"bl31.bin"
 #define BL32_IMAGE_NAME			"bl32.bin"
+#define BL32_EXTRA1_IMAGE_NAME		"bl32_extra1.bin"
+#define BL32_EXTRA2_IMAGE_NAME		"bl32_extra2.bin"
 #define BL33_IMAGE_NAME			"bl33.bin"
 
 #if TRUSTED_BOARD_BOOT
-#define BL2_CERT_NAME			"bl2.crt"
+#define TRUSTED_BOOT_FW_CERT_NAME	"tb_fw.crt"
 #define TRUSTED_KEY_CERT_NAME		"trusted_key.crt"
-#define BL31_KEY_CERT_NAME		"bl31_key.crt"
-#define BL32_KEY_CERT_NAME		"bl32_key.crt"
-#define BL33_KEY_CERT_NAME		"bl33_key.crt"
-#define BL31_CERT_NAME			"bl31.crt"
-#define BL32_CERT_NAME			"bl32.crt"
-#define BL33_CERT_NAME			"bl33.crt"
+#define SOC_FW_KEY_CERT_NAME		"soc_fw_key.crt"
+#define TOS_FW_KEY_CERT_NAME		"tos_fw_key.crt"
+#define NT_FW_KEY_CERT_NAME		"nt_fw_key.crt"
+#define SOC_FW_CONTENT_CERT_NAME	"soc_fw_content.crt"
+#define TOS_FW_CONTENT_CERT_NAME	"tos_fw_content.crt"
+#define NT_FW_CONTENT_CERT_NAME		"nt_fw_content.crt"
 #endif /* TRUSTED_BOARD_BOOT */
 
 
@@ -61,41 +63,49 @@ static const io_uuid_spec_t bl32_uuid_spec = {
 	.uuid = UUID_SECURE_PAYLOAD_BL32,
 };
 
+static const io_uuid_spec_t bl32_extra1_uuid_spec = {
+	.uuid = UUID_SECURE_PAYLOAD_BL32_EXTRA1,
+};
+
+static const io_uuid_spec_t bl32_extra2_uuid_spec = {
+	.uuid = UUID_SECURE_PAYLOAD_BL32_EXTRA2,
+};
+
 static const io_uuid_spec_t bl33_uuid_spec = {
 	.uuid = UUID_NON_TRUSTED_FIRMWARE_BL33,
 };
 
 #if TRUSTED_BOARD_BOOT
-static const io_uuid_spec_t bl2_cert_uuid_spec = {
-	.uuid = UUID_TRUSTED_BOOT_FIRMWARE_BL2_CERT,
+static const io_uuid_spec_t tb_fw_cert_uuid_spec = {
+	.uuid = UUID_TRUSTED_BOOT_FW_CERT,
 };
 
 static const io_uuid_spec_t trusted_key_cert_uuid_spec = {
 	.uuid = UUID_TRUSTED_KEY_CERT,
 };
 
-static const io_uuid_spec_t bl31_key_cert_uuid_spec = {
-	.uuid = UUID_EL3_RUNTIME_FIRMWARE_BL31_KEY_CERT,
+static const io_uuid_spec_t soc_fw_key_cert_uuid_spec = {
+	.uuid = UUID_SOC_FW_KEY_CERT,
 };
 
-static const io_uuid_spec_t bl32_key_cert_uuid_spec = {
-	.uuid = UUID_SECURE_PAYLOAD_BL32_KEY_CERT,
+static const io_uuid_spec_t tos_fw_key_cert_uuid_spec = {
+	.uuid = UUID_TRUSTED_OS_FW_KEY_CERT,
 };
 
-static const io_uuid_spec_t bl33_key_cert_uuid_spec = {
-	.uuid = UUID_NON_TRUSTED_FIRMWARE_BL33_KEY_CERT,
+static const io_uuid_spec_t nt_fw_key_cert_uuid_spec = {
+	.uuid = UUID_NON_TRUSTED_FW_KEY_CERT,
 };
 
-static const io_uuid_spec_t bl31_cert_uuid_spec = {
-	.uuid = UUID_EL3_RUNTIME_FIRMWARE_BL31_CERT,
+static const io_uuid_spec_t soc_fw_cert_uuid_spec = {
+	.uuid = UUID_SOC_FW_CONTENT_CERT,
 };
 
-static const io_uuid_spec_t bl32_cert_uuid_spec = {
-	.uuid = UUID_SECURE_PAYLOAD_BL32_CERT,
+static const io_uuid_spec_t tos_fw_cert_uuid_spec = {
+	.uuid = UUID_TRUSTED_OS_FW_CONTENT_CERT,
 };
 
-static const io_uuid_spec_t bl33_cert_uuid_spec = {
-	.uuid = UUID_NON_TRUSTED_FIRMWARE_BL33_CERT,
+static const io_uuid_spec_t nt_fw_cert_uuid_spec = {
+	.uuid = UUID_NON_TRUSTED_FW_CONTENT_CERT,
 };
 #endif /* TRUSTED_BOARD_BOOT */
 
@@ -112,41 +122,49 @@ static const io_file_spec_t sh_file_spec[] = {
 		.path = BL32_IMAGE_NAME,
 		.mode = FOPEN_MODE_RB
 	},
+	[BL32_EXTRA1_IMAGE_ID] = {
+		.path = BL32_EXTRA1_IMAGE_NAME,
+		.mode = FOPEN_MODE_RB
+	},
+	[BL32_EXTRA2_IMAGE_ID] = {
+		.path = BL32_EXTRA2_IMAGE_NAME,
+		.mode = FOPEN_MODE_RB
+	},
 	[BL33_IMAGE_ID] = {
 		.path = BL33_IMAGE_NAME,
 		.mode = FOPEN_MODE_RB
 	},
 #if TRUSTED_BOARD_BOOT
-	[BL2_CERT_ID] = {
-		.path = BL2_CERT_NAME,
+	[TRUSTED_BOOT_FW_CERT_ID] = {
+		.path = TRUSTED_BOOT_FW_CERT_NAME,
 		.mode = FOPEN_MODE_RB
 	},
 	[TRUSTED_KEY_CERT_ID] = {
 		.path = TRUSTED_KEY_CERT_NAME,
 		.mode = FOPEN_MODE_RB
 	},
-	[BL31_KEY_CERT_ID] = {
-		.path = BL31_KEY_CERT_NAME,
+	[SOC_FW_KEY_CERT_ID] = {
+		.path = SOC_FW_KEY_CERT_NAME,
 		.mode = FOPEN_MODE_RB
 	},
-	[BL32_KEY_CERT_ID] = {
-		.path = BL32_KEY_CERT_NAME,
+	[TRUSTED_OS_FW_KEY_CERT_ID] = {
+		.path = TOS_FW_KEY_CERT_NAME,
 		.mode = FOPEN_MODE_RB
 	},
-	[BL33_KEY_CERT_ID] = {
-		.path = BL33_KEY_CERT_NAME,
+	[NON_TRUSTED_FW_KEY_CERT_ID] = {
+		.path = NT_FW_KEY_CERT_NAME,
 		.mode = FOPEN_MODE_RB
 	},
-	[BL31_CERT_ID] = {
-		.path = BL31_CERT_NAME,
+	[SOC_FW_CONTENT_CERT_ID] = {
+		.path = SOC_FW_CONTENT_CERT_NAME,
 		.mode = FOPEN_MODE_RB
 	},
-	[BL32_CERT_ID] = {
-		.path = BL32_CERT_NAME,
+	[TRUSTED_OS_FW_CONTENT_CERT_ID] = {
+		.path = TOS_FW_CONTENT_CERT_NAME,
 		.mode = FOPEN_MODE_RB
 	},
-	[BL33_CERT_ID] = {
-		.path = BL33_CERT_NAME,
+	[NON_TRUSTED_FW_CONTENT_CERT_ID] = {
+		.path = NT_FW_CONTENT_CERT_NAME,
 		.mode = FOPEN_MODE_RB
 	},
 #endif /* TRUSTED_BOARD_BOOT */
@@ -185,15 +203,25 @@ static const struct plat_io_policy policies[] = {
 		(uintptr_t)&bl32_uuid_spec,
 		open_fip
 	},
+	[BL32_EXTRA1_IMAGE_ID] = {
+		&fip_dev_handle,
+		(uintptr_t)&bl32_extra1_uuid_spec,
+		open_fip
+	},
+	[BL32_EXTRA2_IMAGE_ID] = {
+		&fip_dev_handle,
+		(uintptr_t)&bl32_extra2_uuid_spec,
+		open_fip
+	},
 	[BL33_IMAGE_ID] = {
 		&fip_dev_handle,
 		(uintptr_t)&bl33_uuid_spec,
 		open_fip
 	},
 #if TRUSTED_BOARD_BOOT
-	[BL2_CERT_ID] = {
+	[TRUSTED_BOOT_FW_CERT_ID] = {
 		&fip_dev_handle,
-		(uintptr_t)&bl2_cert_uuid_spec,
+		(uintptr_t)&tb_fw_cert_uuid_spec,
 		open_fip
 	},
 	[TRUSTED_KEY_CERT_ID] = {
@@ -201,34 +229,34 @@ static const struct plat_io_policy policies[] = {
 		(uintptr_t)&trusted_key_cert_uuid_spec,
 		open_fip
 	},
-	[BL31_KEY_CERT_ID] = {
+	[SOC_FW_KEY_CERT_ID] = {
 		&fip_dev_handle,
-		(uintptr_t)&bl31_key_cert_uuid_spec,
+		(uintptr_t)&soc_fw_key_cert_uuid_spec,
 		open_fip
 	},
-	[BL32_KEY_CERT_ID] = {
+	[TRUSTED_OS_FW_KEY_CERT_ID] = {
 		&fip_dev_handle,
-		(uintptr_t)&bl32_key_cert_uuid_spec,
+		(uintptr_t)&tos_fw_key_cert_uuid_spec,
 		open_fip
 	},
-	[BL33_KEY_CERT_ID] = {
+	[NON_TRUSTED_FW_KEY_CERT_ID] = {
 		&fip_dev_handle,
-		(uintptr_t)&bl33_key_cert_uuid_spec,
+		(uintptr_t)&nt_fw_key_cert_uuid_spec,
 		open_fip
 	},
-	[BL31_CERT_ID] = {
+	[SOC_FW_CONTENT_CERT_ID] = {
 		&fip_dev_handle,
-		(uintptr_t)&bl31_cert_uuid_spec,
+		(uintptr_t)&soc_fw_cert_uuid_spec,
 		open_fip
 	},
-	[BL32_CERT_ID] = {
+	[TRUSTED_OS_FW_CONTENT_CERT_ID] = {
 		&fip_dev_handle,
-		(uintptr_t)&bl32_cert_uuid_spec,
+		(uintptr_t)&tos_fw_cert_uuid_spec,
 		open_fip
 	},
-	[BL33_CERT_ID] = {
+	[NON_TRUSTED_FW_CONTENT_CERT_ID] = {
 		&fip_dev_handle,
-		(uintptr_t)&bl33_cert_uuid_spec,
+		(uintptr_t)&nt_fw_cert_uuid_spec,
 		open_fip
 	},
 #endif /* TRUSTED_BOARD_BOOT */

@@ -12,15 +12,6 @@
 #include <platform_def.h>
 #include "qemu_private.h"
 
-/*******************************************************************************
- * Declarations of linker defined symbols which will tell us where BL1 lives
- * in Trusted RAM
- ******************************************************************************/
-extern uint64_t __BL1_RAM_START__;
-extern uint64_t __BL1_RAM_END__;
-#define BL1_RAM_BASE (uint64_t)(&__BL1_RAM_START__)
-#define BL1_RAM_LIMIT (uint64_t)(&__BL1_RAM_END__)
-
 /* Data structure which holds the extents of the trusted SRAM for BL1*/
 static meminfo_t bl1_tzram_layout;
 
@@ -35,8 +26,6 @@ meminfo_t *bl1_plat_sec_mem_layout(void)
  ******************************************************************************/
 void bl1_early_platform_setup(void)
 {
-	const size_t bl1_size = BL1_RAM_LIMIT - BL1_RAM_BASE;
-
 	/* Initialize the console to provide early debug support */
 	console_init(PLAT_QEMU_BOOT_UART_BASE, PLAT_QEMU_BOOT_UART_CLK_IN_HZ,
 		     PLAT_QEMU_CONSOLE_BAUDRATE);
@@ -45,11 +34,13 @@ void bl1_early_platform_setup(void)
 	bl1_tzram_layout.total_base = BL_RAM_BASE;
 	bl1_tzram_layout.total_size = BL_RAM_SIZE;
 
+#if !LOAD_IMAGE_V2
 	/* Calculate how much RAM BL1 is using and how much remains free */
 	bl1_tzram_layout.free_base = BL_RAM_BASE;
 	bl1_tzram_layout.free_size = BL_RAM_SIZE;
 	reserve_mem(&bl1_tzram_layout.free_base, &bl1_tzram_layout.free_size,
-		    BL1_RAM_BASE, bl1_size);
+		    BL1_RAM_BASE, BL1_RAM_LIMIT - BL1_RAM_BASE);
+#endif /* !LOAD_IMAGE_V2 */
 }
 
 /******************************************************************************
@@ -57,11 +48,18 @@ void bl1_early_platform_setup(void)
  * does basic initialization. Later architectural setup (bl1_arch_setup())
  * does not do anything platform specific.
  *****************************************************************************/
+#ifdef AARCH32
+#define QEMU_CONFIGURE_BL1_MMU(...)	qemu_configure_mmu_secure(__VA_ARGS__)
+#else
+#define QEMU_CONFIGURE_BL1_MMU(...)	qemu_configure_mmu_el3(__VA_ARGS__)
+#endif
+
 void bl1_plat_arch_setup(void)
 {
-	qemu_configure_mmu_el3(bl1_tzram_layout.total_base,
+	QEMU_CONFIGURE_BL1_MMU(bl1_tzram_layout.total_base,
 				bl1_tzram_layout.total_size,
-				BL1_RO_BASE, BL1_RO_LIMIT,
+				BL_CODE_BASE, BL1_CODE_END,
+				BL1_RO_DATA_BASE, BL1_RO_DATA_END,
 				BL_COHERENT_RAM_BASE, BL_COHERENT_RAM_END);
 }
 
@@ -70,6 +68,7 @@ void bl1_platform_setup(void)
 	plat_qemu_io_setup();
 }
 
+#if !LOAD_IMAGE_V2
 /*******************************************************************************
  * Function that takes a memory layout into which BL2 has been loaded and
  * populates a new memory layout for BL2 that ensures that BL1's data sections
@@ -110,3 +109,4 @@ void bl1_plat_set_bl2_ep_info(image_info_t *bl2_image,
 	SET_SECURITY_STATE(bl2_ep->h.attr, SECURE);
 	bl2_ep->spsr = SPSR_64(MODE_EL1, MODE_SP_ELX, DISABLE_ALL_EXCEPTIONS);
 }
+#endif /* !LOAD_IMAGE_V2 */

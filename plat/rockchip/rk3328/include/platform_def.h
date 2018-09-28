@@ -26,13 +26,13 @@
 /* Size of cacheable stacks */
 #if DEBUG_XLAT_TABLE
 #define PLATFORM_STACK_SIZE 0x800
-#elif IMAGE_BL1
+#elif defined(IMAGE_BL1)
 #define PLATFORM_STACK_SIZE 0x440
-#elif IMAGE_BL2
+#elif defined(IMAGE_BL2)
 #define PLATFORM_STACK_SIZE 0x400
-#elif IMAGE_BL31
+#elif defined(IMAGE_BL31)
 #define PLATFORM_STACK_SIZE 0x800
-#elif IMAGE_BL32
+#elif defined(IMAGE_BL32)
 #define PLATFORM_STACK_SIZE 0x440
 #endif
 
@@ -85,7 +85,7 @@
 /*******************************************************************************
  * Platform specific page table and MMU setup constants
  ******************************************************************************/
-#define ADDR_SPACE_SIZE		(1ull << 32)
+#define ADDR_SPACE_SIZE		(1ULL << 32)
 #define MAX_XLAT_TABLES		9
 #define MAX_MMAP_REGIONS	33
 

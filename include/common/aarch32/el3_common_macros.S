@@ -98,6 +98,7 @@
 	vmsr	FPEXC, r0
 	isb
 
+#if (ARM_ARCH_MAJOR > 7)
 	/* ---------------------------------------------------------------------
 	 * Initialise SDCR, setting all the fields rather than relying on hw.
 	 *
@@ -107,6 +108,7 @@
 	 */
 	ldr	r0, =(SDCR_RESET_VAL | SDCR_SPD(SDCR_SPD_DISABLE))
 	stcopr	r0, SDCR
+#endif
 
 	.endm
 
@@ -258,9 +260,9 @@
 	 * ---------------------------------------------------------------------
 	 */
 	.if \_init_c_runtime
-#ifdef IMAGE_BL32
+#if defined(IMAGE_BL32) || (defined(IMAGE_BL2) && BL2_AT_EL3)
 		/* -----------------------------------------------------------------
-		 * Invalidate the RW memory used by the BL32 (SP_MIN) image. This
+		 * Invalidate the RW memory used by the image. This
 		 * includes the data and NOBITS sections. This is done to
 		 * safeguard against possible corruption of this memory by
 		 * dirty cache lines in a system cache as a result of use by
@@ -271,7 +273,7 @@
 		ldr	r1, =__RW_END__
 		sub	r1, r1, r0
 		bl	inv_dcache_range
-#endif /* IMAGE_BL32 */
+#endif
 
 		ldr	r0, =__BSS_START__
 		ldr	r1, =__BSS_SIZE__

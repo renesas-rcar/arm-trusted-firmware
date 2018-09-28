@@ -79,6 +79,38 @@
 	ldr r0, =(\_name + \_size)
 	.endm
 
+#if ARM_ARCH_MAJOR == 7 && !defined(ARMV7_SUPPORTS_VIRTUALIZATION)
+	/*
+	 * ARMv7 cores without Virtualization extension do not support the
+	 * eret instruction.
+	 */
+	.macro eret
+	movs	pc, lr
+	.endm
+#endif
+
+#if (ARM_ARCH_MAJOR == 7)
+	/* ARMv7 does not support stl instruction */
+	.macro stl _reg, _write_lock
+	dmb
+	str	\_reg, \_write_lock
+	dsb
+	.endm
+#endif
+
+	/*
+	 * Helper macro to generate the best mov/movw/movt combinations
+	 * according to the value to be moved.
+	 */
+	.macro mov_imm _reg, _val
+		.if ((\_val) & 0xffff0000) == 0
+			mov	\_reg, #(\_val)
+		.else
+			movw	\_reg, #((\_val) & 0xffff)
+			movt	\_reg, #((\_val) >> 16)
+		.endif
+	.endm
+
 	/*
 	 * Macro to mark instances where we're jumping to a function and don't
 	 * expect a return. To provide the function being jumped to with

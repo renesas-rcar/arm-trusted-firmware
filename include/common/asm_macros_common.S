@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2016, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2013-2017, ARM Limited and Contributors. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -11,9 +11,13 @@
 	 * code into a separate text section based on the function name
 	 * to enable elimination of unused code during linking. It also adds
 	 * basic debug information to enable call stack printing most of the
-	 * time.
+	 * time. The optional _align parameter can be used to force a
+	 * non-standard alignment (indicated in powers of 2). The default is
+	 * _align=2 because both Aarch32 and Aarch64 instructions must be
+	 * word aligned. Do *not* try to use a raw .align directive. Since func
+	 * switches to a new section, this would not have the desired effect.
 	 */
-	.macro func _name
+	.macro func _name, _align=2
 	/*
 	 * Add Call Frame Information entry in the .debug_frame section for
 	 * debugger consumption. This enables callstack printing in debuggers.
@@ -25,7 +29,7 @@
 	 * debugging experience.
 	 */
 	.cfi_sections .debug_frame
-	.section .text.\_name, "ax"
+	.section .text.asm.\_name, "ax"
 	.type \_name, %function
 	.func \_name
 	/*
@@ -33,6 +37,7 @@
 	 * .debug_frame
 	 */
 	.cfi_startproc
+	.align \_align
 	\_name:
 	.endm
 

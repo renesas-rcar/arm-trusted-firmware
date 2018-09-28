@@ -1,15 +1,17 @@
 /*
  * Copyright (c) 2013-2014, ARM Limited and Contributors. All rights reserved.
- * Copyright (c) 2015-2017, Renesas Electronics Corporation. All rights reserved.
+ * Copyright (c) 2015-2018, Renesas Electronics Corporation. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
 #include <debug.h>
+#include <platform.h>
 #include <platform_def.h>
 /* TODO: Reusing psci error codes & state information. Get our own! */
 #include <psci.h>
 #include "drivers/pwrc/rcar_pwrc.h"
+#include "rcar_private.h"
 
 /* We treat '255' as an invalid affinity instance */
 #define AFFINST_INVAL	0xff

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2017, Renesas Electronics Corporation. All rights reserved.
+ * Copyright (c) 2015-2018, Renesas Electronics Corporation. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -22,7 +22,7 @@ void bl2_interrupt_error_id(uint32_t int_id)
 	ERROR("\n");
 	if (int_id >= SWDT_ERROR_ID) {
 		ERROR("BL2: Unhandled exception occurred.\n");
-		ERROR("     Exception type = FIQ_SP_ELX\n");
+		ERROR("     Exception type = FIQ_SP_EL0\n");
 		/* Endless loop		*/
 		panic();
 	}
@@ -30,15 +30,15 @@ void bl2_interrupt_error_id(uint32_t int_id)
 	gicv2_end_of_interrupt((uint32_t)int_id);
 	bl2_swdt_release();
 	ERROR("BL2: Unhandled exception occurred.\n");
-	ERROR("     Exception type = FIQ_SP_ELX\n");
-	ERROR("     SPSR_EL1 = 0x%x\n",
-		(uint32_t)(read_spsr_el1() & 0x0FFFFFFFFU));
-	ERROR("     ELR_EL1  = 0x%x\n",
-		(uint32_t)(read_elr_el1()  & 0x0FFFFFFFFU));
-	ERROR("     ESR_EL1  = 0x%x\n",
-		(uint32_t)(read_esr_el1()  & 0x0FFFFFFFFU));
-	ERROR("     FAR_EL1  = 0x%x\n",
-		(uint32_t)(read_far_el1()  & 0x0FFFFFFFFU));
+	ERROR("     Exception type = FIQ_SP_EL0\n");
+	ERROR("     SPSR_EL3 = 0x%x\n",
+		(uint32_t)(read_spsr_el3() & 0x0FFFFFFFFU));
+	ERROR("     ELR_EL3  = 0x%x\n",
+		(uint32_t)(read_elr_el3()  & 0x0FFFFFFFFU));
+	ERROR("     ESR_EL3  = 0x%x\n",
+		(uint32_t)(read_esr_el3()  & 0x0FFFFFFFFU));
+	ERROR("     FAR_EL3  = 0x%x\n",
+		(uint32_t)(read_far_el3()  & 0x0FFFFFFFFU));
 	ERROR("\n");
 	/* Endless loop		*/
 	panic();
@@ -65,6 +65,23 @@ void bl2_interrupt_error_type(uint32_t ex_type)
 		"SERR AARCH32"
 	};
 	char msg[128];
+	static uint32_t clear_serror_flag = 1U;
+	uint32_t reg;
+
+	/* ---------------------------------------------
+	 * If SError is vaild, clear SError exception.
+	 * ---------------------------------------------
+	 */
+	if ((0U != clear_serror_flag) &&
+		((uint32_t)(SERROR_SP_ELX) == ex_type)) {
+		clear_serror_flag = 0U;
+		reg = mmio_read_32(RCAR_PRR) &
+			(RCAR_PRODUCT_MASK | RCAR_CUT_MASK);
+		if ((reg == RCAR_PRODUCT_H3_CUT20) ||
+			(reg == RCAR_PRODUCT_M3_CUT11)) {
+			eret(0,0,0,0,0,0,0,0);
+		}
+	}
 
 	/* Clear the interrupt request	*/
 	if (ex_type >= SWDT_ERROR_TYPE) {
@@ -80,41 +97,41 @@ void bl2_interrupt_error_type(uint32_t ex_type)
 		ERROR("%s", msg);
 		switch(ex_type)
 		{
-		case SYNC_EXCEPTION_SP_ELX:
-			ERROR("     SPSR_EL1 = 0x%x\n",
-				(uint32_t)(read_spsr_el1() & 0x0FFFFFFFFU));
-			ERROR("     ELR_EL1  = 0x%x\n",
-				(uint32_t)(read_elr_el1()  & 0x0FFFFFFFFU));
-			ERROR("     ESR_EL1  = 0x%x\n",
-				(uint32_t)(read_esr_el1()  & 0x0FFFFFFFFU));
-			ERROR("     FAR_EL1  = 0x%x\n",
-				(uint32_t)(read_far_el1()  & 0x0FFFFFFFFU));
+		case SYNC_EXCEPTION_SP_EL0:
+			ERROR("     SPSR_EL3 = 0x%x\n",
+				(uint32_t)(read_spsr_el3() & 0x0FFFFFFFFU));
+			ERROR("     ELR_EL3  = 0x%x\n",
+				(uint32_t)(read_elr_el3()  & 0x0FFFFFFFFU));
+			ERROR("     ESR_EL3  = 0x%x\n",
+				(uint32_t)(read_esr_el3()  & 0x0FFFFFFFFU));
+			ERROR("     FAR_EL3  = 0x%x\n",
+				(uint32_t)(read_far_el3()  & 0x0FFFFFFFFU));
 			break;
-		case IRQ_SP_ELX:
-			ERROR("     SPSR_EL1 = 0x%x\n",
-				(uint32_t)(read_spsr_el1() & 0x0FFFFFFFFU));
-			ERROR("     ELR_EL1  = 0x%x\n",
-				(uint32_t)(read_elr_el1()  & 0x0FFFFFFFFU));
-			ERROR("     IAR_EL1  = 0x%x\n",
+		case IRQ_SP_EL0:
+			ERROR("     SPSR_EL3 = 0x%x\n",
+				(uint32_t)(read_spsr_el3() & 0x0FFFFFFFFU));
+			ERROR("     ELR_EL3  = 0x%x\n",
+				(uint32_t)(read_elr_el3()  & 0x0FFFFFFFFU));
+			ERROR("     IAR_EL3  = 0x%x\n",
 				gicv2_acknowledge_interrupt());
 			break;
-		case FIQ_SP_ELX:
-			ERROR("     SPSR_EL1 = 0x%x\n",
-				(uint32_t)(read_spsr_el1() & 0x0FFFFFFFFU));
-			ERROR("     ELR_EL1  = 0x%x\n",
-				(uint32_t)(read_elr_el1()  & 0x0FFFFFFFFU));
-			ERROR("     IAR_EL1  = 0x%x\n",
+		case FIQ_SP_EL0:
+			ERROR("     SPSR_EL3 = 0x%x\n",
+				(uint32_t)(read_spsr_el3() & 0x0FFFFFFFFU));
+			ERROR("     ELR_EL3  = 0x%x\n",
+				(uint32_t)(read_elr_el3()  & 0x0FFFFFFFFU));
+			ERROR("     IAR_EL3  = 0x%x\n",
 				gicv2_acknowledge_interrupt());
 			break;
-		case SERROR_SP_ELX:
-			ERROR("     SPSR_EL1 = 0x%x\n",
-				(uint32_t)(read_spsr_el1() & 0x0FFFFFFFFU));
-			ERROR("     ELR_EL1  = 0x%x\n",
-				(uint32_t)(read_elr_el1()  & 0x0FFFFFFFFU));
-			ERROR("     ESR_EL1  = 0x%x\n",
-				(uint32_t)(read_esr_el1()  & 0x0FFFFFFFFU));
-			ERROR("     FAR_EL1  = 0x%x\n",
-				(uint32_t)(read_far_el1()  & 0x0FFFFFFFFU));
+		case SERROR_SP_EL0:
+			ERROR("     SPSR_EL3 = 0x%x\n",
+				(uint32_t)(read_spsr_el3() & 0x0FFFFFFFFU));
+			ERROR("     ELR_EL3  = 0x%x\n",
+				(uint32_t)(read_elr_el3()  & 0x0FFFFFFFFU));
+			ERROR("     ESR_EL3  = 0x%x\n",
+				(uint32_t)(read_esr_el3()  & 0x0FFFFFFFFU));
+			ERROR("     FAR_EL3  = 0x%x\n",
+				(uint32_t)(read_far_el3()  & 0x0FFFFFFFFU));
 			break;
 		default:
 			break;

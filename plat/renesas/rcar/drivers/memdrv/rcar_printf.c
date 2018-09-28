@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2017, Renesas Electronics Corporation. All rights reserved.
+ * Copyright (c) 2015-2018, Renesas Electronics Corporation. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -17,7 +17,6 @@
 
 #define INDEX_TIMER_COUNT	(4U)
 
-extern RCAR_INSTANTIATE_LOCK
 
 typedef struct log_head
 {

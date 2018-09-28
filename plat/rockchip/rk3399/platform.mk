@@ -18,10 +18,13 @@ PLAT_INCLUDES		:=	-I${RK_PLAT_COMMON}/			\
 				-I${RK_PLAT_SOC}/drivers/secure/	\
 				-I${RK_PLAT_SOC}/drivers/soc/		\
 				-I${RK_PLAT_SOC}/drivers/dram/		\
+				-I${RK_PLAT_SOC}/drivers/dp/		\
 				-I${RK_PLAT_SOC}/include/		\
 				-I${RK_PLAT_SOC}/include/shared/	\
 
 RK_GIC_SOURCES		:=	drivers/arm/gic/common/gic_common.c	\
+				drivers/arm/gic/v3/arm_gicv3_common.c	\
+				drivers/arm/gic/v3/gic500.c		\
 				drivers/arm/gic/v3/gicv3_main.c		\
 				drivers/arm/gic/v3/gicv3_helpers.c	\
 				plat/common/plat_gicv3.c		\
@@ -49,6 +52,7 @@ BL31_SOURCES	+=	${RK_GIC_SOURCES}				\
 			${RK_PLAT_COMMON}/aarch64/platform_common.c	\
 			${RK_PLAT_COMMON}/rockchip_sip_svc.c		\
 			${RK_PLAT_SOC}/plat_sip_calls.c			\
+			${RK_PLAT_SOC}/drivers/dp/cdn_dp.c		\
 			${RK_PLAT_SOC}/drivers/gpio/rk3399_gpio.c	\
 			${RK_PLAT_SOC}/drivers/pmu/pmu.c		\
 			${RK_PLAT_SOC}/drivers/pmu/pmu_fw.c		\
@@ -62,6 +66,9 @@ BL31_SOURCES	+=	${RK_GIC_SOURCES}				\
 			${RK_PLAT_SOC}/drivers/dram/suspend.c
 
 ENABLE_PLAT_COMPAT	:=	0
+MULTI_CONSOLE_API	:=	1
+
+include lib/coreboot/coreboot.mk
 
 $(eval $(call add_define,PLAT_EXTRA_LD_SCRIPT))
 
@@ -75,12 +82,21 @@ BUILD_M0		:=	${BUILD_PLAT}/m0
 RK3399M0FW=${BUILD_M0}/${PLAT_M0}.bin
 $(eval $(call add_define,RK3399M0FW))
 
+HDCPFW=${RK_PLAT_SOC}/drivers/dp/hdcp.bin
+$(eval $(call add_define,HDCPFW))
+
 # CCACHE_EXTRAFILES is needed because ccache doesn't handle .incbin
 export CCACHE_EXTRAFILES
 ${BUILD_PLAT}/bl31/pmu_fw.o: CCACHE_EXTRAFILES=$(RK3399M0FW)
 ${RK_PLAT_SOC}/drivers/pmu/pmu_fw.c: $(RK3399M0FW)
 
-$(eval $(call MAKE_PREREQ_DIR,${BUILD_M0},))
+${BUILD_PLAT}/bl31/cdn_dp.o: CCACHE_EXTRAFILES=$(HDCPFW)
+${RK_PLAT_SOC}/drivers/dp/cdn_dp.c: $(HDCPFW)
+
+$(eval $(call MAKE_PREREQ_DIR,${BUILD_M0},${BUILD_PLAT}))
 .PHONY: $(RK3399M0FW)
 $(RK3399M0FW): | ${BUILD_M0}
 	$(MAKE) -C ${RK_PLAT_SOC}/drivers/m0 BUILD=$(abspath ${BUILD_PLAT}/m0)
+
+# Do not enable SVE
+ENABLE_SVE_FOR_NS	:=	0

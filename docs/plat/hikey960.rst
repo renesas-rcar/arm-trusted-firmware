@@ -11,8 +11,11 @@ How to build
 Code Locations
 --------------
 
--  ARM Trusted Firmware:
+-  Trusted Firmware-A:
    `link <https://github.com/ARM-software/arm-trusted-firmware>`__
+
+-  OP-TEE:
+   `link <https://github.com/OP-TEE/optee_os>`__
 
 -  edk2:
    `link <https://github.com/96boards-hikey/edk2/tree/testing/hikey960_v2.5>`__
@@ -24,13 +27,22 @@ Code Locations
    `link <https://github.com/96boards-hikey/l-loader/tree/testing/hikey960_v1.2>`__
 
 -  uefi-tools:
-   `link <https://github.com/96boards-hikey/uefi-tools/tree/hikey960_v1>`__
+   `link <https://git.linaro.org/uefi/uefi-tools.git>`__
 
 Build Procedure
 ---------------
 
 -  Fetch all the above 5 repositories into local host.
    Make all the repositories in the same ${BUILD\_PATH}.
+
+  .. code:: shell
+
+       git clone https://github.com/ARM-software/arm-trusted-firmware -b integration
+       git clone https://github.com/OP-TEE/optee_os
+       git clone https://github.com/96boards-hikey/edk2 -b testing/hikey960_v2.5
+       git clone https://github.com/96boards-hikey/OpenPlatformPkg -b testing/hikey960_v1.3.4
+       git clone https://github.com/96boards-hikey/l-loader -b testing/hikey960_v1.2
+       git clone https://git.linaro.org/uefi/uefi-tools
 
 -  Create the symbol link to OpenPlatformPkg in edk2.
 
@@ -56,26 +68,25 @@ Build Procedure
    .. code:: shell
 
        BUILD_OPTION=DEBUG
-       export AARCH64_TOOLCHAIN=GCC48
+       export AARCH64_TOOLCHAIN=GCC5
        export UEFI_TOOLS_DIR=${BUILD_PATH}/uefi-tools
        export EDK2_DIR=${BUILD_PATH}/edk2
        EDK2_OUTPUT_DIR=${EDK2_DIR}/Build/HiKey960/${BUILD_OPTION}_${AARCH64_TOOLCHAIN}
        cd ${EDK2_DIR}
-       # Build UEFI & ARM Trust Firmware
-       ${UEFI_TOOLS_DIR}/uefi-build.sh -b ${BUILD_OPTION} -a ../arm-trusted-firmware hikey960
-       # Generate l-loader.bin
-       cd ${BUILD_PATH}/l-loader
-       ln -sf ${EDK2_OUTPUT_DIR}/FV/bl1.bin
-       ln -sf ${EDK2_OUTPUT_DIR}/FV/fip.bin
-       ln -sf ${EDK2_OUTPUT_DIR}/FV/BL33_AP_UEFI.fd
-       python gen_loader.py -o l-loader.bin --img_bl1=bl1.bin --img_ns_bl1u=BL33_AP_UEFI.fd
+       # Build UEFI & Trusted Firmware-A
+       ${UEFI_TOOLS_DIR}/uefi-build.sh -b ${BUILD_OPTION} -a ../arm-trusted-firmware -s ../optee_os hikey960
 
--  Generate partition table.
+-  Generate l-loader.bin and partition table.
    *Make sure that you're using the sgdisk in the l-loader directory.*
 
    .. code:: shell
 
-       $PTABLE=aosp-32g SECTOR_SIZE=4096 SGDISK=./sgdisk bash -x generate_ptable.sh
+       cd ${BUILD_PATH}/l-loader
+       ln -sf ${EDK2_OUTPUT_DIR}/FV/bl1.bin
+       ln -sf ${EDK2_OUTPUT_DIR}/FV/bl2.bin
+       ln -sf ${EDK2_OUTPUT_DIR}/FV/fip.bin
+       ln -sf ${EDK2_OUTPUT_DIR}/FV/BL33_AP_UEFI.fd
+       make hikey960
 
 Setup Console
 -------------
@@ -99,6 +110,13 @@ Setup Console
 
        2004:telnet:0:/dev/ttyUSB0:115200 8DATABITS NONE 1STOPBIT banner
 
+-  Start ser2net
+
+   .. code:: shell
+
+       $sudo killall ser2net
+       $sudo ser2net -u
+
 -  Open the console.
 
    .. code:: shell
@@ -113,12 +131,14 @@ Boot UEFI in recovery mode
 -  Fetch that are used in recovery mode. The code location is in below.
    `link <https://github.com/96boards-hikey/tools-images-hikey960>`__
 
--  Generate l-loader.bin.
+-  Prepare recovery binary.
 
    .. code:: shell
 
        $cd tools-images-hikey960
        $ln -sf ${BUILD_PATH}/l-loader/l-loader.bin
+       $ln -sf ${BUILD_PATH}/l-loader/fip.bin
+       $ln -sf ${BUILD_PATH}/l-loader/recovery.bin
 
 -  Prepare config file.
 
@@ -126,9 +146,9 @@ Boot UEFI in recovery mode
 
        $vi config
        # The content of config file
-       ./sec_user_xloader.img 0x00020000
+       ./sec_usb_xloader.img 0x00020000
        ./sec_uce_boot.img 0x6A908000
-       ./l-loader.bin 0x1AC00000
+       ./recovery.bin 0x1AC00000
 
 -  Remove the modemmanager package. This package may causes hikey\_idt tool failure.
 
@@ -136,7 +156,7 @@ Boot UEFI in recovery mode
 
        $sudo apt-get purge modemmanager
 
--  Run the command to download l-loader.bin into HiKey960.
+-  Run the command to download recovery.bin into HiKey960.
 
    .. code:: shell
 

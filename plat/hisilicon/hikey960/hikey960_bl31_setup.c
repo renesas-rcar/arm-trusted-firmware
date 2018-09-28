@@ -16,6 +16,8 @@
 #include <gicv2.h>
 #include <hi3660.h>
 #include <hisi_ipc.h>
+#include <interrupt_mgmt.h>
+#include <platform.h>
 #include <platform_def.h>
 
 #include "hikey960_def.h"
@@ -64,7 +66,7 @@ static const int cci_map[] = {
 	CCI400_SL_IFACE4_CLUSTER_IX
 };
 
-entry_point_info_t *bl31_plat_get_next_image_ep_info(unsigned int type)
+entry_point_info_t *bl31_plat_get_next_image_ep_info(uint32_t type)
 {
 	entry_point_info_t *next_image_info;
 
@@ -76,8 +78,8 @@ entry_point_info_t *bl31_plat_get_next_image_ep_info(unsigned int type)
 	return NULL;
 }
 
-void bl31_early_platform_setup(bl31_params_t *from_bl2,
-		void *plat_params_from_bl2)
+void bl31_early_platform_setup(void *from_bl2,
+			       void *plat_params_from_bl2)
 {
 	unsigned int id, uart_base;
 
@@ -96,11 +98,31 @@ void bl31_early_platform_setup(bl31_params_t *from_bl2,
 	cci_enable_snoop_dvm_reqs(MPIDR_AFFLVL1_VAL(read_mpidr_el1()));
 
 	/*
-	 * Copy BL3-2 and BL3-3 entry point information.
+	 * Check params passed from BL2 should not be NULL,
+	 */
+	bl_params_t *params_from_bl2 = (bl_params_t *)from_bl2;
+	assert(params_from_bl2 != NULL);
+	assert(params_from_bl2->h.type == PARAM_BL_PARAMS);
+	assert(params_from_bl2->h.version >= VERSION_2);
+
+	bl_params_node_t *bl_params = params_from_bl2->head;
+
+	/*
+	 * Copy BL33 and BL32 (if present), entry point information.
 	 * They are stored in Secure RAM, in BL2's address space.
 	 */
-	bl32_ep_info = *from_bl2->bl32_ep_info;
-	bl33_ep_info = *from_bl2->bl33_ep_info;
+	while (bl_params) {
+		if (bl_params->image_id == BL32_IMAGE_ID)
+			bl32_ep_info = *bl_params->ep_info;
+
+		if (bl_params->image_id == BL33_IMAGE_ID)
+			bl33_ep_info = *bl_params->ep_info;
+
+		bl_params = bl_params->next_params_info;
+	}
+
+	if (bl33_ep_info.pc == 0)
+		panic();
 }
 
 void bl31_plat_arch_setup(void)
@@ -124,6 +146,37 @@ void bl31_platform_setup(void)
 	hisi_ipc_init();
 }
 
+#ifdef SPD_none
+static uint64_t hikey_debug_fiq_handler(uint32_t id,
+					uint32_t flags,
+					void *handle,
+					void *cookie)
+{
+	int intr, intr_raw;
+
+	/* Acknowledge interrupt */
+	intr_raw = plat_ic_acknowledge_interrupt();
+	intr = plat_ic_get_interrupt_id(intr_raw);
+	ERROR("Invalid interrupt: intr=%d\n", intr);
+	console_flush();
+	panic();
+
+	return 0;
+}
+#endif
+
 void bl31_plat_runtime_setup(void)
 {
+#ifdef SPD_none
+	uint32_t flags;
+	int32_t rc;
+
+	flags = 0;
+	set_interrupt_rm_flag(flags, NON_SECURE);
+	rc = register_interrupt_type_handler(INTR_TYPE_S_EL1,
+					     hikey_debug_fiq_handler,
+					     flags);
+	if (rc != 0)
+		panic();
+#endif
 }

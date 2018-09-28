@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2017-2018, ARM Limited and Contributors. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -10,6 +10,8 @@
 #include <arch.h>
 #include "../hikey960_def.h"
 
+/* Special value used to verify platform parameters from BL2 to BL3-1 */
+#define HIKEY960_BL31_PLAT_PARAM_VAL	0x0f1e2d3c4b5a6978ULL
 
 /*
  * Generic platform constants
@@ -54,14 +56,48 @@
 /*
  * BL2 specific defines.
  */
-#define BL2_BASE			(BL1_RW_BASE + 0x8000)	/* 1AC1_8000 */
-#define BL2_LIMIT			(BL2_BASE + 0x40000)	/* 1AC5_8000 */
+#define BL2_BASE			(0x1AC00000)
+#define BL2_LIMIT			(BL2_BASE + 0x58000)	/* 1AC5_8000 */
 
 /*
  * BL31 specific defines.
  */
 #define BL31_BASE			(BL2_LIMIT)		/* 1AC5_8000 */
 #define BL31_LIMIT			(BL31_BASE + 0x40000)	/* 1AC9_8000 */
+
+/*
+ * BL3-2 specific defines.
+ */
+
+/*
+ * The TSP currently executes from TZC secured area of DRAM.
+ */
+#define BL32_DRAM_BASE                  DDR_SEC_BASE
+#define BL32_DRAM_LIMIT                 (DDR_SEC_BASE+DDR_SEC_SIZE)
+
+#ifdef SPD_opteed
+/* Load pageable part of OP-TEE at end of allocated DRAM space for BL32 */
+#define HIKEY960_OPTEE_PAGEABLE_LOAD_BASE	(BL32_DRAM_LIMIT - HIKEY960_OPTEE_PAGEABLE_LOAD_SIZE) /* 0x3FC0_0000 */
+#define HIKEY960_OPTEE_PAGEABLE_LOAD_SIZE	0x400000 /* 4MB */
+#endif
+
+#if (HIKEY960_TSP_RAM_LOCATION_ID == HIKEY960_DRAM_ID)
+#define TSP_SEC_MEM_BASE		BL32_DRAM_BASE
+#define TSP_SEC_MEM_SIZE		(BL32_DRAM_LIMIT - BL32_DRAM_BASE)
+#define BL32_BASE			BL32_DRAM_BASE
+#define BL32_LIMIT			BL32_DRAM_LIMIT
+#elif (HIKEY960_TSP_RAM_LOCATION_ID == HIKEY960_SRAM_ID)
+#error "SRAM storage of TSP payload is currently unsupported"
+#else
+#error "Currently unsupported HIKEY960_TSP_LOCATION_ID value"
+#endif
+
+/* BL32 is mandatory in AArch32 */
+#ifndef AARCH32
+#ifdef SPD_none
+#undef BL32_BASE
+#endif /* SPD_none */
+#endif
 
 #define NS_BL1U_BASE			(BL31_LIMIT)		/* 1AC9_8000 */
 #define NS_BL1U_SIZE			(0x00100000)
@@ -70,18 +106,24 @@
 #define HIKEY960_NS_IMAGE_OFFSET	(0x1AC18000)	/* offset in l-loader */
 #define HIKEY960_NS_TMP_OFFSET		(0x1AE00000)
 
-#define SCP_BL2_BASE			BL31_BASE
-
-#define SCP_MEM_BASE			(0x89C80000)
-#define SCP_MEM_SIZE			(0x00040000)
+#define SCP_BL2_BASE			(0x89C80000)
+#define SCP_BL2_SIZE			(0x00040000)
 
 /*
  * Platform specific page table and MMU setup constants
  */
-#define ADDR_SPACE_SIZE			(1ull << 32)
+#define ADDR_SPACE_SIZE			(1ULL << 32)
 
-#if IMAGE_BL1 || IMAGE_BL2 || IMAGE_BL31
+#if defined(IMAGE_BL1) || defined(IMAGE_BL31) || defined(IMAGE_BL32)
 #define MAX_XLAT_TABLES			3
+#endif
+
+#ifdef IMAGE_BL2
+#ifdef SPD_opteed
+#define MAX_XLAT_TABLES			4
+#else
+#define MAX_XLAT_TABLES			3
+#endif
 #endif
 
 #define MAX_MMAP_REGIONS		16

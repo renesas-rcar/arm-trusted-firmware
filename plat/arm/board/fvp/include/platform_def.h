@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2017, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2014-2018, ARM Limited and Contributors. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -8,18 +8,22 @@
 #define __PLATFORM_DEF_H__
 
 #include <arm_def.h>
+#include <arm_spm_def.h>
 #include <board_arm_def.h>
 #include <common_def.h>
 #include <tzc400.h>
-#include <utils.h>
+#include <utils_def.h>
 #include <v2m_def.h>
 #include "../fvp_def.h"
 
 /* Required platform porting definitions */
+#define PLATFORM_CORE_COUNT \
+	(FVP_CLUSTER_COUNT * FVP_MAX_CPUS_PER_CLUSTER * FVP_MAX_PE_PER_CPU)
+
 #define PLAT_NUM_PWR_DOMAINS		(FVP_CLUSTER_COUNT + \
-					PLATFORM_CORE_COUNT)
-#define PLAT_MAX_PWR_LVL		ARM_PWR_LVL1
-#define PLATFORM_CORE_COUNT		(FVP_CLUSTER_COUNT * FVP_MAX_CPUS_PER_CLUSTER)
+					PLATFORM_CORE_COUNT) + 1
+
+#define PLAT_MAX_PWR_LVL		ARM_PWR_LVL2
 
 /*
  * Other platform porting definitions are provided by included headers
@@ -39,7 +43,7 @@
 /* No SCP in FVP */
 #define PLAT_ARM_SCP_TZC_DRAM1_SIZE	ULL(0x0)
 
-#define PLAT_ARM_DRAM2_SIZE		ULL(0x780000000)
+#define PLAT_ARM_DRAM2_SIZE		ULL(0x80000000)
 
 /*
  * Load address of BL33 for this platform port
@@ -65,10 +69,17 @@
 #define PLAT_ARM_TSP_UART_BASE		V2M_IOFPGA_UART2_BASE
 #define PLAT_ARM_TSP_UART_CLK_IN_HZ	V2M_IOFPGA_UART2_CLK_IN_HZ
 
+#define PLAT_FVP_SMMUV3_BASE		0x2b400000
+
 /* CCI related constants */
-#define PLAT_ARM_CCI_BASE		0x2c090000
-#define PLAT_ARM_CCI_CLUSTER0_SL_IFACE_IX	3
-#define PLAT_ARM_CCI_CLUSTER1_SL_IFACE_IX	4
+#define PLAT_FVP_CCI400_BASE		0x2c090000
+#define PLAT_FVP_CCI400_CLUS0_SL_PORT	3
+#define PLAT_FVP_CCI400_CLUS1_SL_PORT	4
+
+/* CCI-500/CCI-550 on Base platform */
+#define PLAT_FVP_CCI5XX_BASE		0x2a000000
+#define PLAT_FVP_CCI5XX_CLUS0_SL_PORT	5
+#define PLAT_FVP_CCI5XX_CLUS1_SL_PORT	6
 
 /* CCN related constants. Only CCN 502 is currently supported */
 #define PLAT_ARM_CCN_BASE		0x2e000000
@@ -125,5 +136,17 @@
 					FVP_IRQ_SEC_SYS_TIMER
 
 #define PLAT_ARM_G0_IRQS		ARM_G0_IRQS
+
+#define PLAT_ARM_G1S_IRQ_PROPS(grp) \
+	ARM_G1S_IRQ_PROPS(grp), \
+	INTR_PROP_DESC(FVP_IRQ_TZ_WDOG, GIC_HIGHEST_SEC_PRIORITY, grp, \
+			GIC_INTR_CFG_LEVEL), \
+	INTR_PROP_DESC(FVP_IRQ_SEC_SYS_TIMER, GIC_HIGHEST_SEC_PRIORITY, grp, \
+			GIC_INTR_CFG_LEVEL)
+
+#define PLAT_ARM_G0_IRQ_PROPS(grp)	ARM_G0_IRQ_PROPS(grp)
+
+#define PLAT_ARM_PRIVATE_SDEI_EVENTS	ARM_SDEI_PRIVATE_EVENTS
+#define PLAT_ARM_SHARED_SDEI_EVENTS	ARM_SDEI_SHARED_EVENTS
 
 #endif /* __PLATFORM_DEF_H__ */

@@ -1,6 +1,5 @@
 /*
  * Copyright (c) 2016-2017, ARM Limited and Contributors. All rights reserved.
- * Copyright (c) 2015-2017, Renesas Electronics Corporation. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -16,7 +15,6 @@
 #include <types.h>
 #include <utils.h>
 #include <xlat_tables.h>
-#include <platform.h>
 #include "xlat_tables_private.h"
 
 #if LOG_LEVEL >= LOG_LEVEL_VERBOSE
@@ -33,7 +31,7 @@
 #define debug_print(...) ((void)0)
 #endif
 
-#define UNSET_DESC	~0ull
+#define UNSET_DESC	~0ULL
 
 static uint64_t xlat_tables[MAX_XLAT_TABLES][XLAT_TABLE_ENTRIES]
 			__aligned(XLAT_TABLE_SIZE) __section("xlat_table");
@@ -127,9 +125,6 @@ void mmap_add_region(unsigned long long base_pa, uintptr_t base_va,
 				(end_pa < mm->base_pa) || (base_pa > mm_end_pa);
 			int separated_va =
 				(end_va < mm->base_va) || (base_va > mm_end_va);
-#if (IMAGE_BL31 && PLAT_rcar)
-			separated_pa = (int)bl31_plat_mmu_pa_chk(separated_pa, base_va, mm->base_pa);
-#endif /* IMAGE_BL31 && PLAT_rcar */
 
 			assert(separated_va && separated_pa);
 		}

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2017, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2015-2018, ARM Limited and Contributors. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -19,6 +19,7 @@
 struct bl31_params;
 struct meminfo;
 struct image_info;
+struct bl_params;
 
 #define ARM_CASSERT_MMAP						\
 	CASSERT((ARRAY_SIZE(plat_arm_mmap) + ARM_BL_REGIONS)		\
@@ -45,7 +46,7 @@ void arm_setup_page_tables(uintptr_t total_base,
  * Use this macro to instantiate lock before it is used in below
  * arm_lock_xxx() macros
  */
-#define ARM_INSTANTIATE_LOCK	DEFINE_BAKERY_LOCK(arm_lock);
+#define ARM_INSTANTIATE_LOCK	DEFINE_BAKERY_LOCK(arm_lock)
 #define ARM_LOCK_GET_INSTANCE	(&arm_lock)
 /*
  * These are wrapper macros to the Coherent Memory Bakery Lock API.
@@ -59,7 +60,7 @@ void arm_setup_page_tables(uintptr_t total_base,
 /*
  * Empty macros for all other BL stages other than BL31 and BL32
  */
-#define ARM_INSTANTIATE_LOCK
+#define ARM_INSTANTIATE_LOCK	static int arm_lock __unused
 #define ARM_LOCK_GET_INSTANCE	0
 #define arm_lock_init()
 #define arm_lock_get()
@@ -119,9 +120,15 @@ void arm_configure_sys_timer(void);
 /* PM utility functions */
 int arm_validate_power_state(unsigned int power_state,
 			    psci_power_state_t *req_state);
+int arm_validate_psci_entrypoint(uintptr_t entrypoint);
 int arm_validate_ns_entrypoint(uintptr_t entrypoint);
+void arm_system_pwr_domain_save(void);
 void arm_system_pwr_domain_resume(void);
 void arm_program_trusted_mailbox(uintptr_t address);
+int arm_psci_read_mem_protect(int *enabled);
+int arm_nor_psci_write_mem_protect(int val);
+void arm_nor_psci_do_mem_protect(void);
+int arm_psci_mem_protect_chk(uintptr_t base, u_register_t length);
 
 /* Topology utility function */
 int arm_check_mpidr(u_register_t mpidr);
@@ -132,12 +139,16 @@ void arm_bl1_platform_setup(void);
 void arm_bl1_plat_arch_setup(void);
 
 /* BL2 utility functions */
-void arm_bl2_early_platform_setup(struct meminfo *mem_layout);
+void arm_bl2_early_platform_setup(uintptr_t tb_fw_config, struct meminfo *mem_layout);
 void arm_bl2_platform_setup(void);
 void arm_bl2_plat_arch_setup(void);
 uint32_t arm_get_spsr_for_bl32_entry(void);
 uint32_t arm_get_spsr_for_bl33_entry(void);
 int arm_bl2_handle_post_image_load(unsigned int image_id);
+
+/* BL2 at EL3 functions */
+void arm_bl2_el3_early_platform_setup(void);
+void arm_bl2_el3_plat_arch_setup(void);
 
 /* BL2U utility functions */
 void arm_bl2u_early_platform_setup(struct meminfo *mem_layout,
@@ -147,11 +158,11 @@ void arm_bl2u_plat_arch_setup(void);
 
 /* BL31 utility functions */
 #if LOAD_IMAGE_V2
-void arm_bl31_early_platform_setup(void *from_bl2,
-				void *plat_params_from_bl2);
+void arm_bl31_early_platform_setup(void *from_bl2, uintptr_t soc_fw_config,
+				uintptr_t hw_config, void *plat_params_from_bl2);
 #else
-void arm_bl31_early_platform_setup(struct bl31_params *from_bl2,
-				void *plat_params_from_bl2);
+void arm_bl31_early_platform_setup(struct bl31_params *from_bl2, uintptr_t soc_fw_config,
+				uintptr_t hw_config, void *plat_params_from_bl2);
 #endif /* LOAD_IMAGE_V2 */
 void arm_bl31_platform_setup(void);
 void arm_bl31_plat_runtime_setup(void);
@@ -161,12 +172,17 @@ void arm_bl31_plat_arch_setup(void);
 void arm_tsp_early_platform_setup(void);
 
 /* SP_MIN utility functions */
-void arm_sp_min_early_platform_setup(void *from_bl2,
-		void *plat_params_from_bl2);
+void arm_sp_min_early_platform_setup(void *from_bl2, uintptr_t tos_fw_config,
+				uintptr_t hw_config, void *plat_params_from_bl2);
 void arm_sp_min_plat_runtime_setup(void);
 
 /* FIP TOC validity check */
 int arm_io_is_toc_valid(void);
+
+/* Utility functions for Dynamic Config */
+void arm_load_tb_fw_config(void);
+void arm_bl2_set_tb_cfg_addr(void *dtb);
+void arm_bl2_dyn_cfg_init(void);
 
 /*
  * Mandatory functions required in ARM standard platforms
@@ -179,6 +195,8 @@ void plat_arm_gic_cpuif_disable(void);
 void plat_arm_gic_redistif_on(void);
 void plat_arm_gic_redistif_off(void);
 void plat_arm_gic_pcpu_init(void);
+void plat_arm_gic_save(void);
+void plat_arm_gic_resume(void);
 void plat_arm_security_setup(void);
 void plat_arm_pwrc_setup(void);
 void plat_arm_interconnect_init(void);
@@ -219,7 +237,12 @@ int arm_execution_state_switch(unsigned int smc_fid,
 		uint32_t cookie_lo,
 		void *handle);
 
-/* Disable Statistical Profiling Extensions helper */
-void arm_disable_spe(void);
+/* Optional functions for SP_MIN */
+void plat_arm_sp_min_early_platform_setup(u_register_t arg0, u_register_t arg1,
+			u_register_t arg2, u_register_t arg3);
+
+/* global variables */
+extern plat_psci_ops_t plat_arm_psci_pm_ops;
+extern const mmap_region_t plat_arm_mmap[];
 
 #endif /* __PLAT_ARM_H__ */

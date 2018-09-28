@@ -8,6 +8,8 @@
 #define __CSS_DEF_H__
 
 #include <arm_def.h>
+#include <gic_common.h>
+#include <interrupt_props.h>
 #include <tzc400.h>
 
 /*************************************************************************
@@ -37,27 +39,44 @@
 #define CSS_IRQ_TZ_WDOG			86
 #define CSS_IRQ_SEC_SYS_TIMER		91
 
-/*
- * Define a list of Group 1 Secure interrupts as per GICv3 terminology. On a
- * GICv2 system or mode, the interrupts will be treated as Group 0 interrupts.
- */
-#define CSS_G1S_IRQS			CSS_IRQ_MHU,		\
-					CSS_IRQ_GPU_SMMU_0,	\
-					CSS_IRQ_TZC,		\
-					CSS_IRQ_TZ_WDOG,	\
-					CSS_IRQ_SEC_SYS_TIMER
+/* MHU register offsets */
+#define MHU_CPU_INTR_S_SET_OFFSET	0x308
 
 /*
- * The lower Non-secure MHU channel is being used for SCMI for ARM Trusted
- * Firmware.
- * TODO: Move SCMI to Secure channel once the migration to SCMI in SCP is
- * complete.
+ * Define a list of Group 1 Secure interrupt properties as per GICv3
+ * terminology. On a GICv2 system or mode, the interrupts will be treated as
+ * Group 0 interrupts.
  */
-#define MHU_CPU_INTR_L_SET_OFFSET	0x108
-#define MHU_CPU_INTR_H_SET_OFFSET	0x128
-#define CSS_SCMI_PAYLOAD_BASE		(NSRAM_BASE + 0x500)
-#define CSS_SCMI_MHU_DB_REG_OFF		MHU_CPU_INTR_L_SET_OFFSET
+#define CSS_G1S_IRQ_PROPS(grp) \
+	INTR_PROP_DESC(CSS_IRQ_MHU, GIC_HIGHEST_SEC_PRIORITY, grp, \
+			GIC_INTR_CFG_LEVEL), \
+	INTR_PROP_DESC(CSS_IRQ_GPU_SMMU_0, GIC_HIGHEST_SEC_PRIORITY, grp, \
+			GIC_INTR_CFG_LEVEL), \
+	INTR_PROP_DESC(CSS_IRQ_TZC, GIC_HIGHEST_SEC_PRIORITY, grp, \
+			GIC_INTR_CFG_LEVEL), \
+	INTR_PROP_DESC(CSS_IRQ_TZ_WDOG, GIC_HIGHEST_SEC_PRIORITY, grp, \
+			GIC_INTR_CFG_LEVEL), \
+	INTR_PROP_DESC(CSS_IRQ_SEC_SYS_TIMER, GIC_HIGHEST_SEC_PRIORITY, grp, \
+			GIC_INTR_CFG_LEVEL)
 
+#if CSS_USE_SCMI_SDS_DRIVER
+/* Memory region for shared data storage */
+#define PLAT_ARM_SDS_MEM_BASE		ARM_SHARED_RAM_BASE
+#define PLAT_ARM_SDS_MEM_SIZE_MAX	0xDC0 /* 3520 bytes */
+/*
+ * The SCMI Channel is placed right after the SDS region
+ */
+#define CSS_SCMI_PAYLOAD_BASE		(PLAT_ARM_SDS_MEM_BASE + PLAT_ARM_SDS_MEM_SIZE_MAX)
+#define CSS_SCMI_MHU_DB_REG_OFF		MHU_CPU_INTR_S_SET_OFFSET
+
+/* Trusted mailbox base address common to all CSS */
+/* If SDS is present, then mailbox is at top of SRAM */
+#define PLAT_ARM_TRUSTED_MAILBOX_BASE	(ARM_SHARED_RAM_BASE + ARM_SHARED_RAM_SIZE - 0x8)
+
+/* Number of retries for SCP_RAM_READY flag */
+#define CSS_SCP_READY_10US_RETRIES		1000000 /* Effective timeout of 10000 ms */
+
+#else
 /*
  * SCP <=> AP boot configuration
  *
@@ -68,6 +87,12 @@
  * the SCP_BL2 image is transferred to SCP.
  */
 #define SCP_BOOT_CFG_ADDR		PLAT_CSS_SCP_COM_SHARED_MEM_BASE
+
+/* Trusted mailbox base address common to all CSS */
+/* If SDS is not present, then the mailbox is at the bottom of SRAM */
+#define PLAT_ARM_TRUSTED_MAILBOX_BASE	ARM_TRUSTED_SRAM_BASE
+
+#endif /* CSS_USE_SCMI_SDS_DRIVER */
 
 #define CSS_MAP_DEVICE			MAP_REGION_FLAT(		\
 						CSS_DEVICE_BASE,	\
@@ -128,16 +153,22 @@
  * an SCP_BL2/SCP_BL2U image.
  */
 #if CSS_LOAD_SCP_IMAGES
+
+#if ARM_BL31_IN_DRAM
+#error "SCP_BL2 is not expected to be loaded by BL2 for ARM_BL31_IN_DRAM config"
+#endif
+
 /*
  * Load address of SCP_BL2 in CSS platform ports
- * SCP_BL2 is loaded to the same place as BL31.  Once SCP_BL2 is transferred to the
- * SCP, it is discarded and BL31 is loaded over the top.
+ * SCP_BL2 is loaded to the same place as BL31 but it shouldn't overwrite BL1
+ * rw data.  Once SCP_BL2 is transferred to the SCP, it is discarded and BL31
+ * is loaded over the top.
  */
-#define SCP_BL2_BASE			BL31_BASE
-#define SCP_BL2_LIMIT			(SCP_BL2_BASE + PLAT_CSS_MAX_SCP_BL2_SIZE)
+#define SCP_BL2_BASE			(BL1_RW_BASE - PLAT_CSS_MAX_SCP_BL2_SIZE)
+#define SCP_BL2_LIMIT			BL1_RW_BASE
 
-#define SCP_BL2U_BASE			BL31_BASE
-#define SCP_BL2U_LIMIT			(SCP_BL2U_BASE + PLAT_CSS_MAX_SCP_BL2U_SIZE)
+#define SCP_BL2U_BASE			(BL1_RW_BASE - PLAT_CSS_MAX_SCP_BL2U_SIZE)
+#define SCP_BL2U_LIMIT			BL1_RW_BASE
 #endif /* CSS_LOAD_SCP_IMAGES */
 
 /* Load address of Non-Secure Image for CSS platform ports */
@@ -145,9 +176,6 @@
 
 /* TZC related constants */
 #define PLAT_ARM_TZC_FILTERS		TZC_400_REGION_ATTR_FILTER_BIT_ALL
-
-/* Trusted mailbox base address common to all CSS */
-#define PLAT_ARM_TRUSTED_MAILBOX_BASE	ARM_TRUSTED_SRAM_BASE
 
 /*
  * Parsing of CPU and Cluster states, as returned by 'Get CSS Power State' SCP

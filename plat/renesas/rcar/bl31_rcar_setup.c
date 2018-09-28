@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2014, ARM Limited and Contributors. All rights reserved.
- * Copyright (c) 2015-2017, Renesas Electronics Corporation. All rights reserved.
+ * Copyright (c) 2015-2018, Renesas Electronics Corporation. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -14,24 +14,11 @@
 #include <platform.h>
 #include <stddef.h>
 #include <debug.h>
-#include <plat_arm.h>
+#include <xlat_tables_v2.h>
 #include "drivers/pwrc/rcar_pwrc.h"
 #include "rcar_def.h"
 #include "rcar_private.h"
 #include "rcar_version.h"
-
-/*******************************************************************************
- * Declarations of linker defined symbols which will help us find the layout
- * of trusted SRAM
- ******************************************************************************/
-extern unsigned long __RO_START__;
-extern unsigned long __RO_END__;
-extern unsigned long __BL31_END__;
-
-#if USE_COHERENT_MEM
-extern unsigned long __COHERENT_RAM_START__;
-extern unsigned long __COHERENT_RAM_END__;
-#endif
 
 /*
  * The next 3 constants identify the extents of the code, RO data region and the
@@ -72,7 +59,7 @@ static uint64_t rcar_boot_mpidr;
  * while BL32 corresponds to the secure image type. A NULL pointer is returned
  * if the image does not exist.
  ******************************************************************************/
-entry_point_info_t *bl31_plat_get_next_image_ep_info(uint32_t type)
+struct entry_point_info *bl31_plat_get_next_image_ep_info(uint32_t type)
 {
 	entry_point_info_t *next_image_info;
 
@@ -99,10 +86,14 @@ entry_point_info_t *bl31_plat_get_next_image_ep_info(uint32_t type)
  * has flushed this information to memory, so we are guaranteed to pick up good
  * data
  ******************************************************************************/
-void bl31_early_platform_setup(bl31_params_t *from_bl2,
-		void *plat_params_from_bl2)
+void bl31_early_platform_setup2(u_register_t arg0, u_register_t arg1,
+		u_register_t arg2, u_register_t arg3)
 {
 	uint32_t cluster_type;
+	bl31_params_t *from_bl2    = (bl31_params_t *)arg0;
+	uintptr_t soc_fw_config    = (uintptr_t)arg1;
+	uintptr_t hw_config        = (uintptr_t)arg2;
+	/* arg3 is not used in RCAR_BL31. */
 
 	/* Initialize the log area to provide early debug support */
 	console_init(1U, 0U, 0U);
@@ -113,6 +104,11 @@ void bl31_early_platform_setup(bl31_params_t *from_bl2,
 	 */
 	if ((NULL == from_bl2) || ((uint8_t)PARAM_BL31 != from_bl2->h.type) ||
 	    ((uint8_t)VERSION_1 > from_bl2->h.version)) {
+		panic();
+	}
+
+	/* Dynamic Config is not supported for LOAD_IMAGE_V1 */
+	if ((0U != soc_fw_config) || (0U != hw_config)) {
 		panic();
 	}
 
@@ -133,6 +129,7 @@ void bl31_early_platform_setup(bl31_params_t *from_bl2,
 	}
 
 }
+
 
 /*******************************************************************************
  * Initialize the gic, configure the CLCD and zero out variables needed by the
@@ -164,6 +161,8 @@ void bl31_platform_setup(void)
  ******************************************************************************/
 void bl31_plat_arch_setup(void)
 {
+	int32_t mmap_ret;
+
 	rcar_configure_mmu_el3(BL31_RO_BASE, (BL31_END - BL31_RO_BASE),
 			BL31_RO_BASE,
 			BL31_RO_LIMIT
@@ -173,18 +172,14 @@ void bl31_plat_arch_setup(void)
 #endif
 	);
 
-}
-
-/*******************************************************************************
- * There check whether duplication of physical address is valid or not.
- ******************************************************************************/
-uint32_t bl31_plat_mmu_pa_chk(uint32_t pa_flg, uintptr_t chk_va, uint64_t chk_pa)
-{
-	if ((DEVICE_SRAM_SHADOW_BASE == chk_va) &&
-	    (DEVICE_SRAM_BASE == chk_pa)) {
-		pa_flg = 1U;
+	mmap_ret = mmap_add_dynamic_region(DEVICE_SRAM_BASE,
+			DEVICE_SRAM_BASE, DEVICE_SRAM_SIZE,
+			(MT_MEMORY | MT_RO | MT_SECURE));
+	if(0 != mmap_ret) {
+		ERROR("RCAR setup add_dynamic_region err ret=%d.\n",mmap_ret);
+		panic();
 	}
-	return pa_flg;
+
 }
 
 /*******************************************************************************

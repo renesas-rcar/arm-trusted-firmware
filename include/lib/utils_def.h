@@ -16,7 +16,18 @@
 
 #define SIZE_FROM_LOG2_WORDS(n)		(4 << (n))
 
-#define BIT(nr)				(1UL << (nr))
+#define BIT(nr)				(ULL(1) << (nr))
+
+/*
+ * This variant of div_round_up can be used in macro definition but should not
+ * be used in C code as the `div` parameter is evaluated twice.
+ */
+#define DIV_ROUND_UP_2EVAL(n, d)	(((n) + (d) - 1) / (d))
+
+#define div_round_up(val, div) __extension__ ({	\
+	__typeof__(div) _div = (div);		\
+	((val) + _div - 1) / _div;		\
+})
 
 #define MIN(x, y) __extension__ ({	\
 	__typeof__(x) _x = (x);		\
@@ -69,8 +80,23 @@
 # define  U(_x)		(_x)
 # define ULL(_x)	(_x)
 #else
-# define  U(_x)		(_x##u)
-# define ULL(_x)	(_x##ull)
+# define  U(_x)		(_x##U)
+# define ULL(_x)	(_x##ULL)
 #endif
+
+/* Register size of the current architecture. */
+#ifdef AARCH32
+#define REGSZ		U(4)
+#else
+#define REGSZ		U(8)
+#endif
+
+/*
+ * Test for the current architecture version to be at least the version
+ * expected.
+ */
+#define ARM_ARCH_AT_LEAST(_maj, _min) \
+	((ARM_ARCH_MAJOR > _maj) || \
+	 ((ARM_ARCH_MAJOR == _maj) && (ARM_ARCH_MINOR >= _min)))
 
 #endif /* __UTILS_DEF_H__ */

@@ -11,6 +11,7 @@
 #include <debug.h>
 #include <arch.h>
 #include <arch_helpers.h>
+#include <xlat_tables_v2.h>
 #include "rcar_def.h"
 #include "rcar_private.h"
 #include "rcar_pwrc.h"
@@ -381,7 +382,7 @@ void rcar_pwrc_clusteroff(uint64_t mpidr)
 	uint32_t lsi_cut;
 
 	rcar_lock_get();
-	
+
 	lsi_product = mmio_read_32((uintptr_t)RCAR_PRR);
 	lsi_cut = lsi_product & RCAR_CUT_MASK;
 	lsi_product &= RCAR_PRODUCT_MASK;
@@ -819,11 +820,42 @@ static void __attribute__ ((section (".system_ram")))  rcar_bl31_micro_wait(uint
 
 void rcar_bl31_code_copy_to_system_ram(void)
 {
-	(void)memcpy((void *)DEVICE_SRAM_SHADOW_BASE, &__SRAM_COPY_START__,
+	int32_t mmap_ret;
+
+	mmap_ret = mmap_remove_dynamic_region(DEVICE_SRAM_BASE, DEVICE_SRAM_SIZE);
+	if(0 != mmap_ret) {
+		ERROR("RCAR code_copy rw remove_dynamic_region err ret=%d.\n",mmap_ret);
+		panic();
+	}
+
+	mmap_ret = mmap_add_dynamic_region(DEVICE_SRAM_BASE,
+			DEVICE_SRAM_BASE, DEVICE_SRAM_SIZE,
+			(MT_MEMORY | MT_RW | MT_SECURE | MT_EXECUTE_NEVER));
+	if(0 != mmap_ret) {
+		ERROR("RCAR code_copy rw add_dynamic_region err ret=%d.\n",mmap_ret);
+		panic();
+	}
+
+
+	(void)memcpy((void *)DEVICE_SRAM_BASE, &__SRAM_COPY_START__,
 			(size_t)((uint64_t)__system_ram_end__ - (uint64_t)__system_ram_start__));
 
-	flush_dcache_range((uint64_t)DEVICE_SRAM_SHADOW_BASE,
+	flush_dcache_range((uint64_t)DEVICE_SRAM_BASE,
 			((uint64_t)__system_ram_end__ - (uint64_t)__system_ram_start__));
+
+	mmap_ret = mmap_remove_dynamic_region(DEVICE_SRAM_BASE, DEVICE_SRAM_SIZE);
+	if(0 != mmap_ret) {
+		ERROR("RCAR code_copy ro remove_dynamic_region err ret=%d.\n",mmap_ret);
+		panic();
+	}
+
+	mmap_ret = mmap_add_dynamic_region(DEVICE_SRAM_BASE,
+			DEVICE_SRAM_BASE, DEVICE_SRAM_SIZE,
+			(MT_MEMORY | MT_RO | MT_SECURE));
+	if(0 != mmap_ret) {
+		ERROR("RCAR code_copy ro add_dynamic_region err ret=%d.\n",mmap_ret);
+		panic();
+	}
 
 	/* Invalidate instruction cache */
 	iciallu();

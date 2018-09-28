@@ -31,11 +31,8 @@ static inline void write_ ## _name(uint64_t v)				\
 	__asm__ volatile ("msr " #_reg_name ", %0" : : "r" (v));	\
 }
 
-#define _DEFINE_SYSREG_WRITE_CONST_FUNC(_name, _reg_name)		\
-static inline void write_ ## _name(const uint64_t v)			\
-{									\
-	__asm__ volatile ("msr " #_reg_name ", %0" : : "i" (v));	\
-}
+#define SYSREG_WRITE_CONST(reg_name, v)				\
+	__asm__ volatile ("msr " #reg_name ", %0" : : "i" (v))
 
 /* Define read function for system register */
 #define DEFINE_SYSREG_READ_FUNC(_name) 			\
@@ -58,11 +55,6 @@ static inline void write_ ## _name(const uint64_t v)			\
 /* Define write function for renamed system register */
 #define DEFINE_RENAME_SYSREG_WRITE_FUNC(_name, _reg_name)	\
 	_DEFINE_SYSREG_WRITE_FUNC(_name, _reg_name)
-
-/* Define write function for special system registers */
-#define DEFINE_SYSREG_WRITE_CONST_FUNC(_name)		\
-	_DEFINE_SYSREG_WRITE_CONST_FUNC(_name, _name)
-
 
 /**********************************************************************
  * Macros to create inline functions for system instructions
@@ -163,6 +155,7 @@ DEFINE_SYSOP_TYPE_PARAM_FUNC(at, s12e1r)
 DEFINE_SYSOP_TYPE_PARAM_FUNC(at, s12e1w)
 DEFINE_SYSOP_TYPE_PARAM_FUNC(at, s12e0r)
 DEFINE_SYSOP_TYPE_PARAM_FUNC(at, s12e0w)
+DEFINE_SYSOP_TYPE_PARAM_FUNC(at, s1e2r)
 
 void flush_dcache_range(uintptr_t addr, size_t size);
 void clean_dcache_range(uintptr_t addr, size_t size);
@@ -171,15 +164,17 @@ void inv_dcache_range(uintptr_t addr, size_t size);
 void dcsw_op_louis(u_register_t op_type);
 void dcsw_op_all(u_register_t op_type);
 
+void disable_mmu_el1(void);
 void disable_mmu_el3(void);
+void disable_mmu_icache_el1(void);
 void disable_mmu_icache_el3(void);
 
 /*******************************************************************************
  * Misc. accessor prototypes
  ******************************************************************************/
 
-DEFINE_SYSREG_WRITE_CONST_FUNC(daifset)
-DEFINE_SYSREG_WRITE_CONST_FUNC(daifclr)
+#define write_daifclr(val) SYSREG_WRITE_CONST(daifclr, val)
+#define write_daifset(val) SYSREG_WRITE_CONST(daifset, val)
 
 DEFINE_SYSREG_READ_FUNC(par_el1)
 DEFINE_SYSREG_READ_FUNC(id_pfr1_el1)
@@ -202,8 +197,10 @@ DEFINE_SYSOP_TYPE_FUNC(dmb, sy)
 DEFINE_SYSOP_TYPE_FUNC(dmb, st)
 DEFINE_SYSOP_TYPE_FUNC(dmb, ld)
 DEFINE_SYSOP_TYPE_FUNC(dsb, ish)
+DEFINE_SYSOP_TYPE_FUNC(dsb, nsh)
 DEFINE_SYSOP_TYPE_FUNC(dsb, ishst)
 DEFINE_SYSOP_TYPE_FUNC(dmb, ish)
+DEFINE_SYSOP_TYPE_FUNC(dmb, ishst)
 DEFINE_SYSOP_FUNC(isb)
 
 uint32_t get_afflvl_shift(uint32_t);
@@ -305,14 +302,16 @@ DEFINE_SYSREG_READ_FUNC(isr_el1)
 DEFINE_SYSREG_READ_FUNC(ctr_el0)
 
 DEFINE_SYSREG_RW_FUNCS(mdcr_el2)
+DEFINE_SYSREG_RW_FUNCS(mdcr_el3)
 DEFINE_SYSREG_RW_FUNCS(hstr_el2)
 DEFINE_SYSREG_RW_FUNCS(cnthp_ctl_el2)
-DEFINE_SYSREG_READ_FUNC(pmcr_el0)
+DEFINE_SYSREG_RW_FUNCS(pmcr_el0)
 
 DEFINE_RENAME_SYSREG_RW_FUNCS(icc_sre_el1, ICC_SRE_EL1)
 DEFINE_RENAME_SYSREG_RW_FUNCS(icc_sre_el2, ICC_SRE_EL2)
 DEFINE_RENAME_SYSREG_RW_FUNCS(icc_sre_el3, ICC_SRE_EL3)
 DEFINE_RENAME_SYSREG_RW_FUNCS(icc_pmr_el1, ICC_PMR_EL1)
+DEFINE_RENAME_SYSREG_READ_FUNC(icc_rpr_el1, ICC_RPR_EL1)
 DEFINE_RENAME_SYSREG_RW_FUNCS(icc_igrpen1_el3, ICC_IGRPEN1_EL3)
 DEFINE_RENAME_SYSREG_RW_FUNCS(icc_igrpen0_el1, ICC_IGRPEN0_EL1)
 DEFINE_RENAME_SYSREG_READ_FUNC(icc_hppir0_el1, ICC_HPPIR0_EL1)
@@ -321,7 +320,18 @@ DEFINE_RENAME_SYSREG_READ_FUNC(icc_iar0_el1, ICC_IAR0_EL1)
 DEFINE_RENAME_SYSREG_READ_FUNC(icc_iar1_el1, ICC_IAR1_EL1)
 DEFINE_RENAME_SYSREG_WRITE_FUNC(icc_eoir0_el1, ICC_EOIR0_EL1)
 DEFINE_RENAME_SYSREG_WRITE_FUNC(icc_eoir1_el1, ICC_EOIR1_EL1)
+DEFINE_RENAME_SYSREG_WRITE_FUNC(icc_sgi0r_el1, ICC_SGI0R_EL1)
 
+DEFINE_RENAME_SYSREG_RW_FUNCS(amcgcr_el0, AMCGCR_EL0)
+DEFINE_RENAME_SYSREG_RW_FUNCS(amcntenclr0_el0, AMCNTENCLR0_EL0)
+DEFINE_RENAME_SYSREG_RW_FUNCS(amcntenset0_el0, AMCNTENSET0_EL0)
+DEFINE_RENAME_SYSREG_RW_FUNCS(amcntenclr1_el0, AMCNTENCLR1_EL0)
+DEFINE_RENAME_SYSREG_RW_FUNCS(amcntenset1_el0, AMCNTENSET1_EL0)
+
+DEFINE_RENAME_SYSREG_RW_FUNCS(pmblimitr_el1, PMBLIMITR_EL1)
+
+DEFINE_RENAME_SYSREG_WRITE_FUNC(zcr_el3, ZCR_EL3)
+DEFINE_RENAME_SYSREG_WRITE_FUNC(zcr_el2, ZCR_EL2)
 
 #define IS_IN_EL(x) \
 	(GET_EL(read_CurrentEl()) == MODE_EL##x)

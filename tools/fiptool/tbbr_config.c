@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2017, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2016-2018, ARM Limited and Contributors. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -53,11 +53,31 @@ toc_entry_t toc_entries[] = {
 		.cmdline_name = "tos-fw"
 	},
 	{
+		.name = "Secure Payload BL32 Extra1 (Trusted OS Extra1)",
+		.uuid = UUID_SECURE_PAYLOAD_BL32_EXTRA1,
+		.cmdline_name = "tos-fw-extra1"
+	},
+	{
+		.name = "Secure Payload BL32 Extra2 (Trusted OS Extra2)",
+		.uuid = UUID_SECURE_PAYLOAD_BL32_EXTRA2,
+		.cmdline_name = "tos-fw-extra2"
+	},
+	{
 		.name = "Non-Trusted Firmware BL33",
 		.uuid = UUID_NON_TRUSTED_FIRMWARE_BL33,
 		.cmdline_name = "nt-fw"
 	},
-
+	/* Dynamic Configs */
+	{
+		.name = "HW_CONFIG",
+		.uuid = UUID_HW_CONFIG,
+		.cmdline_name = "hw-config"
+	},
+	{
+		.name = "TB_FW_CONFIG",
+		.uuid = UUID_TB_FW_CONFIG,
+		.cmdline_name = "tb-fw-config"
+	},
 	/* Key Certificates */
 	{
 		.name = "Root Of Trust key certificate",

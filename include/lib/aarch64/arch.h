@@ -68,6 +68,7 @@
 #define ICC_CTLR_EL1    S3_0_C12_C12_4
 #define ICC_CTLR_EL3    S3_6_C12_C12_4
 #define ICC_PMR_EL1     S3_0_C4_C6_0
+#define ICC_RPR_EL1     S3_0_C12_C11_3
 #define ICC_IGRPEN1_EL3 S3_6_c12_c12_7
 #define ICC_IGRPEN0_EL1 S3_0_c12_c12_6
 #define ICC_HPPIR0_EL1  S3_0_c12_c8_2
@@ -76,6 +77,7 @@
 #define ICC_IAR1_EL1    S3_0_c12_c12_0
 #define ICC_EOIR0_EL1   S3_0_c12_c8_1
 #define ICC_EOIR1_EL1   S3_0_c12_c12_1
+#define ICC_SGI0R_EL1	S3_0_c12_c11_7
 
 /*******************************************************************************
  * Generic timer memory mapped registers & offsets
@@ -108,7 +110,16 @@
 #define ID_AA64PFR0_EL1_SHIFT	U(4)
 #define ID_AA64PFR0_EL2_SHIFT	U(8)
 #define ID_AA64PFR0_EL3_SHIFT	U(12)
+#define ID_AA64PFR0_AMU_SHIFT	U(44)
+#define ID_AA64PFR0_AMU_LENGTH	U(4)
+#define ID_AA64PFR0_AMU_MASK	U(0xf)
 #define ID_AA64PFR0_ELX_MASK	U(0xf)
+#define ID_AA64PFR0_SVE_SHIFT	U(32)
+#define ID_AA64PFR0_SVE_MASK	U(0xf)
+#define ID_AA64PFR0_SVE_LENGTH	U(4)
+#define ID_AA64PFR0_CSV2_SHIFT	U(56)
+#define ID_AA64PFR0_CSV2_MASK	U(0xf)
+#define ID_AA64PFR0_CSV2_LENGTH	U(4)
 
 /* ID_AA64DFR0_EL1.PMS definitions (for ARMv8.2+) */
 #define ID_AA64DFR0_PMS_SHIFT	U(32)
@@ -124,6 +135,7 @@
 #define ID_AA64PFR0_GIC_MASK	((U(1) << ID_AA64PFR0_GIC_WIDTH) - 1)
 
 /* ID_AA64MMFR0_EL1 definitions */
+#define ID_AA64MMFR0_EL1_PARANGE_SHIFT	U(0)
 #define ID_AA64MMFR0_EL1_PARANGE_MASK	U(0xf)
 
 #define PARANGE_0000	U(32)
@@ -132,6 +144,22 @@
 #define PARANGE_0011	U(42)
 #define PARANGE_0100	U(44)
 #define PARANGE_0101	U(48)
+#define PARANGE_0110	U(52)
+
+#define ID_AA64MMFR0_EL1_TGRAN4_SHIFT		U(28)
+#define ID_AA64MMFR0_EL1_TGRAN4_MASK		U(0xf)
+#define ID_AA64MMFR0_EL1_TGRAN4_SUPPORTED	U(0x0)
+#define ID_AA64MMFR0_EL1_TGRAN4_NOT_SUPPORTED	U(0xf)
+
+#define ID_AA64MMFR0_EL1_TGRAN64_SHIFT		U(24)
+#define ID_AA64MMFR0_EL1_TGRAN64_MASK		U(0xf)
+#define ID_AA64MMFR0_EL1_TGRAN64_SUPPORTED	U(0x0)
+#define ID_AA64MMFR0_EL1_TGRAN64_NOT_SUPPORTED	U(0xf)
+
+#define ID_AA64MMFR0_EL1_TGRAN16_SHIFT		U(20)
+#define ID_AA64MMFR0_EL1_TGRAN16_MASK		U(0xf)
+#define ID_AA64MMFR0_EL1_TGRAN16_SUPPORTED	U(0x1)
+#define ID_AA64MMFR0_EL1_TGRAN16_NOT_SUPPORTED	U(0x0)
 
 /* ID_PFR1_EL1 definitions */
 #define ID_PFR1_VIRTEXT_SHIFT	U(12)
@@ -158,12 +186,25 @@
 #define SCTLR_A_BIT		(U(1) << 1)
 #define SCTLR_C_BIT		(U(1) << 2)
 #define SCTLR_SA_BIT		(U(1) << 3)
+#define SCTLR_SA0_BIT		(U(1) << 4)
 #define SCTLR_CP15BEN_BIT	(U(1) << 5)
+#define SCTLR_ITD_BIT		(U(1) << 7)
+#define SCTLR_SED_BIT		(U(1) << 8)
+#define SCTLR_UMA_BIT		(U(1) << 9)
 #define SCTLR_I_BIT		(U(1) << 12)
+#define SCTLR_V_BIT		(U(1) << 13)
+#define SCTLR_DZE_BIT		(U(1) << 14)
+#define SCTLR_UCT_BIT		(U(1) << 15)
 #define SCTLR_NTWI_BIT		(U(1) << 16)
 #define SCTLR_NTWE_BIT		(U(1) << 18)
 #define SCTLR_WXN_BIT		(U(1) << 19)
+#define SCTLR_UWXN_BIT		(U(1) << 20)
+#define SCTLR_E0E_BIT		(U(1) << 24)
 #define SCTLR_EE_BIT		(U(1) << 25)
+#define SCTLR_UCI_BIT		(U(1) << 26)
+#define SCTLR_TRE_BIT		(U(1) << 28)
+#define SCTLR_AFE_BIT		(U(1) << 29)
+#define SCTLR_TE_BIT		(U(1) << 30)
 #define SCTLR_RESET_VAL		SCTLR_EL3_RES1
 
 /* CPACR_El1 definitions */
@@ -263,15 +304,19 @@
 
 /* CPTR_EL3 definitions */
 #define TCPAC_BIT		(U(1) << 31)
+#define TAM_BIT			(U(1) << 30)
 #define TTA_BIT			(U(1) << 20)
 #define TFP_BIT			(U(1) << 10)
+#define CPTR_EZ_BIT		(U(1) << 8)
 #define CPTR_EL3_RESET_VAL	U(0x0)
 
 /* CPTR_EL2 definitions */
 #define CPTR_EL2_RES1		((U(1) << 13) | (U(1) << 12) | (U(0x3ff)))
 #define CPTR_EL2_TCPAC_BIT	(U(1) << 31)
+#define CPTR_EL2_TAM_BIT	(U(1) << 30)
 #define CPTR_EL2_TTA_BIT	(U(1) << 20)
 #define CPTR_EL2_TFP_BIT	(U(1) << 10)
+#define CPTR_EL2_TZ_BIT		(U(1) << 8)
 #define CPTR_EL2_RESET_VAL	CPTR_EL2_RES1
 
 /* CPSR/SPSR definitions */
@@ -317,7 +362,7 @@
 /*
  * TCR defintions
  */
-#define TCR_EL3_RES1		((1UL << 31) | (1UL << 23))
+#define TCR_EL3_RES1		((U(1) << 31) | (U(1) << 23))
 #define TCR_EL1_IPS_SHIFT	U(32)
 #define TCR_EL3_PS_SHIFT	U(16)
 
@@ -352,6 +397,15 @@
 #define TCR_SH_NON_SHAREABLE	(U(0x0) << 12)
 #define TCR_SH_OUTER_SHAREABLE	(U(0x2) << 12)
 #define TCR_SH_INNER_SHAREABLE	(U(0x3) << 12)
+
+#define TCR_TG0_SHIFT		U(14)
+#define TCR_TG0_MASK		U(3)
+#define TCR_TG0_4K		(ULL(0) << TCR_TG0_SHIFT)
+#define TCR_TG0_64K		(ULL(1) << TCR_TG0_SHIFT)
+#define TCR_TG0_16K		(ULL(2) << TCR_TG0_SHIFT)
+
+#define TCR_EPD0_BIT		(U(1) << 7)
+#define TCR_EPD1_BIT		(U(1) << 23)
 
 #define MODE_SP_SHIFT		U(0x0)
 #define MODE_SP_MASK		U(0x1)
@@ -399,6 +453,11 @@
 	(((isa) & SPSR_T_MASK) << SPSR_T_SHIFT) |	\
 	(((endian) & SPSR_E_MASK) << SPSR_E_SHIFT) |	\
 	(((aif) & SPSR_AIF_MASK) << SPSR_AIF_SHIFT))
+
+/*
+ * TTBR Definitions
+ */
+#define TTBR_CNP_BIT		0x1
 
 /*
  * CTR_EL0 definitions
@@ -500,8 +559,150 @@
 #define CNTACR_RWPT_SHIFT	U(0x5)
 
 /* PMCR_EL0 definitions */
+#define PMCR_EL0_RESET_VAL	U(0x0)
 #define PMCR_EL0_N_SHIFT	U(11)
 #define PMCR_EL0_N_MASK		U(0x1f)
 #define PMCR_EL0_N_BITS		(PMCR_EL0_N_MASK << PMCR_EL0_N_SHIFT)
+#define PMCR_EL0_LC_BIT		(U(1) << 6)
+#define PMCR_EL0_DP_BIT		(U(1) << 5)
+#define PMCR_EL0_X_BIT		(U(1) << 4)
+#define PMCR_EL0_D_BIT		(U(1) << 3)
+
+/*******************************************************************************
+ * Definitions for system register interface to SVE
+ ******************************************************************************/
+#define ZCR_EL3			S3_6_C1_C2_0
+#define ZCR_EL2			S3_4_C1_C2_0
+
+/* ZCR_EL3 definitions */
+#define ZCR_EL3_LEN_MASK	U(0xf)
+
+/* ZCR_EL2 definitions */
+#define ZCR_EL2_LEN_MASK	U(0xf)
+
+/*******************************************************************************
+ * Definitions of MAIR encodings for device and normal memory
+ ******************************************************************************/
+/*
+ * MAIR encodings for device memory attributes.
+ */
+#define MAIR_DEV_nGnRnE		ULL(0x0)
+#define MAIR_DEV_nGnRE		ULL(0x4)
+#define MAIR_DEV_nGRE		ULL(0x8)
+#define MAIR_DEV_GRE		ULL(0xc)
+
+/*
+ * MAIR encodings for normal memory attributes.
+ *
+ * Cache Policy
+ *  WT:	 Write Through
+ *  WB:	 Write Back
+ *  NC:	 Non-Cacheable
+ *
+ * Transient Hint
+ *  NTR: Non-Transient
+ *  TR:	 Transient
+ *
+ * Allocation Policy
+ *  RA:	 Read Allocate
+ *  WA:	 Write Allocate
+ *  RWA: Read and Write Allocate
+ *  NA:	 No Allocation
+ */
+#define MAIR_NORM_WT_TR_WA	ULL(0x1)
+#define MAIR_NORM_WT_TR_RA	ULL(0x2)
+#define MAIR_NORM_WT_TR_RWA	ULL(0x3)
+#define MAIR_NORM_NC		ULL(0x4)
+#define MAIR_NORM_WB_TR_WA	ULL(0x5)
+#define MAIR_NORM_WB_TR_RA	ULL(0x6)
+#define MAIR_NORM_WB_TR_RWA	ULL(0x7)
+#define MAIR_NORM_WT_NTR_NA	ULL(0x8)
+#define MAIR_NORM_WT_NTR_WA	ULL(0x9)
+#define MAIR_NORM_WT_NTR_RA	ULL(0xa)
+#define MAIR_NORM_WT_NTR_RWA	ULL(0xb)
+#define MAIR_NORM_WB_NTR_NA	ULL(0xc)
+#define MAIR_NORM_WB_NTR_WA	ULL(0xd)
+#define MAIR_NORM_WB_NTR_RA	ULL(0xe)
+#define MAIR_NORM_WB_NTR_RWA	ULL(0xf)
+
+#define MAIR_NORM_OUTER_SHIFT	4
+
+#define MAKE_MAIR_NORMAL_MEMORY(inner, outer)	((inner) | ((outer) << MAIR_NORM_OUTER_SHIFT))
+
+/* PAR_EL1 fields */
+#define PAR_F_SHIFT	0
+#define PAR_F_MASK	1
+#define PAR_ADDR_SHIFT	12
+#define PAR_ADDR_MASK	(BIT(40) - 1) /* 40-bits-wide page address */
+
+/*******************************************************************************
+ * Definitions for system register interface to SPE
+ ******************************************************************************/
+#define PMBLIMITR_EL1		S3_0_C9_C10_0
+
+/*******************************************************************************
+ * Definitions for system register interface to AMU for ARMv8.4 onwards
+ ******************************************************************************/
+#define AMCR_EL0		S3_3_C13_C2_0
+#define AMCFGR_EL0		S3_3_C13_C2_1
+#define AMCGCR_EL0		S3_3_C13_C2_2
+#define AMUSERENR_EL0		S3_3_C13_C2_3
+#define AMCNTENCLR0_EL0		S3_3_C13_C2_4
+#define AMCNTENSET0_EL0		S3_3_C13_C2_5
+#define AMCNTENCLR1_EL0		S3_3_C13_C3_0
+#define AMCNTENSET1_EL0		S3_3_C13_C3_1
+
+/* Activity Monitor Group 0 Event Counter Registers */
+#define AMEVCNTR00_EL0		S3_3_C13_C4_0
+#define AMEVCNTR01_EL0		S3_3_C13_C4_1
+#define AMEVCNTR02_EL0		S3_3_C13_C4_2
+#define AMEVCNTR03_EL0		S3_3_C13_C4_3
+
+/* Activity Monitor Group 0 Event Type Registers */
+#define AMEVTYPER00_EL0		S3_3_C13_C6_0
+#define AMEVTYPER01_EL0		S3_3_C13_C6_1
+#define AMEVTYPER02_EL0		S3_3_C13_C6_2
+#define AMEVTYPER03_EL0		S3_3_C13_C6_3
+
+/* Activity Monitor Group 1 Event Counter Registers */
+#define AMEVCNTR10_EL0		S3_3_C13_C12_0
+#define AMEVCNTR11_EL0		S3_3_C13_C12_1
+#define AMEVCNTR12_EL0		S3_3_C13_C12_2
+#define AMEVCNTR13_EL0		S3_3_C13_C12_3
+#define AMEVCNTR14_EL0		S3_3_C13_C12_4
+#define AMEVCNTR15_EL0		S3_3_C13_C12_5
+#define AMEVCNTR16_EL0		S3_3_C13_C12_6
+#define AMEVCNTR17_EL0		S3_3_C13_C12_7
+#define AMEVCNTR18_EL0		S3_3_C13_C13_0
+#define AMEVCNTR19_EL0		S3_3_C13_C13_1
+#define AMEVCNTR1A_EL0		S3_3_C13_C13_2
+#define AMEVCNTR1B_EL0		S3_3_C13_C13_3
+#define AMEVCNTR1C_EL0		S3_3_C13_C13_4
+#define AMEVCNTR1D_EL0		S3_3_C13_C13_5
+#define AMEVCNTR1E_EL0		S3_3_C13_C13_6
+#define AMEVCNTR1F_EL0		S3_3_C13_C13_7
+
+/* Activity Monitor Group 1 Event Type Registers */
+#define AMEVTYPER10_EL0		S3_3_C13_C14_0
+#define AMEVTYPER11_EL0		S3_3_C13_C14_1
+#define AMEVTYPER12_EL0		S3_3_C13_C14_2
+#define AMEVTYPER13_EL0		S3_3_C13_C14_3
+#define AMEVTYPER14_EL0		S3_3_C13_C14_4
+#define AMEVTYPER15_EL0		S3_3_C13_C14_5
+#define AMEVTYPER16_EL0		S3_3_C13_C14_6
+#define AMEVTYPER17_EL0		S3_3_C13_C14_7
+#define AMEVTYPER18_EL0		S3_3_C13_C15_0
+#define AMEVTYPER19_EL0		S3_3_C13_C15_1
+#define AMEVTYPER1A_EL0		S3_3_C13_C15_2
+#define AMEVTYPER1B_EL0		S3_3_C13_C15_3
+#define AMEVTYPER1C_EL0		S3_3_C13_C15_4
+#define AMEVTYPER1D_EL0		S3_3_C13_C15_5
+#define AMEVTYPER1E_EL0		S3_3_C13_C15_6
+#define AMEVTYPER1F_EL0		S3_3_C13_C15_7
+
+/* AMCGCR_EL0 definitions */
+#define AMCGCR_EL0_CG1NC_SHIFT	U(8)
+#define AMCGCR_EL0_CG1NC_LENGTH	U(8)
+#define AMCGCR_EL0_CG1NC_MASK	U(0xff)
 
 #endif /* __ARCH_H__ */

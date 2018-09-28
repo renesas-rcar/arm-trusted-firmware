@@ -311,7 +311,7 @@ static int32_t
 	if (lsi_product == RCAR_PRODUCT_E3) {
 		mmio_write_8(IIC_DVFS_REG_ICCL, IIC_DVFS_SET_ICCL_EXTAL_TYPE_E);
 		mmio_write_8(IIC_DVFS_REG_ICCH, IIC_DVFS_SET_ICCH_EXTAL_TYPE_E);
-	} else {	
+	} else {
 		reg = mmio_read_32(RCAR_MODEMR) & CHECK_MD13_MD14;
 		switch (reg) {
 		case MD14_MD13_TYPE_0:

@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2014, ARM Limited and Contributors. All rights reserved.
- * Copyright (c) 2015-2017, Renesas Electronics Corporation. All rights reserved.
+ * Copyright (c) 2015-2018, Renesas Electronics Corporation. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -15,7 +15,7 @@
 #define PWKUPR_OFF		0xc
 #define PSYSR_OFF		0x10
 
-#define PWKUPR_WEN		(1ull << 31)
+#define PWKUPR_WEN		(1ULL << 31)
 
 #define PSYSR_AFF_L2		(1 << 31)
 #define PSYSR_AFF_L1		(1 << 30)

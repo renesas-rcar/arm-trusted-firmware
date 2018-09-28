@@ -6,11 +6,13 @@
 
 #include <debug.h>
 #include <mmio.h>
+
+#include <hi6220_regs_acpu.h>
+#include <hi6220_regs_ao.h>
 #include <hisi_ipc.h>
 #include <hisi_pwrc.h>
 #include <hisi_sram_map.h>
-#include <hi6220_regs_acpu.h>
-#include <hi6220_regs_ao.h>
+
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
@@ -49,6 +51,21 @@ void hisi_pwrc_set_cluster_wfi(unsigned int cluster)
 	}
 }
 
+void hisi_pwrc_enable_debug(unsigned int core, unsigned int cluster)
+{
+	unsigned int val, enable;
+
+	enable = 1U << (core + PDBGUP_CLUSTER1_SHIFT * cluster);
+
+	/* Enable debug module */
+	val = mmio_read_32(ACPU_SC_PDBGUP_MBIST);
+	mmio_write_32(ACPU_SC_PDBGUP_MBIST, val | enable);
+	do {
+		/* RAW barrier */
+		val = mmio_read_32(ACPU_SC_PDBGUP_MBIST);
+	} while (!(val & enable));
+}
+
 int hisi_pwrc_setup(void)
 {
 	unsigned int reg, sec_entrypoint;
@@ -73,8 +90,13 @@ int hisi_pwrc_setup(void)
 	       pm_asm_code_end - pm_asm_code);
 
 	reg = mmio_read_32(AO_SC_SYS_CTRL1);
+	/* Remap SRAM address for ACPU */
 	reg |= AO_SC_SYS_CTRL1_REMAP_SRAM_AARM |
 	       AO_SC_SYS_CTRL1_REMAP_SRAM_AARM_MSK;
+
+	/* Enable reset signal for watchdog */
+	reg |= AO_SC_SYS_CTRL1_AARM_WD_RST_CFG |
+	       AO_SC_SYS_CTRL1_AARM_WD_RST_CFG_MSK;
 	mmio_write_32(AO_SC_SYS_CTRL1, reg);
 
 	return 0;

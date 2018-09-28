@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2017, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2016-2018, ARM Limited and Contributors. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -7,13 +7,24 @@
 #include <arch.h>
 #include <asm_macros.S>
 
+	.weak	plat_report_exception
 	.weak	plat_crash_console_init
 	.weak	plat_crash_console_putc
 	.weak	plat_crash_console_flush
 	.weak	plat_reset_handler
 	.weak	plat_disable_acp
+	.weak	bl1_plat_prepare_exit
 	.weak	platform_mem_init
 	.weak	plat_panic_handler
+
+	/* -----------------------------------------------------
+	 * Placeholder function which should be redefined by
+	 * each platform.
+	 * -----------------------------------------------------
+	 */
+func plat_report_exception
+	bx	lr
+endfunc plat_report_exception
 
 	/* -----------------------------------------------------
 	 * Placeholder function which should be redefined by
@@ -70,6 +81,15 @@ endfunc plat_disable_acp
 func platform_mem_init
 	bx	lr
 endfunc platform_mem_init
+
+	/* -----------------------------------------------------
+	 * void bl1_plat_prepare_exit(entry_point_info_t *ep_info);
+	 * Called before exiting BL1. Default: do nothing
+	 * -----------------------------------------------------
+	 */
+func bl1_plat_prepare_exit
+	bx	lr
+endfunc bl1_plat_prepare_exit
 
 	/* -----------------------------------------------------
 	 * void plat_panic_handler(void) __dead2;

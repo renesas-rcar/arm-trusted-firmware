@@ -1,9 +1,10 @@
 /*
- * Copyright (c) 2016-2017, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2016-2018, ARM Limited and Contributors. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
+#include <amu.h>
 #include <arch.h>
 #include <arch_helpers.h>
 #include <assert.h>
@@ -12,7 +13,7 @@
 #include <context_mgmt.h>
 #include <platform.h>
 #include <platform_def.h>
-#include <smcc_helpers.h>
+#include <smccc_helpers.h>
 #include <string.h>
 #include <utils.h>
 
@@ -125,6 +126,20 @@ static void cm_init_context_common(cpu_context_t *ctx, const entry_point_info_t 
 }
 
 /*******************************************************************************
+ * Enable architecture extensions on first entry to Non-secure world.
+ * When EL2 is implemented but unused `el2_unused` is non-zero, otherwise
+ * it is zero.
+ ******************************************************************************/
+static void enable_extensions_nonsecure(int el2_unused)
+{
+#if IMAGE_BL32
+#if ENABLE_AMU
+	amu_enable(el2_unused);
+#endif
+#endif
+}
+
+/*******************************************************************************
  * The following function initializes the cpu_context for a CPU specified by
  * its `cpu_idx` for first use, and sets the initial entrypoint state as
  * specified by the entry_point_info structure.
@@ -161,6 +176,7 @@ void cm_prepare_el3_exit(uint32_t security_state)
 {
 	uint32_t hsctlr, scr;
 	cpu_context_t *ctx = cm_get_context(security_state);
+	int el2_unused = 0;
 
 	assert(ctx);
 
@@ -185,6 +201,8 @@ void cm_prepare_el3_exit(uint32_t security_state)
 			isb();
 		} else if (read_id_pfr1() &
 			(ID_PFR1_VIRTEXT_MASK << ID_PFR1_VIRTEXT_SHIFT)) {
+			el2_unused = 1;
+
 			/*
 			 * Set the NS bit to access NS copies of certain banked
 			 * registers
@@ -283,5 +301,6 @@ void cm_prepare_el3_exit(uint32_t security_state)
 			write_scr(read_scr() & ~SCR_NS_BIT);
 			isb();
 		}
+		enable_extensions_nonsecure(el2_unused);
 	}
 }

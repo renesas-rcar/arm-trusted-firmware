@@ -51,8 +51,8 @@
 	 * so that it inserts illegal AArch64 instructions. This increases
 	 * security, robustness and potentially facilitates debugging.
 	 */
-	.macro vector_base  label
-	.section .vectors, "ax"
+	.macro vector_base  label, section_name=.vectors
+	.section \section_name, "ax"
 	.align 11, 0
 	\label:
 	.endm
@@ -64,9 +64,13 @@
 	 * so that it inserts illegal AArch64 instructions. This increases
 	 * security, robustness and potentially facilitates debugging.
 	 */
-	.macro vector_entry  label
-	.section .vectors, "ax"
+	.macro vector_entry  label, section_name=.vectors
+	.cfi_sections .debug_frame
+	.section \section_name, "ax"
 	.align 7, 0
+	.type \label, %function
+	.func \label
+	.cfi_startproc
 	\label:
 	.endm
 
@@ -77,6 +81,8 @@
 	 * vector entry as the parameter
 	 */
 	.macro check_vector_size since
+	  .endfunc
+	  .cfi_endproc
 	  .if (. - \since) > (32 * 4)
 	    .error "Vector exceeds 32 instructions"
 	  .endif

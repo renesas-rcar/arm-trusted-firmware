@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2016, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2015-2018, ARM Limited and Contributors. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -10,6 +10,8 @@
 #include <io_fip.h>
 #include <io_memmap.h>
 #include <io_storage.h>
+#include <plat_arm.h>
+#include <platform.h>
 #include <platform_def.h>
 #include <string.h>
 #include <utils.h>
@@ -41,8 +43,24 @@ static const io_uuid_spec_t bl32_uuid_spec = {
 	.uuid = UUID_SECURE_PAYLOAD_BL32,
 };
 
+static const io_uuid_spec_t bl32_extra1_uuid_spec = {
+	.uuid = UUID_SECURE_PAYLOAD_BL32_EXTRA1,
+};
+
+static const io_uuid_spec_t bl32_extra2_uuid_spec = {
+	.uuid = UUID_SECURE_PAYLOAD_BL32_EXTRA2,
+};
+
 static const io_uuid_spec_t bl33_uuid_spec = {
 	.uuid = UUID_NON_TRUSTED_FIRMWARE_BL33,
+};
+
+static const io_uuid_spec_t tb_fw_config_uuid_spec = {
+	.uuid = UUID_TB_FW_CONFIG,
+};
+
+static const io_uuid_spec_t hw_config_uuid_spec = {
+	.uuid = UUID_HW_CONFIG,
 };
 
 #if TRUSTED_BOARD_BOOT
@@ -124,9 +142,29 @@ static const struct plat_io_policy policies[] = {
 		(uintptr_t)&bl32_uuid_spec,
 		open_fip
 	},
+	[BL32_EXTRA1_IMAGE_ID] = {
+		&fip_dev_handle,
+		(uintptr_t)&bl32_extra1_uuid_spec,
+		open_fip
+	},
+	[BL32_EXTRA2_IMAGE_ID] = {
+		&fip_dev_handle,
+		(uintptr_t)&bl32_extra2_uuid_spec,
+		open_fip
+	},
 	[BL33_IMAGE_ID] = {
 		&fip_dev_handle,
 		(uintptr_t)&bl33_uuid_spec,
+		open_fip
+	},
+	[TB_FW_CONFIG_ID] = {
+		&fip_dev_handle,
+		(uintptr_t)&tb_fw_config_uuid_spec,
+		open_fip
+	},
+	[HW_CONFIG_ID] = {
+		&fip_dev_handle,
+		(uintptr_t)&hw_config_uuid_spec,
 		open_fip
 	},
 #if TRUSTED_BOARD_BOOT

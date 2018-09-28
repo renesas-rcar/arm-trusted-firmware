@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2017, ARM Limited and Contributors. All rights reserved.
- * Copyright (c) 2015-2017, Renesas Electronics Corporation. All rights reserved.
+ * Copyright (c) 2013-2018, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2015-2018, Renesas Electronics Corporation. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -90,7 +90,9 @@
 			define_psci_cap(PSCI_NODE_HW_STATE_AARCH64) |	\
 			define_psci_cap(PSCI_SYSTEM_SUSPEND_AARCH64) |	\
 			define_psci_cap(PSCI_STAT_RESIDENCY_AARCH64) |	\
-			define_psci_cap(PSCI_STAT_COUNT_AARCH64))
+			define_psci_cap(PSCI_STAT_COUNT_AARCH64) |	\
+			define_psci_cap(PSCI_SYSTEM_RESET2_AARCH64) |	\
+			define_psci_cap(PSCI_MEM_CHK_RANGE_AARCH64))
 
 /*
  * Helper macros to get/set the fields of PSCI per-cpu data.
@@ -217,7 +219,7 @@ void psci_acquire_pwr_domain_locks(unsigned int end_pwrlvl,
 void psci_release_pwr_domain_locks(unsigned int end_pwrlvl,
 				   unsigned int cpu_idx);
 int psci_validate_suspend_req(const psci_power_state_t *state_info,
-			      unsigned int is_power_down_state_req);
+			      unsigned int is_power_down_state);
 unsigned int psci_find_max_off_lvl(const psci_power_state_t *state_info);
 unsigned int psci_find_target_suspend_lvl(const psci_power_state_t *state_info);
 void psci_set_pwr_domains_to_run(unsigned int end_pwrlvl);
@@ -247,7 +249,7 @@ int psci_do_cpu_off(unsigned int end_pwrlvl);
 void psci_cpu_suspend_start(entry_point_info_t *ep,
 			unsigned int end_pwrlvl,
 			psci_power_state_t *state_info,
-			unsigned int is_power_down_state_req);
+			unsigned int is_power_down_state);
 
 void psci_cpu_suspend_finish(unsigned int cpu_idx,
 			psci_power_state_t *state_info);
@@ -259,6 +261,7 @@ void psci_do_pwrup_cache_maintenance(void);
 /* Private exported functions from psci_system_off.c */
 void __dead2 psci_system_off(void);
 void __dead2 psci_system_reset(void);
+int psci_system_reset2(uint32_t reset_type, u_register_t cookie);
 
 /* Private exported functions from psci_stat.c */
 void psci_stats_update_pwr_down(unsigned int end_pwrlvl,
@@ -269,6 +272,10 @@ u_register_t psci_stat_residency(u_register_t target_cpu,
 			unsigned int power_state);
 u_register_t psci_stat_count(u_register_t target_cpu,
 			unsigned int power_state);
+
+/* Private exported functions from psci_mem_protect.c */
+int psci_mem_protect(unsigned int enable);
+int psci_mem_chk_range(uintptr_t base, u_register_t length);
 
 #if (PLAT_rcar && RCAR_SYSTEM_SUSPEND)
 extern void rcar_bl31_suspend_to_ram(void);

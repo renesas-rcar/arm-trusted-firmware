@@ -1,10 +1,11 @@
 /*
- * Copyright (c) 2016-2017, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2016-2018, ARM Limited and Contributors. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
 #include <platform_def.h>
+#include <xlat_tables_defs.h>
 
 OUTPUT_FORMAT(elf32-littlearm)
 OUTPUT_ARCH(arm)
@@ -18,7 +19,7 @@ MEMORY {
 SECTIONS
 {
     . = BL32_BASE;
-   ASSERT(. == ALIGN(4096),
+   ASSERT(. == ALIGN(PAGE_SIZE),
           "BL32_BASE address is not aligned on a page boundary.")
 
 #if SEPARATE_CODE_AND_RODATA
@@ -27,7 +28,7 @@ SECTIONS
         *entrypoint.o(.text*)
         *(.text*)
         *(.vectors)
-        . = NEXT(4096);
+        . = NEXT(PAGE_SIZE);
         __TEXT_END__ = .;
     } >RAM
 
@@ -50,7 +51,11 @@ SECTIONS
         KEEP(*(cpu_ops))
         __CPU_OPS_END__ = .;
 
-        . = NEXT(4096);
+        /* Place pubsub sections for events */
+        . = ALIGN(8);
+#include <pubsub_events.h>
+
+        . = NEXT(PAGE_SIZE);
         __RODATA_END__ = .;
     } >RAM
 #else
@@ -75,6 +80,10 @@ SECTIONS
         KEEP(*(cpu_ops))
         __CPU_OPS_END__ = .;
 
+        /* Place pubsub sections for events */
+        . = ALIGN(8);
+#include <pubsub_events.h>
+
         *(.vectors)
         __RO_END_UNALIGNED__ = .;
 
@@ -83,7 +92,7 @@ SECTIONS
          * read-only, executable.  No RW data from the next section must
          * creep in.  Ensure the rest of the current memory block is unused.
          */
-        . = NEXT(4096);
+        . = NEXT(PAGE_SIZE);
         __RO_END__ = .;
     } >RAM
 #endif
@@ -101,6 +110,10 @@ SECTIONS
         *(.data*)
         __DATA_END__ = .;
     } >RAM
+
+#ifdef BL32_PROGBITS_LIMIT
+    ASSERT(. <= BL32_PROGBITS_LIMIT, "BL32 progbits has exceeded its limit.")
+#endif
 
     stacks (NOLOAD) : {
         __STACKS_START__ = .;
@@ -163,7 +176,8 @@ SECTIONS
     /*
      * The xlat_table section is for full, aligned page tables (4K).
      * Removing them from .bss avoids forcing 4K alignment on
-     * the .bss section and eliminates the unecessary zero init
+     * the .bss section. The tables are initialized to zero by the translation
+     * tables library.
      */
     xlat_table (NOLOAD) : {
         *(xlat_table)
@@ -178,7 +192,7 @@ SECTIONS
      * are not mixed with normal data.  This is required to set up the correct
      * memory attributes for the coherent data page tables.
      */
-    coherent_ram (NOLOAD) : ALIGN(4096) {
+    coherent_ram (NOLOAD) : ALIGN(PAGE_SIZE) {
         __COHERENT_RAM_START__ = .;
         /*
          * Bakery locks are stored in coherent memory
@@ -193,7 +207,7 @@ SECTIONS
          * as device memory.  No other unexpected data must creep in.
          * Ensure the rest of the current memory page is unused.
          */
-        . = NEXT(4096);
+        . = NEXT(PAGE_SIZE);
         __COHERENT_RAM_END__ = .;
     } >RAM
 

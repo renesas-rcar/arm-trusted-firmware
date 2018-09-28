@@ -7,6 +7,7 @@
 #include <assert.h>
 #include <bl_common.h>
 #include <console.h>
+#include <gic_common.h>
 #include <gicv2.h>
 #include <platform_def.h>
 #include "qemu_private.h"
@@ -18,8 +19,6 @@
  * script to ensure that __RO_START__, __RO_END__ & __BL31_END__ linker symbols
  * refer to page-aligned addresses.
  */
-#define BL31_RO_BASE (unsigned long)(&__RO_START__)
-#define BL31_RO_LIMIT (unsigned long)(&__RO_END__)
 #define BL31_END (unsigned long)(&__BL31_END__)
 
 /*
@@ -37,12 +36,48 @@ static entry_point_info_t bl33_image_ep_info;
  * tables. BL2 has flushed this information to memory, so we are guaranteed
  * to pick up good data.
  ******************************************************************************/
+#if LOAD_IMAGE_V2
+void bl31_early_platform_setup(void *from_bl2,
+			       void *plat_params_from_bl2)
+#else
 void bl31_early_platform_setup(bl31_params_t *from_bl2,
 				void *plat_params_from_bl2)
+#endif
 {
 	/* Initialize the console to provide early debug support */
 	console_init(PLAT_QEMU_BOOT_UART_BASE, PLAT_QEMU_BOOT_UART_CLK_IN_HZ,
 			PLAT_QEMU_CONSOLE_BAUDRATE);
+
+#if LOAD_IMAGE_V2
+	/*
+	 * Check params passed from BL2
+	 */
+	bl_params_t *params_from_bl2 = (bl_params_t *)from_bl2;
+
+	assert(params_from_bl2);
+	assert(params_from_bl2->h.type == PARAM_BL_PARAMS);
+	assert(params_from_bl2->h.version >= VERSION_2);
+
+	bl_params_node_t *bl_params = params_from_bl2->head;
+
+	/*
+	 * Copy BL33 and BL32 (if present), entry point information.
+	 * They are stored in Secure RAM, in BL2's address space.
+	 */
+	while (bl_params) {
+		if (bl_params->image_id == BL32_IMAGE_ID)
+			bl32_image_ep_info = *bl_params->ep_info;
+
+		if (bl_params->image_id == BL33_IMAGE_ID)
+			bl33_image_ep_info = *bl_params->ep_info;
+
+		bl_params = bl_params->next_params_info;
+	}
+
+	if (!bl33_image_ep_info.pc)
+		panic();
+
+#else /* LOAD_IMAGE_V2 */
 
 	/*
 	 * Check params passed from BL2 should not be NULL,
@@ -65,31 +100,52 @@ void bl31_early_platform_setup(bl31_params_t *from_bl2,
 	if (from_bl2->bl32_ep_info)
 		bl32_image_ep_info = *from_bl2->bl32_ep_info;
 	bl33_image_ep_info = *from_bl2->bl33_ep_info;
+
+#endif /* !LOAD_IMAGE_V2 */
 }
 
 void bl31_plat_arch_setup(void)
 {
-	qemu_configure_mmu_el3(BL31_RO_BASE, (BL31_END - BL31_RO_BASE),
-			      BL31_RO_BASE, BL31_RO_LIMIT,
+	qemu_configure_mmu_el3(BL31_BASE, (BL31_END - BL31_BASE),
+			      BL_CODE_BASE, BL_CODE_END,
+			      BL_RO_DATA_BASE, BL_RO_DATA_END,
 			      BL_COHERENT_RAM_BASE, BL_COHERENT_RAM_END);
 }
 
-static const unsigned int irq_sec_array[] = {
-	QEMU_IRQ_SEC_SGI_0,
-	QEMU_IRQ_SEC_SGI_1,
-	QEMU_IRQ_SEC_SGI_2,
-	QEMU_IRQ_SEC_SGI_3,
-	QEMU_IRQ_SEC_SGI_4,
-	QEMU_IRQ_SEC_SGI_5,
-	QEMU_IRQ_SEC_SGI_6,
-	QEMU_IRQ_SEC_SGI_7,
+/******************************************************************************
+ * On a GICv2 system, the Group 1 secure interrupts are treated as Group 0
+ * interrupts.
+ *****************************************************************************/
+#define PLATFORM_G1S_PROPS(grp)						\
+	INTR_PROP_DESC(QEMU_IRQ_SEC_SGI_0, GIC_HIGHEST_SEC_PRIORITY,	\
+					   grp, GIC_INTR_CFG_EDGE),	\
+	INTR_PROP_DESC(QEMU_IRQ_SEC_SGI_1, GIC_HIGHEST_SEC_PRIORITY,	\
+					   grp, GIC_INTR_CFG_EDGE),	\
+	INTR_PROP_DESC(QEMU_IRQ_SEC_SGI_2, GIC_HIGHEST_SEC_PRIORITY,	\
+					   grp, GIC_INTR_CFG_EDGE),	\
+	INTR_PROP_DESC(QEMU_IRQ_SEC_SGI_3, GIC_HIGHEST_SEC_PRIORITY,	\
+					   grp, GIC_INTR_CFG_EDGE),	\
+	INTR_PROP_DESC(QEMU_IRQ_SEC_SGI_4, GIC_HIGHEST_SEC_PRIORITY,	\
+					   grp, GIC_INTR_CFG_EDGE),	\
+	INTR_PROP_DESC(QEMU_IRQ_SEC_SGI_5, GIC_HIGHEST_SEC_PRIORITY,	\
+					   grp, GIC_INTR_CFG_EDGE),	\
+	INTR_PROP_DESC(QEMU_IRQ_SEC_SGI_6, GIC_HIGHEST_SEC_PRIORITY,	\
+					   grp, GIC_INTR_CFG_EDGE),	\
+	INTR_PROP_DESC(QEMU_IRQ_SEC_SGI_7, GIC_HIGHEST_SEC_PRIORITY,	\
+					   grp, GIC_INTR_CFG_EDGE)
+
+#define PLATFORM_G0_PROPS(grp)
+
+static const interrupt_prop_t qemu_interrupt_props[] = {
+	PLATFORM_G1S_PROPS(GICV2_INTR_GROUP0),
+	PLATFORM_G0_PROPS(GICV2_INTR_GROUP0)
 };
 
 static const struct gicv2_driver_data plat_gicv2_driver_data = {
 	.gicd_base = GICD_BASE,
 	.gicc_base = GICC_BASE,
-	.g0_interrupt_num = ARRAY_SIZE(irq_sec_array),
-	.g0_interrupt_array = irq_sec_array,
+	.interrupt_props = qemu_interrupt_props,
+	.interrupt_props_num = ARRAY_SIZE(qemu_interrupt_props),
 };
 
 void bl31_platform_setup(void)

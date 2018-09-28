@@ -4,24 +4,24 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 #include <arch_helpers.h>
+#include <assert.h>
 #include <bl_common.h>
 #include <console.h>
 #include <debug.h>
+#include <desc_image_load.h>
+#include <optee_utils.h>
 #include <libfdt.h>
+#include <platform.h>
 #include <platform_def.h>
-#include "qemu_private.h"
 #include <string.h>
 #include <utils.h>
+#include "qemu_private.h"
 
-/*
- * The next 2 constants identify the extents of the code & RO data region.
- * These addresses are used by the MMU setup code and therefore they must be
- * page-aligned.  It is the responsibility of the linker script to ensure that
- * __RO_START__ and __RO_END__ linker symbols refer to page-aligned addresses.
- */
-#define BL2_RO_BASE (unsigned long)(&__RO_START__)
-#define BL2_RO_LIMIT (unsigned long)(&__RO_END__)
 
+/* Data structure which holds the extents of the trusted SRAM for BL2 */
+static meminfo_t bl2_tzram_layout __aligned(CACHE_WRITEBACK_GRANULE);
+
+#if !LOAD_IMAGE_V2
 /*******************************************************************************
  * This structure represents the superset of information that is passed to
  * BL3-1, e.g. while passing control to it from BL2, bl31_params
@@ -40,10 +40,6 @@ typedef struct bl2_to_bl31_params_mem {
 
 static bl2_to_bl31_params_mem_t bl31_params_mem;
 
-
-
-/* Data structure which holds the extents of the trusted SRAM for BL2 */
-static meminfo_t bl2_tzram_layout __aligned(CACHE_WRITEBACK_GRANULE);
 
 meminfo_t *bl2_plat_sec_mem_layout(void)
 {
@@ -120,6 +116,7 @@ struct entry_point_info *bl2_plat_get_bl31_ep_info(void)
 
 	return &bl31_params_mem.bl31_ep_info;
 }
+#endif /* !LOAD_IMAGE_V2 */
 
 
 
@@ -177,11 +174,18 @@ void bl2_platform_setup(void)
 	/* TODO Initialize timer */
 }
 
+#ifdef AARCH32
+#define QEMU_CONFIGURE_BL2_MMU(...)	qemu_configure_mmu_secure(__VA_ARGS__)
+#else
+#define QEMU_CONFIGURE_BL2_MMU(...)	qemu_configure_mmu_el1(__VA_ARGS__)
+#endif
+
 void bl2_plat_arch_setup(void)
 {
-	qemu_configure_mmu_el1(bl2_tzram_layout.total_base,
+	QEMU_CONFIGURE_BL2_MMU(bl2_tzram_layout.total_base,
 			      bl2_tzram_layout.total_size,
-			      BL2_RO_BASE, BL2_RO_LIMIT,
+			      BL_CODE_BASE, BL_CODE_END,
+			      BL_RO_DATA_BASE, BL_RO_DATA_END,
 			      BL_COHERENT_RAM_BASE, BL_COHERENT_RAM_END);
 }
 
@@ -190,11 +194,16 @@ void bl2_plat_arch_setup(void)
  ******************************************************************************/
 static uint32_t qemu_get_spsr_for_bl32_entry(void)
 {
+#ifdef AARCH64
 	/*
 	 * The Secure Payload Dispatcher service is responsible for
 	 * setting the SPSR prior to entry into the BL3-2 image.
 	 */
 	return 0;
+#else
+	return SPSR_MODE32(MODE32_svc, SPSR_T_ARM, SPSR_E_LITTLE,
+			   DISABLE_ALL_EXCEPTIONS);
+#endif
 }
 
 /*******************************************************************************
@@ -202,8 +211,9 @@ static uint32_t qemu_get_spsr_for_bl32_entry(void)
  ******************************************************************************/
 static uint32_t qemu_get_spsr_for_bl33_entry(void)
 {
-	unsigned int mode;
 	uint32_t spsr;
+#ifdef AARCH64
+	unsigned int mode;
 
 	/* Figure out what mode we enter the non-secure world in */
 	mode = EL_IMPLEMENTED(2) ? MODE_EL2 : MODE_EL1;
@@ -214,8 +224,86 @@ static uint32_t qemu_get_spsr_for_bl33_entry(void)
 	 * well.
 	 */
 	spsr = SPSR_64(mode, MODE_SP_ELX, DISABLE_ALL_EXCEPTIONS);
+#else
+	spsr = SPSR_MODE32(MODE32_svc,
+		    plat_get_ns_image_entrypoint() & 0x1,
+		    SPSR_E_LITTLE, DISABLE_ALL_EXCEPTIONS);
+#endif
 	return spsr;
 }
+
+#if LOAD_IMAGE_V2
+static int qemu_bl2_handle_post_image_load(unsigned int image_id)
+{
+	int err = 0;
+	bl_mem_params_node_t *bl_mem_params = get_bl_mem_params_node(image_id);
+#if defined(SPD_opteed) || defined(AARCH32_SP_OPTEE)
+	bl_mem_params_node_t *pager_mem_params = NULL;
+	bl_mem_params_node_t *paged_mem_params = NULL;
+#endif
+
+	assert(bl_mem_params);
+
+	switch (image_id) {
+	case BL32_IMAGE_ID:
+#if defined(SPD_opteed) || defined(AARCH32_SP_OPTEE)
+		pager_mem_params = get_bl_mem_params_node(BL32_EXTRA1_IMAGE_ID);
+		assert(pager_mem_params);
+
+		paged_mem_params = get_bl_mem_params_node(BL32_EXTRA2_IMAGE_ID);
+		assert(paged_mem_params);
+
+		err = parse_optee_header(&bl_mem_params->ep_info,
+					 &pager_mem_params->image_info,
+					 &paged_mem_params->image_info);
+		if (err != 0) {
+			WARN("OPTEE header parse error.\n");
+		}
+
+#if defined(SPD_opteed)
+		/*
+		 * OP-TEE expect to receive DTB address in x2.
+		 * This will be copied into x2 by dispatcher.
+		 */
+		bl_mem_params->ep_info.args.arg3 = PLAT_QEMU_DT_BASE;
+#else /* case AARCH32_SP_OPTEE */
+		bl_mem_params->ep_info.args.arg0 =
+					bl_mem_params->ep_info.args.arg1;
+		bl_mem_params->ep_info.args.arg1 = 0;
+		bl_mem_params->ep_info.args.arg2 = PLAT_QEMU_DT_BASE;
+		bl_mem_params->ep_info.args.arg3 = 0;
+#endif
+#endif
+		bl_mem_params->ep_info.spsr = qemu_get_spsr_for_bl32_entry();
+		break;
+
+	case BL33_IMAGE_ID:
+#ifdef AARCH32_SP_OPTEE
+		/* AArch32 only core: OP-TEE expects NSec EP in register LR */
+		pager_mem_params = get_bl_mem_params_node(BL32_IMAGE_ID);
+		assert(pager_mem_params);
+		pager_mem_params->ep_info.lr_svc = bl_mem_params->ep_info.pc;
+#endif
+
+		/* BL33 expects to receive the primary CPU MPID (through r0) */
+		bl_mem_params->ep_info.args.arg0 = 0xffff & read_mpidr();
+		bl_mem_params->ep_info.spsr = qemu_get_spsr_for_bl33_entry();
+		break;
+	}
+
+	return err;
+}
+
+/*******************************************************************************
+ * This function can be used by the platforms to update/use image
+ * information for given `image_id`.
+ ******************************************************************************/
+int bl2_plat_handle_post_image_load(unsigned int image_id)
+{
+	return qemu_bl2_handle_post_image_load(image_id);
+}
+
+#else /* LOAD_IMAGE_V2 */
 
 /*******************************************************************************
  * Before calling this function BL3-1 is loaded in memory and its entrypoint
@@ -282,8 +370,9 @@ void bl2_plat_get_bl33_meminfo(meminfo_t *bl33_meminfo)
 	bl33_meminfo->free_base = NS_DRAM0_BASE;
 	bl33_meminfo->free_size = NS_DRAM0_SIZE;
 }
+#endif /* !LOAD_IMAGE_V2 */
 
-unsigned long plat_get_ns_image_entrypoint(void)
+uintptr_t plat_get_ns_image_entrypoint(void)
 {
 	return NS_IMAGE_OFFSET;
 }

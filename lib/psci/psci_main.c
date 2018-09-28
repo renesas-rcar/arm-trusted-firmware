@@ -13,7 +13,7 @@
 #include <platform.h>
 #include <pmf.h>
 #include <runtime_instr.h>
-#include <smcc.h>
+#include <smccc.h>
 #include <string.h>
 #include "psci_private.h"
 
@@ -238,6 +238,23 @@ int psci_affinity_info(u_register_t target_affinity,
 	if (target_idx == -1)
 		return PSCI_E_INVALID_PARAMS;
 
+	/*
+	 * Generic management:
+	 * Perform cache maintanence ahead of reading the target CPU state to
+	 * ensure that the data is not stale.
+	 * There is a theoretical edge case where the cache may contain stale
+	 * data for the target CPU data - this can occur under the following
+	 * conditions:
+	 * - the target CPU is in another cluster from the current
+	 * - the target CPU was the last CPU to shutdown on its cluster
+	 * - the cluster was removed from coherency as part of the CPU shutdown
+	 *
+	 * In this case the cache maintenace that was performed as part of the
+	 * target CPUs shutdown was not seen by the current CPU's cluster. And
+	 * so the cache may contain stale data for the target CPU.
+	 */
+	flush_cpu_data_by_index(target_idx, psci_svc_cpu_data.aff_info_state);
+
 	return psci_get_aff_info_state_by_idx(target_idx);
 }
 
@@ -429,6 +446,15 @@ u_register_t psci_smc_handler(uint32_t smc_fid,
 		case PSCI_STAT_COUNT_AARCH32:
 			return psci_stat_count(x1, x2);
 #endif
+		case PSCI_MEM_PROTECT:
+			return psci_mem_protect(x1);
+
+		case PSCI_MEM_CHK_RANGE_AARCH32:
+			return psci_mem_chk_range(x1, x2);
+
+		case PSCI_SYSTEM_RESET2_AARCH32:
+			/* We should never return from psci_system_reset2() */
+			return psci_system_reset2(x1, x2);
 
 		default:
 			break;
@@ -465,6 +491,13 @@ u_register_t psci_smc_handler(uint32_t smc_fid,
 		case PSCI_STAT_COUNT_AARCH64:
 			return psci_stat_count(x1, x2);
 #endif
+
+		case PSCI_MEM_CHK_RANGE_AARCH64:
+			return psci_mem_chk_range(x1, x2);
+
+		case PSCI_SYSTEM_RESET2_AARCH64:
+			/* We should never return from psci_system_reset2() */
+			return psci_system_reset2(x1, x2);
 
 		default:
 			break;

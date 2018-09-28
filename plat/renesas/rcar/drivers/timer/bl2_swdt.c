@@ -99,7 +99,7 @@ void bl2_swdt_init(void)
 	case MD14_MD13_TYPE_3:	/* MD13=1 and MD14=1		*/
 		/* OSCCLK=130.2kHz				*/
 		if (product_cut==(RCAR_PRODUCT_H3 | RCAR_CUT_VER10)) {
-			/* R-car H3 ES1.0			*/
+			/* R-car H3 Ver.1.0			*/
 			/* count=20343, set 0x5A5AB089		*/
 			mmio_write_32(SWDT_WTCNT,(WTCNT_UPPER_BYTE |
 				WTCNT_COUNT_8p13k_H3VER10));
@@ -157,7 +157,11 @@ void bl2_swdt_release(void)
 				+ (ARM_IRQ_SEC_WDT & (uint32_t)(~ITARGET_MASK)));
 	uint32_t i;
 
+	/* Disable FIQ interrupt */
 	write_daifset(DAIF_FIQ_BIT);
+	/* FIQ interrupts are not taken to EL3 */
+	write_scr_el3(read_scr_el3() & ~SCR_FIQ_BIT);
+
         bl2_swdt_disable();
         gicv2_cpuif_disable();
 	for (i=0U; i<IGROUPR_NUM; i++) {

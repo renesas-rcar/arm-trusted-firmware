@@ -180,7 +180,7 @@ void bl2_avs_init(void)
 			break;
 		}
 	}
-	
+
 	if (efuse_avs >= EFUSE_AVS_NUM) {
 		efuse_avs = EFUSE_AVS0;		/* Not applicable */
 	}

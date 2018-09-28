@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2014-2017, ARM Limited and Contributors. All rights reserved.
+# Copyright (c) 2014-2018, ARM Limited and Contributors. All rights reserved.
 #
 # SPDX-License-Identifier: BSD-3-Clause
 #
@@ -17,6 +17,8 @@ A53_DISABLE_NON_TEMPORAL_HINT	?=1
 A57_DISABLE_NON_TEMPORAL_HINT	?=1
 
 WORKAROUND_CVE_2017_5715	?=1
+WORKAROUND_CVE_2018_3639	?=1
+DYNAMIC_WORKAROUND_CVE_2018_3639	?=0
 
 # Process SKIP_A57_L1_FLUSH_PWR_DWN flag
 $(eval $(call assert_boolean,SKIP_A57_L1_FLUSH_PWR_DWN))
@@ -33,6 +35,19 @@ $(eval $(call add_define,A57_DISABLE_NON_TEMPORAL_HINT))
 # Process WORKAROUND_CVE_2017_5715 flag
 $(eval $(call assert_boolean,WORKAROUND_CVE_2017_5715))
 $(eval $(call add_define,WORKAROUND_CVE_2017_5715))
+
+# Process WORKAROUND_CVE_2018_3639 flag
+$(eval $(call assert_boolean,WORKAROUND_CVE_2018_3639))
+$(eval $(call add_define,WORKAROUND_CVE_2018_3639))
+
+$(eval $(call assert_boolean,DYNAMIC_WORKAROUND_CVE_2018_3639))
+$(eval $(call add_define,DYNAMIC_WORKAROUND_CVE_2018_3639))
+
+ifneq (${DYNAMIC_WORKAROUND_CVE_2018_3639},0)
+    ifeq (${WORKAROUND_CVE_2018_3639},0)
+        $(error "Error: WORKAROUND_CVE_2018_3639 must be 1 if DYNAMIC_WORKAROUND_CVE_2018_3639 is 1")
+    endif
+endif
 
 # CPU Errata Build flags.
 # These should be enabled by the platform if the erratum workaround needs to be
@@ -104,6 +119,10 @@ ERRATA_A57_859972	?=0
 # only to revision <= r0p3 of the Cortex A72 cpu.
 ERRATA_A72_859971	?=0
 
+# Flag to apply T32 CLREX workaround during reset. This erratum applies
+# only to r0p0 and r1p0 of the Ares cpu.
+ERRATA_ARES_1043202	?=1
+
 # Process ERRATA_A53_826319 flag
 $(eval $(call assert_boolean,ERRATA_A53_826319))
 $(eval $(call add_define,ERRATA_A53_826319))
@@ -163,6 +182,10 @@ $(eval $(call add_define,ERRATA_A57_859972))
 # Process ERRATA_A72_859971 flag
 $(eval $(call assert_boolean,ERRATA_A72_859971))
 $(eval $(call add_define,ERRATA_A72_859971))
+
+# Process ERRATA_ARES_1043202 flag
+$(eval $(call assert_boolean,ERRATA_ARES_1043202))
+$(eval $(call add_define,ERRATA_ARES_1043202))
 
 # Errata build flags
 ifneq (${ERRATA_A53_843419},0)

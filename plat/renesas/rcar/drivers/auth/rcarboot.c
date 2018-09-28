@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2017, Renesas Electronics Corporation. All rights reserved.
+ * Copyright (c) 2015-2018, Renesas Electronics Corporation. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -162,7 +162,7 @@ int auth_mod_verify_img(unsigned int img_id, void *img_ptr,
 			}
 			if (0 == ret) {
 #if RCAR_BL2_DCACHE == 1	/* clean and disable D-Cache */
-				write_sctlr_el1(read_sctlr_el1() & ~SCTLR_C_BIT);
+				write_sctlr_el3(read_sctlr_el3() & ~SCTLR_C_BIT);
 				dcsw_op_all(DCCISW);
 #endif /* RCAR_BL2_DCACHE == 1 */
 				if (RCAR_CERT_MAGIC_NUM ==
@@ -176,7 +176,7 @@ int auth_mod_verify_img(unsigned int img_id, void *img_ptr,
 						cert_addr, NULL);
 				}
 #if RCAR_BL2_DCACHE == 1	/* enable D-Cache */
-				write_sctlr_el1(read_sctlr_el1() | SCTLR_C_BIT);
+				write_sctlr_el3(read_sctlr_el3() | SCTLR_C_BIT);
 #endif /* RCAR_BL2_DCACHE == 1 */
 				if (0 != ret) {
 					ERROR(

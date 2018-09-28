@@ -1,23 +1,25 @@
 /*
- * Copyright (c) 2015-2017, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2015-2018, ARM Limited and Contributors. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
 #include <auth_mod.h>
 #include <platform_def.h>
+#include <stddef.h>
+
 #if USE_TBBR_DEFS
 #include <tbbr_oid.h>
 #else
 #include <platform_oid.h>
 #endif
-#include <stddef.h>
+
 
 /*
  * Maximum key and hash sizes (in DER format)
  */
 #define PK_DER_LEN			294
-#define HASH_DER_LEN			51
+#define HASH_DER_LEN			83
 
 /*
  * The platform must allocate buffers to store the authentication parameters
@@ -25,9 +27,13 @@
  * established, we can reuse some of the buffers on different stages
  */
 static unsigned char tb_fw_hash_buf[HASH_DER_LEN];
+static unsigned char tb_fw_config_hash_buf[HASH_DER_LEN];
+static unsigned char hw_config_hash_buf[HASH_DER_LEN];
 static unsigned char scp_fw_hash_buf[HASH_DER_LEN];
 static unsigned char soc_fw_hash_buf[HASH_DER_LEN];
 static unsigned char tos_fw_hash_buf[HASH_DER_LEN];
+static unsigned char tos_fw_extra1_hash_buf[HASH_DER_LEN];
+static unsigned char tos_fw_extra2_hash_buf[HASH_DER_LEN];
 static unsigned char nt_world_bl_hash_buf[HASH_DER_LEN];
 static unsigned char trusted_world_pk_buf[PK_DER_LEN];
 static unsigned char non_trusted_world_pk_buf[PK_DER_LEN];
@@ -66,12 +72,20 @@ static auth_param_type_desc_t nt_fw_content_pk = AUTH_PARAM_TYPE_DESC(
 
 static auth_param_type_desc_t tb_fw_hash = AUTH_PARAM_TYPE_DESC(
 		AUTH_PARAM_HASH, TRUSTED_BOOT_FW_HASH_OID);
+static auth_param_type_desc_t tb_fw_config_hash = AUTH_PARAM_TYPE_DESC(
+		AUTH_PARAM_HASH, TRUSTED_BOOT_FW_CONFIG_HASH_OID);
+static auth_param_type_desc_t hw_config_hash = AUTH_PARAM_TYPE_DESC(
+		AUTH_PARAM_HASH, HW_CONFIG_HASH_OID);
 static auth_param_type_desc_t scp_fw_hash = AUTH_PARAM_TYPE_DESC(
 		AUTH_PARAM_HASH, SCP_FW_HASH_OID);
 static auth_param_type_desc_t soc_fw_hash = AUTH_PARAM_TYPE_DESC(
 		AUTH_PARAM_HASH, SOC_AP_FW_HASH_OID);
 static auth_param_type_desc_t tos_fw_hash = AUTH_PARAM_TYPE_DESC(
 		AUTH_PARAM_HASH, TRUSTED_OS_FW_HASH_OID);
+static auth_param_type_desc_t tos_fw_extra1_hash = AUTH_PARAM_TYPE_DESC(
+		AUTH_PARAM_HASH, TRUSTED_OS_FW_EXTRA1_HASH_OID);
+static auth_param_type_desc_t tos_fw_extra2_hash = AUTH_PARAM_TYPE_DESC(
+		AUTH_PARAM_HASH, TRUSTED_OS_FW_EXTRA2_HASH_OID);
 static auth_param_type_desc_t nt_world_bl_hash = AUTH_PARAM_TYPE_DESC(
 		AUTH_PARAM_HASH, NON_TRUSTED_WORLD_BOOTLOADER_HASH_OID);
 static auth_param_type_desc_t scp_bl2u_hash = AUTH_PARAM_TYPE_DESC(
@@ -117,6 +131,20 @@ static const auth_img_desc_t cot_desc[] = {
 					.ptr = (void *)tb_fw_hash_buf,
 					.len = (unsigned int)HASH_DER_LEN
 				}
+			},
+			[1] = {
+				.type_desc = &tb_fw_config_hash,
+				.data = {
+					.ptr = (void *)tb_fw_config_hash_buf,
+					.len = (unsigned int)HASH_DER_LEN
+				}
+			},
+			[2] = {
+				.type_desc = &hw_config_hash,
+				.data = {
+					.ptr = (void *)hw_config_hash_buf,
+					.len = (unsigned int)HASH_DER_LEN
+				}
 			}
 		}
 	},
@@ -130,6 +158,36 @@ static const auth_img_desc_t cot_desc[] = {
 				.param.hash = {
 					.data = &raw_data,
 					.hash = &tb_fw_hash,
+				}
+			}
+		}
+	},
+	/* HW Config */
+	[HW_CONFIG_ID] = {
+		.img_id = HW_CONFIG_ID,
+		.img_type = IMG_RAW,
+		.parent = &cot_desc[TRUSTED_BOOT_FW_CERT_ID],
+		.img_auth_methods = {
+			[0] = {
+				.type = AUTH_METHOD_HASH,
+				.param.hash = {
+					.data = &raw_data,
+					.hash = &hw_config_hash,
+				}
+			}
+		}
+	},
+	/* TB FW Config */
+	[TB_FW_CONFIG_ID] = {
+		.img_id = TB_FW_CONFIG_ID,
+		.img_type = IMG_RAW,
+		.parent = &cot_desc[TRUSTED_BOOT_FW_CERT_ID],
+		.img_auth_methods = {
+			[0] = {
+				.type = AUTH_METHOD_HASH,
+				.param.hash = {
+					.data = &raw_data,
+					.hash = &tb_fw_config_hash,
 				}
 			}
 		}
@@ -402,6 +460,20 @@ static const auth_img_desc_t cot_desc[] = {
 					.ptr = (void *)tos_fw_hash_buf,
 					.len = (unsigned int)HASH_DER_LEN
 				}
+			},
+			[1] = {
+				.type_desc = &tos_fw_extra1_hash,
+				.data = {
+					.ptr = (void *)tos_fw_extra1_hash_buf,
+					.len = (unsigned int)HASH_DER_LEN
+				}
+			},
+			[2] = {
+				.type_desc = &tos_fw_extra2_hash,
+				.data = {
+					.ptr = (void *)tos_fw_extra2_hash_buf,
+					.len = (unsigned int)HASH_DER_LEN
+				}
 			}
 		}
 	},
@@ -415,6 +487,34 @@ static const auth_img_desc_t cot_desc[] = {
 				.param.hash = {
 					.data = &raw_data,
 					.hash = &tos_fw_hash,
+				}
+			}
+		}
+	},
+	[BL32_EXTRA1_IMAGE_ID] = {
+		.img_id = BL32_EXTRA1_IMAGE_ID,
+		.img_type = IMG_RAW,
+		.parent = &cot_desc[TRUSTED_OS_FW_CONTENT_CERT_ID],
+		.img_auth_methods = {
+			[0] = {
+				.type = AUTH_METHOD_HASH,
+				.param.hash = {
+					.data = &raw_data,
+					.hash = &tos_fw_extra1_hash,
+				}
+			}
+		}
+	},
+	[BL32_EXTRA2_IMAGE_ID] = {
+		.img_id = BL32_EXTRA2_IMAGE_ID,
+		.img_type = IMG_RAW,
+		.parent = &cot_desc[TRUSTED_OS_FW_CONTENT_CERT_ID],
+		.img_auth_methods = {
+			[0] = {
+				.type = AUTH_METHOD_HASH,
+				.param.hash = {
+					.data = &raw_data,
+					.hash = &tos_fw_extra2_hash,
 				}
 			}
 		}

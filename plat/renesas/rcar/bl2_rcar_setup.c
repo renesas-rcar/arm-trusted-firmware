@@ -12,7 +12,6 @@
 #include <platform.h>
 #include <platform_def.h>
 #include <string.h>
-#include <plat_arm.h>
 #include "rcar_def.h"
 #include "rcar_private.h"
 #include "io_common.h"
@@ -114,7 +113,7 @@
 #define MIDR_CA57		(0x0D07U << MIDR_PN_SHIFT)
 #define MIDR_CA53		(0x0D03U << MIDR_PN_SHIFT)
 
-/* R-Car Gen3 product check */
+/* R-Car Series, 3rd Generation product check */
 #if (RCAR_LSI == RCAR_H3) || (RCAR_LSI == RCAR_H3N)
 #define TARGET_PRODUCT		RCAR_PRODUCT_H3
 #define TARGET_NAME		"R-Car H3"
@@ -127,6 +126,8 @@
 #elif RCAR_LSI == RCAR_E3
 #define TARGET_PRODUCT		RCAR_PRODUCT_E3
 #define TARGET_NAME		"R-Car E3"
+#elif RCAR_LSI == RCAR_AUTO
+#define TARGET_NAME		"R-Car H3/M3/M3N"
 #endif
 
 /* for SuspendToRAM */
@@ -151,25 +152,13 @@
 #endif /* PMIC_ROHM_BD9571 && RCAR_SYSTEM_RESET_KEEPON_DDR */
 
 static uint32_t isDdrBackupMode(void);
-
-/*******************************************************************************
- * Declarations of linker defined symbols which will help us find the layout
- * of trusted SRAM
- ******************************************************************************/
-extern unsigned long __RO_START__;
-extern unsigned long __RO_END__;
-
-#if USE_COHERENT_MEM
-extern unsigned long __COHERENT_RAM_START__;
-extern unsigned long __COHERENT_RAM_END__;
-#endif
+static void bl2_init_generic_timer(void);
 
 /*
- * The next 3 constants identify the extents of the code, RO data region and the
- * limit of the BL2 image. These addresses are used by the MMU setup code and
- * therefore they must be page-aligned.  It is the responsibility of the linker
- * script to ensure that __RO_START__, __RO_END__ & __BL2_END__ linker symbols
- * refer to page-aligned addresses.
+ * The next 2 constants identify the extents of the code & RO data region.
+ * These addresses are used by the MMU setup code and therefore they must be
+ * page-aligned.  It is the responsibility of the linker script to ensure that
+ * __RO_START__ and __RO_END__ linker symbols refer to page-aligned addresses.
  */
 #define BL2_RO_BASE (unsigned long)(&__RO_START__)
 #define BL2_RO_LIMIT (unsigned long)(&__RO_END__)
@@ -189,7 +178,7 @@ extern unsigned long __COHERENT_RAM_END__;
 
 /* Data structure which holds the extents of the trusted SRAM for BL2 */
 static meminfo_t bl2_tzram_layout
-__attribute__ ((aligned(PLATFORM_CACHE_LINE_SIZE)));
+__attribute__ ((aligned(CACHE_WRITEBACK_GRANULE)));
 
 /* Assert that BL3-1 parameters fit in shared memory */
 CASSERT((PARAMS_BASE + sizeof(bl2_to_bl31_params_mem_t)) <
@@ -203,7 +192,7 @@ CASSERT((PARAMS_BASE + sizeof(bl2_to_bl31_params_mem_t)) <
 static bl31_params_t *bl2_to_bl31_params;
 static entry_point_info_t *bl31_ep_info;
 
-meminfo_t *bl2_plat_sec_mem_layout(void)
+struct meminfo *bl2_plat_sec_mem_layout(void)
 {
 	return &bl2_tzram_layout;
 }
@@ -217,7 +206,7 @@ meminfo_t *bl2_plat_sec_mem_layout(void)
  * NOTE: This function should be called only once and should be done
  * before generating params to BL31
  ******************************************************************************/
-bl31_params_t *bl2_plat_get_bl31_params(void)
+struct bl31_params *bl2_plat_get_bl31_params(void)
 {
 	bl2_to_bl31_params_mem_t *bl31_params_mem;
 
@@ -285,17 +274,10 @@ struct entry_point_info *bl2_plat_get_bl31_ep_info(void)
 		/* Flush the params to be passed to memory */
 		bl2_plat_flush_bl31_params();
 
-		/* Flush of all buffered data and desables the SCIF. */
+		print_entry_point_info(bl31_ep_info);
 		(void)console_flush();
 
-		/*
-		 * Run BL3-1 via an SMC to BL1.
-		 * Need to jumps entrypoint of Suspend to RAM at SMC handler.
-		 */
-		smc((unsigned long)BL1_SMC_RUN_IMAGE, (unsigned long)bl31_ep_info,
-			0UL, 0UL, 0UL, 0UL, 0UL, 0UL);
-
-		/* Jump to BL31 (Not come back here) */
+		bl2_run_next_image(bl31_ep_info);
 	}
 
 	bl31_ep_info->args.arg1 = 0x00000000UL;	/* cold boot */
@@ -382,7 +364,7 @@ static void bl2_lossy_setting(uint32_t no, uint64_t start_addr,
  * in x0. This memory layout is sitting at the base of the free trusted SRAM.
  * Copy it to a safe loaction before its reclaimed by later BL2 functionality.
  ******************************************************************************/
-void bl2_early_platform_setup(meminfo_t *mem_layout)
+static void rcar_bl2_early_platform_setup(const meminfo_t *mem_layout)
 {
 	uint32_t reg;
 	uint32_t lcs;
@@ -443,6 +425,8 @@ void bl2_early_platform_setup(meminfo_t *mem_layout)
 	/* System WDT initialize	*/
 	bl2_swdt_init();
 
+	/* FIQ interrupts are taken to EL3 */
+	write_scr_el3(read_scr_el3() | SCR_FIQ_BIT);
 	/* Enable FIQ interrupt		*/
 	write_daifclr(DAIF_FIQ_BIT);
 
@@ -459,11 +443,15 @@ void bl2_early_platform_setup(meminfo_t *mem_layout)
 		str = unknown;
 		break;
 	}
-	(void)sprintf(msg, "BL2: R-Car Gen3 Initial Program Loader(%s) Rev.%s\n"
-						, str, version_of_renesas);
+	(void)sprintf(msg, "BL2: %s Initial Program Loader(%s)\n"
+					, TARGET_NAME, str);
 	NOTICE("%s", msg);
 
-	/* R-Car Gen3 product display & check */
+	(void)sprintf(msg, "BL2: Initial Program Loader(Rev.%s)\n",
+					version_of_renesas);
+	NOTICE("%s", msg);
+
+	/* R-Car Series, 3rd Generation product display & check */
 	reg = mmio_read_32(RCAR_PRR);
 	prr_val = reg;
 	switch (reg & RCAR_PRODUCT_MASK) {
@@ -496,7 +484,7 @@ void bl2_early_platform_setup(meminfo_t *mem_layout)
 	}
 	NOTICE("%s", msg);
 
-	/* R-Car Gen3 PLL1 clock select display (E3 only) */
+	/* R-Car Series, 3rd Generation PLL1 clock select display (E3 only) */
 	reg = mmio_read_32(RCAR_PRR);
 	if ((reg & RCAR_PRODUCT_MASK) == RCAR_PRODUCT_E3) {
 		modemr_sscg = mmio_read_32(RCAR_MODEMR);
@@ -511,7 +499,7 @@ void bl2_early_platform_setup(meminfo_t *mem_layout)
 
 	/* Board ID detection */
 	(void)get_board_type(&board_type, &board_rev);
-	
+
 	switch (board_type) {
 	case BOARD_SALVATOR_X:
 	case BOARD_KRIEK:
@@ -526,7 +514,7 @@ void bl2_early_platform_setup(meminfo_t *mem_layout)
 		board_type = BOARD_UNKNOWN;
 		break;
 	}
-	
+
 	if ((board_type == BOARD_UNKNOWN) || (board_rev == BOARD_REV_UNKNOWN)) {
 		(void)sprintf(msg, "BL2: Board is %s Rev.---\n",
 			GET_BOARD_NAME(board_type));
@@ -754,6 +742,23 @@ void bl2_early_platform_setup(meminfo_t *mem_layout)
 	}
 }
 
+void bl2_el3_early_platform_setup(u_register_t arg0 __unused,
+				  u_register_t arg1 __unused,
+				  u_register_t arg2 __unused,
+				  u_register_t arg3 __unused)
+{
+	static meminfo_t tzram_layout;
+
+	bl2_init_generic_timer();
+
+	tzram_layout.total_base = BL31_BASE;
+	tzram_layout.total_size = BL31_LIMIT - BL31_BASE;
+	tzram_layout.free_base = BL31_BASE;
+	tzram_layout.free_size = BL31_LIMIT - BL31_BASE;
+
+	rcar_bl2_early_platform_setup((meminfo_t *)&tzram_layout);
+}
+
 /*******************************************************************************
  * Get DDR Backup Mode
  *  BKUP_TRG= LOW:Cold boot, HIGH:Warm boot
@@ -909,15 +914,6 @@ void bl2_plat_flush_bl31_params(void)
 	/* Initialize the System Module stop registers */
 	bl2_system_cpg_init();
 
-#if RCAR_BL2_DCACHE == 1
-	/* Disable data cache (clean and invalidate) */
-	val = (uint32_t)read_sctlr_el1();
-	val &= ~((uint32_t)(SCTLR_C_BIT | SCTLR_M_BIT));
-	write_sctlr_el1((uint64_t)val);
-	dcsw_op_all(DCCISW);
-	tlbivmalle1();
-#endif /* RCAR_BL2_DCACHE == 1 */
-
 }
 
 
@@ -925,11 +921,11 @@ void bl2_plat_flush_bl31_params(void)
  * Perform the very early platform specific architectural setup here. At the
  * moment this is only intializes the mmu in a quick and dirty way.
  ******************************************************************************/
-void bl2_plat_arch_setup(void)
+static void rcar_bl2_plat_arch_setup(void)
 {
 #if RCAR_BL2_DCACHE == 1
 	NOTICE("BL2: D-Cache enable\n");
-	rcar_configure_mmu_el1(BL2_BASE,
+	rcar_configure_mmu_el3(BL2_BASE,
 			      (BL2_END - BL2_BASE),
 			      BL2_RO_BASE,
 			      BL2_RO_LIMIT
@@ -941,17 +937,21 @@ void bl2_plat_arch_setup(void)
 #endif /* RCAR_BL2_DCACHE == 1 */
 }
 
+void bl2_el3_plat_arch_setup(void)
+{
+	rcar_bl2_plat_arch_setup();
+}
 /*******************************************************************************
  * Before calling this function BL31 is loaded in memory and its entrypoint
  * is set by load_image. This is a placeholder for the platform to change
  * the entrypoint of BL31 and set SPSR and security state.
  * On RCAR we are only setting the security state, entrypoint
  ******************************************************************************/
-void bl2_plat_set_bl31_ep_info(image_info_t *bl31_image_info,
-					entry_point_info_t *bl31_ep_info)
+void bl2_plat_set_bl31_ep_info(struct image_info *image,
+					struct entry_point_info *ep)
 {
-	SET_SECURITY_STATE(bl31_ep_info->h.attr, SECURE);
-	bl31_ep_info->spsr = SPSR_64(MODE_EL3, MODE_SP_ELX,
+	SET_SECURITY_STATE(ep->h.attr, SECURE);
+	ep->spsr = SPSR_64(MODE_EL3, MODE_SP_ELX,
 					DISABLE_ALL_EXCEPTIONS);
 }
 
@@ -962,11 +962,11 @@ void bl2_plat_set_bl31_ep_info(image_info_t *bl31_image_info,
  * the entrypoint of BL32 and set SPSR and security state.
  * On RCAR we are only setting the security state, entrypoint
  ******************************************************************************/
-void bl2_plat_set_bl32_ep_info(image_info_t *bl32_image_info,
-					entry_point_info_t *bl32_ep_info)
+void bl2_plat_set_bl32_ep_info(struct image_info *image,
+					struct entry_point_info *ep)
 {
-	SET_SECURITY_STATE(bl32_ep_info->h.attr, SECURE);
-	bl32_ep_info->spsr = rcar_get_spsr_for_bl32_entry();
+	SET_SECURITY_STATE(ep->h.attr, SECURE);
+	ep->spsr = rcar_get_spsr_for_bl32_entry();
 }
 
 /*******************************************************************************
@@ -975,13 +975,13 @@ void bl2_plat_set_bl32_ep_info(image_info_t *bl32_image_info,
  * the entrypoint of BL33 and set SPSR and security state.
  * On RCAR we are only setting the security state, entrypoint
  ******************************************************************************/
-void bl2_plat_set_bl33_ep_info(image_info_t *image,
-					entry_point_info_t *bl33_ep_info)
+void bl2_plat_set_bl33_ep_info(struct image_info *image,
+					struct entry_point_info *ep)
 {
-	SET_SECURITY_STATE(bl33_ep_info->h.attr, NON_SECURE);
-	bl33_ep_info->spsr = rcar_get_spsr_for_bl33_entry();
+	SET_SECURITY_STATE(ep->h.attr, NON_SECURE);
+	ep->spsr = rcar_get_spsr_for_bl33_entry();
 #ifdef RCAR_BL33_ARG0
-	bl33_ep_info->args.arg0 = RCAR_BL33_ARG0;
+	ep->args.arg0 = RCAR_BL33_ARG0;
 #endif
 }
 
@@ -990,31 +990,31 @@ void bl2_plat_set_bl33_ep_info(image_info_t *image,
  * Populate the extents of memory available for loading BL32
  ******************************************************************************/
 #ifdef BL32_BASE
-void bl2_plat_get_bl32_meminfo(meminfo_t *bl32_meminfo)
+void bl2_plat_get_bl32_meminfo(struct meminfo *mem_info)
 {
 	/*
 	 * Populate the extents of memory available for loading BL32.
 	 */
-	bl32_meminfo->total_base = BL32_BASE;
-	bl32_meminfo->free_base = BL32_BASE;
-	bl32_meminfo->total_size = BL32_BASE;
-	bl32_meminfo->free_size = BL32_LIMIT - BL32_BASE;
+	mem_info->total_base = BL32_BASE;
+	mem_info->free_base = BL32_BASE;
+	mem_info->total_size = BL32_LIMIT - BL32_BASE;
+	mem_info->free_size = BL32_LIMIT - BL32_BASE;
 }
 #endif
 
 /*******************************************************************************
  * Populate the extents of memory available for loading BL33
  ******************************************************************************/
-void bl2_plat_get_bl33_meminfo(meminfo_t *bl33_meminfo)
+void bl2_plat_get_bl33_meminfo(struct meminfo *mem_info)
 {
 	/* Non-secure target programs loading area limit is 40-bits address. */
-	bl33_meminfo->total_base = DRAM1_NS_BASE;
-	bl33_meminfo->total_size = DRAM_LIMIT - DRAM1_NS_BASE;
-	bl33_meminfo->free_base = AARCH64_SPACE_BASE;
-	bl33_meminfo->free_size = AARCH64_SPACE_SIZE;
+	mem_info->total_base = (uintptr_t)AARCH64_SPACE_BASE;
+	mem_info->total_size = (size_t)AARCH64_SPACE_SIZE;
+	mem_info->free_base = (uintptr_t)AARCH64_SPACE_BASE;
+	mem_info->free_size = (size_t)AARCH64_SPACE_SIZE;
 }
 
-void bl2_init_generic_timer(void)
+static void bl2_init_generic_timer(void)
 {
 #if RCAR_LSI == RCAR_E3
 	uint32_t reg_cntfid = EXTAL_EBISU;

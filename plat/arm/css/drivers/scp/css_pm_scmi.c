@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2017-2018, ARM Limited and Contributors. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -62,21 +62,15 @@ typedef enum {
 } scmi_power_state_t;
 
 /*
- * This mapping array has to be exported by the platform. Each element at
- * a given index maps that core to an SCMI power domain.
- */
-extern uint32_t plat_css_core_pos_to_scmi_dmn_id_map[];
-
-/*
  * The global handle for invoking the SCMI driver APIs after the driver
  * has been initialized.
  */
-void *scmi_handle;
+static void *scmi_handle;
 
 /* The SCMI channel global object */
 static scmi_channel_t scmi_channel;
 
-ARM_INSTANTIATE_LOCK
+ARM_INSTANTIATE_LOCK;
 
 /*
  * Helper function to suspend a CPU power domain and its parent power domains
@@ -259,10 +253,7 @@ int css_scp_get_power_state(u_register_t mpidr, unsigned int power_level)
 	return HW_OFF;
 }
 
-/*
- * Helper function to shutdown the system via SCMI.
- */
-void __dead2 css_scp_sys_shutdown(void)
+void __dead2 css_scp_system_off(int state)
 {
 	int ret;
 
@@ -273,21 +264,29 @@ void __dead2 css_scp_sys_shutdown(void)
 	plat_arm_gic_cpuif_disable();
 
 	/*
-	 * Issue SCMI command for SYSTEM_SHUTDOWN. First issue a graceful
+	 * Issue SCMI command. First issue a graceful
 	 * request and if that fails force the request.
 	 */
 	ret = scmi_sys_pwr_state_set(scmi_handle,
 			SCMI_SYS_PWR_FORCEFUL_REQ,
-			SCMI_SYS_PWR_SHUTDOWN);
+			state);
+
 	if (ret != SCMI_E_SUCCESS) {
-		ERROR("SCMI system power domain shutdown return 0x%x unexpected\n",
-				ret);
+		ERROR("SCMI system power state set 0x%x returns unexpected 0x%x\n",
+			state, ret);
 		panic();
 	}
-
 	wfi();
-	ERROR("CSS System Shutdown: operation not handled.\n");
+	ERROR("CSS set power state: operation not handled.\n");
 	panic();
+}
+
+/*
+ * Helper function to shutdown the system via SCMI.
+ */
+void __dead2 css_scp_sys_shutdown(void)
+{
+	css_scp_system_off(SCMI_SYS_PWR_SHUTDOWN);
 }
 
 /*
@@ -295,37 +294,14 @@ void __dead2 css_scp_sys_shutdown(void)
  */
 void __dead2 css_scp_sys_reboot(void)
 {
-	int ret;
-
-	/*
-	 * Disable GIC CPU interface to prevent pending interrupt from waking
-	 * up the AP from WFI.
-	 */
-	plat_arm_gic_cpuif_disable();
-
-	/*
-	 * Issue SCMI command for SYSTEM_REBOOT. First issue a graceful
-	 * request and if that fails force the request.
-	 */
-	ret = scmi_sys_pwr_state_set(scmi_handle,
-			SCMI_SYS_PWR_FORCEFUL_REQ,
-			SCMI_SYS_PWR_COLD_RESET);
-	if (ret != SCMI_E_SUCCESS) {
-		ERROR("SCMI system power domain reset return 0x%x unexpected\n",
-				ret);
-		panic();
-	}
-
-	wfi();
-	ERROR("CSS System Reset: operation not handled.\n");
-	panic();
+	css_scp_system_off(SCMI_SYS_PWR_COLD_RESET);
 }
 
 scmi_channel_plat_info_t plat_css_scmi_plat_info = {
 		.scmi_mbx_mem = CSS_SCMI_PAYLOAD_BASE,
 		.db_reg_addr = PLAT_CSS_MHU_BASE + CSS_SCMI_MHU_DB_REG_OFF,
-		.db_preserve_mask = 0xfffffffd,
-		.db_modify_mask = 0x2,
+		.db_preserve_mask = 0xfffffffe,
+		.db_modify_mask = 0x1,
 };
 
 void plat_arm_pwrc_setup(void)
@@ -376,13 +352,35 @@ const plat_psci_ops_t *plat_arm_psci_override_pm_ops(plat_psci_ops_t *ops)
 		ops->system_off = NULL;
 		ops->system_reset = NULL;
 		ops->get_sys_suspend_power_state = NULL;
-	} else if (!(msg_attr & SCMI_SYS_PWR_SUSPEND_SUPPORTED)) {
-		/*
-		 * System power management protocol is available, but it does
-		 * not support SYSTEM SUSPEND.
-		 */
-		ops->get_sys_suspend_power_state = NULL;
+	} else {
+		if (!(msg_attr & SCMI_SYS_PWR_SUSPEND_SUPPORTED)) {
+			/*
+			 * System power management protocol is available, but
+			 * it does not support SYSTEM SUSPEND.
+			 */
+			ops->get_sys_suspend_power_state = NULL;
+		}
+		if (!(msg_attr & SCMI_SYS_PWR_WARM_RESET_SUPPORTED)) {
+			/*
+			 * WARM reset is not available.
+			 */
+			ops->system_reset2 = NULL;
+		}
 	}
 
 	return ops;
+}
+
+int css_system_reset2(int is_vendor, int reset_type, u_register_t cookie)
+{
+	if (is_vendor || (reset_type != PSCI_RESET2_SYSTEM_WARM_RESET))
+		return PSCI_E_INVALID_PARAMS;
+
+	css_scp_system_off(SCMI_SYS_PWR_WARM_RESET);
+	/*
+	 * css_scp_system_off cannot return (it is a __dead function),
+	 * but css_system_reset2 has to return some value, even in
+	 * this case.
+	 */
+	return 0;
 }

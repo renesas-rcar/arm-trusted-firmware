@@ -7,8 +7,8 @@
 #include <arch_helpers.h>
 #include <bl_common.h>
 #include <platform_def.h>
+#include <arm_xlat_tables.h>
 #include "qemu_private.h"
-#include <xlat_tables.h>
 
 #define MAP_DEVICE0	MAP_REGION_FLAT(DEVICE0_BASE,			\
 					DEVICE0_SIZE,			\
@@ -85,6 +85,16 @@ static const mmap_region_t plat_qemu_mmap[] = {
 	{0}
 };
 #endif
+#ifdef IMAGE_BL32
+static const mmap_region_t plat_qemu_mmap[] = {
+	MAP_SHARED_RAM,
+	MAP_DEVICE0,
+#ifdef MAP_DEVICE1
+	MAP_DEVICE1,
+#endif
+	{0}
+};
+#endif
 
 /*******************************************************************************
  * Macro generating the code for the function setting up the pagetables as per
@@ -92,8 +102,10 @@ static const mmap_region_t plat_qemu_mmap[] = {
  ******************************************************************************/
 
 #define DEFINE_CONFIGURE_MMU_EL(_el)					\
-	void qemu_configure_mmu_el##_el(unsigned long total_base,	\
+	void qemu_configure_mmu_##_el(unsigned long total_base,	\
 				   unsigned long total_size,		\
+				   unsigned long code_start,		\
+				   unsigned long code_limit,		\
 				   unsigned long ro_start,		\
 				   unsigned long ro_limit,		\
 				   unsigned long coh_start,		\
@@ -102,20 +114,27 @@ static const mmap_region_t plat_qemu_mmap[] = {
 		mmap_add_region(total_base, total_base,			\
 				total_size,				\
 				MT_MEMORY | MT_RW | MT_SECURE);		\
+		mmap_add_region(code_start, code_start,			\
+				code_limit - code_start,		\
+				MT_CODE | MT_SECURE);			\
 		mmap_add_region(ro_start, ro_start,			\
 				ro_limit - ro_start,			\
-				MT_MEMORY | MT_RO | MT_SECURE);		\
+				MT_RO_DATA | MT_SECURE);		\
 		mmap_add_region(coh_start, coh_start,			\
 				coh_limit - coh_start,			\
 				MT_DEVICE | MT_RW | MT_SECURE);		\
 		mmap_add(plat_qemu_mmap);				\
 		init_xlat_tables();					\
 									\
-		enable_mmu_el##_el(0);					\
+		enable_mmu_##_el(0);					\
 	}
 
 /* Define EL1 and EL3 variants of the function initialising the MMU */
-DEFINE_CONFIGURE_MMU_EL(1)
-DEFINE_CONFIGURE_MMU_EL(3)
+#ifdef AARCH32
+DEFINE_CONFIGURE_MMU_EL(secure)
+#else
+DEFINE_CONFIGURE_MMU_EL(el1)
+DEFINE_CONFIGURE_MMU_EL(el3)
+#endif
 
 

@@ -19,10 +19,9 @@
 	.globl	plat_secondary_cold_boot_setup
 	.globl	plat_report_exception
 	.globl	platform_is_primary_cpu
-	.globl	plat_crash_console_init
-	.globl	plat_crash_console_putc
 	.globl	plat_my_core_pos
 	.globl	plat_reset_handler
+	.globl	plat_panic_handler
 
 	/*
 	 * void plat_reset_handler(void);
@@ -82,38 +81,24 @@ func platform_is_primary_cpu
 endfunc platform_is_primary_cpu
 
 	/* --------------------------------------------------------------------
-	 * int plat_crash_console_init(void)
-	 * Function to initialize the crash console
-	 * without a C Runtime to print crash report.
-	 * Clobber list : x0, x1, x2
+	 * void plat_panic_handler(void)
+	 * Call system reset function on panic. Set up an emergency stack so we
+	 * can run C functions (it only needs to last for a few calls until we
+	 * reboot anyway).
 	 * --------------------------------------------------------------------
 	 */
-func plat_crash_console_init
-	mov_imm	x0, PLAT_RK_UART_BASE
-	mov_imm	x1, PLAT_RK_UART_CLOCK
-	mov_imm	x2, PLAT_RK_UART_BAUDRATE
-	b	console_core_init
-endfunc plat_crash_console_init
-
-	/* --------------------------------------------------------------------
-	 * int plat_crash_console_putc(void)
-	 * Function to print a character on the crash
-	 * console without a C Runtime.
-	 * Clobber list : x1, x2
-	 * --------------------------------------------------------------------
-	 */
-func plat_crash_console_putc
-	mov_imm x1, PLAT_RK_UART_BASE
-	b	console_core_putc
-endfunc plat_crash_console_putc
+func plat_panic_handler
+	msr	spsel, #0
+	bl	plat_set_my_stack
+	b	rockchip_soc_soft_reset
+endfunc plat_panic_handler
 
 	/* --------------------------------------------------------------------
 	 * void platform_cpu_warmboot (void);
 	 * cpus online or resume enterpoint
 	 * --------------------------------------------------------------------
 	 */
-	.align	16
-func platform_cpu_warmboot
+func platform_cpu_warmboot _align=16
 	mrs	x0, MPIDR_EL1
 	and	x19, x0, #MPIDR_CPU_MASK
 	and	x20, x0, #MPIDR_CLUSTER_MASK

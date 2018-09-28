@@ -9,7 +9,6 @@
 #include <context.h>
 
 	.global	el1_sysregs_context_save
-	.global el1_sysregs_context_save_post_ops
 	.global	el1_sysregs_context_restore
 #if CTX_INCLUDE_FPREGS
 	.global	fpregs_context_save
@@ -74,6 +73,9 @@ func el1_sysregs_context_save
 	mrs	x9, vbar_el1
 	stp	x17, x9, [x0, #CTX_CONTEXTIDR_EL1]
 
+	mrs	x10, pmcr_el0
+	str	x10, [x0, #CTX_PMCR_EL0]
+
 	/* Save AArch32 system registers if the build has instructed so */
 #if CTX_INCLUDE_AARCH32_REGS
 	mrs	x11, spsr_abt
@@ -87,9 +89,6 @@ func el1_sysregs_context_save
 	mrs	x15, dacr32_el2
 	mrs	x16, ifsr32_el2
 	stp	x15, x16, [x0, #CTX_DACR32_EL2]
-
-	mrs	x17, fpexc32_el2
-	str	x17, [x0, #CTX_FP_FPEXC32_EL2]
 #endif
 
 	/* Save NS timer registers if the build has instructed so */
@@ -108,36 +107,6 @@ func el1_sysregs_context_save
 
 	ret
 endfunc el1_sysregs_context_save
-
-/* -----------------------------------------------------
- * The following function strictly follows the AArch64
- * PCS to use x9-x17 (temporary caller-saved registers)
- * to do post operations after saving the EL1 system
- * register context.
- * -----------------------------------------------------
- */
-func el1_sysregs_context_save_post_ops
-#if ENABLE_SPE_FOR_LOWER_ELS
-	/* Detect if SPE is implemented */
-	mrs	x9, id_aa64dfr0_el1
-	ubfx	x9, x9, #ID_AA64DFR0_PMS_SHIFT, #ID_AA64DFR0_PMS_LENGTH
-	cmp	x9, #0x1
-	b.ne	1f
-
-	/*
-	 * Before switching from normal world to secure world
-	 * the profiling buffers need to be drained out to memory.  This is
-	 * required to avoid an invalid memory access when TTBR is switched
-	 * for entry to SEL1.
-	 */
-	.arch	armv8.2-a+profile
-	psb	csync
-	dsb	nsh
-	.arch	armv8-a
-1:
-#endif
-	ret
-endfunc el1_sysregs_context_save_post_ops
 
 /* -----------------------------------------------------
  * The following function strictly follows the AArch64
@@ -193,6 +162,9 @@ func el1_sysregs_context_restore
 	msr	contextidr_el1, x17
 	msr	vbar_el1, x9
 
+	ldr	x10, [x0, #CTX_PMCR_EL0]
+	msr	pmcr_el0, x10
+
 	/* Restore AArch32 system registers if the build has instructed so */
 #if CTX_INCLUDE_AARCH32_REGS
 	ldp	x11, x12, [x0, #CTX_SPSR_ABT]
@@ -206,9 +178,6 @@ func el1_sysregs_context_restore
 	ldp	x15, x16, [x0, #CTX_DACR32_EL2]
 	msr	dacr32_el2, x15
 	msr	ifsr32_el2, x16
-
-	ldr	x17, [x0, #CTX_FP_FPEXC32_EL2]
-	msr	fpexc32_el2, x17
 #endif
 	/* Restore NS timer registers if the build has instructed so */
 #if NS_TIMER_SWITCH
@@ -269,6 +238,10 @@ func fpregs_context_save
 	mrs	x10, fpcr
 	str	x10, [x0, #CTX_FP_FPCR]
 
+#if CTX_INCLUDE_AARCH32_REGS
+	mrs	x11, fpexc32_el2
+	str	x11, [x0, #CTX_FP_FPEXC32_EL2]
+#endif
 	ret
 endfunc fpregs_context_save
 
@@ -312,6 +285,10 @@ func fpregs_context_restore
 	ldr	x10, [x0, #CTX_FP_FPCR]
 	msr	fpcr, x10
 
+#if CTX_INCLUDE_AARCH32_REGS
+	ldr	x11, [x0, #CTX_FP_FPEXC32_EL2]
+	msr	fpexc32_el2, x11
+#endif
 	/*
 	 * No explict ISB required here as ERET to
 	 * switch to secure EL1 or non-secure world
@@ -407,6 +384,15 @@ func el3_exit
 	msr	spsr_el3, x16
 	msr	elr_el3, x17
 
+#if IMAGE_BL31 && DYNAMIC_WORKAROUND_CVE_2018_3639
+	/* Restore mitigation state as it was on entry to EL3 */
+	ldr	x17, [sp, #CTX_CVE_2018_3639_OFFSET + CTX_CVE_2018_3639_DISABLE]
+	cmp	x17, xzr
+	beq	1f
+	blr	x17
+#endif
+
+1:
 	/* Restore saved general purpose registers and return */
 	b	restore_gp_registers_eret
 endfunc el3_exit

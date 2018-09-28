@@ -92,6 +92,15 @@ func check_errata_cve_2017_5715
 	bx	lr
 endfunc check_errata_cve_2017_5715
 
+func check_errata_cve_2018_3639
+#if WORKAROUND_CVE_2018_3639
+	mov	r0, #ERRATA_APPLIES
+#else
+	mov	r0, #ERRATA_MISSING
+#endif
+	bx	lr
+endfunc check_errata_cve_2018_3639
+
 	/* -------------------------------------------------
 	 * The CPU Ops reset function for Cortex-A72.
 	 * -------------------------------------------------
@@ -105,6 +114,15 @@ func cortex_a72_reset_func
 	mov	r0, r4
 	bl	errata_a72_859971_wa
 #endif
+
+#if WORKAROUND_CVE_2018_3639
+	ldcopr16	r0, r1, CORTEX_A72_CPUACTLR
+	orr64_imm	r0, r1, CORTEX_A72_CPUACTLR_DIS_LOAD_PASS_STORE
+	stcopr16	r0, r1, CORTEX_A72_CPUACTLR
+	isb
+	dsb	sy
+#endif
+
 	/* ---------------------------------------------
 	 * Enable the SMP bit.
 	 * ---------------------------------------------
@@ -113,7 +131,7 @@ func cortex_a72_reset_func
 	orr64_imm	r0, r1, CORTEX_A72_ECTLR_SMP_BIT
 	stcopr16	r0, r1,	CORTEX_A72_ECTLR
 	isb
-	bx	lr
+	bx	r5
 endfunc cortex_a72_reset_func
 
 	/* ----------------------------------------------------
@@ -124,7 +142,7 @@ func cortex_a72_core_pwr_dwn
 	push	{r12, lr}
 
 	/* Assert if cache is enabled */
-#if ASM_ASSERTION
+#if ENABLE_ASSERTIONS
 	ldcopr	r0, SCTLR
 	tst	r0, #SCTLR_C_BIT
 	ASM_ASSERT(eq)
@@ -171,7 +189,7 @@ func cortex_a72_cluster_pwr_dwn
 	push	{r12, lr}
 
 	/* Assert if cache is enabled */
-#if ASM_ASSERTION
+#if ENABLE_ASSERTIONS
 	ldcopr	r0, SCTLR
 	tst	r0, #SCTLR_C_BIT
 	ASM_ASSERT(eq)
@@ -241,6 +259,7 @@ func cortex_a72_errata_report
 	 */
 	report_errata ERRATA_A72_859971, cortex_a72, 859971
 	report_errata WORKAROUND_CVE_2017_5715, cortex_a72, cve_2017_5715
+	report_errata WORKAROUND_CVE_2018_3639, cortex_a72, cve_2018_3639
 
 	pop	{r12, lr}
 	bx	lr
