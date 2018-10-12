@@ -1155,13 +1155,13 @@ uint32_t recovery_from_backup_mode(void)
 
    // ddr backupmode end
    if(ddrBackup) {
-      NOTICE("[WARM_BOOT]");
+      NOTICE("BL2: [WARM_BOOT]\n");
    } else {
-      NOTICE("[COLD_BOOT]");
+      NOTICE("BL2: [COLD_BOOT]\n");
    } // ddrBackup
    err=dram_update_boot_status(ddrBackup);
    if(err){
-      NOTICE("[BOOT_STATUS_UPDATE_ERROR]");
+      NOTICE("BL2: [BOOT_STATUS_UPDATE_ERROR]\n");
       return INITDRAM_ERR_I;
    } // err
 
@@ -1623,10 +1623,10 @@ int32_t InitDram(void)
     md = *((volatile uint32_t*)RST_MODEMR);
     ddr = (md & 0x00080000) >> 19;
     if(ddr == 0x0){
-        NOTICE("BL2: DDR1584(%s)", RCAR_E3_DDR_VERSION);
+        NOTICE("BL2: DDR1584(%s)\n", RCAR_E3_DDR_VERSION);
     }
     else if(ddr == 0x1){
-        NOTICE("BL2: DDR1856(%s)", RCAR_E3_DDR_VERSION);
+        NOTICE("BL2: DDR1856(%s)\n", RCAR_E3_DDR_VERSION);
     } // ddr
 
     dram_get_boot_status(&ddrBackup);
@@ -1642,8 +1642,6 @@ int32_t InitDram(void)
     } else {
         failcount =1;
     } // dataL
-
-    NOTICE("..%d\n",failcount); // rev.0.05
 
     if(failcount==0){
         return INITDRAM_OK;

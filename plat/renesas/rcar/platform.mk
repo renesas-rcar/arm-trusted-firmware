@@ -46,7 +46,7 @@ BL2_SOURCES		+=	${RCAR_GIC_SOURCES}				\
 				plat/renesas/rcar/drivers/rpc/rpc_driver.c	\
 				plat/renesas/rcar/drivers/dma/dma_driver.c	\
 				plat/renesas/rcar/drivers/avs/avs_driver.c	\
-				plat/renesas/rcar/drivers/wait/micro_wait.S	\
+				plat/renesas/rcar/drivers/wait/micro_wait.c	\
 				plat/renesas/rcar/drivers/emmc/emmc_utility.c	\
 				plat/renesas/rcar/drivers/emmc/emmc_interrupt.c	\
 				plat/renesas/rcar/drivers/emmc/emmc_cmd.c	\
@@ -75,7 +75,8 @@ BL31_SOURCES		+=	${RCAR_GIC_SOURCES}				\
 				plat/renesas/rcar/aarch64/rcar_drivers_common.c	\
 				plat/renesas/rcar/drivers/pwrc/rcar_call_sram.S	\
 				plat/renesas/rcar/drivers/pwrc/rcar_pwrc.c	\
-				plat/renesas/rcar/drivers/cpld/ulcb_cpld.c
+				plat/renesas/rcar/drivers/cpld/ulcb_cpld.c	\
+				plat/renesas/rcar/drivers/wait/micro_wait.c
 
 # compile option setting
 ARM_CCI_PRODUCT_ID	:= 500

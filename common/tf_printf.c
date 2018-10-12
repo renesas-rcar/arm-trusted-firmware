@@ -1,6 +1,5 @@
 /*
  * Copyright (c) 2014-2017, ARM Limited and Contributors. All rights reserved.
- * Copyright (c) 2015-2018, Renesas Electronics Corporation. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -12,11 +11,6 @@
 #include <stdarg.h>
 #include <stdint.h>
 
-#if ((IMAGE_BL31 || IMAGE_BL2) && PLAT_rcar)
-#include "rcar_printf.h"
-
-static int newline = 1;
-#endif
 /***********************************************************
  * The tf_printf implementation for all BL stages
  ***********************************************************/
@@ -35,10 +29,6 @@ void tf_string_print(const char *str)
 
 	while (*str)
 		putchar(*str++);
-#if ((IMAGE_BL31 || IMAGE_BL2) && PLAT_rcar)
-	if ((str - 1) && (*(str - 1) == '\n'))
-		newline = 1;
-#endif
 }
 
 static void unsigned_num_print(unsigned long long int unum, unsigned int radix,
@@ -95,12 +85,6 @@ void tf_vprintf(const char *fmt, va_list args)
 	char padc = 0; /* Padding character */
 	int padn; /* Number of characters to pad */
 
-#if ((IMAGE_BL31 || IMAGE_BL2) && PLAT_rcar)
-	if (newline) {
-		newline = 0;
-		rcar_set_log_time();
-	}
-#endif
 	while (*fmt) {
 		l_count = 0;
 		padn = 0;
@@ -173,10 +157,6 @@ loop:
 			fmt++;
 			continue;
 		}
-#if ((IMAGE_BL31 || IMAGE_BL2) && PLAT_rcar)
-		if (*fmt == '\n')
-			newline = 1;
-#endif
 		putchar(*fmt++);
 	}
 }

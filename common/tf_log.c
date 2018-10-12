@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2017, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2018, Renesas Electronics Corporation. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -7,6 +8,9 @@
 #include <assert.h>
 #include <debug.h>
 #include <platform.h>
+#if ((IMAGE_BL31 || IMAGE_BL2) && PLAT_rcar)
+#include "rcar_printf.h"
+#endif /* ((IMAGE_BL31 || IMAGE_BL2) && PLAT_rcar) */
 
 /* Set the default maximum log level to the `LOG_LEVEL` build flag */
 static unsigned int max_log_level = LOG_LEVEL;
@@ -33,6 +37,10 @@ void tf_log(const char *fmt, ...)
 
 	if (log_level > max_log_level)
 		return;
+
+#if ((IMAGE_BL31 || IMAGE_BL2) && PLAT_rcar)
+	rcar_set_log_time();
+#endif /* ((IMAGE_BL31 || IMAGE_BL2) && PLAT_rcar) */
 
 	prefix_str = plat_log_get_prefix(log_level);
 

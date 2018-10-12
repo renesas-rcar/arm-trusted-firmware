@@ -2627,7 +2627,7 @@ static uint32_t pll3_freq(uint32_t on)
 	set_freqchgack(0);
 
 	if(timeout){
-		FATAL_MSG("Time out[2]");
+		FATAL_MSG("BL2: Time out[2]\n");
 		return (1);
 	}
 	return (0);
@@ -2808,13 +2808,13 @@ static uint32_t init_ddr(void)
 	***********************************************************************/
 #ifdef DDR_BACKUPMODE
 	if(ddrBackup){
-		NOTICE("[WARM_BOOT]");
+		NOTICE("BL2: [WARM_BOOT]\n");
 	} else {
-		NOTICE("[COLD_BOOT]");
+		NOTICE("BL2: [COLD_BOOT]\n");
 	}
 	err=dram_update_boot_status(ddrBackup);
 	if(err){
-		NOTICE("[BOOT_STATUS_UPDATE_ERROR]");
+		NOTICE("BL2: [BOOT_STATUS_UPDATE_ERROR]\n");
 		return INITDRAM_ERR_I;
 	}
 #endif
@@ -3858,7 +3858,7 @@ int32_t InitDram(void)
 	} else if((Prr_Product==PRR_PRODUCT_M3N)||(Prr_Product==PRR_PRODUCT_V3H)){
 		pDDR_REGDEF_TBL = (uint32_t *)&DDR_REGDEF_TBL[3][0];
 	} else {
-		FATAL_MSG("DDR:Unknown Product");
+		FATAL_MSG("BL2: DDR:Unknown Product\n");
 		return 0xff;
 	}
 
@@ -3874,7 +3874,7 @@ int32_t InitDram(void)
 	***********************************************************************/
 	_cnf_BOARDTYPE = boardcnf_get_brd_type();
 	if(_cnf_BOARDTYPE>=BOARDNUM){
-		FATAL_MSG("DDR:Unknown Board");
+		FATAL_MSG("BL2: DDR:Unknown Board\n");
 		return 0xff;
 	}
 	Boardcnf = (struct _boardcnf *)&boardcnfs[_cnf_BOARDTYPE];
@@ -3957,7 +3957,7 @@ int32_t InitDram(void)
 	else
 		ddr_tccd = tmp_tccd;
 
-	NOTICE("BL2: DDR%d(%s)", ddr_mbps/ddr_mbpsdiv, RCAR_DDR_VERSION);
+	NOTICE("BL2: DDR%d(%s)\n", ddr_mbps/ddr_mbpsdiv, RCAR_DDR_VERSION);
 
 	MSG_LF("Start\n");
 
@@ -3976,8 +3976,6 @@ int32_t InitDram(void)
 	else {
 		failcount =1;
 	}
-
-	NOTICE("..%d\n", failcount);
 
 	foreach_vch(ch)
 		mmio_write_32(DBSC_DBPDLK(ch), 0x00000000);

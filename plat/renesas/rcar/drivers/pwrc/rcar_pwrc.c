@@ -16,6 +16,7 @@
 #include "rcar_private.h"
 #include "rcar_pwrc.h"
 #include "iic_dvfs.h"
+#include "micro_wait.h"
 
 /*
  * TODO: Someday there will be a generic power controller api. At the moment
@@ -132,7 +133,6 @@ RCAR_INSTANTIATE_LOCK
 #define	RST_MODEMR				(RST_BASE + 0x0060U)
 #define	RST_MODEMR_BIT0				(0x00000001U)
 
-#define RCAR_CONV_MICROSEC			(1000000U)
 
 #if PMIC_ROHM_BD9571
 /* PMIC for BD9571MWV-M*/
@@ -156,7 +156,6 @@ RCAR_INSTANTIATE_LOCK
 #if RCAR_SYSTEM_SUSPEND
 static void rcar_bl31_set_self_refresh(void);
 static void rcar_bl31_set_self_refresh_e3(void);
-static void rcar_bl31_micro_wait(uint64_t micro_sec);
 #endif /* RCAR_SYSTEM_SUSPEND */
 static void SCU_power_up(uint64_t mpidr);
 
@@ -516,7 +515,7 @@ static void __attribute__ ((section (".system_ram")))  rcar_bl31_set_self_refres
 	if ((lsi_product == RCAR_PRODUCT_H3) && (lsi_cut < RCAR_CUT_VER20)){
 		/* for R-CarH3 Ver.1.x WA */
 		/* Waiting	: tRC * 512 *2 = 66us(LPDDR4) [min]  -> 100us OK!! */
-		rcar_bl31_micro_wait(100U);
+		micro_wait(100U);
 	} else if (lsi_product == RCAR_PRODUCT_H3) {
 		/* for R-CarH3 Ver.2.0~ */
 		mmio_write_32(DBSC4_REG_DBCAM0CTRL0, 1U);		/* CAM Flush 1: Flush.	*/
@@ -592,7 +591,7 @@ static void __attribute__ ((section (".system_ram")))  rcar_bl31_set_self_refres
 	mmio_write_32(DBSC4_REG_DBRFEN, 0U);		/* Set the ARFEN bit to 0 in the DBRFEN	*/
 
 	/* Wait for the tCKELPD period. */
-	rcar_bl31_micro_wait(1U);
+	micro_wait(1U);
 
 		/* DDR PHY must be entered "deep sleep" mode (details are T.B.D.). */
 		/* MxBKUP is set High Level. */
@@ -799,21 +798,6 @@ void rcar_bl31_suspend_to_ram(void)
 #if RCAR_SYSTEM_RESET_KEEPON_DDR
 	}
 #endif /* RCAR_SYSTEM_RESET_KEEPON_DDR */
-}
-
-static void __attribute__ ((section (".system_ram")))  rcar_bl31_micro_wait(uint64_t micro_sec)
-{
-	uint64_t freq;
-	uint64_t base_count;
-	uint64_t get_count;
-	uint64_t wait_time = 0U;
-
-	freq = read_cntfrq_el0();
-	base_count = (uint64_t)read_cntpct_el0();
-	while(micro_sec > wait_time) {
-		get_count = (uint64_t)read_cntpct_el0();
-		wait_time = ((get_count - base_count) * RCAR_CONV_MICROSEC) / freq;
-	}
 }
 #endif /* RCAR_SYSTEM_SUSPEND */
 
