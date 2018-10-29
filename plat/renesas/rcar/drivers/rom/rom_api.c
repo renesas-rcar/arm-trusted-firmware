@@ -21,8 +21,10 @@ static uint32_t get_table_index(void);
 #define OLD_API_TABLE1	(0U)	/* H3 Ver.1.0/Ver.1.1 */
 #define OLD_API_TABLE2	(1U)	/* H3 Ver.2.0 */
 #define OLD_API_TABLE3	(2U)	/* M3 Ver.1.0 */
-#define NEW_API_TABLE	(3U)	/* H3 Ver.3.0, M3 Ver.1.1 or later, M3N, E3 */
-#define API_TABLE_MAX	(4U)	/* table max */
+#define NEW_API_TABLE	(3U)	/* H3 Ver.3.0, M3 Ver.1.1 or later, M3N, E3, */
+				/* V3M WS2.0 */
+#define NEW_API_TABLE2	(4U)	/* V3M WS1.0 */
+#define API_TABLE_MAX	(5U)	/* table max */
 
 
 
@@ -35,7 +37,9 @@ uint32_t ROM_SecureBootAPI( uint32_t *pKeyCert,
 		0xEB10DD64U,	/* H3 Ver.1.0/Ver.1.1 */
 		0xEB116ED4U,	/* H3 Ver.2.0 */
 		0xEB1102FCU,	/* M3 Ver.1.0 */
-		0xEB100180U	/* H3 Ver.3.0, M3 Ver.1.1 or later, M3N, E3 */
+		0xEB100180U,	/* H3 Ver.3.0, M3 Ver.1.1 or later, M3N, E3, */
+				/* V3M WS2.0 */
+		0xEB110128U,	/* V3M WS1.0 */
 	};
 
 	ROM_SECURE_BOOT_API func;
@@ -55,7 +59,9 @@ uint32_t ROM_GetLcs(uint32_t *pLcs)
 		0xEB10DFE0U,	/* H3 Ver.1.0/Ver.1.1 */
 		0xEB117150U,	/* H3 Ver.2.0 */
 		0xEB110578U,	/* M3 Ver.1.0 */
-		0xEB10018CU	/* H3 Ver.3.0, M3 Ver.1.1 or later, M3N, E3 */
+		0xEB10018CU,	/* H3 Ver.3.0, M3 Ver.1.1 or later, M3N, E3, */
+				/* V3M WS2.0 */
+		0xEB1103A4U,	/* V3M WS1.0 */
 	};
 
 	ROM_GETLCS_API func;
@@ -94,6 +100,13 @@ static uint32_t get_table_index(void)
 			index = OLD_API_TABLE3;	/* M3 Ver.1.0 */
 		} else {
 			index = NEW_API_TABLE;	/* M3 Ver.1.1 or later */
+		}
+		break;
+	case RCAR_PRODUCT_V3M:
+		if (cut_ver == RCAR_CUT_VER10) {
+			index = NEW_API_TABLE2;	/* V3M WS1.0 */
+		} else {
+			index = NEW_API_TABLE;	/* V3M WS2.0 or later */
 		}
 		break;
 	default:

@@ -7,7 +7,11 @@
 #ifndef BL2_DMA_REGISTER_H__
 #define BL2_DMA_REGISTER_H__
 
+#if RCAR_LSI == RCAR_V3M	/* V3M */
+#define	DMACH	16	/* DMA CH setting (0/16/32) */
+#else
 #define	DMACH	0	/* DMA CH setting (0/16/32) */
+#endif
 
 #if (DMACH==0)		/* SYS-DMAC0 (CH0) */
 #define SYS_DMAC_BIT	((uint32_t)1U << 19U)

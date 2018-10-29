@@ -104,18 +104,21 @@
  * size plus a little space for growth.
  */
 #define RCAR_SYSRAM_BASE		U(0xE6300000)
-#if RCAR_LSI == RCAR_E3
-#define BL2_LIMIT			U(0xE6320000)
-#else  /* RCAR_LSI == RCAR_E3 */
-#define BL2_LIMIT			U(0xE6360000)
-#endif /* RCAR_LSI == RCAR_E3 */
 
+#if RCAR_LSI == RCAR_V3M
+#define BL2_BASE			U(0xE6344000)
+#define BL2_LIMIT			U(0xE6360000)
+#define BL2_IMAGE_LIMIT			U(0xE636E800)
+#elif RCAR_LSI == RCAR_E3
 #define BL2_BASE			U(0xE6304000)
-#if RCAR_LSI == RCAR_E3
+#define BL2_LIMIT			U(0xE6320000)
 #define BL2_IMAGE_LIMIT			U(0xE6318000)
-#else  /* RCAR_LSI == RCAR_E3 */
+#else
+#define BL2_BASE			U(0xE6304000)
+#define BL2_LIMIT			U(0xE6360000)
 #define BL2_IMAGE_LIMIT			U(0xE632E800)
-#endif /* RCAR_LSI == RCAR_E3 */
+#endif
+
 #define RCAR_SYSRAM_SIZE		(BL2_BASE - RCAR_SYSRAM_BASE)
 
 /*******************************************************************************

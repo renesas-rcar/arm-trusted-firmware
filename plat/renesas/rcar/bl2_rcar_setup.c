@@ -132,8 +132,11 @@
 #elif RCAR_LSI == RCAR_E3
 #define TARGET_PRODUCT		RCAR_PRODUCT_E3
 #define TARGET_NAME		"R-Car E3"
+#elif RCAR_LSI == RCAR_V3M
+#define TARGET_PRODUCT		RCAR_PRODUCT_V3M
+#define TARGET_NAME		"R-Car V3M"
 #elif RCAR_LSI == RCAR_AUTO
-#define TARGET_NAME		"R-Car H3/M3/M3N"
+#define TARGET_NAME		"R-Car H3/M3/M3N/V3M"
 #endif
 
 /* for SuspendToRAM */
@@ -410,6 +413,7 @@ static void rcar_bl2_early_platform_setup(const meminfo_t *mem_layout)
 	const char *product_m3      = "M3";
 	const char *product_m3n     = "M3N";
 	const char *product_e3      = "E3";
+	const char *product_v3m     = "V3M";
 	const char *lcs_cm          = "CM";
 	const char *lcs_dm          = "DM";
 	const char *lcs_sd          = "SD";
@@ -494,6 +498,9 @@ static void rcar_bl2_early_platform_setup(const meminfo_t *mem_layout)
 	case RCAR_PRODUCT_E3:
 		str = product_e3;
 		break;
+	case RCAR_PRODUCT_V3M:
+		str = product_v3m;
+		break;
 	default:
 		str = unknown;
 		break;
@@ -568,11 +575,13 @@ static void rcar_bl2_early_platform_setup(const meminfo_t *mem_layout)
 	}
 #endif /* RCAR_LSI != RCAR_AUTO */
 
+#if RCAR_LSI != RCAR_V3M
 	/* Initialize AVS Settings */
 	bl2_avs_init();
 
 	/* Proceed with separated AVS processing */
 	bl2_avs_setting();
+#endif
 
 	switch (modemr_boot_dev) {
 	case MODEMR_BOOT_DEV_HYPERFLASH160:
@@ -600,8 +609,10 @@ static void rcar_bl2_early_platform_setup(const meminfo_t *mem_layout)
 	(void)sprintf(msg, "BL2: Boot device is %s\n", str);
 	NOTICE("%s", msg);
 
+#if RCAR_LSI != RCAR_V3M
 	/* Proceed with separated AVS processing */
 	bl2_avs_setting();
+#endif
 
 	reg = ROM_GetLcs(&lcs);
 	if (reg == 0U) {
