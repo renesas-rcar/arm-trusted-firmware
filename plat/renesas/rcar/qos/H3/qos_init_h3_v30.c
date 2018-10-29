@@ -11,7 +11,7 @@
 #include "qos_init_h3_v30.h"
 
 
-#define	RCAR_QOS_VERSION		"rev.0.08"
+#define	RCAR_QOS_VERSION		"rev.0.09"
 
 #define QOSCTRL_FSS			(QOS_BASE1 + 0x0048U)
 

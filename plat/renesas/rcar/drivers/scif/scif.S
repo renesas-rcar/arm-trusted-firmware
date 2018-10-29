@@ -75,6 +75,8 @@
 #define	SCSCR_CKE_INT_CLK	(SCSCR_CKE_INT)
 #endif
 
+#define	SCFSR_TEND_MASK		(1 << 6)
+#define	SCFSR_TEND_TRANS_END	(0x0040)
 #define	SCFSR_INIT_DATA		(0x0000)
 
 #define	SCFCR_TTRG_MASK		(3 << 4)
@@ -274,6 +276,11 @@ func console_core_putc
 	bcs	2b
 	strb	w0, [x1, #SCIF_SCFTDR]
 
+	/* Clear TEND flag */
+	ldrh	w2, [x1, #SCIF_SCFSR]
+	and	w2, w2, #~SCFSR_TEND_MASK
+	strh	w2, [x1, #SCIF_SCFSR]
+
 	ret
 endfunc console_core_putc
 
@@ -302,37 +309,11 @@ endfunc console_getc
 func console_flush
 	ldr	x0, =SCIF2_BASE
 1:
-	ldrh	w1, [x0, #SCIF_SCFDR]
-	ubfx	w1, w1, #8, #5
-	cmp	w1, #0
+	/* Check TEND flag */
+	ldrh	w1, [x0, #SCIF_SCFSR]
+	and	w1, w1, #SCFSR_TEND_MASK
+	cmp	w1, #SCFSR_TEND_TRANS_END
 	bne	1b
-
-	mov	x9, x30
-
-	stp	x2, x3, [sp, #-16]!
-	stp	x4, x5, [sp, #-16]!
-	stp	x6, x7, [sp, #-16]!
-	stp	x8, x9, [sp, #-16]!
-	stp	x10, x11, [sp, #-16]!
-	stp	x12, x13, [sp, #-16]!
-	stp	x14, x15, [sp, #-16]!
-	stp	x16, x17, [sp, #-16]!
-	stp	x18, x19, [sp, #-16]!
-
-	mov	x0, #100
-	bl	micro_wait
-
-	ldp	x18, x19, [sp], #16
-	ldp	x16, x17, [sp], #16
-	ldp	x14, x15, [sp], #16
-	ldp	x12, x13, [sp], #16
-	ldp	x10, x11, [sp], #16
-	ldp	x8, x9, [sp], #16
-	ldp	x6, x7, [sp], #16
-	ldp	x4, x5, [sp], #16
-	ldp	x2, x3, [sp], #16
-
-	mov	x30, x9
 
 	ldr	x0, =SCIF2_BASE
 	ldrh	w1, [x0, #SCIF_SCSCR]

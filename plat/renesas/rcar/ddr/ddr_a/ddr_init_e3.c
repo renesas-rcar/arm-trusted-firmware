@@ -114,6 +114,11 @@
  *                           ddr_init_e3.h : RCAR_E3_DDR_VERSION "rev.0.07" -> "rev.0.08"
  * rev.0.09    2018/08/22    Separate initialization of Rdbit/Wrbit/Rd/Wr and Correct BackupResume Sequence (add RCAR_DRAM_DDR3L_MEMDUAL)
  *                           ddr_init_e3.h : RCAR_E3_DDR_VERSION "rev.0.08" -> "rev.0.09"
+ * rev.0.10    2018/10/09    Add Workaround for DRAM limitation (PDR)
+ *                           ddr_init_e3.h : RCAR_E3_DDR_VERSION "rev.0.09" -> "rev.0.10"
+ * rev.0.11    2018/10/19    Add Workaround for DRAM limitation (bypmode)
+ *                           ddr_init_e3.h : RCAR_E3_DDR_VERSION "rev.0.10" -> "rev.0.11"
+ *                           init_ddr, recovery_from_backup_mode, InitDram : modify output log
  */
 
 
@@ -169,14 +174,22 @@ uint32_t init_ddr(void)
    uint32_t dqsgd_0c, bdlcount_0c, bdlcount_0c_div2, bdlcount_0c_div4, bdlcount_0c_div8, bdlcount_0c_div16;
    uint32_t gatesl_0c, rdqsd_0c, rdqsnd_0c, rbd_0c[4];
    uint32_t pdqsr_ctl,lcdl_ctl,lcdl_judge1,lcdl_judge2;
+//rev.0.10
+   uint32_t pdr_ctl;
+//rev.0.11
+   uint32_t byp_ctl;
 
 //rev.0.08
    if ((ReadReg_32(0xFFF00044) & 0x000000FF) == 0x00000000) {
      pdqsr_ctl  = 1;
      lcdl_ctl   = 1;
+     pdr_ctl    = 1;  //rev.0.10
+     byp_ctl    = 1;  //rev.0.11
     }else {
      pdqsr_ctl  = 0;
      lcdl_ctl   = 0;
+     pdr_ctl    = 0;  //rev.0.10
+     byp_ctl    = 0;  //rev.0.11
    }
 
    // Judge the DDR bit rate (ddr_md : 0 = 1584Mbps, 1 = 1856Mbps)
@@ -310,6 +323,7 @@ uint32_t init_ddr(void)
    WriteReg_32(DBSC_E3_DBPDLK0,0x0000A55A);
    WriteReg_32(DBSC_E3_DBCMD,0x01840001);
    WriteReg_32(DBSC_E3_DBCMD,0x08840000);
+   NOTICE("BL2: [COLD_BOOT]\n");  // rev.0.11
    WriteReg_32(DBSC_E3_DBPDRGA0,0x00000001);
    WriteReg_32(DBSC_E3_DBPDRGD0,0x80010000);
    WriteReg_32(DBSC_E3_DBPDRGA0,0x00000006);
@@ -378,7 +392,11 @@ uint32_t init_ddr(void)
    while ( (BIT0 & ReadReg_32(DBSC_E3_DBPDRGD0)) == 0 );
 
    WriteReg_32(DBSC_E3_DBPDRGA0,0x00000003);
+if (byp_ctl==1) {
+   WriteReg_32(DBSC_E3_DBPDRGD0,0x0780C720);
+} else {
    WriteReg_32(DBSC_E3_DBPDRGD0,0x0780C700);
+}
    WriteReg_32(DBSC_E3_DBPDRGA0,0x00000007);
    while ( (BIT30 & ReadReg_32(DBSC_E3_DBPDRGD0)) == 0 );
 
@@ -506,10 +524,6 @@ uint32_t init_ddr(void)
    WriteReg_32(DBSC_E3_DBPDRGA0,0x00000006);
    while ( (BIT0 & ReadReg_32(DBSC_E3_DBPDRGD0)) == 0 );
 
-   // rev.0.03 add Comment
-   /****************************************************************************
-    *  Initial_Step4( WLADJ training )
-    ***************************************************************************/
    for ( i = 0; i<4; i++){
       WriteReg_32(DBSC_E3_DBPDRGA0,0x000000B1 + i*0x20);
       RegVal_R5 = (ReadReg_32(DBSC_E3_DBPDRGD0) & 0x0000FF00) >> 0x8;
@@ -538,6 +552,10 @@ uint32_t init_ddr(void)
       } // RegVal_R6
    } // for i
 
+   // rev.0.10 move Comment
+   /****************************************************************************
+    *  Initial_Step4( WLADJ training )
+    ***************************************************************************/
    WriteReg_32(DBSC_E3_DBPDRGA0,0x00000005);
    WriteReg_32(DBSC_E3_DBPDRGD0,0xC1AA00C0);
 
@@ -555,14 +573,25 @@ uint32_t init_ddr(void)
 
    }
 
+// PDR always off   // rev.0.10 add
+if (pdr_ctl==1) {
+   WriteReg_32(DBSC_E3_DBPDRGA0,0x000000A3);
+   WriteReg_32(DBSC_E3_DBPDRGD0,0x00000008);
+   WriteReg_32(DBSC_E3_DBPDRGA0,0x000000C3);
+   WriteReg_32(DBSC_E3_DBPDRGD0,0x00000008);
+   WriteReg_32(DBSC_E3_DBPDRGA0,0x000000E3);
+   WriteReg_32(DBSC_E3_DBPDRGD0,0x00000008);
+   WriteReg_32(DBSC_E3_DBPDRGA0,0x00000103);
+   WriteReg_32(DBSC_E3_DBPDRGD0,0x00000008);
+}
+
    WriteReg_32(DBSC_E3_DBPDRGA0,0x00000001);
    WriteReg_32(DBSC_E3_DBPDRGD0,0x00010801);
    WriteReg_32(DBSC_E3_DBPDRGA0,0x00000006);
    while ( (BIT0 & ReadReg_32(DBSC_E3_DBPDRGD0)) == 0 );
 
-   // rev.0.03 add Comment
    /****************************************************************************
-    *  Initial_Step5678( RdWrbitRdWreye )
+    *  Initial_Step5(Read Data Bit Deskew)
     ***************************************************************************/
    WriteReg_32(DBSC_E3_DBPDRGA0,0x00000005);
    WriteReg_32(DBSC_E3_DBPDRGD0,0xC1AA00D8);
@@ -584,11 +613,29 @@ if (pdqsr_ctl == 1){
    WriteReg_32(DBSC_E3_DBPDRGD0,0x7C0002C5);
 }
 
+// PDR dynamic      // rev.0.10 add
+if (pdr_ctl==1) {
+   WriteReg_32(DBSC_E3_DBPDRGA0,0x000000A3);
+   WriteReg_32(DBSC_E3_DBPDRGD0,0x00000000);
+   WriteReg_32(DBSC_E3_DBPDRGA0,0x000000C3);
+   WriteReg_32(DBSC_E3_DBPDRGD0,0x00000000);
+   WriteReg_32(DBSC_E3_DBPDRGA0,0x000000E3);
+   WriteReg_32(DBSC_E3_DBPDRGD0,0x00000000);
+   WriteReg_32(DBSC_E3_DBPDRGA0,0x00000103);
+   WriteReg_32(DBSC_E3_DBPDRGD0,0x00000000);
+}
+
+   /****************************************************************************
+    *  Initial_Step6(Write Data Bit Deskew)
+    ***************************************************************************/
    WriteReg_32(DBSC_E3_DBPDRGA0,0x00000001);
    WriteReg_32(DBSC_E3_DBPDRGD0,0x00012001);
    WriteReg_32(DBSC_E3_DBPDRGA0,0x00000006);
    while ( (BIT0 & ReadReg_32(DBSC_E3_DBPDRGD0)) == 0 );
 
+   /****************************************************************************
+    *  Initial_Step7(Read Data Eye Training)
+    ***************************************************************************/
 if (pdqsr_ctl == 1){
    WriteReg_32(DBSC_E3_DBPDRGA0,0x000000A0);
    WriteReg_32(DBSC_E3_DBPDRGD0,0x7C000285);
@@ -598,6 +645,18 @@ if (pdqsr_ctl == 1){
    WriteReg_32(DBSC_E3_DBPDRGD0,0x7C000285);
    WriteReg_32(DBSC_E3_DBPDRGA0,0x00000100);
    WriteReg_32(DBSC_E3_DBPDRGD0,0x7C000285);
+}
+
+// PDR always off   // rev.0.10 add
+if (pdr_ctl==1) {
+   WriteReg_32(DBSC_E3_DBPDRGA0,0x000000A3);
+   WriteReg_32(DBSC_E3_DBPDRGD0,0x00000008);
+   WriteReg_32(DBSC_E3_DBPDRGA0,0x000000C3);
+   WriteReg_32(DBSC_E3_DBPDRGD0,0x00000008);
+   WriteReg_32(DBSC_E3_DBPDRGA0,0x000000E3);
+   WriteReg_32(DBSC_E3_DBPDRGD0,0x00000008);
+   WriteReg_32(DBSC_E3_DBPDRGA0,0x00000103);
+   WriteReg_32(DBSC_E3_DBPDRGD0,0x00000008);
 }
 
    WriteReg_32(DBSC_E3_DBPDRGA0,0x00000001);
@@ -616,6 +675,21 @@ if (pdqsr_ctl == 1){
    WriteReg_32(DBSC_E3_DBPDRGD0,0x7C0002C5);
 }
 
+// PDR dynamic      // rev.0.10 add
+if (pdr_ctl==1) {
+   WriteReg_32(DBSC_E3_DBPDRGA0,0x000000A3);
+   WriteReg_32(DBSC_E3_DBPDRGD0,0x00000000);
+   WriteReg_32(DBSC_E3_DBPDRGA0,0x000000C3);
+   WriteReg_32(DBSC_E3_DBPDRGD0,0x00000000);
+   WriteReg_32(DBSC_E3_DBPDRGA0,0x000000E3);
+   WriteReg_32(DBSC_E3_DBPDRGD0,0x00000000);
+   WriteReg_32(DBSC_E3_DBPDRGA0,0x00000103);
+   WriteReg_32(DBSC_E3_DBPDRGD0,0x00000000);
+}
+
+   /****************************************************************************
+    *  Initial_Step8(Write Data Eye Training)
+    ***************************************************************************/
    WriteReg_32(DBSC_E3_DBPDRGA0,0x00000001);
    WriteReg_32(DBSC_E3_DBPDRGD0,0x00018001);
    WriteReg_32(DBSC_E3_DBPDRGA0,0x00000006);
@@ -640,10 +714,6 @@ if (pdqsr_ctl == 1){
    WriteReg_32(DBSC_E3_DBPDRGA0,0x00000006);
    while ( (BIT0 & ReadReg_32(DBSC_E3_DBPDRGD0)) == 0 );
 
-   // rev.0.03 add Comment
-   /****************************************************************************
-    *  Initial_Step5-2_7-2( Rd bit Rd eye )
-    ***************************************************************************/
    for ( i = 0; i < 4; i++){
       WriteReg_32(DBSC_E3_DBPDRGA0,0x000000B1 + i*0x20);
       RegVal_R5 = ((ReadReg_32(DBSC_E3_DBPDRGD0) & 0x0000FF00) >> 0x8);
@@ -673,6 +743,10 @@ if (pdqsr_ctl == 1){
       } // RegVal_R12 < RegVal_R6
    } // for i
 
+   // rev.0.10 move Comment
+   /****************************************************************************
+    *  Initial_Step5-2_7-2( Rd bit Rd eye )
+    ***************************************************************************/
 //rev.0.08
    if (pdqsr_ctl == 1){}else{
 
@@ -686,6 +760,18 @@ if (pdqsr_ctl == 1){
    WriteReg_32(DBSC_E3_DBPDRGD0,0x7C0002C5);
 
    }
+
+// PDR always off   // rev.0.10 add
+if (pdr_ctl==1) {
+   WriteReg_32(DBSC_E3_DBPDRGA0,0x000000A3);
+   WriteReg_32(DBSC_E3_DBPDRGD0,0x00000008);
+   WriteReg_32(DBSC_E3_DBPDRGA0,0x000000C3);
+   WriteReg_32(DBSC_E3_DBPDRGD0,0x00000008);
+   WriteReg_32(DBSC_E3_DBPDRGA0,0x000000E3);
+   WriteReg_32(DBSC_E3_DBPDRGD0,0x00000008);
+   WriteReg_32(DBSC_E3_DBPDRGA0,0x00000103);
+   WriteReg_32(DBSC_E3_DBPDRGD0,0x00000008);
+}
 
    WriteReg_32(DBSC_E3_DBPDRGA0,0x00000001);
    WriteReg_32(DBSC_E3_DBPDRGD0,0x00015001);
@@ -770,7 +856,11 @@ if (pdqsr_ctl == 1){
 
 
    WriteReg_32(DBSC_E3_DBPDRGA0,0x00000003);
+if (byp_ctl==1) {
+   WriteReg_32(DBSC_E3_DBPDRGD0,0x0380C720);
+} else {
    WriteReg_32(DBSC_E3_DBPDRGD0,0x0380C700);
+}
    WriteReg_32(DBSC_E3_DBPDRGA0,0x00000007);
    while ( (BIT30 & ReadReg_32(DBSC_E3_DBPDRGD0)) != 0 );
 
@@ -807,6 +897,18 @@ if (pdqsr_ctl == 1){
    WriteReg_32(DBSC_E3_DBPDRGD0,0x7C0002C5);
 
    }
+
+// PDR dynamic      // rev.0.10 add
+if (pdr_ctl==1) {
+   WriteReg_32(DBSC_E3_DBPDRGA0,0x000000A3);
+   WriteReg_32(DBSC_E3_DBPDRGD0,0x00000000);
+   WriteReg_32(DBSC_E3_DBPDRGA0,0x000000C3);
+   WriteReg_32(DBSC_E3_DBPDRGD0,0x00000000);
+   WriteReg_32(DBSC_E3_DBPDRGA0,0x000000E3);
+   WriteReg_32(DBSC_E3_DBPDRGD0,0x00000000);
+   WriteReg_32(DBSC_E3_DBPDRGA0,0x00000103);
+   WriteReg_32(DBSC_E3_DBPDRGD0,0x00000000);
+}
 
 
    // rev.0.03 add Comment
@@ -879,14 +981,22 @@ uint32_t recovery_from_backup_mode(void)
    uint32_t dqsgd_0c, bdlcount_0c, bdlcount_0c_div2, bdlcount_0c_div4, bdlcount_0c_div8, bdlcount_0c_div16;
    uint32_t gatesl_0c, rdqsd_0c, rdqsnd_0c, rbd_0c[4];
    uint32_t pdqsr_ctl,lcdl_ctl,lcdl_judge1,lcdl_judge2;
+//rev.0.10
+   uint32_t pdr_ctl;
+//rev.0.11
+   uint32_t byp_ctl;
 
 //rev.0.08
    if ((ReadReg_32(0xFFF00044) & 0x000000FF) == 0x00000000) {
      pdqsr_ctl  = 1;
      lcdl_ctl   = 1;
+     pdr_ctl    = 1;  //rev.0.10
+     byp_ctl    = 1;  //rev.0.11
     }else {
      pdqsr_ctl  = 0;
      lcdl_ctl   = 0;
+     pdr_ctl    = 0;  //rev.0.10
+     byp_ctl    = 0;  //rev.0.11
    }
 
 
@@ -1021,7 +1131,11 @@ uint32_t recovery_from_backup_mode(void)
    WriteReg_32(DBSC_E3_DBPDRGA0,0x00000008); // DDR_PLLCR
    WriteReg_32(DBSC_E3_DBPDRGD0,0x000B8000);
    WriteReg_32(DBSC_E3_DBPDRGA0,0x00000003); // DDR_PGCR1
+if (byp_ctl==1) {
+   WriteReg_32(DBSC_E3_DBPDRGD0,0x0780C720);
+} else {
    WriteReg_32(DBSC_E3_DBPDRGD0,0x0780C700);
+}
    WriteReg_32(DBSC_E3_DBPDRGA0,0x00000020); // DDR_DXCCR
    WriteReg_32(DBSC_E3_DBPDRGD0,0x00181884);
    WriteReg_32(DBSC_E3_DBPDRGA0,0x0000001A); // DDR_ACIOCR0
@@ -1322,6 +1436,18 @@ uint32_t recovery_from_backup_mode(void)
 
    }
 
+// PDR always off   // rev.0.10 add
+if (pdr_ctl==1) {
+   WriteReg_32(DBSC_E3_DBPDRGA0,0x000000A3);
+   WriteReg_32(DBSC_E3_DBPDRGD0,0x00000008);
+   WriteReg_32(DBSC_E3_DBPDRGA0,0x000000C3);
+   WriteReg_32(DBSC_E3_DBPDRGD0,0x00000008);
+   WriteReg_32(DBSC_E3_DBPDRGA0,0x000000E3);
+   WriteReg_32(DBSC_E3_DBPDRGD0,0x00000008);
+   WriteReg_32(DBSC_E3_DBPDRGA0,0x00000103);
+   WriteReg_32(DBSC_E3_DBPDRGD0,0x00000008);
+}
+
    WriteReg_32(DBSC_E3_DBPDRGA0,0x00000001);
    WriteReg_32(DBSC_E3_DBPDRGD0,0x00010801);
    WriteReg_32(DBSC_E3_DBPDRGA0,0x00000006);
@@ -1348,6 +1474,18 @@ if (pdqsr_ctl == 1){
    WriteReg_32(DBSC_E3_DBPDRGD0,0x7C0002C5);
 }
 
+// PDR dynamic      // rev.0.10 add
+if (pdr_ctl==1) {
+   WriteReg_32(DBSC_E3_DBPDRGA0,0x000000A3);
+   WriteReg_32(DBSC_E3_DBPDRGD0,0x00000000);
+   WriteReg_32(DBSC_E3_DBPDRGA0,0x000000C3);
+   WriteReg_32(DBSC_E3_DBPDRGD0,0x00000000);
+   WriteReg_32(DBSC_E3_DBPDRGA0,0x000000E3);
+   WriteReg_32(DBSC_E3_DBPDRGD0,0x00000000);
+   WriteReg_32(DBSC_E3_DBPDRGA0,0x00000103);
+   WriteReg_32(DBSC_E3_DBPDRGD0,0x00000000);
+}
+
    WriteReg_32(DBSC_E3_DBPDRGA0,0x00000001);
    WriteReg_32(DBSC_E3_DBPDRGD0,0x00012001);
    WriteReg_32(DBSC_E3_DBPDRGA0,0x00000006);
@@ -1364,6 +1502,18 @@ if (pdqsr_ctl == 1){
    WriteReg_32(DBSC_E3_DBPDRGD0,0x7C000285);
 }
 
+// PDR always off   // rev.0.10 add
+if (pdr_ctl==1) {
+   WriteReg_32(DBSC_E3_DBPDRGA0,0x000000A3);
+   WriteReg_32(DBSC_E3_DBPDRGD0,0x00000008);
+   WriteReg_32(DBSC_E3_DBPDRGA0,0x000000C3);
+   WriteReg_32(DBSC_E3_DBPDRGD0,0x00000008);
+   WriteReg_32(DBSC_E3_DBPDRGA0,0x000000E3);
+   WriteReg_32(DBSC_E3_DBPDRGD0,0x00000008);
+   WriteReg_32(DBSC_E3_DBPDRGA0,0x00000103);
+   WriteReg_32(DBSC_E3_DBPDRGD0,0x00000008);
+}
+
    WriteReg_32(DBSC_E3_DBPDRGA0,0x00000001);
    WriteReg_32(DBSC_E3_DBPDRGD0,0x00014001);
    WriteReg_32(DBSC_E3_DBPDRGA0,0x00000006);
@@ -1378,6 +1528,18 @@ if (pdqsr_ctl == 1){
    WriteReg_32(DBSC_E3_DBPDRGD0,0x7C0002C5);
    WriteReg_32(DBSC_E3_DBPDRGA0,0x00000100);
    WriteReg_32(DBSC_E3_DBPDRGD0,0x7C0002C5);
+}
+
+// PDR dynamic      // rev.0.10 add
+if (pdr_ctl==1) {
+   WriteReg_32(DBSC_E3_DBPDRGA0,0x000000A3);
+   WriteReg_32(DBSC_E3_DBPDRGD0,0x00000000);
+   WriteReg_32(DBSC_E3_DBPDRGA0,0x000000C3);
+   WriteReg_32(DBSC_E3_DBPDRGD0,0x00000000);
+   WriteReg_32(DBSC_E3_DBPDRGA0,0x000000E3);
+   WriteReg_32(DBSC_E3_DBPDRGD0,0x00000000);
+   WriteReg_32(DBSC_E3_DBPDRGA0,0x00000103);
+   WriteReg_32(DBSC_E3_DBPDRGD0,0x00000000);
 }
 
    WriteReg_32(DBSC_E3_DBPDRGA0,0x00000001);
@@ -1443,6 +1605,18 @@ if (pdqsr_ctl == 1){
    WriteReg_32(DBSC_E3_DBPDRGD0,0x7C0002C5);
 
    }
+
+// PDR always off   // rev.0.10 add
+if (pdr_ctl==1) {
+   WriteReg_32(DBSC_E3_DBPDRGA0,0x000000A3);
+   WriteReg_32(DBSC_E3_DBPDRGD0,0x00000008);
+   WriteReg_32(DBSC_E3_DBPDRGA0,0x000000C3);
+   WriteReg_32(DBSC_E3_DBPDRGD0,0x00000008);
+   WriteReg_32(DBSC_E3_DBPDRGA0,0x000000E3);
+   WriteReg_32(DBSC_E3_DBPDRGD0,0x00000008);
+   WriteReg_32(DBSC_E3_DBPDRGA0,0x00000103);
+   WriteReg_32(DBSC_E3_DBPDRGD0,0x00000008);
+}
 
    WriteReg_32(DBSC_E3_DBPDRGA0,0x00000001);
    WriteReg_32(DBSC_E3_DBPDRGD0,0x00015001);
@@ -1528,7 +1702,11 @@ if (pdqsr_ctl == 1){
 
 
    WriteReg_32(DBSC_E3_DBPDRGA0,0x00000003);
+if (byp_ctl==1) {
+   WriteReg_32(DBSC_E3_DBPDRGD0,0x0380C720);
+} else {
    WriteReg_32(DBSC_E3_DBPDRGD0,0x0380C700);
+}
    WriteReg_32(DBSC_E3_DBPDRGA0,0x00000007);
    while ( (BIT30 & ReadReg_32(DBSC_E3_DBPDRGD0)) != 0 );
    WriteReg_32(DBSC_E3_DBPDRGA0,0x00000021);
@@ -1556,6 +1734,18 @@ if (pdqsr_ctl == 1){
    WriteReg_32(DBSC_E3_DBPDRGD0,0x7C0002C5);
 
    }
+
+// PDR dynamic      // rev.0.10 add
+if (pdr_ctl==1) {
+   WriteReg_32(DBSC_E3_DBPDRGA0,0x000000A3);
+   WriteReg_32(DBSC_E3_DBPDRGD0,0x00000000);
+   WriteReg_32(DBSC_E3_DBPDRGA0,0x000000C3);
+   WriteReg_32(DBSC_E3_DBPDRGD0,0x00000000);
+   WriteReg_32(DBSC_E3_DBPDRGA0,0x000000E3);
+   WriteReg_32(DBSC_E3_DBPDRGD0,0x00000000);
+   WriteReg_32(DBSC_E3_DBPDRGA0,0x00000103);
+   WriteReg_32(DBSC_E3_DBPDRGD0,0x00000000);
+}
 
 
    WriteReg_32(DBSC_E3_DBPDLK0,0x00000000);

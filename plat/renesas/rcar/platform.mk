@@ -67,6 +67,8 @@ BL31_SOURCES		+=	${RCAR_GIC_SOURCES}				\
 				lib/cpus/aarch64/cortex_a57.S			\
 				plat/renesas/rcar/bl31_rcar_setup.c		\
 				plat/renesas/rcar/rcar_pm.c			\
+				plat/renesas/rcar/rcar_sip_svc.c		\
+				plat/renesas/rcar/drivers/dramconf/dramconf.c	\
 				plat/renesas/rcar/drivers/memdrv/rcar_console.S	\
 				plat/renesas/rcar/drivers/memdrv/rcar_printf.c	\
 				plat/renesas/rcar/rcar_topology.c		\
@@ -356,6 +358,12 @@ endif
 # Enable dynamic memory mapping
 PLAT_XLAT_TABLES_DYNAMIC := 1
 $(eval $(call add_define,PLAT_XLAT_TABLES_DYNAMIC))
+
+# Process RCAR_SMC_GET_DRAMCONF flag
+ifndef RCAR_SMC_GET_DRAMCONF
+RCAR_SMC_GET_DRAMCONF := 1
+endif
+$(eval $(call add_define,RCAR_SMC_GET_DRAMCONF))
 
 # Enable workarounds for selected Cortex-A53 erratas.
 ERRATA_A53_835769  := 1
