@@ -3877,6 +3877,13 @@ int32_t InitDram(void)
 	Prr_Cut = mmio_read_32(PRR) & PRR_CUT_MASK;
 #endif /* RCAR_DDR_FIXED_LSI_TYPE */
 
+#if RCAR_LSI == RCAR_V3H
+	if (Prr_Product == PRR_PRODUCT_V3H) {
+		/* dram initialized by CR7 */
+		return INITDRAM_OK;
+	}
+#endif
+
 	if (Prr_Product == PRR_PRODUCT_H3) {
 		if (Prr_Cut <= PRR_PRODUCT_11)
 			pDDR_REGDEF_TBL = (const uint32_t *)&DDR_REGDEF_TBL[0][0];

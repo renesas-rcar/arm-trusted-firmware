@@ -32,6 +32,10 @@ static void bl2_system_cpg_init_e3(void);
 static void bl2_realtime_cpg_init_v3m(void);
 static void bl2_system_cpg_init_v3m(void);
 #endif /* (RCAR_LSI == RCAR_AUTO) || (RCAR_LSI == RCAR_V3M) */
+#if (RCAR_LSI == RCAR_AUTO) || (RCAR_LSI == RCAR_V3H)
+static void bl2_realtime_cpg_init_v3h(void);
+static void bl2_system_cpg_init_v3h(void);
+#endif /* (RCAR_LSI == RCAR_AUTO) || (RCAR_LSI == RCAR_V3H) */
 
 typedef struct {
 	uintptr_t	adr;
@@ -423,6 +427,60 @@ static void bl2_system_cpg_init_v3m(void)
 }
 #endif /* (RCAR_LSI == RCAR_AUTO) || (RCAR_LSI == RCAR_V3M) */
 
+#if (RCAR_LSI == RCAR_AUTO) || (RCAR_LSI == RCAR_V3H)
+static void bl2_realtime_cpg_init_v3h(void)
+{
+	/* CPG (REALTIME) registers */
+
+	/* Realtime Module Stop Control Register 0 */
+	cpg_write(RMSTPCR0,	0x00230000U);
+	/* Realtime Module Stop Control Register 1 */
+	cpg_write(RMSTPCR1,	0xFFFFFFFFU);
+	/* Realtime Module Stop Control Register 2 */
+	cpg_write(RMSTPCR2,	0x14062FD8U);
+	/* Realtime Module Stop Control Register 3 */
+	cpg_write(RMSTPCR3,	0xFFFFFFDFU);
+	/* Realtime Module Stop Control Register 4 */
+	cpg_write(RMSTPCR4,	0x80000184U);
+	/* Realtime Module Stop Control Register 5 */
+	cpg_write(RMSTPCR5,	0x83FFFFFFU);
+	/* Realtime Module Stop Control Register 6 */
+	cpg_write(RMSTPCR6,	0xFFFFFFFFU);
+	/* Realtime Module Stop Control Register 7 */
+	cpg_write(RMSTPCR7,	0xFFFFFFFFU);
+	/* Realtime Module Stop Control Register 8 */
+	cpg_write(RMSTPCR8,	0x7FF3FFF4U);
+	/* Realtime Module Stop Control Register 9 */
+	cpg_write(RMSTPCR9,	0xFFFFFFFEU);
+}
+
+static void bl2_system_cpg_init_v3h(void)
+{
+	/* CPG (SYSTEM) registers */
+
+	/* System Module Stop Control Register 0 */
+	cpg_write(SMSTPCR0,	0x00210000U);
+	/* System Module Stop Control Register 1 */
+	cpg_write(SMSTPCR1,	0xFFFFFFFFU);
+	/* System Module Stop Control Register 2 */
+	cpg_write(SMSTPCR2,	0x340E2FDCU);
+	/* System Module Stop Control Register 3 */
+	cpg_write(SMSTPCR3,	0xFFFFFBDFU);
+	/* System Module Stop Control Register 4 */
+	cpg_write(SMSTPCR4,	0x80000004U);
+	/* System Module Stop Control Register 5 */
+	cpg_write(SMSTPCR5,	0xC3FFFFFFU);
+	/* System Module Stop Control Register 6 */
+	cpg_write(SMSTPCR6,	0xFFFFFFFFU);
+	/* System Module Stop Control Register 7 */
+	cpg_write(SMSTPCR7,	0xFFFFFFFFU);
+	/* System Module Stop Control Register 8 */
+	cpg_write(SMSTPCR8,	0x01F1FFF5U);
+	/* System Module Stop Control Register 9 */
+	cpg_write(SMSTPCR9,	0xFFFFFFFEU);
+}
+#endif /* (RCAR_LSI == RCAR_AUTO) || (RCAR_LSI == RCAR_V3H) */
+
 void bl2_cpg_init(void)
 {
 	uint32_t	modemr;
@@ -454,6 +512,9 @@ void bl2_cpg_init(void)
 		case RCAR_PRODUCT_V3M:
 			bl2_realtime_cpg_init_v3m();
 			break;
+		case RCAR_PRODUCT_V3H:
+			bl2_realtime_cpg_init_v3h();
+			break;
 		default:
 			panic();
 			break;
@@ -468,6 +529,8 @@ void bl2_cpg_init(void)
 		bl2_realtime_cpg_init_e3();
 #elif RCAR_LSI == RCAR_V3M
 		bl2_realtime_cpg_init_v3m();
+#elif RCAR_LSI == RCAR_V3H
+		bl2_realtime_cpg_init_v3h();
 #else /* RCAR_LSI == RCAR_XX */
 #error "Don't have CPG initialize routine(unknown)."
 #endif /* RCAR_LSI == RCAR_XX */
@@ -493,6 +556,9 @@ void bl2_system_cpg_init(void)
 	case RCAR_PRODUCT_V3M:
 		bl2_system_cpg_init_v3m();
 		break;
+	case RCAR_PRODUCT_V3H:
+		bl2_system_cpg_init_v3h();
+		break;
 	default:
 		panic();
 		break;
@@ -507,6 +573,8 @@ void bl2_system_cpg_init(void)
 	bl2_system_cpg_init_e3();
 #elif RCAR_LSI == RCAR_V3M
 	bl2_system_cpg_init_v3m();
+#elif RCAR_LSI == RCAR_V3H
+	bl2_system_cpg_init_v3h();
 #else /* RCAR_LSI == RCAR_XX */
 #error "Don't have CPG initialize routine(unknown)."
 #endif /* RCAR_LSI == RCAR_XX */

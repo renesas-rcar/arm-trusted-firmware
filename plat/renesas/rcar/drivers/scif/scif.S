@@ -29,7 +29,7 @@
 #define	SCIF0_BASE		(0xE6E60000)	/* SCIF-0 base address */
 #define	SCIF2_BASE		(0xE6E88000)	/* SCIF-2 base address */
 
-#if RCAR_LSI == RCAR_V3M	/* V3M */
+#if (RCAR_LSI == RCAR_V3M) || (RCAR_LSI == RCAR_V3H)	/* V3M or V3H */
 #define SCIF_BASE		SCIF0_BASE
 #define CPG_SMSTPCR		CPG_SMSTPCR2
 #define CPG_MSTPSR		CPG_MSTPSR2

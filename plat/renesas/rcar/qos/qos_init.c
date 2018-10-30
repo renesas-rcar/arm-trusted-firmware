@@ -19,6 +19,7 @@
   #include "M3/qos_init_m3_v30.h"
   #include "M3N/qos_init_m3n_v10.h"
   #include "V3M/qos_init_v3m.h"
+  #include "V3H/qos_init_v3h_v10.h"
 #endif
 #if RCAR_LSI == RCAR_H3	/* H3 */
   #include "H3/qos_init_h3_v10.h"
@@ -43,6 +44,9 @@
 #if RCAR_LSI == RCAR_V3M	/* V3M */
   #include "V3M/qos_init_v3m.h"
 #endif
+#if RCAR_LSI == RCAR_V3H	/* V3H */
+  #include "V3H/qos_init_v3h_v10.h"
+#endif
 
  /* Product Register */
 #define PRR			(0xFFF00044U)
@@ -52,6 +56,7 @@
 #define PRR_PRODUCT_M3		(0x00005200U)           /* R-Car M3 */
 #define PRR_PRODUCT_V3M		(0x00005400U)           /* R-Car V3M */
 #define PRR_PRODUCT_M3N		(0x00005500U)           /* R-Car M3N */
+#define PRR_PRODUCT_V3H		(0x00005600U)           /* R-Car V3H */
 #define PRR_PRODUCT_E3		(0x00005700U)           /* R-Car E3 */
 #define PRR_PRODUCT_10		(0x00U)
 #define PRR_PRODUCT_11		(0x01U)
@@ -179,6 +184,19 @@ void qos_init(void)
 		PRR_PRODUCT_ERR(reg);
  #endif
 		break;
+	case PRR_PRODUCT_V3H:
+ #if (RCAR_LSI == RCAR_AUTO) || (RCAR_LSI == RCAR_V3H)
+		switch (reg & PRR_CUT_MASK) {
+		case PRR_PRODUCT_10:
+		case PRR_PRODUCT_20:
+		default:
+			qos_init_v3h_v10();
+			break;
+		}
+ #else
+		PRR_PRODUCT_ERR(reg);
+ #endif
+		break;
 	default:
 		PRR_PRODUCT_ERR(reg);
 		break;
@@ -272,6 +290,13 @@ void qos_init(void)
 		PRR_PRODUCT_ERR(reg);
 	}
 	qos_init_v3m();
+ #elif RCAR_LSI == RCAR_V3H	/* V3H */
+	/* V3H Cut 10 or later */
+	if ((PRR_PRODUCT_V3H)
+			!= (reg & (PRR_PRODUCT_MASK))) {
+		PRR_PRODUCT_ERR(reg);
+	}
+	qos_init_v3h_v10();
  #else
   #error "Don't have QoS initialize routine(Unknown chip)."
  #endif

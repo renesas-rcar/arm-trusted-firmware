@@ -7,7 +7,7 @@
 #ifndef BL2_DMA_REGISTER_H__
 #define BL2_DMA_REGISTER_H__
 
-#if RCAR_LSI == RCAR_V3M	/* V3M */
+#if (RCAR_LSI == RCAR_V3M) || (RCAR_LSI == RCAR_V3H)	/* V3M/V3H */
 #define	DMACH	16	/* DMA CH setting (0/16/32) */
 #else
 #define	DMACH	0	/* DMA CH setting (0/16/32) */

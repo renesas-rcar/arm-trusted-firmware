@@ -10,6 +10,7 @@ ifeq (${RCAR_LSI},${RCAR_AUTO})
     BL2_SOURCES += plat/renesas/rcar/pfc/M3/pfc_init_m3.c
     BL2_SOURCES += plat/renesas/rcar/pfc/M3N/pfc_init_m3n.c
     BL2_SOURCES += plat/renesas/rcar/pfc/V3M/pfc_init_v3m.c
+    BL2_SOURCES += plat/renesas/rcar/pfc/V3H/pfc_init_v3h.c
 
 else ifdef RCAR_LSI_CUT_COMPAT
   ifeq (${RCAR_LSI},${RCAR_H3})
@@ -31,6 +32,9 @@ else ifdef RCAR_LSI_CUT_COMPAT
   endif
   ifeq (${RCAR_LSI},${RCAR_V3M})
     BL2_SOURCES += plat/renesas/rcar/pfc/V3M/pfc_init_v3m.c
+  endif
+  ifeq (${RCAR_LSI},${RCAR_V3H})
+    BL2_SOURCES += plat/renesas/rcar/pfc/V3H/pfc_init_v3h.c
   endif
 else
   ifeq (${RCAR_LSI},${RCAR_H3})
@@ -57,6 +61,9 @@ else
   endif
   ifeq (${RCAR_LSI},${RCAR_V3M})
     BL2_SOURCES += plat/renesas/rcar/pfc/V3M/pfc_init_v3m.c
+  endif
+  ifeq (${RCAR_LSI},${RCAR_V3H})
+    BL2_SOURCES += plat/renesas/rcar/pfc/V3H/pfc_init_v3h.c
   endif
 endif
 

@@ -24,7 +24,8 @@ static uint32_t get_table_index(void);
 #define NEW_API_TABLE	(3U)	/* H3 Ver.3.0, M3 Ver.1.1 or later, M3N, E3, */
 				/* V3M WS2.0 */
 #define NEW_API_TABLE2	(4U)	/* V3M WS1.0 */
-#define API_TABLE_MAX	(5U)	/* table max */
+#define NEW_API_TABLE3	(5U)	/* V3H WS1.0 */
+#define API_TABLE_MAX	(6U)	/* table max */
 
 
 
@@ -40,6 +41,7 @@ uint32_t ROM_SecureBootAPI( uint32_t *pKeyCert,
 		0xEB100180U,	/* H3 Ver.3.0, M3 Ver.1.1 or later, M3N, E3, */
 				/* V3M WS2.0 */
 		0xEB110128U,	/* V3M WS1.0 */
+		0xEB101960U,	/* V3H WS1.0 */
 	};
 
 	ROM_SECURE_BOOT_API func;
@@ -54,6 +56,10 @@ uint32_t ROM_SecureBootAPI( uint32_t *pKeyCert,
 
 uint32_t ROM_GetLcs(uint32_t *pLcs)
 {
+#if RCAR_LSI == RCAR_V3H
+	*pLcs = 0xff;
+	return 0;
+#else
 	/* Get LCS stete API address table */
 	static const uintptr_t ROM_GetLcs_table[API_TABLE_MAX] = {
 		0xEB10DFE0U,	/* H3 Ver.1.0/Ver.1.1 */
@@ -62,6 +68,7 @@ uint32_t ROM_GetLcs(uint32_t *pLcs)
 		0xEB10018CU,	/* H3 Ver.3.0, M3 Ver.1.1 or later, M3N, E3, */
 				/* V3M WS2.0 */
 		0xEB1103A4U,	/* V3M WS1.0 */
+		0xEB101940U,	/* V3H WS1.0 */
 	};
 
 	ROM_GETLCS_API func;
@@ -71,6 +78,7 @@ uint32_t ROM_GetLcs(uint32_t *pLcs)
 	func = (ROM_GETLCS_API)ROM_GetLcs_table[index];
 
 	return func(pLcs);
+#endif
 }
 
 
@@ -107,6 +115,13 @@ static uint32_t get_table_index(void)
 			index = NEW_API_TABLE2;	/* V3M WS1.0 */
 		} else {
 			index = NEW_API_TABLE;	/* V3M WS2.0 or later */
+		}
+		break;
+	case RCAR_PRODUCT_V3H:
+		if (cut_ver == RCAR_CUT_VER10) {
+			index = NEW_API_TABLE3;	/* V3H WS1.0 */
+		} else {
+			index = NEW_API_TABLE3;	/* V3H WS2.0 or later */
 		}
 		break;
 	default:
