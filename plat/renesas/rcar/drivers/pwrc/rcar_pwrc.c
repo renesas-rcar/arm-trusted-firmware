@@ -749,8 +749,6 @@ void rcar_bl31_set_suspend_to_ram(void)
 {
 	uint32_t sctlr;
 
-	rcar_bl31_code_copy_to_system_ram();
-
 	rcar_bl31_save_generic_timer(rcar_stack_generic_timer);
 
 	/* disable MMU */
@@ -767,11 +765,7 @@ void rcar_bl31_init_suspend_to_ram(void)
 {
 #if PMIC_ROHM_BD9571
 	uint8_t		mode;
-#endif /* PMIC_ROHM_BD9571 */
 
-	rcar_bl31_code_copy_to_system_ram();
-
-#if PMIC_ROHM_BD9571
 	if (rcar_iic_dvfs_recieve(PMIC_SLAVE_ADDR, PMIC_BKUP_MODE_CNT, &mode) != 0){
 		panic();
 	}
@@ -787,8 +781,6 @@ void rcar_bl31_suspend_to_ram(void)
 #if RCAR_SYSTEM_RESET_KEEPON_DDR
 	int32_t error;
 
-	rcar_bl31_code_copy_to_system_ram();
-
 	error = rcar_iic_dvfs_send(SLAVE_ADDR_PMIC, REG_ADDR_REG_KEEP10 ,0U);
 	if(0 != error) {
 		ERROR("Failed send KEEP10 init ret=%d \n",error);
@@ -802,14 +794,17 @@ void rcar_bl31_suspend_to_ram(void)
 #endif /* RCAR_SYSTEM_SUSPEND */
 
 
-void rcar_bl31_code_copy_to_system_ram(void)
+void rcar_bl31_code_copy_to_system_ram(uint32_t type)
 {
 	int32_t mmap_ret;
 
-	mmap_ret = mmap_remove_dynamic_region(DEVICE_SRAM_BASE, DEVICE_SRAM_SIZE);
-	if(0 != mmap_ret) {
-		ERROR("RCAR code_copy rw remove_dynamic_region err ret=%d.\n",mmap_ret);
-		panic();
+
+	if(RCAR_DYNAMIC_REGION_EXIST == type) {
+		mmap_ret = mmap_remove_dynamic_region(DEVICE_SRAM_BASE, DEVICE_SRAM_SIZE);
+		if(0 != mmap_ret) {
+			ERROR("RCAR code_copy rw remove_dynamic_region err ret=%d.\n",mmap_ret);
+			panic();
+		}
 	}
 
 	mmap_ret = mmap_add_dynamic_region(DEVICE_SRAM_BASE,
@@ -835,7 +830,7 @@ void rcar_bl31_code_copy_to_system_ram(void)
 
 	mmap_ret = mmap_add_dynamic_region(DEVICE_SRAM_BASE,
 			DEVICE_SRAM_BASE, DEVICE_SRAM_SIZE,
-			(MT_MEMORY | MT_RO | MT_SECURE));
+			(MT_MEMORY | MT_RO | MT_SECURE | MT_EXECUTE));
 	if(0 != mmap_ret) {
 		ERROR("RCAR code_copy ro add_dynamic_region err ret=%d.\n",mmap_ret);
 		panic();

@@ -14,7 +14,6 @@
 #include <platform.h>
 #include <stddef.h>
 #include <debug.h>
-#include <xlat_tables_v2.h>
 #include "drivers/pwrc/rcar_pwrc.h"
 #include "rcar_def.h"
 #include "rcar_private.h"
@@ -161,8 +160,6 @@ void bl31_platform_setup(void)
  ******************************************************************************/
 void bl31_plat_arch_setup(void)
 {
-	int32_t mmap_ret;
-
 	rcar_configure_mmu_el3(BL31_RO_BASE, (BL31_END - BL31_RO_BASE),
 			BL31_RO_BASE,
 			BL31_RO_LIMIT
@@ -172,14 +169,7 @@ void bl31_plat_arch_setup(void)
 #endif
 	);
 
-	mmap_ret = mmap_add_dynamic_region(DEVICE_SRAM_BASE,
-			DEVICE_SRAM_BASE, DEVICE_SRAM_SIZE,
-			(MT_MEMORY | MT_RO | MT_SECURE));
-	if(0 != mmap_ret) {
-		ERROR("RCAR setup add_dynamic_region err ret=%d.\n",mmap_ret);
-		panic();
-	}
-
+	rcar_bl31_code_copy_to_system_ram(RCAR_DYNAMIC_REGION_NOT_EXIST);
 }
 
 /*******************************************************************************

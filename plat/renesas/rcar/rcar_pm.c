@@ -300,6 +300,7 @@ void rcar_affinst_suspend_finish(unsigned int afflvl, unsigned int state)
 		mmio_write_32((uintptr_t)(RCAR_CNTC_BASE+(uint32_t)CNTCR_OFF),
 					(CNTCR_FCREQ(U(0))|CNTCR_EN));
 		rcar_pwrc_setup();
+		rcar_bl31_code_copy_to_system_ram(RCAR_DYNAMIC_REGION_EXIST);
 #if RCAR_SYSTEM_SUSPEND
 		rcar_bl31_init_suspend_to_ram();
 #endif /* RCAR_SYSTEM_SUSPEND */
@@ -318,9 +319,6 @@ static void __dead2 rcar_system_off(void)
 #if PMIC_LEVEL_MODE
 	int32_t error;
 
-	/* The code of iic for DVFS driver is copied to system ram */
-	rcar_bl31_code_copy_to_system_ram();
-
 	error = rcar_iic_dvfs_send(SLAVE_ADDR_PMIC
 					,REG_ADDR_DVFS_SetVID
 					,REG_DATA_DVFS_SetVID_0V);
@@ -329,9 +327,6 @@ static void __dead2 rcar_system_off(void)
 	}
 #else /* pulse mode */
 	int32_t error;
-
-	/* The code of iic for DVFS driver is copied to system ram */
-	rcar_bl31_code_copy_to_system_ram();
 
 	error = rcar_iic_dvfs_send(SLAVE_ADDR_PMIC
 					,REG_ADDR_BKUP_Mode_Cnt
@@ -369,9 +364,6 @@ static void __dead2 rcar_system_reset(void)
 #if RCAR_SYSTEM_RESET_KEEPON_DDR
 	uint8_t		mode;
 
-	/* The code of iic for DVFS driver is copied to system ram */
-	rcar_bl31_code_copy_to_system_ram();
-
 	error = rcar_iic_dvfs_send(SLAVE_ADDR_PMIC
 					,REG_ADDR_REG_KEEP10
 					,REG_DATA_REG_KEEP10_MAGIC);
@@ -400,9 +392,6 @@ static void __dead2 rcar_system_reset(void)
 		}
 	}
 #else /* RCAR_SYSTEM_RESET_KEEPON_DDR */
-	/* The code of iic for DVFS driver is copied to system ram */
-	rcar_bl31_code_copy_to_system_ram();
-
 	error = rcar_iic_dvfs_send(SLAVE_ADDR_PMIC
 					,REG_ADDR_BKUP_Mode_Cnt
 					,REG_DATA_P_ALL_OFF);

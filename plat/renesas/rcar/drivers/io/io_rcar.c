@@ -461,7 +461,8 @@ static int32_t rcar_dev_init(io_dev_info_t *dev_info, const uintptr_t init_param
 	size_t bytes_read;
 	ssize_t offset;
 	uint32_t loop;
-	uint64_t rcar_image_header_tmp[64] __aligned(FLASH_TRANS_SIZE_UNIT) = {0U};
+	static uint64_t rcar_image_header_tmp[64]
+			__aligned(FLASH_TRANS_SIZE_UNIT) = {0U};
 
 	/* Obtain a reference to the image by querying the platform layer */
 	/* get rcar flash memory address... (certain BL2, BL31, BL32, BL33... max 64MB:RPC LBSC address) */

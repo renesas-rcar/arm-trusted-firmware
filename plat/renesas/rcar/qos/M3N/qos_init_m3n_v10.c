@@ -10,7 +10,7 @@
 #include "../qos_reg.h"
 #include "qos_init_m3n_v10.h"
 
-#define	RCAR_QOS_VERSION		"rev.0.07"
+#define	RCAR_QOS_VERSION		"rev.0.08"
 
 #define QOSCTRL_EARLYR			(QOS_BASE1 + 0x0060U)
 #define QOSCTRL_FSS			(QOS_BASE1 + 0x0048U)

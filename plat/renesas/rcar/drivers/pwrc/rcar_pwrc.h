@@ -40,6 +40,11 @@
 #define	RCAR_CLUSTER_CA53	(1U)
 #define	RCAR_CLUSTER_CA57	(2U)
 
+
+#define	RCAR_DYNAMIC_REGION_NOT_EXIST	(0U)
+#define	RCAR_DYNAMIC_REGION_EXIST	(1U)
+
+
 #ifndef __ASSEMBLY__
 
 /*******************************************************************************
@@ -65,7 +70,7 @@ void rcar_bl31_set_suspend_to_ram(void);
 void rcar_bl31_init_suspend_to_ram(void);
 void rcar_bl31_suspend_to_ram(void);
 #endif /* RCAR_SYSTEM_SUSPEND */
-void rcar_bl31_code_copy_to_system_ram(void);
+void rcar_bl31_code_copy_to_system_ram(uint32_t type);
 uint32_t rcar_bl31_get_cluster(void);
 uint32_t rcar_bl31_get_mpidr_cluster(uint64_t mpidr);
 uint32_t rcar_bl31_get_cpu_num(uint32_t cluster_type);

@@ -11,7 +11,7 @@
 #include "qos_init_h3_v20.h"
 
 
-#define	RCAR_QOS_VERSION		"rev.0.19"
+#define	RCAR_QOS_VERSION		"rev.0.20"
 
 #define QOSWT_TIME_BANK0				(20000000U)	//unit:ns
 
