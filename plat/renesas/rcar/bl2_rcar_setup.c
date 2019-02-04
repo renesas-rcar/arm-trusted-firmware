@@ -446,7 +446,7 @@ static void rcar_bl2_early_platform_setup(const meminfo_t *mem_layout)
 		str = unknown;
 		break;
 	}
-	(void)sprintf(msg, "BL2: %s Initial Program Loader(%s)\n"
+	(void)sprintf(msg, "BL2: %s Test Initial Program Loader(%s)\n"
 					, TARGET_NAME, str);
 	NOTICE("%s", msg);
 
