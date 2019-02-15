@@ -504,8 +504,8 @@ static void __attribute__ ((section (".system_ram")))  rcar_bl31_set_self_refres
 
 	/* Write enable */
 	lsi_product &= RCAR_PRODUCT_MASK;
-	if (((lsi_product != RCAR_PRODUCT_M3) &&
-	      (!((lsi_product == RCAR_PRODUCT_H3) && (lsi_cut < RCAR_CUT_VER20))))) {
+	if ((!((lsi_product == RCAR_PRODUCT_M3) && (lsi_cut < RCAR_CUT_VER30))) &&
+	      (!((lsi_product == RCAR_PRODUCT_H3) && (lsi_cut < RCAR_CUT_VER20)))) {
 		mmio_write_32(DBSC4_REG_DBSYSCNT0, DBSC4_SET_DBSYSCNT0_WRITE_ENABLE);
 	}
 
@@ -598,8 +598,8 @@ static void __attribute__ ((section (".system_ram")))  rcar_bl31_set_self_refres
 		/* The power except the DDR IO are removed. */
 
 	/* Write disable */
-	if (((lsi_product != RCAR_PRODUCT_M3) &&
-	      (!((lsi_product == RCAR_PRODUCT_H3) && (lsi_cut < RCAR_CUT_VER20))))) {
+	if ((!((lsi_product == RCAR_PRODUCT_M3) && (lsi_cut < RCAR_CUT_VER30))) &&
+	      (!((lsi_product == RCAR_PRODUCT_H3) && (lsi_cut < RCAR_CUT_VER20)))) {
 		mmio_write_32(DBSC4_REG_DBSYSCNT0, DBSC4_SET_DBSYSCNT0_WRITE_DISABLE);
 	}
 }
