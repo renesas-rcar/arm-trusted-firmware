@@ -203,6 +203,8 @@ else
       # disable compatible function.
       ifeq (${LSI_CUT},10)
         RCAR_LSI_CUT:=0
+      else ifeq (${LSI_CUT},11)
+        RCAR_LSI_CUT:=1
       else
         $(error "Error: ${LSI_CUT} is not supported.")
       endif
