@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2014, ARM Limited and Contributors. All rights reserved.
- * Copyright (c) 2015-2018, Renesas Electronics Corporation. All rights reserved.
+ * Copyright (c) 2015-2019, Renesas Electronics Corporation. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -475,11 +475,18 @@ static void rcar_bl2_early_platform_setup(const meminfo_t *mem_layout)
 		break;
 	}
 
-	if(RCAR_PRODUCT_M3_CUT11 ==
-		(reg & (RCAR_PRODUCT_MASK | RCAR_CUT_MASK))) {
-		/* M3 Ver.1.1 or Ver.1.2 */
-		(void)sprintf(msg,
-			"BL2: PRR is R-Car %s Ver.1.1 / Ver.1.2\n", str);
+	if((RCAR_PRODUCT_M3 == (reg & RCAR_PRODUCT_MASK)) &&
+		(RCAR_CUT_VER20 == (reg & RCAR_MAJOR_MASK))) {
+		if (RCAR_M3_CUT_VER11 == (reg & RCAR_CUT_MASK)) {
+			/* M3 Ver.1.1 or Ver.1.2 */
+			(void)sprintf(msg,
+				"BL2: PRR is R-Car %s Ver.1.1 / Ver.1.2\n",
+				str);
+		} else {
+			(void)sprintf(msg, "BL2: PRR is R-Car %s Ver.1.%d\n",
+			str,
+			(prr_val & RCAR_MINOR_MASK) + RCAR_M3_MINOR_OFFSET);
+		}
 	} else {
 		(void)sprintf(msg, "BL2: PRR is R-Car %s Ver.%d.%d\n", str,
 			((prr_val & RCAR_MAJOR_MASK) >> RCAR_MAJOR_SHIFT)
@@ -846,9 +853,10 @@ void bl2_plat_flush_bl31_params(void)
 	}
 
 	val = mmio_read_32(RCAR_PRR);
-	if ((RCAR_PRODUCT_M3 == (val & RCAR_PRODUCT_MASK)) ||
-		((RCAR_PRODUCT_H3 == (val & RCAR_PRODUCT_MASK)) &&
-			(RCAR_CUT_VER20 > (val & RCAR_CUT_MASK)))) {
+	if (((RCAR_PRODUCT_M3 == (val & RCAR_PRODUCT_MASK)) &&
+		(RCAR_CUT_VER30 > (val & RCAR_CUT_MASK))) ||
+			((RCAR_PRODUCT_H3 == (val & RCAR_PRODUCT_MASK)) &&
+				(RCAR_CUT_VER20 > (val & RCAR_CUT_MASK)))) {
 		/* No need to disable MFIS write protection */
 		;
 	} else {

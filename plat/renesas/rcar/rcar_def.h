@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2014, ARM Limited and Contributors. All rights reserved.
- * Copyright (c) 2015-2018, Renesas Electronics Corporation. All rights reserved.
+ * Copyright (c) 2015-2019, Renesas Electronics Corporation. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -218,6 +218,7 @@
 #define RCAR_MAJOR_SHIFT		U(4)
 #define RCAR_MINOR_SHIFT		U(0)
 #define RCAR_MAJOR_OFFSET		U(1)
+#define RCAR_M3_MINOR_OFFSET		U(2)
 #define RCAR_PRODUCT_H3_CUT10		(RCAR_PRODUCT_H3 | U(0x00)) /* H3 Ver.1.0 */
 #define RCAR_PRODUCT_H3_CUT11		(RCAR_PRODUCT_H3 | U(0x01)) /* H3 Ver.1.1 */
 #define RCAR_PRODUCT_H3_CUT20		(RCAR_PRODUCT_H3 | U(0x10)) /* H3 Ver.2.0 */
