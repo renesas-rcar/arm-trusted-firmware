@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2016-2017, ARM Limited and Contributors. All rights reserved.
- * Copyright (c) 2018, Renesas Electronics Corporation. All rights reserved.
+ * Copyright (c) 2018-2019, Renesas Electronics Corporation. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -15,6 +15,7 @@
 #include "rcar_private.h"
 #include "rcar_sip_svc.h"
 #include "dramconf.h"
+#include "board.h"
 
 #define RCAR_MMAP_DYNAMIC_ADDR_MASK	0xfffff000U
 #define RCAR_MMAP_DYNAMIC_SIZE		0x2000U
@@ -45,6 +46,9 @@ static uintptr_t rcar_sip_handler(unsigned int smc_fid,
 			u_register_t flags)
 {
 	int32_t		ret;
+	int32_t		board_ret = RCAR_SMC_RET_SUCCESS;
+	uint32_t	board_type = 0U;
+	uint32_t	board_rev = 0U;
 
 	switch (smc_fid) {
 	case RCAR_SIP_SVC_GET_DRAMCONF:
@@ -55,6 +59,18 @@ static uintptr_t rcar_sip_handler(unsigned int smc_fid,
 		ret = SMC_UNK;
 #endif
 		SMC_RET1(handle, ret);
+
+	case RCAR_SIP_SVC_GET_BOARD_TYPE:
+		/* get Board type */
+#if PMIC_ROHM_BD9571
+		ret = get_board_type(&board_type, &board_rev);
+		if (0 != ret) {
+			board_ret = RCAR_SMC_RET_EFAILED;
+		}
+#else	/* PMIC_ROHM_BD9571 */
+		board_ret = RCAR_SMC_RET_PMIC_DISABLE;
+#endif	/* PMIC_ROHM_BD9571 */
+		SMC_RET3(handle, board_ret, board_type, board_rev);
 
 	case RCAR_SIP_SVC_CALL_COUNT:
 		/* Return the number of function IDs */

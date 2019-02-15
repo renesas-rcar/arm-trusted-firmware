@@ -1,6 +1,6 @@
 #
 # Copyright (c) 2013-2014, ARM Limited and Contributors. All rights reserved.
-# Copyright (c) 2015-2018, Renesas Electronics Corporation. All rights reserved.
+# Copyright (c) 2015-2019, Renesas Electronics Corporation. All rights reserved.
 #
 # SPDX-License-Identifier: BSD-3-Clause
 #
@@ -68,6 +68,7 @@ BL31_SOURCES		+=	${RCAR_GIC_SOURCES}				\
 				plat/renesas/rcar/bl31_rcar_setup.c		\
 				plat/renesas/rcar/rcar_pm.c			\
 				plat/renesas/rcar/rcar_sip_svc.c		\
+				plat/renesas/rcar/drivers/board/board.c		\
 				plat/renesas/rcar/drivers/dramconf/dramconf.c	\
 				plat/renesas/rcar/drivers/memdrv/rcar_console.S	\
 				plat/renesas/rcar/drivers/memdrv/rcar_printf.c	\
