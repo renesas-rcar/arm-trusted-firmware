@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2018, Renesas Electronics Corporation. All rights reserved.
+ * Copyright (c) 2015-2019, Renesas Electronics Corporation. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -8,7 +8,7 @@
  *	NUMBER OF BOARD CONFIGRATION
  *	PLEASE DEFINE
  ******************************************************************************/
-#define BOARDNUM 18
+#define BOARDNUM 19
 /*******************************************************************************
  *	PLEASE SET board number or board judge function
  ******************************************************************************/
@@ -1403,6 +1403,59 @@ static const struct _boardcnf boardcnfs[BOARDNUM] = {
 			  0, 0, 0, 0, 0, 0, 0, 0 }
 		}
 	}
+},
+/*
+ * boardcnf[18] RENESAS SALVATOR-X board with M3-W/SIP(16Gbit 2rank)
+ */
+{
+	0x03,		/* phyvalid */
+	0x01,		/* dbi_en */
+	0x02c0,		/* cacs_dly */
+	0,		/* cacs_dly_adj */
+	0x0300,		/* dqdm_dly_w */
+	0x00a0,		/* dqdm_dly_r */
+	{
+/*ch[0]*/	{
+/*ddr_density[]*/	{ 0x04, 0x04 },
+/*ca_swap*/		0x00543210,
+/*dqs_swap*/		0x3201,
+/*dq_swap[]*/		{ 0x70612543, 0x43251670, 0x45326170, 0x10672534 },
+/*dm_swap[]*/		{ 0x08, 0x08, 0x08, 0x08 },
+/*wdqlvl_patt[]*/	WDQLVL_PAT,
+/*cacs_adj*/		{ 0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0 },
+/*dm_adj_w*/		{ 0, 0, 0, 0 },
+/*dqdm_adj_w*/		{ 0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0 },
+/*dm_adj_r*/		{ 0, 0, 0, 0 },
+/*dqdm_adj_r*/		{ 0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0 }
+		},
+/*ch[1]*/	{
+/*ddr_density[]*/	{ 0x04, 0x04 },
+/*ca_swap*/		0x00543210,
+/*dqs_swap*/		0x2310,
+/*dq_swap[]*/		{ 0x01327654, 0x34526107, 0x35421670, 0x70615324 },
+/*dm_swap[]*/		{ 0x08, 0x08, 0x08, 0x08 },
+/*wdqlvl_patt[]*/	WDQLVL_PAT,
+/*cacs_adj*/		{ 0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0 },
+/*dm_adj_w*/		{ 0, 0, 0, 0 },
+/*dqdm_adj_w*/		{ 0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0 },
+/*dm_adj_r*/		{ 0, 0, 0, 0 },
+/*dqdm_adj_r*/		{ 0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0 }
+		}
+	}
 }
 };
 
@@ -1665,9 +1718,12 @@ static uint32_t _board_judge(void)
 		} else if(Prr_Product == PRR_PRODUCT_M3N){
 			/* RENESAS SALVATOR-X (M3-N/SIP) */
 			brd = 11;
-		} else if(Prr_Product == PRR_PRODUCT_M3){
+		} else if((Prr_Product == PRR_PRODUCT_M3)&&(Prr_Cut< PRR_PRODUCT_30)){
 			/* RENESAS SALVATOR-X (M3-W/SIP) */
 			brd = 0;
+		} else if((Prr_Product == PRR_PRODUCT_M3)&&(Prr_Cut>=PRR_PRODUCT_30)){
+			/* RENESAS SALVATOR-X (M3-W ver.3.0/SIP) */
+			brd = 18;
 		}
 	}
 #endif//(RCAR_GEN3_ULCB==1)

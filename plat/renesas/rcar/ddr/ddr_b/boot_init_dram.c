@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2018, Renesas Electronics Corporation. All rights reserved.
+ * Copyright (c) 2015-2019, Renesas Electronics Corporation. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -1958,7 +1958,9 @@ static void dbsc_regset(void)
 	/* DBTR16 */
 	/* WDQL : tphy_wrlat + tphy_wrdata */
 	tmp[0] = ddrtbl_getval(_cnf_DDR_PI_REGSET, _reg_PI_WRLAT_F1);
-	/* DQENLTNCY : tphy_wrlat = WL-2 */
+	/* DQENLTNCY : tphy_wrlat = WL-2 : PHY_WRITE_PATH_LAT_ADD == 0
+	 *             tphy_wrlat = WL-3 : PHY_WRITE_PATH_LAT_ADD != 0
+	 */
 	tmp[1] = ddrtbl_getval(_cnf_DDR_PI_REGSET, _reg_PI_WRLAT_ADJ_F1);
 	/* DQL : tphy_rdlat + trdata_en */
 	/* it is not important for dbsc */
@@ -2252,7 +2254,7 @@ static void dbsc_regset_post(void)
 	/* periodic dram zqcal and phy ctrl update enable*/
 	mmio_write_32(DBSC_DBCALCNF, 0x01000010);
 	if(((Prr_Product==PRR_PRODUCT_H3)&&(Prr_Cut<=PRR_PRODUCT_11))
-	 ||((Prr_Product==PRR_PRODUCT_M3)&&(Prr_Cut<=PRR_PRODUCT_20))){
+	 ||((Prr_Product==PRR_PRODUCT_M3)&&(Prr_Cut<PRR_PRODUCT_30))){
 		/* non : H3 Ver.1.x/M3-W Ver.1.x not support */
 	} else {
 #if RCAR_DRAM_SPLIT == 2
@@ -3863,7 +3865,7 @@ int32_t InitDram(void)
 	}
 
 	if(((Prr_Product==PRR_PRODUCT_H3)&&(Prr_Cut<=PRR_PRODUCT_11))
-	 ||((Prr_Product==PRR_PRODUCT_M3)&&(Prr_Cut<=PRR_PRODUCT_20))){
+	 ||((Prr_Product==PRR_PRODUCT_M3)&&(Prr_Cut<PRR_PRODUCT_30))){
 		/* non : H3 Ver.1.x/M3-W Ver.1.x not support */
 	} else {
 		mmio_write_32(DBSC_DBSYSCNT0, 0x00001234);
@@ -3980,7 +3982,7 @@ int32_t InitDram(void)
 	foreach_vch(ch)
 		mmio_write_32(DBSC_DBPDLK(ch), 0x00000000);
 	if(((Prr_Product==PRR_PRODUCT_H3)&&(Prr_Cut<=PRR_PRODUCT_11))
-	 ||((Prr_Product==PRR_PRODUCT_M3)&&(Prr_Cut<=PRR_PRODUCT_20))){
+	 ||((Prr_Product==PRR_PRODUCT_M3)&&(Prr_Cut<PRR_PRODUCT_30))){
 		/* non : H3 Ver.1.x/M3-W Ver.1.x not support */
 	} else {
 		mmio_write_32(DBSC_DBSYSCNT0, 0x00000000);
