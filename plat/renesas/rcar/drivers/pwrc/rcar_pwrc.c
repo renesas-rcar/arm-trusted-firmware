@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2014, ARM Limited and Contributors. All rights reserved.
- * Copyright (c) 2015-2018, Renesas Electronics Corporation. All rights reserved.
+ * Copyright (c) 2015-2019, Renesas Electronics Corporation. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -393,7 +393,7 @@ void rcar_pwrc_clusteroff(uint64_t mpidr)
 		reg = (uintptr_t)RCAR_CA57CPUCMCR;
 	}
 
-	if(!((RCAR_PRODUCT_M3 == lsi_product) && (lsi_cut <= RCAR_M3_CUT_VER11)) &&
+	if(!((RCAR_PRODUCT_M3 == lsi_product) && (lsi_cut < RCAR_CUT_VER30)) &&
 	   !((RCAR_PRODUCT_H3 == lsi_product) && (lsi_cut <= RCAR_CUT_VER20))) {
 		/* all of the CPUs in the cluster is in the CoreStandby mode	*/
 		mmio_write_32(reg, MODE_L2_DOWN);
