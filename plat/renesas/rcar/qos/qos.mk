@@ -67,8 +67,6 @@ else
      BL2_SOURCES += plat/renesas/rcar/qos/M3/qos_init_m3_v11.c
     else ifeq (${LSI_CUT},30)
      BL2_SOURCES += plat/renesas/rcar/qos/M3/qos_init_m3_v30.c
-  else ifeq (${LSI_CUT},30)
-     BL2_SOURCES += plat/renesas/rcar/qos/M3/qos_init_m3_v30.c
     else
 #    LSI_CUT 30 or later
      BL2_SOURCES += plat/renesas/rcar/qos/M3/qos_init_m3_v30.c
