@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2018, Renesas Electronics Corporation. All rights reserved.
+ * Copyright (c) 2015-2019, Renesas Electronics Corporation. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -44,9 +44,6 @@ void rcar_set_log_time(void)
 	int32_t start_counter;
 
 	now_time = (uint64_t)read_cntpct_el0();
-#ifndef IMAGE_BL2
-	now_time += rcar_stack_generic_timer[INDEX_TIMER_COUNT];
-#endif
 	freq = read_cntfrq_el0(); /* get the frequency	*/
 	if (freq == 0U) { /* for zero division	*/
 		second = 0U;
@@ -149,9 +146,6 @@ int32_t rcar_log_init(void)
 		(void)memcpy((void *)t_log->header.head, (const void *)const_header, sizeof(t_log->header.head));
 		t_log->header.index = 0U;
 		t_log->header.size = 0U;
-#ifndef IMAGE_BL2
-		rcar_stack_generic_timer[INDEX_TIMER_COUNT] = 0U;
-#endif
 	}
 	rcar_lock_init();
 

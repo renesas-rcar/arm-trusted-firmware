@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2014, ARM Limited and Contributors. All rights reserved.
- * Copyright (c) 2015-2018, Renesas Electronics Corporation. All rights reserved.
+ * Copyright (c) 2015-2019, Renesas Electronics Corporation. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -38,7 +38,6 @@ static int32_t cpu_on_check(uint64_t mpidr) __unused;
 #define	RCAR_MPIDR_CA57_CPU0		((uint64_t)0x0000U)
 #define	RCAR_MPIDR_CA53_CPU0		((uint64_t)0x0100U)
 
-uint64_t rcar_stack_generic_timer[5] __attribute__((section("data")));
 /*******************************************************************************
  * Private RCAR function to program the mailbox for a cpu before it is released
  * from reset.
@@ -293,12 +292,8 @@ void rcar_affinst_suspend_finish(unsigned int afflvl, unsigned int state)
 		if (RCAR_CLUSTER_A53A57 == cluster_type) {
 			rcar_cci_init();
 		}
-		/* restore generic timer register */
-		rcar_bl31_restore_generic_timer(rcar_stack_generic_timer);
-		/* start generic timer */
-		write_cntfrq_el0((unsigned long)plat_get_syscnt_freq2());
-		mmio_write_32((uintptr_t)(RCAR_CNTC_BASE+(uint32_t)CNTCR_OFF),
-					(CNTCR_FCREQ(U(0))|CNTCR_EN));
+
+		rcar_bl31_restore_timer_state();
 		rcar_pwrc_setup();
 		rcar_bl31_code_copy_to_system_ram(RCAR_DYNAMIC_REGION_EXIST);
 #if RCAR_SYSTEM_SUSPEND

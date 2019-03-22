@@ -11,6 +11,7 @@
 #include <debug.h>
 #include <arch.h>
 #include <arch_helpers.h>
+#include <platform.h>
 #include <xlat_tables_v2.h>
 #include "rcar_def.h"
 #include "rcar_private.h"
@@ -153,6 +154,14 @@ RCAR_INSTANTIATE_LOCK
 #define	RCAR_CA53CPU_NUM_MAX		(4U)
 #define	RCAR_CA57CPU_NUM_MAX		(4U)
 
+#define RCAR_CNTCR_OFF			(0x00U)
+#define RCAR_CNTCVL_OFF			(0x08U)
+#define RCAR_CNTCVU_OFF			(0x0CU)
+#define RCAR_CNTFID_OFF			(0x20U)
+
+#define RCAR_CNTCR_EN			((uint32_t)1U << 0U)
+#define RCAR_CNTCR_FCREQ(x)		((uint32_t)(x) << 8U)
+
 
 /* prototype */
 #if RCAR_SYSTEM_SUSPEND
@@ -160,6 +169,10 @@ static void rcar_bl31_set_self_refresh(void);
 static void rcar_bl31_set_self_refresh_e3(void);
 #endif /* RCAR_SYSTEM_SUSPEND */
 static void SCU_power_up(uint64_t mpidr);
+static void rcar_bl31_save_timer_state(void);
+
+static uint64_t rcar_bl31_saved_cntpct_el0;
+static uint32_t rcar_bl31_saved_cntfid;
 
 uint32_t rcar_pwrc_status(uint64_t mpidr)
 {
@@ -756,7 +769,7 @@ void rcar_bl31_set_suspend_to_ram(void)
 {
 	uint32_t sctlr;
 
-	rcar_bl31_save_generic_timer(rcar_stack_generic_timer);
+	rcar_bl31_save_timer_state();
 
 	/* disable MMU */
 	sctlr = (uint32_t)read_sctlr_el3();
@@ -918,4 +931,32 @@ uint32_t rcar_bl31_get_cpu_num(uint32_t cluster_type)
 		}
 	}
 	return num;
+}
+
+static void rcar_bl31_save_timer_state(void)
+{
+	rcar_bl31_saved_cntpct_el0 = read_cntpct_el0();
+
+	rcar_bl31_saved_cntfid =
+		mmio_read_32((uintptr_t)(RCAR_CNTC_BASE + RCAR_CNTFID_OFF));
+}
+
+void rcar_bl31_restore_timer_state(void)
+{
+	/* Stop timer before restoring counter value */
+	mmio_write_32((uintptr_t)(RCAR_CNTC_BASE + RCAR_CNTCR_OFF), 0U);
+
+	mmio_write_32((uintptr_t)(RCAR_CNTC_BASE + RCAR_CNTCVL_OFF),
+		(uint32_t)(rcar_bl31_saved_cntpct_el0 & 0xFFFFFFFFU));
+	mmio_write_32((uintptr_t)(RCAR_CNTC_BASE + RCAR_CNTCVU_OFF),
+		(uint32_t)(rcar_bl31_saved_cntpct_el0 >> 32U));
+
+	mmio_write_32((uintptr_t)(RCAR_CNTC_BASE + RCAR_CNTFID_OFF),
+		rcar_bl31_saved_cntfid);
+
+	/* Start generic timer back */
+	write_cntfrq_el0((u_register_t)plat_get_syscnt_freq2());
+
+	mmio_write_32((uintptr_t)(RCAR_CNTC_BASE + RCAR_CNTCR_OFF),
+		(RCAR_CNTCR_FCREQ(0U) | RCAR_CNTCR_EN));
 }
