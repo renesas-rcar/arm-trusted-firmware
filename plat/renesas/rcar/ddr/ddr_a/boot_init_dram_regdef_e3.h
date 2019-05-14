@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2018, Renesas Electronics Corporation
+ * Copyright (c) 2015-2019, Renesas Electronics Corporation
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -44,9 +44,9 @@
 extern "C" {
 #endif /* __cplusplus */
 
-#define				BIT0						0x00000001U
-#define				BIT11						0x00000800U
-#define				BIT30						0x40000000U
+#define				BIT0                       0x00000001U
+#define				BIT11                      0x00000800U
+#define				BIT30                      0x40000000U
 
 /* DBSC registers */
 
