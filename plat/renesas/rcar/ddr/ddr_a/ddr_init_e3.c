@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2018, Renesas Electronics Corporation
+ * Copyright (c) 2015-2019, Renesas Electronics Corporation
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -119,6 +119,8 @@
  * rev.0.11    2018/10/19    Add Workaround for DRAM limitation (bypmode)
  *                           ddr_init_e3.h : RCAR_E3_DDR_VERSION "rev.0.10" -> "rev.0.11"
  *                           init_ddr, recovery_from_backup_mode, InitDram : modify output log
+ * rev.0.12    2019/05/15    Remove RCAR_DRAM_DDR3L_MEMCONF == 2 for DBSC_E3_DBMEMCONF00
+ *                           ddr_init_e3.h : RCAR_E3_DDR_VERSION "rev.0.11" -> "rev.0.12"
  */
 
 
@@ -221,8 +223,6 @@ uint32_t init_ddr(void)
    WriteReg_32(DBSC_E3_DBMEMCONF00,0x0f030a02); // 1GB
 #elif RCAR_DRAM_DDR3L_MEMCONF == 1
    WriteReg_32(DBSC_E3_DBMEMCONF00,0x10030a02); // 2GB(default)
-#elif RCAR_DRAM_DDR3L_MEMCONF == 2
-   WriteReg_32(DBSC_E3_DBMEMCONF00,0x10030b02); // 4GB
 #else
    WriteReg_32(DBSC_E3_DBMEMCONF00,0x10030a02); // 2GB
 #endif
@@ -1028,8 +1028,6 @@ uint32_t recovery_from_backup_mode(void)
    WriteReg_32(DBSC_E3_DBMEMCONF00,0x0f030a02);
 #elif RCAR_DRAM_DDR3L_MEMCONF == 1
    WriteReg_32(DBSC_E3_DBMEMCONF00,0x10030a02);
-#elif RCAR_DRAM_DDR3L_MEMCONF == 2
-   WriteReg_32(DBSC_E3_DBMEMCONF00,0x10030b02);
 #else
    WriteReg_32(DBSC_E3_DBMEMCONF00,0x10030a02);
 #endif
