@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2018, Renesas Electronics Corporation. All rights reserved.
+ * Copyright (c) 2015-2019, Renesas Electronics Corporation. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -41,17 +41,16 @@
 #define PRR_PRODUCT_11		(0x01U)
 #define PRR_PRODUCT_20		(0x10U)
 
-#define PRR_PRODUCT_ERR(reg)	do{\
+#define PRR_PRODUCT_ERR(reg)	do {\
 				ERROR("LSI Product ID(PRR=0x%x) PFC "\
-				"initialize not supported.\n",reg);\
+				"initialize not supported.\n", reg);\
 				panic();\
-				}while(0)
-#define PRR_CUT_ERR(reg)	do{\
+				} while (0)
+#define PRR_CUT_ERR(reg)	do {\
 				ERROR("LSI Cut ID(PRR=0x%x) PFC "\
-				"initialize not supported.\n",reg);\
+				"initialize not supported.\n", reg);\
 				panic();\
-				}while(0)
-
+				} while (0)
 
 void pfc_init(void)
 {
@@ -134,38 +133,38 @@ void pfc_init(void)
   #if RCAR_LSI_CUT == RCAR_CUT_10
 	/* H3 Ver.1.0 */
 	if ((PRR_PRODUCT_H3 | PRR_PRODUCT_10)
-			!= (reg & (PRR_PRODUCT_MASK | PRR_CUT_MASK))) {
+			!= (reg & (PRR_PRODUCT_MASK | PRR_CUT_MASK)))
 		PRR_PRODUCT_ERR(reg);
-	}
+
 	pfc_init_h3_v1();
   #elif RCAR_LSI_CUT == RCAR_CUT_11
 	/* H3 Ver.1.1 */
 	if ((PRR_PRODUCT_H3 | PRR_PRODUCT_11)
-			!= (reg & (PRR_PRODUCT_MASK | PRR_CUT_MASK))) {
+			!= (reg & (PRR_PRODUCT_MASK | PRR_CUT_MASK)))
 		PRR_PRODUCT_ERR(reg);
-	}
+
 	pfc_init_h3_v1();
   #else
 	/* H3 Ver.2.0 or later */
-	if (PRR_PRODUCT_H3 != (reg & PRR_PRODUCT_MASK)) {
+	if (PRR_PRODUCT_H3 != (reg & PRR_PRODUCT_MASK))
 		PRR_PRODUCT_ERR(reg);
-	}
+
 	pfc_init_h3_v2();
   #endif
  #elif RCAR_LSI == RCAR_M3	/* M3 */
-	if ((PRR_PRODUCT_M3) != (reg & PRR_PRODUCT_MASK)) {
+	if ((PRR_PRODUCT_M3) != (reg & PRR_PRODUCT_MASK))
 		PRR_PRODUCT_ERR(reg);
-	}
+
 	pfc_init_m3();
  #elif RCAR_LSI == RCAR_M3N	/* M3N */
-	if ((PRR_PRODUCT_M3N) != (reg & PRR_PRODUCT_MASK)) {
+	if ((PRR_PRODUCT_M3N) != (reg & PRR_PRODUCT_MASK))
 		PRR_PRODUCT_ERR(reg);
-	}
+
 	pfc_init_m3n();
  #elif RCAR_LSI == RCAR_E3	/* E3 */
-	if ((PRR_PRODUCT_E3) != (reg & PRR_PRODUCT_MASK)) {
+	if ((PRR_PRODUCT_E3) != (reg & PRR_PRODUCT_MASK))
 		PRR_PRODUCT_ERR(reg);
-	}
+
 	pfc_init_e3();
  #else
   #error "Don't have PFC initialize routine(unknown)."

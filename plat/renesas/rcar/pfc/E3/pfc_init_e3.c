@@ -10,7 +10,6 @@
 #include "pfc_init_e3.h"
 #include "rcar_def.h"
 
-
 /* GPIO base address */
 #define	GPIO_BASE		(0xE6050000U)
 
@@ -222,8 +221,8 @@
 #define	GPSR1_A2		((uint32_t)1U << 2U)
 #define	GPSR1_A1		((uint32_t)1U << 1U)
 #define	GPSR1_A0		((uint32_t)1U << 0U)
-#define	GPSR2_BIT27_REVERCED 	((uint32_t)1U << 27U)
-#define	GPSR2_BIT26_REVERCED 	((uint32_t)1U << 26U)
+#define	GPSR2_BIT27_REVERCED	((uint32_t)1U << 27U)
+#define	GPSR2_BIT26_REVERCED	((uint32_t)1U << 26U)
 #define	GPSR2_EX_WAIT0		((uint32_t)1U << 25U)
 #define	GPSR2_RD_WR		((uint32_t)1U << 24U)
 #define	GPSR2_RD		((uint32_t)1U << 23U)
@@ -457,16 +456,13 @@
 #define	MOD_SEL1_SSI9_A		((uint32_t)0U << 4U)
 #define	MOD_SEL1_SSI9_B		((uint32_t)1U << 4U)
 
-
 static void pfc_reg_write(uint32_t addr, uint32_t data);
-
 
 static void pfc_reg_write(uint32_t addr, uint32_t data)
 {
 	mmio_write_32(PFC_PMMR, ~data);
 	mmio_write_32((uintptr_t)addr, data);
 }
-
 
 void pfc_init_e3(void)
 {
@@ -679,7 +675,7 @@ void pfc_init_e3(void)
 			       | GPSR1_A1
 			       | GPSR1_A0);
 	pfc_reg_write(PFC_GPSR2, GPSR2_BIT27_REVERCED
-		               | GPSR2_BIT26_REVERCED
+			       | GPSR2_BIT26_REVERCED
 			       | GPSR2_RD
 			       | GPSR2_AVB_PHY_INT
 			       | GPSR2_AVB_TXCREFCLK
@@ -720,7 +716,7 @@ void pfc_init_e3(void)
 			       | GPSR3_SD0_CMD
 			       | GPSR3_SD0_CLK);
 	pfc_reg_write(PFC_GPSR4, GPSR4_SD3_DS
-		               | GPSR4_SD3_DAT7
+			       | GPSR4_SD3_DAT7
 			       | GPSR4_SD3_DAT6
 			       | GPSR4_SD3_DAT5
 			       | GPSR4_SD3_DAT4
@@ -731,7 +727,7 @@ void pfc_init_e3(void)
 			       | GPSR4_SD3_CMD
 			       | GPSR4_SD3_CLK);
 	pfc_reg_write(PFC_GPSR5, GPSR5_SSI_SDATA9
-		               | GPSR5_MSIOF0_SS2
+			       | GPSR5_MSIOF0_SS2
 			       | GPSR5_MSIOF0_SS1
 			       | GPSR5_RX2_A
 			       | GPSR5_TX2_A

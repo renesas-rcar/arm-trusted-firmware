@@ -8,7 +8,6 @@
 #include <mmio.h>
 #include "pfc_init_h3_v1.h"
 
-
 /* GPIO base address */
 #define	GPIO_BASE		(0xE6050000U)
 
@@ -149,7 +148,6 @@
 #define	GPIO_OUTDTH7		(GPIO_BASE + 0x5844U)
 #define	GPIO_OUTDTL7		(GPIO_BASE + 0x5848U)
 #define	GPIO_BOTHEDGE7		(GPIO_BASE + 0x584CU)
-
 
 /* Pin functon base address */
 #define	PFC_BASE		(0xE6060000U)
@@ -771,7 +769,6 @@
 #define	MOD_SEL2_VIN4_A		((uint32_t)0U << 0U)
 #define	MOD_SEL2_VIN4_B		((uint32_t)1U << 0U)
 
-
 static void pfc_reg_write(uint32_t addr, uint32_t data);
 
 static void pfc_reg_write(uint32_t addr, uint32_t data)
@@ -779,7 +776,6 @@ static void pfc_reg_write(uint32_t addr, uint32_t data)
 	mmio_write_32(PFC_PMMR, ~data);
 	mmio_write_32((uintptr_t)addr, data);
 }
-
 
 void pfc_init_h3_v1(void)
 {
@@ -1347,22 +1343,22 @@ void pfc_init_h3_v1(void)
 	pfc_reg_write(PFC_DRVCTRL24, reg);
 
 	/* initialize LSI pin pull-up/down control */
-	pfc_reg_write(PFC_PUD0,0x00005FBFU);
-	pfc_reg_write(PFC_PUD1,0x00300FFEU);
-	pfc_reg_write(PFC_PUD2,0x330001E6U);
-	pfc_reg_write(PFC_PUD3,0x000002E0U);
-	pfc_reg_write(PFC_PUD4,0xFFFFFF00U);
-	pfc_reg_write(PFC_PUD5,0x7F5FFF87U);
-	pfc_reg_write(PFC_PUD6,0x00000055U);
+	pfc_reg_write(PFC_PUD0, 0x00005FBFU);
+	pfc_reg_write(PFC_PUD1, 0x00300FFEU);
+	pfc_reg_write(PFC_PUD2, 0x330001E6U);
+	pfc_reg_write(PFC_PUD3, 0x000002E0U);
+	pfc_reg_write(PFC_PUD4, 0xFFFFFF00U);
+	pfc_reg_write(PFC_PUD5, 0x7F5FFF87U);
+	pfc_reg_write(PFC_PUD6, 0x00000055U);
 
 	/* initialize LSI pin pull-enable register */
-	pfc_reg_write(PFC_PUEN0,0x00000FFFU);
-	pfc_reg_write(PFC_PUEN1,0x00100234U);
-	pfc_reg_write(PFC_PUEN2,0x000004C4U);
-	pfc_reg_write(PFC_PUEN3,0x00000200U);
-	pfc_reg_write(PFC_PUEN4,0x3E000000U);
-	pfc_reg_write(PFC_PUEN5,0x1F000805U);
-	pfc_reg_write(PFC_PUEN6,0x00000006U);
+	pfc_reg_write(PFC_PUEN0, 0x00000FFFU);
+	pfc_reg_write(PFC_PUEN1, 0x00100234U);
+	pfc_reg_write(PFC_PUEN2, 0x000004C4U);
+	pfc_reg_write(PFC_PUEN3, 0x00000200U);
+	pfc_reg_write(PFC_PUEN4, 0x3E000000U);
+	pfc_reg_write(PFC_PUEN5, 0x1F000805U);
+	pfc_reg_write(PFC_PUEN6, 0x00000006U);
 
 	/* initialize positive/negative logic select */
 	mmio_write_32(GPIO_POSNEG0, 0x00000000U);
