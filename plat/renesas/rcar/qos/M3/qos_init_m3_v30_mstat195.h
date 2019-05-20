@@ -1,4 +1,10 @@
-static uint64_t mstat_fix[]={
+/*
+ * Copyright (c) 2019, Renesas Electronics Corporation. All rights reserved.
+ *
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+
+static uint64_t mstat_fix[] = {
 	/* 0x0000, */ 0x0000000000000000UL,
 	/* 0x0008, */ 0x0000000000000000UL,
 	/* 0x0010, */ 0x0000000000000000UL,
@@ -107,7 +113,8 @@ static uint64_t mstat_fix[]={
 	/* 0x0348, */ 0x0000000000000000UL,
 	/* 0x0350, */ 0x0000000000000000UL,
 };
-static uint64_t mstat_be[]={
+
+static uint64_t mstat_be[] = {
 	/* 0x0000, */ 0x001200200BDFFC01UL,
 	/* 0x0008, */ 0x001200200BDFFC01UL,
 	/* 0x0010, */ 0x001200200BDFFC01UL,

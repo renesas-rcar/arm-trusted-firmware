@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Renesas Electronics Corporation. All rights reserved.
+ * Copyright (c) 2018-2019, Renesas Electronics Corporation. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -114,24 +114,20 @@ void qos_init_e3_v10(void)
 	io_write_32(QOSCTRL_EARLYR, 0x00000000U);
 	io_write_32(QOSCTRL_RACNT0, 0x00010003U);
 
-
-	io_write_32(QOSCTRL_SL_INIT, SL_INIT_REFFSSLOT | SL_INIT_SLOTSSLOT | SL_INIT_SSLOTCLK_E3);
+	io_write_32(QOSCTRL_SL_INIT, SL_INIT_REFFSSLOT | SL_INIT_SLOTSSLOT |
+		    SL_INIT_SSLOTCLK_E3);
 	io_write_32(QOSCTRL_REF_ARS, REF_ARS_ARBSTOPCYCLE_E3);
 
 	{
 	uint32_t i;
 
 	for (i = 0U; i < ARRAY_SIZE(mstat_fix); i++) {
-		io_write_64(QOSBW_FIX_QOS_BANK0 + i*8,
-				mstat_fix[i]);
-		io_write_64(QOSBW_FIX_QOS_BANK1 + i*8,
-				mstat_fix[i]);
+		io_write_64(QOSBW_FIX_QOS_BANK0 + i * 8, mstat_fix[i]);
+		io_write_64(QOSBW_FIX_QOS_BANK1 + i * 8, mstat_fix[i]);
 	}
 	for (i = 0U; i < ARRAY_SIZE(mstat_be); i++) {
-		io_write_64(QOSBW_BE_QOS_BANK0 + i*8,
-				mstat_be[i]);
-		io_write_64(QOSBW_BE_QOS_BANK1 + i*8,
-				mstat_be[i]);
+		io_write_64(QOSBW_BE_QOS_BANK0 + i * 8, mstat_be[i]);
+		io_write_64(QOSBW_BE_QOS_BANK1 + i * 8, mstat_be[i]);
 	}
 	}
 

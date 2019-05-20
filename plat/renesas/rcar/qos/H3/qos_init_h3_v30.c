@@ -10,31 +10,33 @@
 #include "../qos_reg.h"
 #include "qos_init_h3_v30.h"
 
-
 #define	RCAR_QOS_VERSION		"rev.0.11"
 
-#define QOSCTRL_FSS			(QOS_BASE1 + 0x0048U)
+#define QOSCTRL_FSS				(QOS_BASE1 + 0x0048U)
 
-#define QOSWT_TIME_BANK0				(20000000U)	//unit:ns
+#define QOSWT_TIME_BANK0			(20000000U)	//unit:ns
 
-#define	QOSWT_WTEN_ENABLE				(0x1U)
+#define	QOSWT_WTEN_ENABLE			(0x1U)
 
 #define QOSCTRL_REF_ARS_ARBSTOPCYCLE_H3_30	(SL_INIT_SSLOTCLK_H3_30 - 0x5U)
 
 #define OSWT_WTREF_SLOT0_EN_REQ1_SLOT	(3U)
 #define OSWT_WTREF_SLOT0_EN_REQ2_SLOT	(9U)
-#define QOSWT_WTREF_SLOT0_EN			((0x1U << OSWT_WTREF_SLOT0_EN_REQ1_SLOT) | (0x1U << OSWT_WTREF_SLOT0_EN_REQ2_SLOT))
-#define QOSWT_WTREF_SLOT1_EN			((0x1U << OSWT_WTREF_SLOT0_EN_REQ1_SLOT) | (0x1U << OSWT_WTREF_SLOT0_EN_REQ2_SLOT))
+#define QOSWT_WTREF_SLOT0_EN	((0x1U << OSWT_WTREF_SLOT0_EN_REQ1_SLOT) | \
+				 (0x1U << OSWT_WTREF_SLOT0_EN_REQ2_SLOT))
+#define QOSWT_WTREF_SLOT1_EN	((0x1U << OSWT_WTREF_SLOT0_EN_REQ1_SLOT) | \
+				 (0x1U << OSWT_WTREF_SLOT0_EN_REQ2_SLOT))
 
-#define QOSWT_WTSET0_REQ_SSLOT0			(5U)
-#define WT_BASE_SUB_SLOT_NUM0			(12U)
-#define QOSWT_WTSET0_PERIOD0_H3_30		((QOSWT_TIME_BANK0/QOSWT_WTSET0_CYCLE_H3_30)-1U)
-#define QOSWT_WTSET0_SSLOT0				(QOSWT_WTSET0_REQ_SSLOT0 -1U)
-#define QOSWT_WTSET0_SLOTSLOT0			(WT_BASE_SUB_SLOT_NUM0 -1U)
+#define QOSWT_WTSET0_REQ_SSLOT0		(5U)
+#define WT_BASE_SUB_SLOT_NUM0		(12U)
+#define QOSWT_WTSET0_PERIOD0_H3_30	((QOSWT_TIME_BANK0 /	\
+					  QOSWT_WTSET0_CYCLE_H3_30) - 1U)
+#define QOSWT_WTSET0_SSLOT0		(QOSWT_WTSET0_REQ_SSLOT0 - 1U)
+#define QOSWT_WTSET0_SLOTSLOT0		(WT_BASE_SUB_SLOT_NUM0 - 1U)
 
-#define QOSWT_WTSET1_PERIOD1_H3_30		(QOSWT_WTSET0_PERIOD0_H3_30)
-#define QOSWT_WTSET1_SSLOT1				(QOSWT_WTSET0_SSLOT0)
-#define QOSWT_WTSET1_SLOTSLOT1			(QOSWT_WTSET0_SLOTSLOT0)
+#define QOSWT_WTSET1_PERIOD1_H3_30	(QOSWT_WTSET0_PERIOD0_H3_30)
+#define QOSWT_WTSET1_SSLOT1		(QOSWT_WTSET0_SSLOT0)
+#define QOSWT_WTSET1_SLOTSLOT1		(QOSWT_WTSET0_SLOTSLOT0)
 
 #if RCAR_QOS_TYPE  == RCAR_QOS_TYPE_DEFAULT
 
@@ -58,7 +60,7 @@
 
 static void dbsc_setting(void)
 {
-	uint32_t md=0;
+	uint32_t md = 0;
 
 	/* Register write enable */
 	io_write_32(DBSC_DBSYSCNT0, 0x00001234U);
@@ -129,6 +131,7 @@ static void dbsc_setting(void)
 void qos_init_h3_v30(void)
 {
 	unsigned int split_area;
+
 	dbsc_setting();
 
 #if RCAR_DRAM_LPDDR4_MEMCONF == 0  /* 1GB */
@@ -139,7 +142,7 @@ void qos_init_h3_v30(void)
 
 	/* DRAM Split Address mapping */
 #if (RCAR_DRAM_SPLIT == RCAR_DRAM_SPLIT_4CH) || \
-    (RCAR_DRAM_SPLIT == RCAR_DRAM_SPLIT_AUTO)
+	(RCAR_DRAM_SPLIT == RCAR_DRAM_SPLIT_AUTO)
 	NOTICE("BL2: DRAM Split is 4ch(DDR %x)\n", (int)qos_init_ddr_phyvalid);
 
 	io_write_32(AXI_ADSPLCR0, ADSPLCR0_ADRMODE_DEFAULT
@@ -150,7 +153,7 @@ void qos_init_h3_v30(void)
 	io_write_32(AXI_ADSPLCR2, 0x00001054U);
 	io_write_32(AXI_ADSPLCR3, 0x00000000U);
 #elif RCAR_DRAM_SPLIT == RCAR_DRAM_SPLIT_2CH
-	NOTICE("BL2: DRAM Split is 2ch(DDR %x)\n",(int)qos_init_ddr_phyvalid);
+	NOTICE("BL2: DRAM Split is 2ch(DDR %x)\n", (int)qos_init_ddr_phyvalid);
 
 	io_write_32(AXI_ADSPLCR0, ADSPLCR0_AREA(split_area));
 	io_write_32(AXI_ADSPLCR1, ADSPLCR0_ADRMODE_DEFAULT
@@ -161,7 +164,7 @@ void qos_init_h3_v30(void)
 	io_write_32(AXI_ADSPLCR3, 0x00000000U);
 #else
 	io_write_32(AXI_ADSPLCR0, ADSPLCR0_AREA(split_area));
-	NOTICE("BL2: DRAM Split is OFF(DDR %x)\n",(int)qos_init_ddr_phyvalid);
+	NOTICE("BL2: DRAM Split is OFF(DDR %x)\n", (int)qos_init_ddr_phyvalid);
 #endif
 
 #if !(RCAR_QOS_TYPE == RCAR_QOS_NONE)
@@ -189,36 +192,29 @@ void qos_init_h3_v30(void)
 	/* GPU Boost Mode */
 	io_write_32(QOSCTRL_STATGEN0, 0x00000001U);
 
-	io_write_32(QOSCTRL_SL_INIT, SL_INIT_REFFSSLOT | SL_INIT_SLOTSSLOT | SL_INIT_SSLOTCLK_H3_30);
-	io_write_32(QOSCTRL_REF_ARS, ((QOSCTRL_REF_ARS_ARBSTOPCYCLE_H3_30 << 16)));
+	io_write_32(QOSCTRL_SL_INIT, SL_INIT_REFFSSLOT | SL_INIT_SLOTSSLOT |
+		    SL_INIT_SSLOTCLK_H3_30);
+	io_write_32(QOSCTRL_REF_ARS, QOSCTRL_REF_ARS_ARBSTOPCYCLE_H3_30 << 16);
 
 	{
 	uint32_t i;
 
 	for (i = 0U; i < ARRAY_SIZE(mstat_fix); i++) {
-		io_write_64(QOSBW_FIX_QOS_BANK0 + i*8,
-				mstat_fix[i]);
-		io_write_64(QOSBW_FIX_QOS_BANK1 + i*8,
-				mstat_fix[i]);
+		io_write_64(QOSBW_FIX_QOS_BANK0 + i * 8, mstat_fix[i]);
+		io_write_64(QOSBW_FIX_QOS_BANK1 + i * 8, mstat_fix[i]);
 	}
 	for (i = 0U; i < ARRAY_SIZE(mstat_be); i++) {
-		io_write_64(QOSBW_BE_QOS_BANK0 + i*8,
-				mstat_be[i]);
-		io_write_64(QOSBW_BE_QOS_BANK1 + i*8,
-				mstat_be[i]);
+		io_write_64(QOSBW_BE_QOS_BANK0 + i * 8, mstat_be[i]);
+		io_write_64(QOSBW_BE_QOS_BANK1 + i * 8, mstat_be[i]);
 	}
 #if RCAR_REWT_TRAINING != RCAR_REWT_TRAINING_DISABLE
 	for (i = 0U; i < ARRAY_SIZE(qoswt_fix); i++) {
-		io_write_64(QOSWT_FIX_WTQOS_BANK0 + i*8,
-				qoswt_fix[i]);
-		io_write_64(QOSWT_FIX_WTQOS_BANK1 + i*8,
-				qoswt_fix[i]);
+		io_write_64(QOSWT_FIX_WTQOS_BANK0 + i * 8, qoswt_fix[i]);
+		io_write_64(QOSWT_FIX_WTQOS_BANK1 + i * 8, qoswt_fix[i]);
 	}
 	for (i = 0U; i < ARRAY_SIZE(qoswt_be); i++) {
-		io_write_64(QOSWT_BE_WTQOS_BANK0 + i*8,
-				qoswt_be[i]);
-		io_write_64(QOSWT_BE_WTQOS_BANK1 + i*8,
-				qoswt_be[i]);
+		io_write_64(QOSWT_BE_WTQOS_BANK0 + i * 8, qoswt_be[i]);
+		io_write_64(QOSWT_BE_WTQOS_BANK1 + i * 8, qoswt_be[i]);
 	}
 #endif /* RCAR_REWT_TRAINING != RCAR_REWT_TRAINING_DISABLE */
 	}
@@ -242,9 +238,12 @@ void qos_init_h3_v30(void)
 
 #if RCAR_REWT_TRAINING != RCAR_REWT_TRAINING_DISABLE
 	/*  re-write training setting */
-	io_write_32(QOSWT_WTREF,  ((QOSWT_WTREF_SLOT1_EN << 16)       | QOSWT_WTREF_SLOT0_EN));
-	io_write_32(QOSWT_WTSET0, ((QOSWT_WTSET0_PERIOD0_H3_30 << 16) | (QOSWT_WTSET0_SSLOT0 << 8) | QOSWT_WTSET0_SLOTSLOT0));
-	io_write_32(QOSWT_WTSET1, ((QOSWT_WTSET1_PERIOD1_H3_30 << 16) | (QOSWT_WTSET1_SSLOT1 << 8) | QOSWT_WTSET1_SLOTSLOT1));
+	io_write_32(QOSWT_WTREF,  ((QOSWT_WTREF_SLOT1_EN << 16)       |
+		    QOSWT_WTREF_SLOT0_EN));
+	io_write_32(QOSWT_WTSET0, ((QOSWT_WTSET0_PERIOD0_H3_30 << 16) |
+		    (QOSWT_WTSET0_SSLOT0 << 8) | QOSWT_WTSET0_SLOTSLOT0));
+	io_write_32(QOSWT_WTSET1, ((QOSWT_WTSET1_PERIOD1_H3_30 << 16) |
+		    (QOSWT_WTSET1_SSLOT1 << 8) | QOSWT_WTSET1_SLOTSLOT1));
 
 	io_write_32(QOSWT_WTEN,   QOSWT_WTEN_ENABLE);
 #endif /* RCAR_REWT_TRAINING != RCAR_REWT_TRAINING_DISABLE */

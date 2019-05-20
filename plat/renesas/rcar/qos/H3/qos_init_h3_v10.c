@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2017, Renesas Electronics Corporation. All rights reserved.
+ * Copyright (c) 2015-2019, Renesas Electronics Corporation. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -8,7 +8,6 @@
 #include <debug.h>
 #include "../qos_common.h"
 #include "qos_init_h3_v10.h"
-
 
 #define	RCAR_QOS_VERSION		"rev.0.36"
 
@@ -51,7 +50,6 @@
 #define	RALLOC_EMS			(RALLOC_BASE + 0x0040U)
 #define	RALLOC_INSFC			(RALLOC_BASE + 0x0050U)
 #define	RALLOC_BERR			(RALLOC_BASE + 0x0054U)
-
 
 #if RCAR_QOS_TYPE  == RCAR_QOS_TYPE_DEFAULT
 static const mstat_slot_t mstat_fix[] = {
@@ -269,12 +267,11 @@ static const mstat_slot_t mstat_be[] = {
 };
 #endif
 
-
 void qos_init_h3_v10(void)
 {
 	/* DRAM Split Address mapping */
 #if (RCAR_DRAM_SPLIT == RCAR_DRAM_SPLIT_4CH) || \
-    (RCAR_DRAM_SPLIT == RCAR_DRAM_SPLIT_AUTO)
+	(RCAR_DRAM_SPLIT == RCAR_DRAM_SPLIT_AUTO)
 	NOTICE("BL2: DRAM Split is 4ch\n");
 	io_write_32(AXI_ADSPLCR0, ADSPLCR0_ADRMODE_DEFAULT
 				  | ADSPLCR0_SPLITSEL(0xFFU)
@@ -317,7 +314,8 @@ void qos_init_h3_v10(void)
 	io_write_32(RALLOC_BERR,  0x00000000U);
 
 	/* MSTAT setting */
-	io_write_32(MSTAT_SL_INIT, SL_INIT_REFFSSLOT | SL_INIT_SLOTSSLOT | SL_INIT_SSLOTCLK);
+	io_write_32(MSTAT_SL_INIT, SL_INIT_REFFSSLOT | SL_INIT_SLOTSSLOT |
+		    SL_INIT_SSLOTCLK);
 	io_write_32(MSTAT_REF_ARS, 0x00330000U);
 
 	/* MSTAT SRAM setting */
@@ -326,15 +324,15 @@ void qos_init_h3_v10(void)
 
 	for (i = 0U; i < ARRAY_SIZE(mstat_fix); i++) {
 		io_write_64(MSTAT_FIX_QOS_BANK0 + mstat_fix[i].addr,
-				mstat_fix[i].value);
+			    mstat_fix[i].value);
 		io_write_64(MSTAT_FIX_QOS_BANK1 + mstat_fix[i].addr,
-				mstat_fix[i].value);
+			    mstat_fix[i].value);
 	}
 	for (i = 0U; i < ARRAY_SIZE(mstat_be); i++) {
 		io_write_64(MSTAT_BE_QOS_BANK0 + mstat_be[i].addr,
-				mstat_be[i].value);
+			    mstat_be[i].value);
 		io_write_64(MSTAT_BE_QOS_BANK1 + mstat_be[i].addr,
-				mstat_be[i].value);
+			    mstat_be[i].value);
 	}
 	}
 

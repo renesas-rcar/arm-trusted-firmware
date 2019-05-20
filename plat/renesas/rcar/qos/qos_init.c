@@ -62,16 +62,16 @@ uint8_t  qos_init_ddr_phyvalid;
 
 #endif
 
-#define PRR_PRODUCT_ERR(reg)	do{\
+#define PRR_PRODUCT_ERR(reg)	do {\
 				ERROR("LSI Product ID(PRR=0x%x) QoS "\
-				"initialize not supported.\n",reg);\
+				"initialize not supported.\n", reg);\
 				panic();\
-				}while(0)
-#define PRR_CUT_ERR(reg)	do{\
+				} while (0)
+#define PRR_CUT_ERR(reg)	do {\
 				ERROR("LSI Cut ID(PRR=0x%x) QoS "\
-				"initialize not supported.\n",reg);\
+				"initialize not supported.\n", reg);\
 				panic();\
-				}while(0)
+				} while (0)
 
 void qos_init(void)
 {
@@ -81,10 +81,9 @@ void qos_init(void)
 
 	qos_init_ddr_ch = 0;
 	qos_init_ddr_phyvalid = get_boardcnf_phyvalid();
-	for(i=0;i<DRAM_CH_CNT;i++) {
-		if((qos_init_ddr_phyvalid & (1<<i))){
+	for (i = 0; i < DRAM_CH_CNT; i++) {
+		if ((qos_init_ddr_phyvalid & (1 << i)))
 			qos_init_ddr_ch++;
-		}
 	}
 #endif
 
