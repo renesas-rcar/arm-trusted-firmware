@@ -167,9 +167,9 @@ RCAR_INSTANTIATE_LOCK
 #if RCAR_SYSTEM_SUSPEND
 static void rcar_bl31_set_self_refresh(void);
 static void rcar_bl31_set_self_refresh_e3(void);
+static void rcar_bl31_save_timer_state(void);
 #endif /* RCAR_SYSTEM_SUSPEND */
 static void SCU_power_up(uint64_t mpidr);
-static void rcar_bl31_save_timer_state(void);
 
 static uint64_t rcar_bl31_saved_cntpct_el0;
 static uint32_t rcar_bl31_saved_cntfid;
@@ -933,6 +933,7 @@ uint32_t rcar_bl31_get_cpu_num(uint32_t cluster_type)
 	return num;
 }
 
+#if RCAR_SYSTEM_SUSPEND
 static void rcar_bl31_save_timer_state(void)
 {
 	rcar_bl31_saved_cntpct_el0 = read_cntpct_el0();
@@ -940,6 +941,7 @@ static void rcar_bl31_save_timer_state(void)
 	rcar_bl31_saved_cntfid =
 		mmio_read_32((uintptr_t)(RCAR_CNTC_BASE + RCAR_CNTFID_OFF));
 }
+#endif /* RCAR_SYSTEM_SUSPEND */
 
 void rcar_bl31_restore_timer_state(void)
 {
