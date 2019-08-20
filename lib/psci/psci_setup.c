@@ -256,6 +256,11 @@ int psci_setup(const psci_lib_args_t *lib_args)
 	psci_caps |=  define_psci_cap(PSCI_STAT_COUNT_AARCH64);
 #endif
 
+#if PLAT_rcar
+	psci_caps |= define_psci_cap(PSCI_MIG_INFO_UP_CPU_AARCH64);
+	psci_caps |= define_psci_cap(PSCI_MIG_INFO_TYPE);
+#endif
+
 	return 0;
 }
 
