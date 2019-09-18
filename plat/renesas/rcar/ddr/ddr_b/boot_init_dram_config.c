@@ -77,11 +77,11 @@ struct _boardcnf {
 	uint8_t dbi_en;
 	/* default CA/CS delay value */
 	uint16_t cacs_dly;
-	/* default CA/CS delay adjust value in ps*/
+	/* default CA/CS delay adjust value in ps */
 	int16_t cacs_dly_adj;
-	/* default DQ/DM delay value for write*/
+	/* default DQ/DM delay value for write */
 	uint16_t dqdm_dly_w;
-	/* default DQ/DM delay value for read*/
+	/* default DQ/DM delay value for read */
 	uint16_t dqdm_dly_r;
 	struct _boardcnf_ch ch[DRAM_CH_CNT];
 };
@@ -318,7 +318,7 @@ static const struct _boardcnf boardcnfs[BOARDNUM] = {
 	0x00a0,		/* dqdm_dly_r */
 	{
 /*ch[0]*/	{
-/*ddr_density[]*/	{ 0x02, 0xff },    // M3-W/SIP(8Gbit 1rank)
+/*ddr_density[]*/	{ 0x02, 0xff },    /* M3-W/SIP(8Gbit 1rank) */
 /*ca_swap*/		0x00543210,
 /*dqs_swap*/		0x3201,
 /*dq_swap[]*/		{ 0x70612543, 0x43251670, 0x45326170, 0x10672534 },
@@ -338,7 +338,7 @@ static const struct _boardcnf boardcnfs[BOARDNUM] = {
 			  0, 0, 0, 0, 0, 0, 0, 0 }
 		},
 /*ch[1]*/	{
-/*ddr_density[]*/	{ 0x02, 0xff },    // M3-W/SIP(8Gbit 1rank)
+/*ddr_density[]*/	{ 0x02, 0xff },    /* M3-W/SIP(8Gbit 1rank) */
 /*ca_swap*/		0x00543210,
 /*dqs_swap*/		0x2310,
 /*dq_swap[]*/		{ 0x01327654, 0x34526107, 0x35421670, 0x70615324 },
@@ -727,7 +727,7 @@ static const struct _boardcnf boardcnfs[BOARDNUM] = {
 			  0, 0, 0, 0, 0, 0, 0, 0 }
 		},
 #if ((RCAR_DRAM_CHANNEL == 5) && (RCAR_DRAM_SPLIT == 2))
-/*ch[1]*/	{	// copy from ch[2] (for DRAM_SPLIT_2CH)
+/*ch[1]*/	{	/* copy from ch[2] (for DRAM_SPLIT_2CH) */
 /*ddr_density[]*/	{ 0x02, 0x02 },
 /*ca_swap*/		0x00543210,
 /*dqs_swap*/		0x2301,
@@ -747,7 +747,7 @@ static const struct _boardcnf boardcnfs[BOARDNUM] = {
 			  0, 0, 0, 0, 0, 0, 0, 0,
 			  0, 0, 0, 0, 0, 0, 0, 0 }
 		},
-#else /* (RCAR_DRAM_CHANNEL==5) && (RCAR_DRAM_SPLIT==2) */
+#else /* (RCAR_DRAM_CHANNEL == 5) && (RCAR_DRAM_SPLIT == 2) */
 /*ch[1]*/	{
 /*ddr_density[]*/	{ 0x02, 0x02 },
 /*ca_swap*/		0x00105432,
@@ -849,7 +849,7 @@ static const struct _boardcnf boardcnfs[BOARDNUM] = {
 /*dq_swap[]*/		{ 0x23764510, 0x43257610, 0x43752610, 0x37652401 },
 /*dm_swap[]*/		{ 0x08, 0x08, 0x08, 0x08 },
 /*wdqlvl_patt[]*/	WDQLVL_PAT,
-/*cacs_adj*///		{ 0, 0, 0, 0, 0, 0, 0, 0,
+/*cacs_adj*/	/*	{ 0, 0, 0, 0, 0, 0, 0, 0, */
 /*cacs_adj*/		{ -128, -128, -128, -128, -128, -128, 0, 0,
 			  0, 0 },
 /*dm_adj_w*/		{ 0, 0, 0, 0 },
@@ -890,8 +890,8 @@ static const struct _boardcnf boardcnfs[BOARDNUM] = {
 /*dq_swap[]*/		{ 0x47652301, 0x75346210, 0x53467210, 0x32674501 },
 /*dm_swap[]*/		{ 0x08, 0x08, 0x08, 0x08 },
 /*wdqlvl_patt[]*/	WDQLVL_PAT,
-/*cacs_adj*///		{ 0, 0, 0, 0, 0, 0, 0, 0,
-	//		  0, 0 },
+/*cacs_adj*/	/*	{ 0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0 }, */
 /*cacs_adj*/		{ 30, 30, 30, 30, 30, 30, 30, 30,
 			  30, 30 },
 /*dm_adj_w*/		{ 0, 0, 0, 0 },
@@ -989,7 +989,7 @@ static const struct _boardcnf boardcnfs[BOARDNUM] = {
 	0x00a0,		/* dqdm_dly_r */
 	{
 /*ch[0]*/	{
-/*ddr_density[]*///	{ 0x00, 0x00 },
+/*ddr_density[]*//*	{ 0x00, 0x00 }, */
 /*ddr_density[]*/	{ 0x02, 0x02 },
 /*ca_swap*/		0x00501342,
 /*dqs_swap*/		0x3201,
@@ -1042,7 +1042,7 @@ static const struct _boardcnf boardcnfs[BOARDNUM] = {
 			  0, 0, 0, 0, 0, 0, 0, 0,
 			  0, 0, 0, 0, 0, 0, 0, 0 }
 		},
-/*ch[1]*/	{	// for DRAM_SPLIT_2CH
+/*ch[1]*/	{	/* for DRAM_SPLIT_2CH */
 /*ddr_density[]*/	{ 0x02, 0x02 },
 /*ca_swap*/		0x00302154,
 /*dqs_swap*/		0x2310,
@@ -1062,7 +1062,7 @@ static const struct _boardcnf boardcnfs[BOARDNUM] = {
 			  0, 0, 0, 0, 0, 0, 0, 0,
 			  0, 0, 0, 0, 0, 0, 0, 0 }
 		},
-/*ch[2]*/	{	// for DRAM_SPLIT_NON
+/*ch[2]*/	{	/* for DRAM_SPLIT_NON */
 /*ddr_density[]*/	{ 0x02, 0x02 },
 /*ca_swap*/		0x00302154,
 /*dqs_swap*/		0x2310,
@@ -1082,7 +1082,7 @@ static const struct _boardcnf boardcnfs[BOARDNUM] = {
 			  0, 0, 0, 0, 0, 0, 0, 0,
 			  0, 0, 0, 0, 0, 0, 0, 0 }
 		},
-/*ch[3]*/	{ // Dummy
+/*ch[3]*/	{ /* Dummy */
 /*ddr_density[]*/	{ 0xff, 0xff },
 /*ca_swap*/		0,
 /*dqs_swap*/		0,
@@ -1140,7 +1140,7 @@ static const struct _boardcnf boardcnfs[BOARDNUM] = {
 			  0, 0, 0, 0, 0, 0, 0, 0 }
 		},
 #if ((RCAR_DRAM_CHANNEL == 5) && (RCAR_DRAM_SPLIT == 2))
-/*ch[1]*/	{	// copy from ch[2] (for DRAM_SPLIT_2CH)
+/*ch[1]*/	{	/* copy from ch[2] (for DRAM_SPLIT_2CH) */
 /*ddr_density[]*/	{ 0x04, 0xff },
 /*ca_swap*/		0x00543210,
 /*dqs_swap*/		0x2301,
@@ -1255,7 +1255,7 @@ static const struct _boardcnf boardcnfs[BOARDNUM] = {
 			  0, 0, 0, 0, 0, 0, 0, 0,
 			  0, 0, 0, 0, 0, 0, 0, 0 }
 		},
-/*ch[1]*/	{	// for DRAM_SPLIT_2CH
+/*ch[1]*/	{	/* for DRAM_SPLIT_2CH */
 /*ddr_density[]*/	{ 0x02, 0x02 },
 /*ca_swap*/		0x00302154,
 /*dqs_swap*/		0x2310,
@@ -1275,7 +1275,7 @@ static const struct _boardcnf boardcnfs[BOARDNUM] = {
 			  0, 0, 0, 0, 0, 0, 0, 0,
 			  0, 0, 0, 0, 0, 0, 0, 0 }
 		},
-/*ch[2]*/	{	// for DRAM_SPLIT_NON
+/*ch[2]*/	{	/* for DRAM_SPLIT_NON */
 /*ddr_density[]*/	{ 0x02, 0x02 },
 /*ca_swap*/		0x00302154,
 /*dqs_swap*/		0x2310,
@@ -1295,7 +1295,7 @@ static const struct _boardcnf boardcnfs[BOARDNUM] = {
 			  0, 0, 0, 0, 0, 0, 0, 0,
 			  0, 0, 0, 0, 0, 0, 0, 0 }
 		},
-/*ch[3]*/	{ // Dummy
+/*ch[3]*/	{ /* Dummy */
 /*ddr_density[]*/	{ 0xff, 0xff },
 /*ca_swap*/		0,
 /*dqs_swap*/		0,
@@ -1677,25 +1677,39 @@ void boardcnf_get_ddr_mbps(uint32_t brd, uint32_t *mbps, uint32_t *div)
 {
 	uint32_t md;
 
-	md = (mmio_read_32(RST_MODEMR) >> 17) & 0x05;
-	md = (md | (md >> 1)) & 0x03;
-	switch (md) {
-	case 0x0:
-		*mbps = 3200;
-		*div = 1;
-		break;
-	case 0x1:
-		*mbps = 2800;
-		*div = 1;
-		break;
-	case 0x2:
-		*mbps = 2400;
-		*div = 1;
-		break;
-	case 0x3:
-		*mbps = 1600;
-		*div = 1;
-		break;
+	if (Prr_Product == PRR_PRODUCT_V3H) {
+		md = (mmio_read_32(RST_MODEMR) >> 19) & 0x01;
+		switch (md) {
+		case 0x0:
+			*mbps = 3200;
+			*div = 1;
+			break;
+		case 0x1:
+			*mbps = 1600;
+			*div = 1;
+			break;
+		}
+	} else {
+		md = (mmio_read_32(RST_MODEMR) >> 17) & 0x05;
+		md = (md | (md >> 1)) & 0x03;
+		switch (md) {
+		case 0x0:
+			*mbps = 3200;
+			*div = 1;
+			break;
+		case 0x1:
+			*mbps = 2800;
+			*div = 1;
+			break;
+		case 0x2:
+			*mbps = 2400;
+			*div = 1;
+			break;
+		case 0x3:
+			*mbps = 1600;
+			*div = 1;
+			break;
+		}
 	}
 	(void)brd;
 }
@@ -1735,7 +1749,7 @@ static const uint32_t TermcodeBySample[20][3] = {
 /*******************************************************************************
  *	SAMPLE board detect function
  ******************************************************************************/
-/* R/W  32      LSI Multiplexed Pin Setting Mask Register*/
+/* R/W  32      LSI Multiplexed Pin Setting Mask Register */
 #define    PFC_PMMR   0xE6060000U
 /* R/W  32      LSI pin pull-enable register 5 */
 #define    PFC_PUEN5  0xE6060414U
@@ -1750,9 +1764,9 @@ static const uint32_t TermcodeBySample[20][3] = {
 /* R    32      General input register 6 */
 #define    GPIO_INDT6 0xE605540CU
 
-#define BIT25 (1U<<25)
-#define BIT22 (1U<<22)
-#define BIT15 (1U<<15)
+#define BIT25 (1U << 25)
+#define BIT22 (1U << 22)
+#define BIT15 (1U << 15)
 #define BIT0  (1U)
 #define    GPIO_GPSR6 0xE6060118U
 
@@ -1772,7 +1786,7 @@ static void pfc_write_and_poll(uint32_t a, uint32_t v)
 #define RCAR_GEN3_ULCB		0
 #endif
 
-#if (RCAR_GEN3_ULCB == 0) // non Starter Kit
+#if (RCAR_GEN3_ULCB == 0) /* non Starter Kit */
 /*
  * Connect = return 0
  * Open    = return 1
@@ -1801,18 +1815,18 @@ static uint32_t opencheck_SSI_WS6(void)
 	dataL = pud5_bak;
 	dataL &= ~(BIT22);
 	pfc_write_and_poll(PFC_PUD5, dataL);
-	/* GPSR6[15]=SSI_WS6*/
+	/* GPSR6[15]=SSI_WS6 */
 	micro_wait(10);
-	down = (mmio_read_32(GPIO_INDT6)>>15) & 0x1;
+	down = (mmio_read_32(GPIO_INDT6) >> 15) & 0x1;
 	dsb_sev();
 
-	/* Pull-Up-Enable (PUD5[22]=1, PUEN5[22]=1)*/
+	/* Pull-Up-Enable (PUD5[22]=1, PUEN5[22]=1) */
 	dataL = pud5_bak;
 	dataL |= (BIT22);
 	pfc_write_and_poll(PFC_PUD5, dataL);
-	/* GPSR6[15]=SSI_WS6*/
+	/* GPSR6[15]=SSI_WS6 */
 	micro_wait(10);
-	up = (mmio_read_32(GPIO_INDT6)>>15) & 0x1;
+	up = (mmio_read_32(GPIO_INDT6) >> 15) & 0x1;
 
 	dsb_sev();
 
@@ -1820,7 +1834,7 @@ static uint32_t opencheck_SSI_WS6(void)
 	pfc_write_and_poll(PFC_PUEN5, puen5_bak);
 	pfc_write_and_poll(PFC_PUD5, pud5_bak);
 
-	/* Compare*/
+	/* Compare */
 	if (down == up) {
 		/* Same = Connect */
 		return 0;
@@ -1830,7 +1844,7 @@ static uint32_t opencheck_SSI_WS6(void)
 	}
 }
 
-#endif //(RCAR_GEN3_ULCB==0)
+#endif /* (RCAR_GEN3_ULCB == 0) */
 
 static uint32_t _board_judge(void)
 {
@@ -1845,9 +1859,9 @@ static uint32_t _board_judge(void)
 		} else {
 			/* RENESAS Starter Kit(H3 Ver.2.0 or later/SIP) board */
 #if (RCAR_DRAM_LPDDR4_MEMCONF == 0)
-			brd = 7;  //  8Gbit/1rank
+			brd = 7;  /* 8Gbit/1rank */
 #else
-			brd = 8;  //  8Gbit/2rank
+			brd = 8;  /* 8Gbit/2rank */
 #endif
 		}
 	} else if (Prr_Product == PRR_PRODUCT_M3) {
@@ -1857,7 +1871,7 @@ static uint32_t _board_judge(void)
 		/* RENESAS Starter Kit(M3-N/SIP) board */
 		brd = 11;
 	}
-#else// not (RCAR_GEN3_ULCB == 1)
+#else /* not (RCAR_GEN3_ULCB == 1) */
 	uint32_t usb2_ovc_open;
 
 	usb2_ovc_open = opencheck_SSI_WS6();
@@ -1883,21 +1897,21 @@ static uint32_t _board_judge(void)
 		}
 	} else {
 		if (Prr_Product == PRR_PRODUCT_H3) {
-		  if (Prr_Cut <= PRR_PRODUCT_11) {
-			/* RENESAS SALVATOR-X (H3 Ver.1.x/SIP) */
-			brd = 2;
-		  } else if (Prr_Cut < PRR_PRODUCT_30) {
-			/* RENESAS SALVATOR-X (H3 Ver.2.0/SIP) */
-			brd = 7;  //  8Gbit/1rank
-		  } else {
-			/* RENESAS SALVATOR-X (H3 Ver.3.0/SIP) */
+			if (Prr_Cut <= PRR_PRODUCT_11) {
+				/* RENESAS SALVATOR-X (H3 Ver.1.x/SIP) */
+				brd = 2;
+			} else if (Prr_Cut < PRR_PRODUCT_30) {
+				/* RENESAS SALVATOR-X (H3 Ver.2.0/SIP) */
+				brd = 7;  /*  8Gbit/1rank */
+			} else {
+				/* RENESAS SALVATOR-X (H3 Ver.3.0/SIP) */
 #if (RCAR_DRAM_LPDDR4_MEMCONF == 0)
-			brd = 7;  //  8Gbit/1rank
+				brd = 7;  /*  8Gbit/1rank */
 #else
-			brd = 8;  //  8Gbit/2rank
-//			brd = 14; // 16Gbit/1rank
+				brd = 8;  /*  8Gbit/2rank */
+			/*	brd = 14;    16Gbit/1rank */
 #endif
-		  }
+			}
 		} else if (Prr_Product == PRR_PRODUCT_M3N) {
 			/* RENESAS SALVATOR-X (M3-N/SIP) */
 			brd = 11;

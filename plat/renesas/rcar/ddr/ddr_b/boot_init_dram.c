@@ -2197,12 +2197,12 @@ static void dbsc_regset_post(void)
 			}
 		}
 	}
-	if ((Prr_Product == PRR_PRODUCT_H3) && (Prr_Cut > PRR_PRODUCT_11)) {
+	if((Prr_Product==PRR_PRODUCT_H3)&&(Prr_Cut> PRR_PRODUCT_11)){
 		mmio_write_32(DBSC_DBTR(24),
-			((rdlat_max * 2 - rdlat_min + 4) << 24) + ((rdlat_min + 2) << 16) + mmio_read_32(DBSC_DBTR(24)));
+			((rdlat_max *2 -rdlat_min +4)<<24) + ((rdlat_min +2)<<16) + mmio_read_32(DBSC_DBTR(24)));
 	} else {
 		mmio_write_32(DBSC_DBTR(24),
-			((rdlat_max + 2) << 24) + ((rdlat_max + 2) << 16) + mmio_read_32(DBSC_DBTR(24)));
+			((rdlat_max +2)<<24) + ((rdlat_max +2)<<16) + mmio_read_32(DBSC_DBTR(24)));
 	}
 
 	/* set ddr density information */
@@ -2232,45 +2232,14 @@ static void dbsc_regset_post(void)
 	dataL = (get_refperiod()) * ddr_mbps / 2000 / ddr_mbpsdiv;
 	mmio_write_32(DBSC_DBRFCNF1, 0x00080000 | (dataL & 0x0000ffff));
 	mmio_write_32(DBSC_DBRFCNF2, 0x00010000 | DBSC_REFINTS);
-#ifdef DDR_BACKUPMODE
-	if (ddrBackup == DRAM_BOOT_STATUS_WARM) {
-#ifdef DDR_BACKUPMODE_HALF		/* for Half channel(ch0, 1 only) */
-		PutStr(" DEBUG_MESS : DDR_BACKUPMODE_HALF ", 1);
-		send_dbcmd(0x08040001);
-		wait_dbcmd();
-		send_dbcmd(0x0A040001);
-		wait_dbcmd();
-		send_dbcmd(0x04040010);
-		wait_dbcmd();
 
-		if (Prr_Product == PRR_PRODUCT_H3) {
-			send_dbcmd(0x08140001);
-			wait_dbcmd();
-			send_dbcmd(0x0A140001);
-			wait_dbcmd();
-			send_dbcmd(0x04140010);
-			wait_dbcmd();
-		}
-#else /* DDR_BACKUPMODE_HALF				//for All channels */
-		send_dbcmd(0x08840001);
-		wait_dbcmd();
-		send_dbcmd(0x0A840001);
-		wait_dbcmd();
-
-		send_dbcmd(0x04840010);
-		wait_dbcmd();
-#endif /* DDR_BACKUPMODE_HALF */
-	}
-#endif /* DDR_BACKUPMODE */
 #if RCAR_REWT_TRAINING != 0
 	/* Periodic-WriteDQ Training seeting */
 	if (((Prr_Product == PRR_PRODUCT_H3) && (Prr_Cut <= PRR_PRODUCT_11))
 	 || ((Prr_Product == PRR_PRODUCT_M3) && (Prr_Cut == PRR_PRODUCT_10))) {
 		/* non : H3 Ver.1.x/M3-W Ver.1.0 not support */
 	} else {
-		/* H3 Ver.2.0 or later/M3-W Ver.1.1 or later/M3-N/V3H -> Periodic-WriteDQ Training seeting */
-
-		/* Periodic WriteDQ Training seeting */
+		/* H3 Ver.2.0 or later/M3-W Ver.1.1 or later/M3-N/V3H */
 		mmio_write_32(DBSC_DBDFIPMSTRCNF, 0x00000000);
 
 		ddr_setval_ach_as(_reg_PHY_WDQLVL_PATT, 0x04);
@@ -2281,7 +2250,6 @@ static void dbsc_regset_post(void)
 		ddr_setval_ach(_reg_PI_WDQLVL_CS_MAP, ddrtbl_getval(_cnf_DDR_PI_REGSET, _reg_PI_WDQLVL_CS_MAP));
 		ddr_setval_ach(_reg_PI_LONG_COUNT_MASK, 0x1f);
 		ddr_setval_ach(_reg_PI_WDQLVL_VREF_EN, 0x00);
-		ddr_setval_ach(_reg_PI_WDQLVL_INTERVAL, 0x0100);
 		ddr_setval_ach(_reg_PI_WDQLVL_ROTATE, 0x01);
 		ddr_setval_ach(_reg_PI_TREF_F0, 0x0000);
 		ddr_setval_ach(_reg_PI_TREF_F1, 0x0000);
@@ -2297,8 +2265,11 @@ static void dbsc_regset_post(void)
 		mmio_write_32(DBSC_DBDFIPMSTRCNF, 0x00000011);	/* DFI_PHYMSTR_ACK: WTmode = b'01 */
 	}
 #endif /* RCAR_REWT_TRAINING */
-	/* periodic dram zqcal and phy ctrl update enable */
+
+	/* periodic dram zqcal enable */
 	mmio_write_32(DBSC_DBCALCNF, 0x01000010);
+
+	/* periodic phy ctrl update enable */
 	if (((Prr_Product == PRR_PRODUCT_H3) && (Prr_Cut <= PRR_PRODUCT_11))
 	 || ((Prr_Product == PRR_PRODUCT_M3) && (Prr_Cut < PRR_PRODUCT_30))) {
 		/* non : H3 Ver.1.x/M3-W Ver.1.x not support */
@@ -2313,12 +2284,37 @@ static void dbsc_regset_post(void)
 #endif /* RCAR_DRAM_SPLIT == 2 */
 	}
 
+#ifdef DDR_BACKUPMODE
+	/* SRX */
+	if (ddrBackup == DRAM_BOOT_STATUS_WARM) {
+#ifdef DDR_BACKUPMODE_HALF		/* for Half channel(ch0, 1 only) */
+		NOTICE("BL2: [DEBUG_MESS] DDR_BACKUPMODE_HALF\n");
+		send_dbcmd(0x0A040001);
+		if (Prr_Product == PRR_PRODUCT_H3)
+			send_dbcmd(0x0A140001);
+#else /* DDR_BACKUPMODE_HALF */		/* for All channels */
+		send_dbcmd(0x0A840001);
+#endif /* DDR_BACKUPMODE_HALF */
+	}
+#endif /* DDR_BACKUPMODE */
+	/* set Auto Refresh */
 	mmio_write_32(DBSC_DBRFEN, 0x00000001);
+
+#if RCAR_REWT_TRAINING != 0
+	/* Periodic WriteDQ Traning */
+	if (((Prr_Product == PRR_PRODUCT_H3) && (Prr_Cut <= PRR_PRODUCT_11))
+	 || ((Prr_Product == PRR_PRODUCT_M3) && (Prr_Cut == PRR_PRODUCT_10))) {
+		/* non : H3 Ver.1.x/M3-W Ver.1.0 not support */
+	} else {
+		/* H3 Ver.2.0 or later/M3-W Ver.1.1 or later/M3-N/V3H */
+		ddr_setval_ach(_reg_PI_WDQLVL_INTERVAL, 0x0100);
+	}
+#endif /* RCAR_REWT_TRAINING */
+
 	/* dram access enable */
 	mmio_write_32(DBSC_DBACEN, 0x00000001);
 
 	MSG_LF("dbsc_regset_post(done)");
-
 }
 
 /*******************************************************************************
@@ -2534,7 +2530,6 @@ static void ddr_register_set(void)
 	for (fspwp = 1; fspwp >= 0; fspwp--) {
 		/* MR13, fspwp */
 		send_dbcmd(0x0e840d08 | ((2 - fspwp) << 6));
-
 		tmp = ddrtbl_getval(_cnf_DDR_PI_REGSET, _reg_PI_MR1_DATA_Fx_CSx[fspwp][0]);
 		send_dbcmd(0x0e840100 | tmp);
 
@@ -2787,7 +2782,6 @@ static uint32_t init_ddr(void)
 	/***********************************************************************
 	 * load ddrphy registers
 	 ***********************************************************************/
-
 	ddrtbl_load();
 
 	/***********************************************************************
@@ -2858,6 +2852,9 @@ static uint32_t init_ddr(void)
 	if (err)
 		return INITDRAM_ERR_O;
 	MSG_LF("init_ddr:5\n");
+
+	/* Dummy PDE */
+	send_dbcmd(0x08840000);
 
 	/* PDX */
 	send_dbcmd(0x08840001);
