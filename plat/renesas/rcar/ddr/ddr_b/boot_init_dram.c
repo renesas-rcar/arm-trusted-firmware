@@ -512,6 +512,14 @@ static void send_dbcmd(uint32_t cmd)
 	dsb_sev();
 }
 
+static void dbwait_loop(uint32_t wait_loop)
+{
+	uint32_t i;
+
+	for (i = 0; wait_loop> i; i++)
+		wait_dbcmd();
+}
+
 /*******************************************************************************
  *	DDRPHY register access (raw)
  ******************************************************************************/
@@ -866,6 +874,7 @@ struct _jedec_spec1 {
 	uint8_t WL;
 	uint8_t nWR;
 	uint8_t nRTP;
+	uint8_t ODTLon;
 	uint8_t MR1;
 	uint8_t MR2;
 };
@@ -875,14 +884,14 @@ struct _jedec_spec1 {
 #define JS1_MR1(f) (0x04 | ((f) << 4))
 #define JS1_MR2(f) (0x00 | ((f) << 3) | (f))
 const struct _jedec_spec1 js1[JS1_FREQ_TBL_NUM] = {
-	{  800,  6,  6,  4,  6,  8, JS1_MR1(0), JS1_MR2(0)|0x40 }, /*  533.333Mbps */
-	{ 1600, 10, 12,  8, 10,  8, JS1_MR1(1), JS1_MR2(1)|0x40 }, /* 1066.666Mbps */
-	{ 2400, 14, 16, 12, 16,  8, JS1_MR1(2), JS1_MR2(2)|0x40 }, /* 1600.000Mbps */
-	{ 3200, 20, 22, 10, 20,  8, JS1_MR1(3), JS1_MR2(3) },      /* 2133.333Mbps */
-	{ 4000, 24, 28, 12, 24, 10, JS1_MR1(4), JS1_MR2(4) },      /* 2666.666Mbps */
-	{ 4800, 28, 32, 14, 30, 12, JS1_MR1(5), JS1_MR2(5) },      /* 3200.000Mbps */
-	{ 5600, 32, 36, 16, 34, 14, JS1_MR1(6), JS1_MR2(6) },      /* 3733.333Mbps */
-	{ 6400, 36, 40, 18, 40, 16, JS1_MR1(7), JS1_MR2(7) }       /* 4266.666Mbps */
+	{  800,  6,  6,  4,  6,  8,  0, JS1_MR1(0), JS1_MR2(0)|0x40 }, /*  533.333Mbps */
+	{ 1600, 10, 12,  8, 10,  8,  0, JS1_MR1(1), JS1_MR2(1)|0x40 }, /* 1066.666Mbps */
+	{ 2400, 14, 16, 12, 16,  8,  6, JS1_MR1(2), JS1_MR2(2)|0x40 }, /* 1600.000Mbps */
+	{ 3200, 20, 22, 10, 20,  8,  4, JS1_MR1(3), JS1_MR2(3) },      /* 2133.333Mbps */
+	{ 4000, 24, 28, 12, 24, 10,  4, JS1_MR1(4), JS1_MR2(4) },      /* 2666.666Mbps */
+	{ 4800, 28, 32, 14, 30, 12,  6, JS1_MR1(5), JS1_MR2(5) },      /* 3200.000Mbps */
+	{ 5600, 32, 36, 16, 34, 14,  6, JS1_MR1(6), JS1_MR2(6) },      /* 3733.333Mbps */
+	{ 6400, 36, 40, 18, 40, 16,  8, JS1_MR1(7), JS1_MR2(7) }       /* 4266.666Mbps */
 };
 
 struct _jedec_spec2 {
@@ -912,7 +921,8 @@ struct _jedec_spec2 {
 #define JS2_tZQCALns 19
 #define JS2_tZQLAT 20
 #define JS2_tIEdly 21
-#define JS2_TBLCNT 22
+#define JS2_tODTon_min 22
+#define JS2_TBLCNT 23
 
 #define JS2_tRCpb (JS2_TBLCNT)
 #define JS2_tRCab (JS2_TBLCNT + 1)
@@ -945,7 +955,8 @@ const struct _jedec_spec2 jedec_spec2[2][JS2_TBLCNT] = {
 /*tMRD*/	{  14000, 10 },
 /*tZQCALns*/	{1000*10,  0 },
 /*tZQLAT*/	{  30000, 10 },
-/*tIEdly*/	{  12500,  0 }
+/*tIEdly*/	{  12500,  0 },
+/*tODTon_min*/	{   1500,  0 }
 	}, {
 /*tSR   */	{  15000,  3 },
 /*tXP   */	{   7500,  3 },
@@ -968,7 +979,8 @@ const struct _jedec_spec2 jedec_spec2[2][JS2_TBLCNT] = {
 /*tMRD*/	{  14000, 10 },
 /*tZQCALns*/	{1000*10,  0 },
 /*tZQLAT*/	{  30000, 10 },
-/*tIEdly*/	{  12500,  0 }
+/*tIEdly*/	{  12500,  0 },
+/*tODTon_min*/	{   1500,  0 }
 	}
 };
 
@@ -1403,7 +1415,7 @@ static void ddrtbl_load(void)
 	ddrtbl_setval(_cnf_DDR_PHY_SLICE_REGSET, _reg_PHY_RDDATA_EN_DLY, dataS);
 	ddrtbl_setval(_cnf_DDR_PHY_SLICE_REGSET, _reg_PHY_RDDATA_EN_TSEL_DLY, (dataS - 2));
 	if ((Prr_Product == PRR_PRODUCT_M3N) || (Prr_Product == PRR_PRODUCT_V3H))
-		ddrtbl_setval(_cnf_DDR_PHY_SLICE_REGSET, _reg_PHY_RDDATA_EN_OE_DLY, dataS);
+		ddrtbl_setval(_cnf_DDR_PHY_SLICE_REGSET, _reg_PHY_RDDATA_EN_OE_DLY, (dataS - 2));
 	ddrtbl_setval(_cnf_DDR_PI_REGSET, _reg_PI_RDLAT_ADJ_F1, RL - dataS);
 
 	if (ddrtbl_getval(_cnf_DDR_PHY_SLICE_REGSET, _reg_PHY_WRITE_PATH_LAT_ADD))
@@ -1447,6 +1459,7 @@ static void ddrtbl_load(void)
 		/* non */
 	} else {
 		regif_pll_wa();
+		dbwait_loop(5);
 	}
 
 	/***********************************************************************
@@ -1943,12 +1956,12 @@ static void dbsc_regset(void)
 	/* DBTR9.TRDPR : tRTP */
 	mmio_write_32(DBSC_DBTR(9), js2[JS2_tRTP]);
 
-	/* DBTR10.TWR : nWR */
-	mmio_write_32(DBSC_DBTR(10), js1[js1_ind].nWR);
+	/* DBTR10.TWR : nWR + 1 */
+	mmio_write_32(DBSC_DBTR(10), js1[js1_ind].nWR + 1);
 
-	/* DBTR11.TRDWR : RL + tDQSCK + BL/2 + Rounddown(tRPST) - WL + tWPRE */
+	/* DBTR11.TRDWR : RL +  BL / 2 + Rounddown(tRPST) + PHY_ODTLoff - ODTLon + tDQSCK - tODTon,min + PCB delay (out+in) + tPHY_ODToff */
 	mmio_write_32(DBSC_DBTR(11),
-		RL + js2[JS2_tDQSCK] + (16 / 2) + 1 - WL + 2 + 2);
+		RL + (16 / 2) + 1 + 2 - js1[js1_ind].ODTLon + js2[JS2_tDQSCK] - js2[JS2_tODTon_min] + _f_scale(ddr_mbps, ddr_mbpsdiv, 1300, 0));
 
 	/* DBTR12.TWRRD : WL + 1 + BL/2 + tWTR */
 	dataL = WL + 1 + (16 / 2) + js2[JS2_tWTR];
@@ -2108,33 +2121,33 @@ static void dbsc_regset(void)
 	 ***********************************************************************/
 #ifdef ddr_qos_init_setting /* only for non qos_init */
 	/* wbkwait(0004), wbkmdhi(4, 2), wbkmdlo(1, 8) */
-	mmio_write_32(DBSC_DBCAM0CNF1,	0x00043218);
+	mmio_write_32(DBSC_DBCAM0CNF1, 0x00043218);
 	/* 0(fillunit), 8(dirtymax), 4(dirtymin) */
-	mmio_write_32(DBSC_DBCAM0CNF2,	0x000000F4);
+	mmio_write_32(DBSC_DBCAM0CNF2, 0x000000F4);
 	/* stop_tolerance */
-	mmio_write_32(DBSC_DBSCHRW0,	0x22421111);
+	mmio_write_32(DBSC_DBSCHRW0, 0x22421111);
 	/* rd-wr/wr-rd toggle priority */
-	mmio_write_32(DBSC_SCFCTST2,	0x012F1123);
-	mmio_write_32(DBSC_DBSCHSZ0,	0x00000001);
-	mmio_write_32(DBSC_DBSCHCNT0,	0x000F0037);
+	mmio_write_32(DBSC_SCFCTST2, 0x012F1123);
+	mmio_write_32(DBSC_DBSCHSZ0, 0x00000001);
+	mmio_write_32(DBSC_DBSCHCNT0, 0x000F0037);
 
 	/* QoS Settings */
-	mmio_write_32(DBSC_DBSCHQOS00,	0x00000F00U);
-	mmio_write_32(DBSC_DBSCHQOS01,	0x00000B00U);
-	mmio_write_32(DBSC_DBSCHQOS02,	0x00000000U);
-	mmio_write_32(DBSC_DBSCHQOS03,	0x00000000U);
-	mmio_write_32(DBSC_DBSCHQOS40,	0x00000300U);
-	mmio_write_32(DBSC_DBSCHQOS41,	0x000002F0U);
-	mmio_write_32(DBSC_DBSCHQOS42,	0x00000200U);
-	mmio_write_32(DBSC_DBSCHQOS43,	0x00000100U);
-	mmio_write_32(DBSC_DBSCHQOS90,	0x00000100U);
-	mmio_write_32(DBSC_DBSCHQOS91,	0x000000F0U);
-	mmio_write_32(DBSC_DBSCHQOS92,	0x000000A0U);
-	mmio_write_32(DBSC_DBSCHQOS93,	0x00000040U);
-	mmio_write_32(DBSC_DBSCHQOS120,	0x00000040U);
-	mmio_write_32(DBSC_DBSCHQOS121,	0x00000030U);
-	mmio_write_32(DBSC_DBSCHQOS122,	0x00000020U);
-	mmio_write_32(DBSC_DBSCHQOS123,	0x00000010U);
+	mmio_write_32(DBSC_DBSCHQOS00, 0x00000F00U);
+	mmio_write_32(DBSC_DBSCHQOS01, 0x00000B00U);
+	mmio_write_32(DBSC_DBSCHQOS02, 0x00000000U);
+	mmio_write_32(DBSC_DBSCHQOS03, 0x00000000U);
+	mmio_write_32(DBSC_DBSCHQOS40, 0x00000300U);
+	mmio_write_32(DBSC_DBSCHQOS41, 0x000002F0U);
+	mmio_write_32(DBSC_DBSCHQOS42, 0x00000200U);
+	mmio_write_32(DBSC_DBSCHQOS43, 0x00000100U);
+	mmio_write_32(DBSC_DBSCHQOS90, 0x00000100U);
+	mmio_write_32(DBSC_DBSCHQOS91, 0x000000F0U);
+	mmio_write_32(DBSC_DBSCHQOS92, 0x000000A0U);
+	mmio_write_32(DBSC_DBSCHQOS93, 0x00000040U);
+	mmio_write_32(DBSC_DBSCHQOS120, 0x00000040U);
+	mmio_write_32(DBSC_DBSCHQOS121, 0x00000030U);
+	mmio_write_32(DBSC_DBSCHQOS122, 0x00000020U);
+	mmio_write_32(DBSC_DBSCHQOS123, 0x00000010U);
 	mmio_write_32(DBSC_DBSCHQOS130, 0x00000100U);
 	mmio_write_32(DBSC_DBSCHQOS131, 0x000000F0U);
 	mmio_write_32(DBSC_DBSCHQOS132, 0x000000A0U);
@@ -2148,7 +2161,7 @@ static void dbsc_regset(void)
 	mmio_write_32(DBSC_DBSCHQOS152, 0x00000020U);
 	mmio_write_32(DBSC_DBSCHQOS153, 0x00000010U);
 
-	mmio_write_32(QOSCTRL_RAEN,	0x00000001U);
+	mmio_write_32(QOSCTRL_RAEN, 0x00000001U);
 #endif /* ddr_qos_init_setting */
 	/* H3 Ver.1.1 need to set monitor function */
 	if ((Prr_Product == PRR_PRODUCT_H3) && (Prr_Cut == PRR_PRODUCT_11))
@@ -2188,7 +2201,7 @@ static void dbsc_regset_post(void)
 			if ((ch_have_this_cs[cs] & (1U << ch)) != 0) {
 				for (slice = 0; slice < SLICE_CNT; slice++) {
 					ddr_setval_s(ch, slice, _reg_PHY_PER_CS_TRAINING_INDEX, cs);
-					dataL = ddr_getval_s(ch, slice,	_reg_PHY_RDDQS_LATENCY_ADJUST);
+					dataL = ddr_getval_s(ch, slice, _reg_PHY_RDDQS_LATENCY_ADJUST);
 					if (dataL > rdlat_max)
 						rdlat_max = dataL;
 					if (dataL < rdlat_min)
@@ -2197,12 +2210,22 @@ static void dbsc_regset_post(void)
 			}
 		}
 	}
-	if((Prr_Product==PRR_PRODUCT_H3)&&(Prr_Cut> PRR_PRODUCT_11)){
+	if ((Prr_Product == PRR_PRODUCT_H3) && (Prr_Cut > PRR_PRODUCT_11)) {
+#if RCAR_DRAM_SPLIT == 2
+		if (Boardcnf->phyvalid == 0x05) {
+			mmio_write_32(DBSC_DBTR(24),
+				((rdlat_max) << 24) + ((rdlat_min) << 16) + mmio_read_32(DBSC_DBTR(24)));
+		} else {
+			mmio_write_32(DBSC_DBTR(24),
+				((rdlat_max * 2 - rdlat_min + 4) << 24) + ((rdlat_min + 2) << 16) + mmio_read_32(DBSC_DBTR(24)));
+		}
+#else /*RCAR_DRAM_SPLIT == 2 */
 		mmio_write_32(DBSC_DBTR(24),
-			((rdlat_max *2 -rdlat_min +4)<<24) + ((rdlat_min +2)<<16) + mmio_read_32(DBSC_DBTR(24)));
+			((rdlat_max * 2 - rdlat_min + 4) << 24) + ((rdlat_min + 2) << 16) + mmio_read_32(DBSC_DBTR(24)));
+#endif /*RCAR_DRAM_SPLIT == 2 */
 	} else {
 		mmio_write_32(DBSC_DBTR(24),
-			((rdlat_max +2)<<24) + ((rdlat_max +2)<<16) + mmio_read_32(DBSC_DBTR(24)));
+			((rdlat_max + 2) << 24) + ((rdlat_max + 2) << 16) + mmio_read_32(DBSC_DBTR(24)));
 	}
 
 	/* set ddr density information */
@@ -3027,7 +3050,7 @@ static uint32_t swlvl1(uint32_t ddr_csn, uint32_t reg_cs, uint32_t reg_kick)
 		/*PREPARE ADDR REGISTER (for SWLVL_OP_DONE)*/
 		ddr_getval(ch, _reg_PI_SWLVL_OP_DONE);
 	}
-	waiting = ch_have_this_cs[ddr_csn%2];
+	waiting = ch_have_this_cs[ddr_csn % 2];
 	dsb_sev();
 	retry = RETRY_MAX;
 	do {
@@ -3064,7 +3087,7 @@ static void wdqdm_clr1(uint32_t ch, uint32_t ddr_csn)
 	/***********************************************************************
 	 * clr of training results buffer
 	 ***********************************************************************/
-	cs = ddr_csn%2;
+	cs = ddr_csn % 2;
 	dataL = Boardcnf->dqdm_dly_w;
 	for (slice = 0; slice < SLICE_CNT; slice++) {
 		k = (Boardcnf->ch[ch].dqs_swap >> (4 * slice)) & 0x0f;
@@ -3160,7 +3183,7 @@ static void wdqdm_cp(uint32_t ddr_csn, uint32_t restore)
 		for (tgt_cs = 0; tgt_cs < CS_CNT; tgt_cs++) {
 			for (slice = 0; slice < SLICE_CNT; slice++) {
 				ddr_setval_s(ch, slice, _reg_PHY_PER_CS_TRAINING_INDEX, tgt_cs);
-				src_cs = ddr_csn%2;
+				src_cs = ddr_csn % 2;
 				if (!(ch_have_this_cs[1] & (1U << ch)))
 					src_cs = 0;
 				for (i = 0; i <= 4; i += 4) {
@@ -3259,7 +3282,7 @@ static uint32_t wdqdm_man1(void)
 			}
 #ifndef DDR_FAST_INIT
 		foreach_vch(ch) {
-			if (!(ch_have_this_cs[ddr_csn%2] & (1U << ch))) {
+			if (!(ch_have_this_cs[ddr_csn % 2] & (1U << ch))) {
 				wdqdm_clr1(ch, ddr_csn);
 				continue;
 			}
@@ -3291,9 +3314,14 @@ static uint32_t wdqdm_man(void)
 {
 	uint32_t err, retry_cnt;
 	uint32_t ch, ddr_csn, mr14_bkup[4][4];
+	uint32_t dataL;
 	const uint32_t retry_max = 0x10;
 
-	ddr_setval_ach(_reg_PI_TDFI_WDQLVL_RW, (mmio_read_32(DBSC_DBTR(11)) & 0xFF) + 19);
+	dataL = RL + js2[JS2_tDQSCK] + (16 / 2) + 1 - WL + 2 + 2 + 19;
+	if ((mmio_read_32(DBSC_DBTR(11)) & 0xFF) > dataL)
+		dataL = (mmio_read_32(DBSC_DBTR(11)) & 0xFF);
+	ddr_setval_ach(_reg_PI_TDFI_WDQLVL_RW, dataL);
+
 	if (((Prr_Product == PRR_PRODUCT_H3) && (Prr_Cut > PRR_PRODUCT_11))
 	  || (Prr_Product == PRR_PRODUCT_M3N) || (Prr_Product == PRR_PRODUCT_V3H)) {
 		ddr_setval_ach(_reg_PI_TDFI_WDQLVL_WR_F0, (mmio_read_32(DBSC_DBTR(12)) & 0xFF) + 10);
@@ -3377,7 +3405,7 @@ static void rdqdm_clr1(uint32_t ch, uint32_t ddr_csn)
 	/***********************************************************************
 	 * clr of training results buffer
 	 ***********************************************************************/
-	cs = ddr_csn%2;
+	cs = ddr_csn % 2;
 	dataL = Boardcnf->dqdm_dly_r;
 	for (slice = 0; slice < SLICE_CNT; slice++) {
 		k = (Boardcnf->ch[ch].dqs_swap >> (4 * slice)) & 0x0f;
@@ -3427,7 +3455,7 @@ static uint32_t rdqdm_ana1(uint32_t ch, uint32_t ddr_csn)
 		if (((k >= 2) && (ddr_csn < 2)) || ((k < 2) && (ddr_csn >= 2)))
 			continue;
 
-		cs = ddr_csn%2;
+		cs = ddr_csn % 2;
 		ddr_setval_s(ch, slice, _reg_PHY_PER_CS_TRAINING_INDEX, cs);
 		ddrphy_regif_idle();
 
@@ -3510,7 +3538,7 @@ static uint32_t rdqdm_man1(void)
 			goto err_exit;
 #ifndef DDR_FAST_INIT
 		foreach_vch(ch) {
-			if (!(ch_have_this_cs[ddr_csn%2] & (1U << ch))) {
+			if (!(ch_have_this_cs[ddr_csn % 2] & (1U << ch))) {
 				rdqdm_clr1(ch, ddr_csn);
 				ddrphy_regif_idle();
 				continue;
