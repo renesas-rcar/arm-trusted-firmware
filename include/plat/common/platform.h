@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2018, ARM Limited and Contributors. All rights reserved.
- * Copyright (c) 2015-2018, Renesas Electronics Corporation. All rights reserved.
+ * Copyright (c) 2015-2019, Renesas Electronics Corporation. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -51,6 +51,9 @@ unsigned int plat_get_syscnt_freq2(void);
 int plat_get_image_source(unsigned int image_id,
 			uintptr_t *dev_handle,
 			uintptr_t *image_spec);
+#if IMAGE_BL2
+uintptr_t plat_get_bl31_bl32_image_entrypoint(int32_t content_cert_id);
+#endif /* IMAGE_BL2 */
 uintptr_t plat_get_ns_image_entrypoint(void);
 unsigned int plat_my_core_pos(void);
 int plat_core_pos_by_mpidr(u_register_t mpidr);

@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2014, ARM Limited and Contributors. All rights reserved.
- * Copyright (c) 2015-2018, Renesas Electronics Corporation. All rights reserved.
+ * Copyright (c) 2015-2019, Renesas Electronics Corporation. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -193,6 +193,24 @@ CASSERT(ARRAY_SIZE(rcar_mmap) + RCAR_BL_REGIONS \
 
 /* Define EL1 and EL3 variants of the function initialising the MMU */
 DEFINE_CONFIGURE_MMU_EL(3)
+
+#if (IMAGE_BL2)
+uintptr_t plat_get_bl31_bl32_image_entrypoint(int32_t content_cert_id)
+{
+	int32_t ret;
+	uint32_t cert_addr;
+	uint32_t l_image_size;
+	uintptr_t dest_addr;
+	ret = file_to_cert(content_cert_id, &cert_addr);
+	if (0 == ret) {
+		get_info_from_cert((uint64_t) cert_addr, &l_image_size, &dest_addr);
+	} else {
+		ERROR("%s : cert file load error", __func__);
+		panic();
+	}
+	return dest_addr;
+}
+#endif
 
 uintptr_t plat_get_ns_image_entrypoint(void)
 {

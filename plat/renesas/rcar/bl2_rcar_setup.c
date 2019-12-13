@@ -15,6 +15,9 @@
 #include "rcar_def.h"
 #include "rcar_private.h"
 #include "io_common.h"
+#include "io_driver.h"
+#include "io_private.h"
+#include "io_rcar.h"
 #include "pfc_init.h"
 #include "rpc_driver.h"
 #include "dma_driver.h"
@@ -263,6 +266,13 @@ struct bl31_params *bl2_plat_get_bl31_params(void)
  ******************************************************************************/
 struct entry_point_info *bl2_plat_get_bl31_ep_info(void)
 {
+	uint32_t modemr;
+	uint32_t modemr_boot_dev;
+	int32_t ret;
+
+	modemr = mmio_read_32(RCAR_MODEMR);
+	modemr_boot_dev = modemr & MODEMR_BOOT_DEV_MASK;
+
 	if (isDdrBackupMode() != 0U) {
 
 		NOTICE("BL2: Skip loading images. (SuspendToRAM)\n");
@@ -281,6 +291,20 @@ struct entry_point_info *bl2_plat_get_bl31_ep_info(void)
 		(void)console_flush();
 
 		bl2_run_next_image(bl31_ep_info);
+	} else {
+		/* load header */
+		if((modemr_boot_dev == MODEMR_BOOT_DEV_EMMC_25X1) ||
+		   (modemr_boot_dev == MODEMR_BOOT_DEV_EMMC_50X8)) {
+			/* boot device is eMMC */
+			ret = rcar_dev_init(NULL, EMMC_DEV_ID);
+		} else {
+			/* boot device is Flash */
+			ret = rcar_dev_init(NULL, FLASH_DEV_ID);
+		}
+		if (ret != IO_SUCCESS) {
+			ERROR("BL2: boot device initialization failed\n");
+			panic();
+		}
 	}
 
 	bl31_ep_info->args.arg1 = 0x00000000UL;	/* cold boot */

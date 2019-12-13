@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2016, ARM Limited and Contributors. All rights reserved.
- * Copyright (c) 2017-2018, Renesas Electronics Corporation. All rights reserved.
+ * Copyright (c) 2017-2019, Renesas Electronics Corporation. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -92,7 +92,12 @@ static int load_bl31(bl31_params_t *bl2_to_bl31_params,
 	/* Load the BL31 image */
 	e = load_auth_image(bl2_tzram_layout,
 			    BL31_IMAGE_ID,
+#if PLAT_rcar
+			    /* load destination address from header */
+			    plat_get_bl31_bl32_image_entrypoint(SOC_FW_CONTENT_CERT_ID),
+#else
 			    BL31_BASE,
+#endif /* PLAT_rcar */
 			    bl2_to_bl31_params->bl31_image_info,
 			    bl31_ep_info);
 
@@ -130,7 +135,12 @@ static int load_bl32(bl31_params_t *bl2_to_bl31_params)
 	bl2_plat_get_bl32_meminfo(&bl32_mem_info);
 	e = load_auth_image(&bl32_mem_info,
 			    BL32_IMAGE_ID,
+#if PLAT_rcar
+			    /* load destination address from header */
+			    plat_get_bl31_bl32_image_entrypoint(TRUSTED_OS_FW_CONTENT_CERT_ID),
+#else
 			    BL32_BASE,
+#endif /* PLAT_rcar */
 			    bl2_to_bl31_params->bl32_image_info,
 			    bl2_to_bl31_params->bl32_ep_info);
 

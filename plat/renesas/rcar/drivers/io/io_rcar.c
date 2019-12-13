@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2014, ARM Limited and Contributors. All rights reserved.
- * Copyright (c) 2015-2018, Renesas Electronics Corporation. All rights reserved.
+ * Copyright (c) 2015-2019, Renesas Electronics Corporation. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -126,7 +126,6 @@ static int32_t rcar_file_len(io_entity_t *entity, size_t *length);
 static int32_t rcar_file_read(io_entity_t *entity, uintptr_t buffer, size_t length,
 			  size_t *length_read);
 static int32_t rcar_file_close(io_entity_t *entity);
-static int32_t rcar_dev_init(io_dev_info_t *dev_info, const uintptr_t init_params);
 static int32_t rcar_dev_close(io_dev_info_t *dev_info);
 static int32_t file_to_offset(const int32_t file, uintptr_t *offset,
 	uint32_t *cert_addr, uint32_t *is_noload, uintptr_t *partition);
@@ -453,7 +452,7 @@ static int32_t check_load_area(uintptr_t dst, uintptr_t len)
 }
 
 /* Do some basic package checks. */
-static int32_t rcar_dev_init(io_dev_info_t *dev_info, const uintptr_t init_params)
+int32_t rcar_dev_init(io_dev_info_t *dev_info, const uintptr_t init_params)
 {
 	int32_t result;
 	uint32_t image_name = (uint32_t)init_params;
