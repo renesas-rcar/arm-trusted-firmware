@@ -13,6 +13,7 @@
 /* ************************ HEADER (INCLUDE) SECTION *********************** */
 #include <stddef.h>
 #include <mmio.h>
+#include "bl2_cpg_register.h"
 #include "emmc_config.h"
 #include "emmc_hal.h"
 #include "emmc_std.h"
