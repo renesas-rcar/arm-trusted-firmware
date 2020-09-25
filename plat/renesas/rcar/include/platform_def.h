@@ -110,9 +110,15 @@
 #endif
 
 #if RCAR_LSI == RCAR_V3H
+#if 0
 #define BL2_BASE			U(0xEB244000)
 #define BL2_LIMIT			U(0xEB264000)
 #define BL2_IMAGE_LIMIT			U(0xEB26E800)
+#else
+#define BL2_BASE			U(0x46000000)
+#define BL2_LIMIT			(BL2_BASE + U(0x100000))
+#define BL2_IMAGE_LIMIT			(BL2_LIMIT + U(0xA800))
+#endif
 #elif RCAR_LSI == RCAR_V3M
 #define BL2_BASE			U(0xE6344000)
 #define BL2_LIMIT			U(0xE6360000)
