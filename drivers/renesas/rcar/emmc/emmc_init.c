@@ -14,6 +14,7 @@
 #include "emmc_registers.h"
 #include "emmc_def.h"
 #include "rcar_private.h"
+#include "cpg_registers.h"
 
 st_mmc_base mmc_drv_obj;
 

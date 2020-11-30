@@ -71,8 +71,6 @@
 #define	CPG_SD2CKCR		(CPG_BASE+0x0268U)	/* SDHI2 clock frequency control register */
 #define CPG_SD3CKCR		(CPG_BASE+0x026CU)	/* SDHI3 clock frequency control register */
 
-#define	CPG_CPGWPR		(CPG_BASE+0x0900U)	/* CPG Write Protect Register */
-
 #if USE_MMC_CH == MMC_CH0
 #define	CPG_SDxCKCR		(CPG_SD2CKCR)	/* SDHI2/MMC0 */
 #else /* USE_MMC_CH == MMC_CH0 */
