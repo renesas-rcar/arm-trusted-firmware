@@ -422,6 +422,8 @@ BL31_SOURCES	+=	${RCAR_GIC_SOURCES}				\
 			plat/renesas/rcar/aarch64/platform_common.c	\
 			plat/renesas/rcar/bl31_plat_setup.c		\
 			plat/renesas/rcar/plat_pm.c			\
+			plat/renesas/rcar/rcar_sip_svc.c	\
+			drivers/renesas/rcar/board/board.c		\
 			drivers/renesas/rcar/console/rcar_console.S	\
 			drivers/renesas/rcar/console/rcar_printf.c	\
 			drivers/renesas/rcar/delay/micro_delay.c	\
