@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2019, Renesas Electronics Corporation. All rights reserved.
+ * Copyright (c) 2015-2020, Renesas Electronics Corporation. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -488,7 +488,7 @@ RCAR_DVFS_API(send, uint8_t slave, uint8_t reg_addr, uint8_t reg_data)
 	uint32_t err = 0;
 
 	mstpcr_write(SCMSTPCR9, CPG_MSTPSR9, CPG_BIT_SMSTPCR9_DVFS);
-	mmio_write_8(IIC_DVFS_REG_ICCR, 0);
+	mmio_write_8(IIC_DVFS_REG_ICCR, 1U);
 again:
 	switch (state) {
 	case DVFS_START:
@@ -527,7 +527,7 @@ RCAR_DVFS_API(receive, uint8_t slave, uint8_t reg, uint8_t *data)
 	uint32_t err = 0;
 
 	mstpcr_write(SCMSTPCR9, CPG_MSTPSR9, CPG_BIT_SMSTPCR9_DVFS);
-	mmio_write_8(IIC_DVFS_REG_ICCR, 0);
+	mmio_write_8(IIC_DVFS_REG_ICCR, 1U);
 again:
 	switch (state) {
 	case DVFS_START:
