@@ -16,6 +16,7 @@ MULTI_CONSOLE_API		:= 1
 
 CRASH_REPORTING			:= 1
 HANDLE_EA_EL3_FIRST		:= 1
+ENABLE_STACK_PROTECTOR	:= strong
 
 $(eval $(call add_define,PLAT_EXTRA_LD_SCRIPT))
 
@@ -371,6 +372,10 @@ PLAT_INCLUDES	:=	-Idrivers/renesas/rcar/ddr		\
 
 PLAT_BL_COMMON_SOURCES	:=	drivers/renesas/rcar/iic_dvfs/iic_dvfs.c \
 				plat/renesas/rcar/rcar_common.c
+
+ifneq (${ENABLE_STACK_PROTECTOR},0)
+PLAT_BL_COMMON_SOURCES	+=	plat/renesas/rcar/rcar_stack_protector.c
+endif
 
 RCAR_GIC_SOURCES	:=	drivers/arm/gic/common/gic_common.c	\
 				drivers/arm/gic/v2/gicv2_main.c		\
