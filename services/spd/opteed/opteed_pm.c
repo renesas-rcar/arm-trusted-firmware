@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2013-2017, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2020, Renesas Electronics Corporation. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -161,7 +162,12 @@ static void opteed_cpu_suspend_finish_handler(u_register_t max_off_pwrlvl)
  ******************************************************************************/
 static int32_t opteed_cpu_migrate_info(u_register_t *resident_cpu)
 {
+#if PLAT_rcar
+	*resident_cpu = 0U;
+	return OPTEE_TYPE_UP;
+#else
 	return OPTEE_MIGRATE_INFO;
+#endif
 }
 
 /*******************************************************************************
