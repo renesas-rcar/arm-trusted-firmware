@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2013-2019, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2020, Renesas Electronics Corporation. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -156,7 +157,14 @@ int psci_system_suspend(uintptr_t entrypoint, u_register_t context_id)
 	int rc;
 	psci_power_state_t state_info;
 	entry_point_info_t ep;
+#if PLAT_rcar
+	uint32_t boot_mpidr_ret;
 
+	boot_mpidr_ret = bl31_plat_boot_mpidr_chk();
+	if (boot_mpidr_ret == RCAR_MPIDRCHK_BOOTCPU) {
+		return PSCI_E_DENIED;
+	}
+#endif
 	/* Check if the current CPU is the last ON CPU in the system */
 	if (psci_is_last_on_cpu() == 0U)
 		return PSCI_E_DENIED;
@@ -199,14 +207,22 @@ int psci_cpu_off(void)
 {
 	int rc;
 	unsigned int target_pwrlvl = PLAT_MAX_PWR_LVL;
+#if PLAT_rcar
+	uint32_t chk = bl31_plat_boot_mpidr_chk();
 
+	if (chk == RCAR_MPIDRCHK_NOT_BOOTCPU) {
+#endif
 	/*
 	 * Do what is needed to power off this CPU and possible higher power
 	 * levels if it able to do so. Upon success, enter the final wfi
 	 * which will power down this CPU.
 	 */
-	rc = psci_do_cpu_off(target_pwrlvl);
-
+		rc = psci_do_cpu_off(target_pwrlvl);
+#if PLAT_rcar
+	} else {
+		rc = PSCI_E_DENIED;
+	}
+#endif
 	/*
 	 * The only error cpu_off can return is E_DENIED. So check if that's
 	 * indeed the case.

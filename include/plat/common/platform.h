@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2013-2020, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2020, Renesas Electronics Corporation. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -331,5 +332,16 @@ int32_t plat_get_soc_version(void);
  * Optional function to get SOC revision
  */
 int32_t plat_get_soc_revision(void);
+
+#if PLAT_rcar
+#define RCAR_MPIDRCHK_NOT_BOOTCPU 1U
+#define RCAR_MPIDRCHK_BOOTCPU 0U
+/*******************************************************************************
+ * Check boot_mpidr(CPU0).
+ * If the CPU is the same as CPU0, return RCAR_MPIDRCHK_BOOTCPU,
+ * otherwise it returns RCAR_MPIDRCHK_NOT_BOOTCPU.
+ ******************************************************************************/
+uint32_t bl31_plat_boot_mpidr_chk(void);
+#endif
 
 #endif /* PLATFORM_H */

@@ -127,3 +127,17 @@ void bl31_platform_setup(void)
 	   functions */
 	rcar_boot_mpidr = read_mpidr_el1() & 0x0000ffffU;
 }
+
+uint32_t bl31_plat_boot_mpidr_chk(void)
+{
+	uint32_t rc = RCAR_MPIDRCHK_NOT_BOOTCPU;
+	uint64_t tmp_mpidr;
+
+	tmp_mpidr = read_mpidr_el1() & 0x0000ffffU;
+
+	if (tmp_mpidr == rcar_boot_mpidr) {
+		rc = RCAR_MPIDRCHK_BOOTCPU;
+	}
+	return rc;
+}
+
