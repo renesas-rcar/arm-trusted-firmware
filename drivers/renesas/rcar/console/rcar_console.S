@@ -63,7 +63,7 @@ endfunc console_rcar_register
 	 * ---------------------------------------------
 	 */
 func console_rcar_init
-	mov	w0, #0
+	mov	w0, #1
 	ret
 endfunc console_rcar_init
 
