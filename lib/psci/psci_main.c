@@ -161,7 +161,7 @@ int psci_system_suspend(uintptr_t entrypoint, u_register_t context_id)
 	uint32_t boot_mpidr_ret;
 
 	boot_mpidr_ret = bl31_plat_boot_mpidr_chk();
-	if (boot_mpidr_ret == RCAR_MPIDRCHK_BOOTCPU) {
+	if (boot_mpidr_ret == RCAR_MPIDRCHK_NOT_BOOTCPU) {
 		return PSCI_E_DENIED;
 	}
 #endif
