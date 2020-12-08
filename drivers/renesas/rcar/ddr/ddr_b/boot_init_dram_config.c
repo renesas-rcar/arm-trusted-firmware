@@ -5,6 +5,8 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
+#include <board.h>
+
 #define BOARDNUM 22
 #define BOARD_JUDGE_AUTO
 
@@ -1709,6 +1711,46 @@ static uint32_t opencheck_SSI_WS6(void)
 
 #endif
 
+#if (RCAR_DRAM_LPDDR4_MEMCONF != 0)
+static uint32_t ddr_rank_judge(void)
+{
+	uint32_t brd;
+
+#if (RCAR_DRAM_MEMRANK == 0)
+	int32_t ret;
+	uint32_t type = 0U;
+	uint32_t rev = 0U;
+
+	brd = 99U;
+	ret = rcar_get_board_type(&type, &rev);
+	if ((ret == 0) && (rev != 0xFFU)) {
+		if (type == (uint32_t)BOARD_SALVATOR_XS) {
+			if (rev == 0x11U) {
+				brd = 14U;
+			} else {
+				brd = 8U;
+			}
+		} else if (type == (uint32_t)BOARD_STARTER_KIT_PRE) {
+			if (rev == 0x21U) {
+				brd = 14U;
+			} else {
+				brd = 8U;
+			}
+		} else {
+			/* No process */
+		}
+	}
+#elif (RCAR_DRAM_MEMRANK == 1)
+	brd = 14U;
+#elif (RCAR_DRAM_MEMRANK == 2)
+	brd = 8U;
+#else
+#error Invalid value was set to RCAR_DRAM_MEMRANK
+#endif
+	return brd;
+}
+#endif
+
 static uint32_t _board_judge(void)
 {
 	uint32_t brd;
@@ -1723,7 +1765,7 @@ static uint32_t _board_judge(void)
 #if (RCAR_DRAM_LPDDR4_MEMCONF == 0)
 			brd = 7;
 #else
-			brd = 8;
+			brd = ddr_rank_judge();
 #endif
 		}
 	} else if (prr_product == PRR_PRODUCT_M3) {
@@ -1777,7 +1819,7 @@ static uint32_t _board_judge(void)
 #if (RCAR_DRAM_LPDDR4_MEMCONF == 0)
 				brd = 7;
 #else
-				brd = 8;
+				brd = ddr_rank_judge();
 #endif
 			}
 		} else if (prr_product == PRR_PRODUCT_M3N) {
