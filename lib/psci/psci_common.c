@@ -770,6 +770,9 @@ void psci_warmboot_entrypoint(void)
 	unsigned int parent_nodes[PLAT_MAX_PWR_LVL] = {0};
 	psci_power_state_t state_info = { {PSCI_LOCAL_STATE_RUN} };
 
+#if PLAT_rcar
+	(void)memset(psci_locks,0, sizeof(psci_locks));
+#endif
 	/*
 	 * Verify that we have been explicitly turned ON or resumed from
 	 * suspend.
