@@ -143,7 +143,15 @@ static void rcar_pwr_domain_suspend_finish(const psci_power_state_t
 		goto finish;
 
 	plat_rcar_gic_driver_init();
+
+	/* clean and disable */
+	write_sctlr_el3(read_sctlr_el3() & ~SCTLR_C_BIT);
+	dcsw_op_all(DCCISW);
+
 	plat_rcar_gic_init();
+
+	/* enable */
+	write_sctlr_el3(read_sctlr_el3() | SCTLR_C_BIT);
 
 	if (cluster_type == RCAR_CLUSTER_A53A57)
 		plat_cci_init();
@@ -153,7 +161,14 @@ static void rcar_pwr_domain_suspend_finish(const psci_power_state_t
 	rcar_pwrc_code_copy_to_system_ram();
 
 #if RCAR_SYSTEM_SUSPEND
+	/* clean and disable */
+	write_sctlr_el3(read_sctlr_el3() & ~SCTLR_C_BIT);
+	dcsw_op_all(DCCISW);
+
 	rcar_pwrc_init_suspend_to_ram();
+
+	/* enable */
+	write_sctlr_el3(read_sctlr_el3() | SCTLR_C_BIT);
 #endif
 finish:
 	rcar_pwr_domain_on_finish(target_state);
