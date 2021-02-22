@@ -12,7 +12,7 @@
 #include <platform_def.h>
 #include <runtime_svc.h>
 #include "rcar_def.h"
-
+#include "bl31_entrypoint.h"
 
 	.globl	platform_get_entrypoint
 	.globl	plat_secondary_cold_boot_setup
@@ -377,7 +377,7 @@ func bl31_secondly_reset
 	mov_imm	x0, PARAMS_BASE			/* pointer to bl31_ep_info */
 	mov_imm	x2, BL31_BASE
 	mov x1, #0x00000001			/* warm boot */
-	br	x2				/* jump to BL31 */
+	b	secondly_boot			/* jump to BL31 */
 	nop
 	nop
 	nop

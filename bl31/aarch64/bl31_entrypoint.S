@@ -11,9 +11,11 @@
 #include <pmf_asm_macros.S>
 #include <runtime_instr.h>
 #include <xlat_mmu_helpers.h>
+#include "bl31_entrypoint.h"
 
 	.globl	bl31_entrypoint
 	.globl	bl31_warm_entrypoint
+	.globl	secondly_boot
 
 	/* -----------------------------------------------------
 	 * bl31_entrypoint() is the cold boot entrypoint,
@@ -23,6 +25,158 @@
 
 func bl31_entrypoint
 #if !RESET_TO_BL31
+
+	ldr	x4, =0x4403E200
+	ldr	x5, =0x0000000000300103
+	str	x5, [x4]
+	ldr	x4, =0x4403E208
+	ldr	x5, =0x000000004403E230
+	str	x5, [x4]
+	ldr	x4, =0x4403E210
+	ldr	x5, =0x0000000000000000
+	str	x5, [x4]
+	ldr	x4, =0x4403E218
+	ldr	x5, =0x0000000000000000
+	str	x5, [x4]
+	ldr	x4, =0x4403E220
+	ldr	x5, =0x000000004403E278
+	str	x5, [x4]
+	ldr	x4, =0x4403E228
+	ldr	x5, =0x000000004403E260
+	str	x5, [x4]
+	ldr	x4, =0x4403E230
+	ldr	x5, =0x0000000000180102
+	str	x5, [x4]
+	ldr	x4, =0x4403E238
+	ldr	x5, =0x0000000044000000
+	str	x5, [x4]
+	ldr	x4, =0x4403E240
+	ldr	x5, =0x0000000000010000
+	str	x5, [x4]
+	ldr	x4, =0x4403E248
+	ldr	x5, =0x0000000000000000
+	str	x5, [x4]
+	ldr	x4, =0x4403E250
+	ldr	x5, =0x0000000000000000
+	str	x5, [x4]
+	ldr	x4, =0x4403E258
+	ldr	x5, =0x0000000000000000
+	str	x5, [x4]
+	ldr	x4, =0x4403E260
+	ldr	x5, =0x0000000000180102
+	str	x5, [x4]
+	ldr	x4, =0x4403E268
+	ldr	x5, =0x0000000050000000
+	str	x5, [x4]
+	ldr	x4, =0x4403E270
+	ldr	x5, =0x0000000000100000
+	str	x5, [x4]
+	ldr	x4, =0x4403E278
+	ldr	x5, =0x0000000100580101
+	str	x5, [x4]
+	ldr	x4, =0x4403E280
+	ldr	x5, =0x0000000050000000
+	str	x5, [x4]
+	ldr	x4, =0x4403E288
+	ldr	x5, =0x00000000000003C5
+	str	x5, [x4]
+	ldr	x4, =0x4403E290
+	ldr	x5, =0x0000000000000000
+	str	x5, [x4]
+	ldr	x4, =0x4403E298
+	ldr	x5, =0x0000000000000000
+	str	x5, [x4]
+	ldr	x4, =0x4403E2A0
+	ldr	x5, =0x0000000000000000
+	str	x5, [x4]
+	ldr	x4, =0x4403E2A8
+	ldr	x5, =0x0000000000000000
+	str	x5, [x4]
+	ldr	x4, =0x4403E2B0
+	ldr	x5, =0x0000000000000000
+	str	x5, [x4]
+	ldr	x4, =0x4403E2B8
+	ldr	x5, =0x0000000000000000
+	str	x5, [x4]
+	ldr	x4, =0x4403E2C0
+	ldr	x5, =0x0000000000000000
+	str	x5, [x4]
+	ldr	x4, =0x4403E2C8
+	ldr	x5, =0x0000000000000000
+	str	x5, [x4]
+	ldr	x4, =0x4403E2D0
+	ldr	x5, =0x0000000000000000
+	str	x5, [x4]
+	ldr	x4, =0x4403E2D8
+	ldr	x5, =0x0000000000000000
+	str	x5, [x4]
+	ldr	x4, =0x4403E2E0
+	ldr	x5, =0x0000000000000000
+	str	x5, [x4]
+	ldr	x4, =0x4403E2E8
+	ldr	x5, =0x0000000000000000
+	str	x5, [x4]
+	ldr	x4, =0x4403E2F0
+	ldr	x5, =0x0000000000000000
+	str	x5, [x4]
+	ldr	x4, =0x4403E2F8
+	ldr	x5, =0x0000000000000000
+	str	x5, [x4]
+	ldr	x4, =0x4403E300
+	ldr	x5, =0x0000000000000000
+	str	x5, [x4]
+	ldr	x4, =0x4403E308
+	ldr	x5, =0x0000000000000000
+	str	x5, [x4]
+	ldr	x4, =0x4403E310
+	ldr	x5, =0x0000000000000000
+	str	x5, [x4]
+	ldr	x4, =0x4403E318
+	ldr	x5, =0x0000000000000000
+	str	x5, [x4]
+	ldr	x4, =0x4403E320
+	ldr	x5, =0x0000000000000000
+	str	x5, [x4]
+	ldr	x4, =0x4403E328
+	ldr	x5, =0x0000000000000000
+	str	x5, [x4]
+	ldr	x4, =0x4403E330
+	ldr	x5, =0x0000000044000000
+	str	x5, [x4]
+	ldr	x4, =0x4403E338
+	ldr	x5, =0x00000000000003CD
+	str	x5, [x4]
+	ldr	x4, =0x4403E340
+	ldr	x5, =0x000000004403E200
+	str	x5, [x4]
+	ldr	x4, =0x4403E348
+	ldr	x5, =0x0000000000000000
+	str	x5, [x4]
+	ldr	x4, =0x4403E350
+	ldr	x5, =0x0000000000000000
+	str	x5, [x4]
+	ldr	x4, =0x4403E358
+	ldr	x5, =0x0000000000000000
+	str	x5, [x4]
+	ldr	x4, =0x4403E360
+	ldr	x5, =0x0000000000000000
+	str	x5, [x4]
+	ldr	x4, =0x4403E368
+	ldr	x5, =0x0000000000000000
+	str	x5, [x4]
+	ldr	x4, =0x4403E370
+	ldr	x5, =0x0000000000000000
+	str	x5, [x4]
+	ldr	x4, =0x4403E378
+	ldr	x5, =0x0000000000000000
+	str	x5, [x4]
+
+	ldr	x0, =0x4403E200
+	mov	x1, #0x0
+	mov	x2, #0x0
+	mov	x3, #0x0
+
+secondly_boot:
 	/* ---------------------------------------------------------------
 	 * Stash the previous bootloader arguments x0 - x3 for later use.
 	 * ---------------------------------------------------------------
