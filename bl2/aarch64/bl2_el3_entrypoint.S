@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2020, ARM Limited and Contributors. All rights reserved.
+ * Copyright (c) 2017-2021, ARM Limited and Contributors. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -27,6 +27,10 @@ func bl2_entrypoint
 	mov	x21, x1
 	mov	x22, x2
 	mov	x23, x3
+
+	/* Clear TCR_EL1 */
+	mov	x0, #0x0
+	msr	tcr_el1, x0
 
 	el3_entrypoint_common                                   \
 		_init_sctlr=1                                   \
