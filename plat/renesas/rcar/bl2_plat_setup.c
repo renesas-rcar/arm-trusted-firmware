@@ -641,19 +641,16 @@ static void bl2_advertise_dram_size(uint32_t product)
 #if (RCAR_GEN3_ULCB == 1)
 			/* 2GB(1GBx2 2ch split) */
 			dram_config[1] = 0x40000000ULL;
-			dram_config[2] = 0x600000000ULL;
-			dram_config[3] = 0x40000000ULL;
+			dram_config[5] = 0x40000000ULL;
 #else
 			/* 4GB(2GBx2 2ch split) */
 			dram_config[1] = 0x80000000ULL;
-			dram_config[2] = 0x600000000ULL;
-			dram_config[3] = 0x80000000ULL;
+			dram_config[5] = 0x80000000ULL;
 #endif
 		} else {
 			/* 8GB(2GBx4 2ch split) */
 			dram_config[1] = 0x100000000ULL;
-			dram_config[2] = 0x600000000ULL;
-			dram_config[3] = 0x100000000ULL;
+			dram_config[5] = 0x100000000ULL;
 		}
 		break;
 
