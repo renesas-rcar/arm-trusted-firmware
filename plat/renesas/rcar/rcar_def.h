@@ -23,8 +23,8 @@
 #define RCAR_SHARED_MEM_SIZE	U(0x00001000)	/* 4 KB */
 
 /* The remaining Trusted SRAM is used to load the BL images */
-#define RCAR_TRUSTED_SRAM_BASE	U(0x44000000)	/* Trusted Firmware Image */
-#define RCAR_TRUSTED_SRAM_SIZE	U(0x0003E000)	/* 248 KB */
+#define RCAR_TRUSTED_SRAM_BASE	U(0x46400000)	/* Trusted Firmware Image */
+#define RCAR_TRUSTED_SRAM_SIZE	U(0x00022000)	/* 136 KB */
 
 #define FLASH0_BASE		U(0x08000000)	/* LBSC RPC address */
 #define FLASH0_SIZE		U(0x04000000)	/* 64MB */
