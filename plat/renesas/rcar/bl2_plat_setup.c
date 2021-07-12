@@ -109,6 +109,7 @@ static meminfo_t bl2_tzram_layout __aligned(CACHE_WRITEBACK_GRANULE);
 
 /* FDT with DRAM configuration */
 uint64_t fdt_blob[PAGE_SIZE_4KB / sizeof(uint64_t)];
+#if 0
 static void *fdt = (void *)fdt_blob;
 
 static void unsigned_num_print(unsigned long long int unum, unsigned int radix,
@@ -133,7 +134,7 @@ static void unsigned_num_print(unsigned long long int unum, unsigned int radix,
 		*string++ = num_buf[i];
 	*string = 0;
 }
-
+#endif
 #if (RCAR_LOSSY_ENABLE == 1)
 typedef struct bl2_lossy_info {
 	uint32_t magic;
@@ -145,6 +146,7 @@ static void bl2_lossy_gen_fdt(uint32_t no, uint64_t start_addr,
 			      uint64_t end_addr, uint32_t format,
 			      uint32_t enable, int fcnlnode)
 {
+#if 0
 	const uint64_t fcnlsize = cpu_to_fdt64(end_addr - start_addr);
 	char nodename[40] = { 0 };
 	int ret, node;
@@ -199,6 +201,7 @@ static void bl2_lossy_gen_fdt(uint32_t no, uint64_t start_addr,
 		NOTICE("BL2: Cannot add FCNL formats prop (ret=%i)\n", ret);
 		panic();
 	}
+#endif
 }
 
 static void bl2_lossy_setting(uint32_t no, uint64_t start_addr,
@@ -449,6 +452,7 @@ struct meminfo *bl2_plat_sec_mem_layout(void)
 	return &bl2_tzram_layout;
 }
 
+#if 0
 static void bl2_populate_compatible_string(void *dt)
 {
 	uint32_t board_type;
@@ -537,13 +541,17 @@ static void bl2_populate_compatible_string(void *dt)
 		panic();
 	}
 }
+#endif
 
 static void bl2_advertise_dram_entries(uint64_t dram_config[8])
 {
+#if 0
 	char nodename[32] = { 0 };
-	uint64_t start, size;
 	uint64_t fdtsize;
-	int ret, node, chan;
+	int ret, node;
+#endif
+	uint64_t start, size;
+	int chan;
 
 	for (chan = 0; chan < 4; chan++) {
 		start = dram_config[2 * chan];
@@ -556,7 +564,7 @@ static void bl2_advertise_dram_entries(uint64_t dram_config[8])
 			(size >> 30) ? : size >> 20,
 			(size >> 30) ? "G" : "M");
 	}
-
+#if 0
 	/*
 	 * We add the DT nodes in reverse order here. The fdt_add_subnode()
 	 * adds the DT node before the first existing DT node, so we have
@@ -604,6 +612,7 @@ static void bl2_advertise_dram_entries(uint64_t dram_config[8])
 err:
 	NOTICE("BL2: Cannot add memory node to FDT (ret=%i)\n", ret);
 	panic();
+#endif
 }
 
 static void bl2_advertise_dram_size(uint32_t product)
@@ -942,7 +951,7 @@ lcm_state:
 		}
 		rcar_qos_init();
 	}
-
+#if 0
 	/* Set up FDT */
 	ret = fdt_create_empty_tree(fdt, sizeof(fdt_blob));
 	if (ret) {
@@ -952,7 +961,7 @@ lcm_state:
 
 	/* Add platform compatible string */
 	bl2_populate_compatible_string(fdt);
-
+#endif
 	/* Print DRAM layout */
 	bl2_advertise_dram_size(product);
 
@@ -1004,14 +1013,14 @@ lcm_state:
 	}
 #if (RCAR_LOSSY_ENABLE == 1)
 	NOTICE("BL2: Lossy Decomp areas\n");
-
+#if 0
 	fcnlnode = fdt_add_subnode(fdt, 0, "reserved-memory");
 	if (fcnlnode < 0) {
 		NOTICE("BL2: Cannot create reserved mem node (ret=%i)\n",
 			fcnlnode);
 		panic();
 	}
-
+#endif
 	bl2_lossy_setting(0, LOSSY_ST_ADDR0, LOSSY_END_ADDR0,
 			  LOSSY_FMT0, LOSSY_ENA_DIS0, fcnlnode);
 	bl2_lossy_setting(1, LOSSY_ST_ADDR1, LOSSY_END_ADDR1,
@@ -1020,8 +1029,10 @@ lcm_state:
 			  LOSSY_FMT2, LOSSY_ENA_DIS2, fcnlnode);
 #endif
 
+#if 0
 	fdt_pack(fdt);
 	NOTICE("BL2: FDT at %p\n", fdt);
+#endif
 
 	if (boot_dev == MODEMR_BOOT_DEV_EMMC_25X1 ||
 	    boot_dev == MODEMR_BOOT_DEV_EMMC_50X8)
