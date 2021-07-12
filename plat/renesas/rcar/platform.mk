@@ -315,6 +315,9 @@ PLAT_INCLUDES	+=	-Idrivers/renesas/common/ddr		\
 BL2_SOURCES	+=	plat/renesas/rcar/bl2_plat_setup.c	\
 			drivers/renesas/rcar/board/board.c
 
+BL31_SOURCES	+=	plat/renesas/rcar/rcar_sip_svc.c	\
+			drivers/renesas/rcar/board/board.c
+
 ifeq (${RCAR_GEN3_ULCB},1)
 BL31_SOURCES		+=	drivers/renesas/rcar/cpld/ulcb_cpld.c
 endif
