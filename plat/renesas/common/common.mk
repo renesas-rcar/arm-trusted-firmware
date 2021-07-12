@@ -134,5 +134,7 @@ BL31_SOURCES	+=	${RCAR_GIC_SOURCES}				\
 			drivers/arm/cci/cci.c
 
 include lib/xlat_tables_v2/xlat_tables.mk
+ifneq (${MBEDTLS_COMMON_MK}, 1)
 include drivers/auth/mbedtls/mbedtls_crypto.mk
+endif
 PLAT_BL_COMMON_SOURCES	+=	${XLAT_TABLES_LIB_SRCS}
