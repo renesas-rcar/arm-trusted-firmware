@@ -333,6 +333,9 @@ BL2_SOURCES	+=	common/image_decompress.c               \
 			$(ZLIB_SOURCES)
 endif
 
+BL31_SOURCES	+=	plat/renesas/rcar/rcar_sip_svc.c	\
+			drivers/renesas/rcar/board/board.c
+
 ifeq (${RCAR_GEN3_ULCB},1)
 BL31_SOURCES		+=	drivers/renesas/rcar/cpld/ulcb_cpld.c
 endif
