@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2017-2023, Arm Limited and Contributors. All rights reserved.
+ * Copyright (c) 2023, Renesas Electronics Corporation. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -197,6 +198,11 @@ SECTIONS {
     __COHERENT_RAM_UNALIGNED_SIZE__ =
         __COHERENT_RAM_END_UNALIGNED__ - __COHERENT_RAM_START__;
 #endif /* USE_COHERENT_MEM */
+
+#if PLAT_rcar
+    ASSERT(__DATA_RAM_END__ < BL2_IMAGE_LIMIT,
+           "BL2 image has exceeded its limit of image size.")
+#endif
 
 #if BL2_IN_XIP_MEM
     ASSERT(. <= BL2_RW_LIMIT, "BL2's RW content has exceeded its limit.")
