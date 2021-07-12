@@ -440,4 +440,15 @@ static inline uint64_t plat_can_cmo(void)
 }
 #endif /* CONDITIONAL_CMO */
 
+#if PLAT_rcar
+#define RCAR_MPIDRCHK_NOT_BOOTCPU 1U
+#define RCAR_MPIDRCHK_BOOTCPU 0U
+/*******************************************************************************
+ * Check boot_mpidr(CPU0).
+ * If the CPU is the same as CPU0, return RCAR_MPIDRCHK_BOOTCPU,
+ * otherwise it returns RCAR_MPIDRCHK_NOT_BOOTCPU.
+ ******************************************************************************/
+uint32_t bl31_plat_boot_mpidr_chk(void);
+#endif
+
 #endif /* PLATFORM_H */
