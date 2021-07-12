@@ -338,6 +338,7 @@ endif
 
 ifneq (${ENABLE_STACK_PROTECTOR},0)
 BL_COMMON_SOURCES	+=	plat/renesas/rcar/rcar_stack_protector.c
+BL31_CFLAGS	+=	-fno-stack-protector
 endif
 
 ifeq (${RCAR_GEN3_ULCB},1)
