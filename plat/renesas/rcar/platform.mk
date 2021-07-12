@@ -318,7 +318,10 @@ PLAT_INCLUDES	+=	-Idrivers/renesas/common/ddr		\
 			-Idrivers/renesas/common/scif		\
 			-Idrivers/renesas/common/emmc		\
 			-Idrivers/renesas/common/pwrc		\
-			-Idrivers/renesas/common/io
+			-Idrivers/renesas/common/io			\
+			-Iplat/renesas/rcar/include			\
+			-Iplat/renesas/rcar
+
 
 BL2_SOURCES	+=	plat/renesas/rcar/bl2_plat_setup.c	\
 			drivers/renesas/rcar/board/board.c
