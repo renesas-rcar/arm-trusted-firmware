@@ -162,7 +162,7 @@ void rcar_configure_mmu_el3(unsigned long total_base,
 	mmap_add_region(ro_start, ro_start, ro_limit - ro_start,
 			RCAR_DCACHE | MT_RO | MT_SECURE);
 	mmap_add_region(coh_start, coh_start, coh_limit - coh_start,
-			RCAR_DCACHE | MT_RW | MT_SECURE);
+			MT_DEVICE | MT_RW | MT_SECURE);
 	mmap_add(rcar_mmap);
 
 	init_xlat_tables();
