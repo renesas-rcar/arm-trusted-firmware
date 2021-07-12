@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2015-2018, Renesas Electronics Corporation. All rights reserved.
+# Copyright (c) 2015-2020, Renesas Electronics Corporation. All rights reserved.
 #
 # SPDX-License-Identifier: BSD-3-Clause
 #
@@ -70,9 +70,11 @@ $(eval $(call add_define,RCAR_VMA_ADJUST_ADDR))
 
 ###################################################
 
+include ../../../make_helpers/defaults.mk
+
 #c compiler
 CFLAGS += ${DEFINES}
-CFLAGS += -I../../include/lib/stdlib
+CFLAGS += -I../../../include/lib/libc -I../../../include/lib/libc/${ARCH}
 
 #clean
 CL = rm -f
