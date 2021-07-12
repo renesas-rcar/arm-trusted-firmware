@@ -12,6 +12,7 @@
 
 u_register_t plat_get_stack_protector_canary(void)
 {
+#ifdef IMAGE_BL2
 	u_register_t cnt;
 	u_register_t seed;
 	u_register_t mul;
@@ -36,4 +37,7 @@ u_register_t plat_get_stack_protector_canary(void)
 	INFO("canary value: 0x%lx    cnt: 0x%16lx\n", ret, read_cntpct_el0());
 
 	return ret;
+#else
+	return RANDOM_CANARY_VALUE;
+#endif
 }
