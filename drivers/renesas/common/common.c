@@ -6,6 +6,7 @@
 
 #include <lib/mmio.h>
 
+#include "cpg_registers.h"
 #include "rcar_private.h"
 
 #if IMAGE_BL31
@@ -16,7 +17,7 @@ void cpg_write(uintptr_t regadr, uint32_t regval)
 {
 	uint32_t value = regval;
 
-	mmio_write_32((uintptr_t) RCAR_CPGWPR, ~value);
+	mmio_write_32(CPG_CPGWPR, ~value);
 	mmio_write_32(regadr, value);
 }
 
