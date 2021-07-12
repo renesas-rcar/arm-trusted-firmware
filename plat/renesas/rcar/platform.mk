@@ -6,6 +6,8 @@
 
 include plat/renesas/common/common.mk
 
+ENABLE_STACK_PROTECTOR	:= strong
+
 ifndef LSI
   $(error "Error: Unknown LSI. Please use LSI=<LSI name> to specify the LSI")
 else
@@ -317,6 +319,10 @@ BL2_SOURCES	+=	plat/renesas/rcar/bl2_plat_setup.c	\
 
 BL31_SOURCES	+=	plat/renesas/rcar/rcar_sip_svc.c	\
 			drivers/renesas/rcar/board/board.c
+
+ifneq (${ENABLE_STACK_PROTECTOR},0)
+PLAT_BL_COMMON_SOURCES	+=	plat/renesas/rcar/rcar_stack_protector.c
+endif
 
 ifeq (${RCAR_GEN3_ULCB},1)
 BL31_SOURCES		+=	drivers/renesas/rcar/cpld/ulcb_cpld.c
