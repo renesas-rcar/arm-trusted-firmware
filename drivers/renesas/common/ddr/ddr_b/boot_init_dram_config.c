@@ -5,6 +5,8 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
+#include <board.h>
+
 #ifndef RZG_SOC
 #define RZG_SOC		0
 #endif
