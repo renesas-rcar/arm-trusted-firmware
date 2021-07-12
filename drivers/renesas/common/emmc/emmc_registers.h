@@ -50,6 +50,7 @@
 #define BIT30	(0x40000000U)
 #define BIT31	(0x80000000U)
 
+/* Clock Pulse Generator (CPG) registers */
 #if USE_MMC_CH == MMC_CH0
 #define CPG_SDxCKCR		(CPG_SD2CKCR)	/* SDHI2/MMC0 */
 #else /* USE_MMC_CH == MMC_CH0 */
