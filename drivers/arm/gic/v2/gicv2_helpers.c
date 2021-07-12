@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2015-2020, ARM Limited and Contributors. All rights reserved.
- * Copyright (c) 2020, Renesas Electronics Corporation. All rights reserved.
+ * Copyright (c) 2020-2021, Renesas Electronics Corporation. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -152,7 +152,7 @@ void gicv2_secure_spis_configure_props(uintptr_t gicd_base,
 		gicd_set_icfgr(gicd_base, prop_desc->intr_num,
 				prop_desc->intr_cfg);
 
-#ifndef PLAT_rcar
+#if (!defined(PLAT_rcar) || defined(IMAGE_BL2))
 		/* Enable this interrupt */
 		gicd_set_isenabler(gicd_base, prop_desc->intr_num);
 #endif
