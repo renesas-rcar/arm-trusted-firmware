@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2016-2017, ARM Limited and Contributors. All rights reserved.
- * Copyright (c) 2018-2020, Renesas Electronics Corporation. All rights reserved.
+ * Copyright (c) 2018-2021, Renesas Electronics Corporation. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -23,7 +23,9 @@ static uintptr_t rcar_sip_handler(unsigned int smc_fid,
 			void *handle,
 			u_register_t flags)
 {
+#if PMIC_ROHM_BD9571
 	int32_t		ret;
+#endif	/* PMIC_ROHM_BD9571 */
 	int32_t		board_ret;
 	uint32_t	board_type = 0U;
 	uint32_t	board_rev = 0U;
