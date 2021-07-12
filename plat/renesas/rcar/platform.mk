@@ -323,9 +323,7 @@ PLAT_INCLUDES	+=	-Idrivers/renesas/common/ddr		\
 			-Idrivers/renesas/common/scif		\
 			-Idrivers/renesas/common/emmc		\
 			-Idrivers/renesas/common/pwrc		\
-			-Idrivers/renesas/common/io			\
-			-Iplat/renesas/rcar/include			\
-			-Iplat/renesas/rcar
+			-Idrivers/renesas/common/io
 
 
 BL2_SOURCES	+=	plat/renesas/rcar/bl2_plat_setup.c	\
@@ -337,9 +335,6 @@ include lib/zlib/zlib.mk
 BL2_SOURCES	+=	common/image_decompress.c               \
 			$(ZLIB_SOURCES)
 endif
-
-BL31_SOURCES	+=	plat/renesas/rcar/rcar_sip_svc.c	\
-			drivers/renesas/rcar/board/board.c
 
 ifneq (${ENABLE_STACK_PROTECTOR},0)
 BL_COMMON_SOURCES	+=	plat/renesas/rcar/rcar_stack_protector.c
