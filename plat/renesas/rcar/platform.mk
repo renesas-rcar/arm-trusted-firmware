@@ -327,7 +327,8 @@ BL31_SOURCES	+=	plat/renesas/rcar/rcar_sip_svc.c	\
 			drivers/renesas/rcar/board/board.c
 
 ifneq (${ENABLE_STACK_PROTECTOR},0)
-PLAT_BL_COMMON_SOURCES	+=	plat/renesas/rcar/rcar_stack_protector.c
+BL_COMMON_SOURCES	+=	plat/renesas/rcar/rcar_stack_protector.c
+BL31_CFLAGS	+=	-fno-stack-protector
 endif
 
 ifeq (${RCAR_GEN3_ULCB},1)
