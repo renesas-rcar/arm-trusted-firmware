@@ -18,6 +18,7 @@
 #include "rcar_def.h"
 #include "rcar_private.h"
 #include "rcar_version.h"
+#include "board.h"
 
 /*
  * The next 3 constants identify the extents of the code, RO data region and the
@@ -41,6 +42,8 @@
 #define BL31_COHERENT_RAM_BASE (uint64_t)(&__COHERENT_RAM_START__)
 #define BL31_COHERENT_RAM_LIMIT (uint64_t)(&__COHERENT_RAM_END__)
 #endif
+
+static void bl31_init_generic_timer(void);
 
 /*******************************************************************************
  * Reference to structure which holds the arguments that have been passed to
@@ -141,6 +144,9 @@ void bl31_platform_setup(void)
 	plat_arm_gic_driver_init();
 	plat_arm_gic_init();
 
+	/* Determine the platform timer frequency and configure the generic timer */
+	bl31_init_generic_timer();
+
 	/* Enable and initialize the System level generic timer */
 	mmio_write_32(RCAR_CNTC_BASE + CNTCR_OFF, CNTCR_FCREQ(U(0)) | CNTCR_EN);
 
@@ -231,4 +237,55 @@ void bl31_plat_runtime_setup(void)
 	 * from BL31 will be suppressed.
 	 */
 	console_uninit();
+}
+
+/*******************************************************************************
+ * Determine the platform timer frequency and configure the generic timer
+ ******************************************************************************/
+static void bl31_init_generic_timer(void)
+{
+#if RCAR_LSI == RCAR_E3
+	uint32_t reg_cntfid = EXTAL_EBISU;
+#else /* RCAR_LSI == RCAR_E3 */
+	uint32_t reg;
+	uint32_t modemr;
+	uint32_t modemr_pll;
+	uint32_t pll_table[] =
+		{	EXTAL_MD14_MD13_TYPE_0,		/* MD14/MD13 : 0b00 */
+			EXTAL_MD14_MD13_TYPE_1,		/* MD14/MD13 : 0b01 */
+			EXTAL_MD14_MD13_TYPE_2,		/* MD14/MD13 : 0b10 */
+			EXTAL_MD14_MD13_TYPE_3};	/* MD14/MD13 : 0b11 */
+	uint32_t reg_cntfid;
+	uint32_t board_type;
+	uint32_t board_rev;
+
+	modemr = mmio_read_32(RCAR_MODEMR);
+	modemr_pll = (modemr & MODEMR_BOOT_PLL_MASK);
+
+	/* Set frequency data in CNTFID0 */
+	reg_cntfid = pll_table[modemr_pll >> MODEMR_BOOT_PLL_SHIFT];
+	reg = mmio_read_32(RCAR_PRR) & (RCAR_PRODUCT_MASK | RCAR_CUT_MASK);
+	switch (modemr_pll) {
+	case MD14_MD13_TYPE_0:
+		(void)get_board_type(&board_type, &board_rev);
+		if (BOARD_SALVATOR_XS == board_type) {
+			reg_cntfid = EXTAL_SALVATOR_XS;
+		}
+		break;
+	case MD14_MD13_TYPE_3:
+		if (RCAR_PRODUCT_H3_CUT10 == reg) {
+			reg_cntfid = reg_cntfid >> 1U;
+		}
+		break;
+	default:
+		/* none */
+		break;
+	}
+#endif /* RCAR_LSI == RCAR_E3 */
+	/* Update memory mapped and register based freqency */
+	write_cntfrq_el0((u_register_t )reg_cntfid);
+	mmio_write_32(ARM_SYS_CNTCTL_BASE + (uintptr_t)CNTFID_OFF, reg_cntfid);
+	/* Enable counter */
+	mmio_setbits_32(RCAR_CNTC_BASE + (uintptr_t)CNTCR_OFF,
+		(uint32_t)CNTCR_EN);
 }
