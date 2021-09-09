@@ -38,6 +38,151 @@
 #define CPG_BASE U(0xE6150000)
 
 struct scmi_reset rcar_resets[RCAR_SCMIRST_MAX] = {
+	[RCAR_SCMIRST_EAVB] = {
+		.rst_reg = 0x920,
+		.clr_reg = 0x960,
+		.bit_off = 12,
+	},
+	[RCAR_SCMIRST_HDMI0] = {
+		.rst_reg = 0x14C,
+		.clr_reg = 0x95C,
+		.bit_off = 29,
+	},
+	[RCAR_SCMIRST_HDMI1] = {
+		.rst_reg = 0x14C,
+		.clr_reg = 0x95C,
+		.bit_off = 28,
+	},
+	[RCAR_SCMIRST_I2C0] = {
+		.rst_reg = 0x924,
+		.clr_reg = 0x964,
+		.bit_off = 31,
+	},
+	[RCAR_SCMIRST_I2C1] = {
+		.rst_reg = 0x924,
+		.clr_reg = 0x964,
+		.bit_off = 30,
+	},
+	[RCAR_SCMIRST_I2C2] = {
+		.rst_reg = 0x924,
+		.clr_reg = 0x964,
+		.bit_off = 29,
+	},
+	[RCAR_SCMIRST_I2C3] = {
+		.rst_reg = 0x924,
+		.clr_reg = 0x964,
+		.bit_off = 28,
+	},
+	[RCAR_SCMIRST_I2C4] = {
+		.rst_reg = 0x924,
+		.clr_reg = 0x964,
+		.bit_off = 27,
+	},
+	[RCAR_SCMIRST_XHCI0] = {
+		.rst_reg = 0x0B8,
+		.clr_reg = 0x94C,
+		.bit_off = 28,
+	},
+	[RCAR_SCMIRST_USB2_01] = {
+		.rst_reg = 0x1CC,
+		.clr_reg = 0x95C,
+		.bit_off = 3,
+	},
+	[RCAR_SCMIRST_USB2_02] = {
+		.rst_reg = 0x1CC,
+		.clr_reg = 0x95C,
+		.bit_off = 4,
+	},
+	[RCAR_SCMIRST_USB2_1] = {
+		.rst_reg = 0x1CC,
+		.clr_reg = 0x95C,
+		.bit_off = 2,
+	},
+	[RCAR_SCMIRST_USB_DMAC0] = {
+		.rst_reg = 0x0B8,
+		.clr_reg = 0x94C,
+		.bit_off = 30,
+	},
+	[RCAR_SCMIRST_USB_DMAC1] = {
+		.rst_reg = 0x0B8,
+		.clr_reg = 0x94C,
+		.bit_off = 31,
+	},
+	[RCAR_SCMIRST_USB_DMAC2] = {
+		.rst_reg = 0x0B8,
+		.clr_reg = 0x94C,
+		.bit_off = 26,
+	},
+	[RCAR_SCMIRST_USB_DMAC3] = {
+		.rst_reg = 0x0B8,
+		.clr_reg = 0x94C,
+		.bit_off = 29,
+	},
+	[RCAR_SCMIRST_SSI] = {
+		.rst_reg = 0x928,
+		.clr_reg = 0x968,
+		.bit_off = 5,
+	},
+	[RCAR_SCMIRST_SSI9] = {
+		.rst_reg = 0x928,
+		.clr_reg = 0x968,
+		.bit_off = 6,
+	},
+	[RCAR_SCMIRST_SSI8] = {
+		.rst_reg = 0x928,
+		.clr_reg = 0x968,
+		.bit_off = 7,
+	},
+	[RCAR_SCMIRST_SSI7] = {
+		.rst_reg = 0x928,
+		.clr_reg = 0x968,
+		.bit_off = 8,
+	},
+	[RCAR_SCMIRST_SSI6] = {
+		.rst_reg = 0x928,
+		.clr_reg = 0x968,
+		.bit_off = 9,
+	},
+	[RCAR_SCMIRST_SSI5] = {
+		.rst_reg = 0x928,
+		.clr_reg = 0x968,
+		.bit_off = 10,
+	},
+	[RCAR_SCMIRST_SSI4] = {
+		.rst_reg = 0x928,
+		.clr_reg = 0x968,
+		.bit_off = 11,
+	},
+	[RCAR_SCMIRST_SSI3] = {
+		.rst_reg = 0x928,
+		.clr_reg = 0x968,
+		.bit_off = 12,
+	},
+	[RCAR_SCMIRST_SSI2] = {
+		.rst_reg = 0x928,
+		.clr_reg = 0x968,
+		.bit_off = 13,
+	},
+	[RCAR_SCMIRST_SSI1] = {
+		.rst_reg = 0x928,
+		.clr_reg = 0x968,
+		.bit_off = 14,
+	},
+	[RCAR_SCMIRST_SSI0] = {
+		.rst_reg = 0x928,
+		.clr_reg = 0x968,
+		.bit_off = 15,
+	},
+	[RCAR_SCMIRST_AUDMAC1] = {
+		.rst_reg = 0x0C4,
+		.clr_reg = 0x954,
+		.bit_off = 1,
+	},
+	[RCAR_SCMIRST_AUDMAC0] = {
+		.rst_reg = 0x0C4,
+		.clr_reg = 0x954,
+		.bit_off = 2,
+	},
 };
 
 enum scmi_message_id {

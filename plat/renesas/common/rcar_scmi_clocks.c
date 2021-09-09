@@ -36,6 +36,17 @@
 #include "rcar_scmi_resources.h"
 
 #define CPG_BASE U(0xE6150000)
+#define SMSTPCR3  0x13C
+#define SMSTPCR5  0x144
+#define SMSTPCR7  0x14C
+#define SMSTPCR8  0x990
+#define SMSTPCR10 0x998
+
+#define MSTPSR3  0x048
+#define MSTPSR5  0x03C
+#define MSTPSR7  0x1C4
+#define MSTPSR8  0x9A0
+#define MSTPSR10 0x9A8
 
 enum scmi_message_id {
 	PROTOCOL_VERSION = 0x0,
@@ -73,6 +84,552 @@ struct scmi_clk_ops {
 static spinlock_t clk_lock;
 
 struct scmi_clk rcar_clocks[RCAR_CLK_MAX] = {
+	[RCAR_SCMICLK_EAVB] = {
+		.name = "_etheravb",
+		.parent = RCAR_CLK_S0D6,
+		.type = CLK_TYPE_MSSR,
+		.clk.mssr = {
+			.cr = SMSTPCR8,
+			.st = MSTPSR8,
+			.bit = 12,
+			.init = MSSR_OFF,
+		}
+	},
+	[RCAR_SCMICLK_XHCI0] = {
+		.name = "_usb3-if0",
+		.parent = RCAR_CLK_S3D1,
+		.type = CLK_TYPE_MSSR,
+		.clk.mssr = {
+			.cr = SMSTPCR3,
+			.st = MSTPSR3,
+			.bit = 28,
+			.init = MSSR_OFF,
+		}
+	},
+	[RCAR_SCMICLK_EHCI0] = {
+		.name = "_ehci0",
+		.parent = RCAR_CLK_S3D2,
+		.type = CLK_TYPE_MSSR,
+		.clk.mssr = {
+			.cr = SMSTPCR7,
+			.st = MSTPSR7,
+			.bit = 3,
+			.init = MSSR_OFF,
+		}
+	},
+	[RCAR_SCMICLK_HSUSB] = {
+		.name = "_hsusb",
+		.parent = RCAR_CLK_S3D2,
+		.type = CLK_TYPE_MSSR,
+		.clk.mssr = {
+			.cr = SMSTPCR7,
+			.st = MSTPSR7,
+			.bit = 4,
+			.init = MSSR_OFF,
+		}
+	},
+	[RCAR_SCMICLK_EHCI1] = {
+		.name = "_ehci1",
+		.parent = RCAR_CLK_S3D2,
+		.type = CLK_TYPE_MSSR,
+		.clk.mssr = {
+			.cr = SMSTPCR7,
+			.st = MSTPSR7,
+			.bit = 2,
+			.init = MSSR_OFF,
+		}
+	},
+	[RCAR_SCMICLK_USB_DMAC0] = {
+		.name = "_usb-dmac0",
+		.parent = RCAR_CLK_S3D1,
+		.type = CLK_TYPE_MSSR,
+		.clk.mssr = {
+			.cr = SMSTPCR3,
+			.st = MSTPSR3,
+			.bit = 30,
+			.init = MSSR_OFF,
+		}
+	},
+	[RCAR_SCMICLK_USB_DMAC1] = {
+		.name = "_usb-dmac1",
+		.parent = RCAR_CLK_S3D1,
+		.type = CLK_TYPE_MSSR,
+		.clk.mssr = {
+			.cr = SMSTPCR3,
+			.st = MSTPSR3,
+			.bit = 31,
+			.init = MSSR_OFF,
+		}
+	},
+	[RCAR_SCMICLK_USB_DMAC30] = {
+		.name = "_usb-dmac30",
+		.parent = RCAR_CLK_S3D1,
+		.type = CLK_TYPE_MSSR,
+		.clk.mssr = {
+			.cr = SMSTPCR3,
+			.st = MSTPSR3,
+			.bit = 26,
+			.init = MSSR_OFF,
+		}
+	},
+	[RCAR_SCMICLK_USB_DMAC31] = {
+		.name = "_usb-dmac31",
+		.parent = RCAR_CLK_S3D1,
+		.type = CLK_TYPE_MSSR,
+		.clk.mssr = {
+			.cr = SMSTPCR3,
+			.st = MSTPSR3,
+			.bit = 29,
+			.init = MSSR_OFF,
+		}
+	},
+	[RCAR_SCMICLK_SSI_ALL] = {
+		.name = "_ssi-all",
+		.parent = RCAR_CLK_S3D4,
+		.type = CLK_TYPE_MSSR,
+		.clk.mssr = {
+			.cr = SMSTPCR10,
+			.st = MSTPSR10,
+			.bit = 5,
+			.init = MSSR_OFF,
+		}
+	},
+	[RCAR_SCMICLK_SSI9] = {
+		.name = "_ssi9",
+		.parent = RCAR_SCMICLK_SSI_ALL,
+		.type = CLK_TYPE_MSSR,
+		.clk.mssr = {
+			.cr = SMSTPCR10,
+			.st = MSTPSR10,
+			.bit = 6,
+			.init = MSSR_OFF,
+		}
+	},
+	[RCAR_SCMICLK_SSI8] = {
+		.name = "_ssi8",
+		.parent = RCAR_SCMICLK_SSI_ALL,
+		.type = CLK_TYPE_MSSR,
+		.clk.mssr = {
+			.cr = SMSTPCR10,
+			.st = MSTPSR10,
+			.bit = 7,
+			.init = MSSR_OFF,
+		}
+	},
+	[RCAR_SCMICLK_SSI7] = {
+		.name = "_ssi7",
+		.parent = RCAR_SCMICLK_SSI_ALL,
+		.type = CLK_TYPE_MSSR,
+		.clk.mssr = {
+			.cr = SMSTPCR10,
+			.st = MSTPSR10,
+			.bit = 8,
+			.init = MSSR_OFF,
+		}
+	},
+	[RCAR_SCMICLK_SSI6] = {
+		.name = "_ssi6",
+		.parent = RCAR_SCMICLK_SSI_ALL,
+		.type = CLK_TYPE_MSSR,
+		.clk.mssr = {
+			.cr = SMSTPCR10,
+			.st = MSTPSR10,
+			.bit = 9,
+			.init = MSSR_OFF,
+		}
+	},
+	[RCAR_SCMICLK_SSI5] = {
+		.name = "_ssi5",
+		.parent = RCAR_SCMICLK_SSI_ALL,
+		.type = CLK_TYPE_MSSR,
+		.clk.mssr = {
+			.cr = SMSTPCR10,
+			.st = MSTPSR10,
+			.bit = 10,
+			.init = MSSR_OFF,
+		}
+	},
+	[RCAR_SCMICLK_SSI4] = {
+		.name = "_ssi4",
+		.parent = RCAR_SCMICLK_SSI_ALL,
+		.type = CLK_TYPE_MSSR,
+		.clk.mssr = {
+			.cr = SMSTPCR10,
+			.st = MSTPSR10,
+			.bit = 11,
+			.init = MSSR_OFF,
+		}
+	},
+	[RCAR_SCMICLK_SSI3] = {
+		.name = "_ssi3",
+		.parent = RCAR_SCMICLK_SSI_ALL,
+		.type = CLK_TYPE_MSSR,
+		.clk.mssr = {
+			.cr = SMSTPCR10,
+			.st = MSTPSR10,
+			.bit = 12,
+			.init = MSSR_OFF,
+		}
+	},
+	[RCAR_SCMICLK_SSI2] = {
+		.name = "_ssi2",
+		.parent = RCAR_SCMICLK_SSI_ALL,
+		.type = CLK_TYPE_MSSR,
+		.clk.mssr = {
+			.cr = SMSTPCR10,
+			.st = MSTPSR10,
+			.bit = 13,
+			.init = MSSR_OFF,
+		}
+	},
+	[RCAR_SCMICLK_SSI1] = {
+		.name = "_ssi1",
+		.parent = RCAR_SCMICLK_SSI_ALL,
+		.type = CLK_TYPE_MSSR,
+		.clk.mssr = {
+			.cr = SMSTPCR10,
+			.st = MSTPSR10,
+			.bit = 14,
+			.init = MSSR_OFF,
+		}
+	},
+	[RCAR_SCMICLK_SSI0] = {
+		.name = "_ssi0",
+		.parent = RCAR_SCMICLK_SSI_ALL,
+		.type = CLK_TYPE_MSSR,
+		.clk.mssr = {
+			.cr = SMSTPCR10,
+			.st = MSTPSR10,
+			.bit = 15,
+			.init = MSSR_OFF,
+		}
+	},
+	[RCAR_SCMICLK_SCU_ALL] = {
+		.name = "_scu-all",
+		.parent = RCAR_CLK_S3D4,
+		.type = CLK_TYPE_MSSR,
+		.clk.mssr = {
+			.cr = SMSTPCR10,
+			.st = MSTPSR10,
+			.bit = 17,
+			.init = MSSR_OFF,
+		}
+	},
+	[RCAR_SCMICLK_SCU_DVC1] = {
+		.name = "_scu-dvc1",
+		.parent = RCAR_SCMICLK_SCU_ALL,
+		.type = CLK_TYPE_MSSR,
+		.clk.mssr = {
+			.cr = SMSTPCR10,
+			.st = MSTPSR10,
+			.bit = 18,
+			.init = MSSR_OFF,
+		}
+	},
+	[RCAR_SCMICLK_SCU_DVC0] = {
+		.name = "_scu-dvc0",
+		.parent = RCAR_SCMICLK_SCU_ALL,
+		.type = CLK_TYPE_MSSR,
+		.clk.mssr = {
+			.cr = SMSTPCR10,
+			.st = MSTPSR10,
+			.bit = 19,
+			.init = MSSR_OFF,
+		}
+	},
+	[RCAR_SCMICLK_SCU_MIX1] = {
+		.name = "_scu-ctu1-mix1",
+		.parent = RCAR_SCMICLK_SCU_ALL,
+		.type = CLK_TYPE_MSSR,
+		.clk.mssr = {
+			.cr = SMSTPCR10,
+			.st = MSTPSR10,
+			.bit = 20,
+			.init = MSSR_OFF,
+		}
+	},
+	[RCAR_SCMICLK_SCU_MIX0] = {
+		.name = "_scu-ctu0-mix0",
+		.parent = RCAR_SCMICLK_SCU_ALL,
+		.type = CLK_TYPE_MSSR,
+		.clk.mssr = {
+			.cr = SMSTPCR10,
+			.st = MSTPSR10,
+			.bit = 21,
+			.init = MSSR_OFF,
+		}
+	},
+	[RCAR_SCMICLK_SCU_SRC9] = {
+		.name = "_scu-src9",
+		.parent = RCAR_SCMICLK_SCU_ALL,
+		.type = CLK_TYPE_MSSR,
+		.clk.mssr = {
+			.cr = SMSTPCR10,
+			.st = MSTPSR10,
+			.bit = 22,
+			.init = MSSR_OFF,
+		}
+	},
+	[RCAR_SCMICLK_SCU_SRC8] = {
+		.name = "_scu-src8",
+		.parent = RCAR_SCMICLK_SCU_ALL,
+		.type = CLK_TYPE_MSSR,
+		.clk.mssr = {
+			.cr = SMSTPCR10,
+			.st = MSTPSR10,
+			.bit = 23,
+			.init = MSSR_OFF,
+		}
+	},
+	[RCAR_SCMICLK_SCU_SRC7] = {
+		.name = "_scu-src7",
+		.parent = RCAR_SCMICLK_SCU_ALL,
+		.type = CLK_TYPE_MSSR,
+		.clk.mssr = {
+			.cr = SMSTPCR10,
+			.st = MSTPSR10,
+			.bit = 24,
+			.init = MSSR_OFF,
+		}
+	},
+	[RCAR_SCMICLK_SCU_SRC6] = {
+		.name = "_scu-src6",
+		.parent = RCAR_SCMICLK_SCU_ALL,
+		.type = CLK_TYPE_MSSR,
+		.clk.mssr = {
+			.cr = SMSTPCR10,
+			.st = MSTPSR10,
+			.bit = 25,
+			.init = MSSR_OFF,
+		}
+	},
+	[RCAR_SCMICLK_SCU_SRC5] = {
+		.name = "_scu-src5",
+		.parent = RCAR_SCMICLK_SCU_ALL,
+		.type = CLK_TYPE_MSSR,
+		.clk.mssr = {
+			.cr = SMSTPCR10,
+			.st = MSTPSR10,
+			.bit = 26,
+			.init = MSSR_OFF,
+		}
+	},
+	[RCAR_SCMICLK_SCU_SRC4] = {
+		.name = "_scu-src4",
+		.parent = RCAR_SCMICLK_SCU_ALL,
+		.type = CLK_TYPE_MSSR,
+		.clk.mssr = {
+			.cr = SMSTPCR10,
+			.st = MSTPSR10,
+			.bit = 27,
+			.init = MSSR_OFF,
+		}
+	},
+	[RCAR_SCMICLK_SCU_SRC3] = {
+		.name = "_scu-src3",
+		.parent = RCAR_SCMICLK_SCU_ALL,
+		.type = CLK_TYPE_MSSR,
+		.clk.mssr = {
+			.cr = SMSTPCR10,
+			.st = MSTPSR10,
+			.bit = 28,
+			.init = MSSR_OFF,
+		}
+	},
+	[RCAR_SCMICLK_SCU_SRC2] = {
+		.name = "_scu-src2",
+		.parent = RCAR_SCMICLK_SCU_ALL,
+		.type = CLK_TYPE_MSSR,
+		.clk.mssr = {
+			.cr = SMSTPCR10,
+			.st = MSTPSR10,
+			.bit = 29,
+			.init = MSSR_OFF,
+		}
+	},
+	[RCAR_SCMICLK_SCU_SRC1] = {
+		.name = "_scu-src1",
+		.parent = RCAR_SCMICLK_SCU_ALL,
+		.type = CLK_TYPE_MSSR,
+		.clk.mssr = {
+			.cr = SMSTPCR10,
+			.st = MSTPSR10,
+			.bit = 30,
+			.init = MSSR_OFF,
+		}
+	},
+	[RCAR_SCMICLK_SCU_SRC0] = {
+		.name = "_scu-src0",
+		.parent = RCAR_SCMICLK_SCU_ALL,
+		.type = CLK_TYPE_MSSR,
+		.clk.mssr = {
+			.cr = SMSTPCR10,
+			.st = MSTPSR10,
+			.bit = 31,
+			.init = MSSR_OFF,
+		}
+	},
+	[RCAR_SCMICLK_AUDMAC1] = {
+		.name = "_audmac1",
+		.parent = RCAR_CLK_S1D2,
+		.type = CLK_TYPE_MSSR,
+		.clk.mssr = {
+			.cr = SMSTPCR5,
+			.st = MSTPSR5,
+			.bit = 1,
+			.init = MSSR_OFF,
+		}
+	},
+	[RCAR_SCMICLK_AUDMAC0] = {
+		.name = "_audmac0",
+		.parent = RCAR_CLK_S1D2,
+		.type = CLK_TYPE_MSSR,
+		.clk.mssr = {
+			.cr = SMSTPCR5,
+			.st = MSTPSR5,
+			.bit = 2,
+			.init = MSSR_OFF,
+		}
+	},
+	[RCAR_SCMICLK_HDMI] = {
+		.name = "_hdmi",
+		.parent = -1, /*TODO: div6 clocks support */
+		.type = CLK_TYPE_DIV6,
+		.clk.div6 = {
+			.cr = 0x250,
+		}
+	},
+	[RCAR_SCMICLK_HDMI0] = {
+		.name = "_hdmi0",
+		.parent = RCAR_SCMICLK_HDMI,
+		.type = CLK_TYPE_MSSR,
+		.clk.mssr = {
+			.cr = SMSTPCR7,
+			.st = MSTPSR7,
+			.bit = 29,
+			.init = MSSR_OFF,
+		}
+	},
+	[RCAR_SCMICLK_HDMI1] = {
+		.name = "_hdmi1",
+		.parent = RCAR_SCMICLK_HDMI,
+		.type = CLK_TYPE_MSSR,
+		.clk.mssr = {
+			.cr = SMSTPCR7,
+			.st = MSTPSR7,
+			.bit = 28,
+			.init = MSSR_OFF,
+		}
+	},
+	[RCAR_CLK_EXTAL] = {
+		.name = "extal",
+		.parent = -1,
+		.type = CLK_TYPE_EXTAL,
+		.clk.extal = {
+			.rate = 16666666,
+		}
+	},
+	[RCAR_CLK_MAIN] = {
+		.name = ".main",
+		.parent = RCAR_CLK_EXTAL,
+		.type = CLK_TYPE_FIXED,
+		/*TODO: should be set according to mode pins */
+		.clk.fixed = {
+			.div = 1,
+			.mult = 1,
+		}
+	},
+	[RCAR_CLK_PLL1] = {
+		.name = ".pll1",
+		.parent = RCAR_CLK_MAIN,
+		.type = CLK_TYPE_FIXED,
+		/*TODO: should be set according to mode pins */
+		.clk.fixed = {
+			.div = 1,
+			.mult = 192,
+		}
+	},
+	[RCAR_CLK_PLL1D2] = {
+		.name = ".pll1_div2",
+		.parent = RCAR_CLK_PLL1,
+		.type = CLK_TYPE_FIXED,
+		.clk.fixed = {
+			.div = 2,
+			.mult = 1,
+		}
+	},
+	[RCAR_CLK_S0] = {
+		.name = ".s0",
+		.parent = RCAR_CLK_PLL1D2,
+		.type = CLK_TYPE_FIXED,
+		.clk.fixed = {
+			.div = 2,
+			.mult = 1,
+		}
+	},
+	[RCAR_CLK_S1] = {
+		.name = ".s1",
+		.parent = RCAR_CLK_PLL1D2,
+		.type = CLK_TYPE_FIXED,
+		.clk.fixed = {
+			.div = 3,
+			.mult = 1,
+		}
+	},
+	[RCAR_CLK_S3] = {
+		.name = ".s3",
+		.parent = RCAR_CLK_PLL1D2,
+		.type = CLK_TYPE_FIXED,
+		.clk.fixed = {
+			.div = 6,
+			.mult = 1,
+		}
+	},
+	[RCAR_CLK_S0D6] = {
+		.name = "s0d6",
+		.parent = RCAR_CLK_S0,
+		.type = CLK_TYPE_FIXED,
+		.clk.fixed = {
+			.div = 6,
+			.mult = 1,
+		}
+	},
+	[RCAR_CLK_S1D2] = {
+		.name = "s1d2",
+		.parent = RCAR_CLK_S1,
+		.type = CLK_TYPE_FIXED,
+		.clk.fixed = {
+			.div = 2,
+			.mult = 1,
+		}
+	},
+	[RCAR_CLK_S3D1] = {
+		.name = "s3d1",
+		.parent = RCAR_CLK_S3,
+		.type = CLK_TYPE_FIXED,
+		.clk.fixed = {
+			.div = 1,
+			.mult = 1,
+		}
+	},
+	[RCAR_CLK_S3D2] = {
+		.name = "s3d2",
+		.parent = RCAR_CLK_S3,
+		.type = CLK_TYPE_FIXED,
+		.clk.fixed = {
+			.div = 2,
+			.mult = 1,
+		}
+	},
+	[RCAR_CLK_S3D4] = {
+		.name = "s3d4",
+		.parent = RCAR_CLK_S3,
+		.type = CLK_TYPE_FIXED,
+		.clk.fixed = {
+			.div = 4,
+			.mult = 1,
+		}
+	},
 };
 
 static uint64_t __clk_get_rate_locked(uint32_t);
