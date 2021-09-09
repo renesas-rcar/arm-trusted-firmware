@@ -10,6 +10,12 @@
 #include <common/debug.h>
 #include <rcar_sip_svc.h>
 #include "board.h"
+#include "rcar_private.h"
+
+static int rcar_sip_setup(void)
+{
+	return rcar_setup_scmi();
+}
 
 /*
  * This function handles Rcar defined SiP Calls
@@ -49,6 +55,10 @@ static uintptr_t rcar_sip_handler(unsigned int smc_fid,
 #endif	/* PMIC_ROHM_BD9571 */
 		SMC_RET3(handle, board_ret, board_type, board_rev);
 
+	case RCAR_SIP_SVC_MBOX_TRIGGER:
+		ret = rcar_trigger_scmi(SMC_GET_GP(handle, CTX_GPREG_X7));
+		SMC_RET1(handle, ret);
+
 	case RCAR_SIP_SVC_CALL_COUNT:
 		/* Return the number of function IDs */
 		SMC_RET1(handle, RCAR_SIP_SVC_FUNCTION_NUM);
@@ -75,7 +85,7 @@ DECLARE_RT_SVC(
 	(uint8_t)OEN_SIP_START,
 	(uint8_t)OEN_SIP_END,
 	(uint8_t)SMC_TYPE_FAST,
-	NULL,
+	rcar_sip_setup,
 	rcar_sip_handler
 );
 

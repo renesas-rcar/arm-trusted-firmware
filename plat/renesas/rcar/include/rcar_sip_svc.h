@@ -18,6 +18,9 @@
 /* Function ID to get the Board type */
 #define RCAR_SIP_SVC_GET_BOARD_TYPE	U(0x82000001)
 
+/* SCMI doorbell */
+#define RCAR_SIP_SVC_MBOX_TRIGGER	U(0x82000002)
+
 /* Rcar SiP Service Calls version numbers */
 #define RCAR_SIP_SVC_VERSION_MAJOR	U(0x0)
 #define RCAR_SIP_SVC_VERSION_MINOR	U(0x2)

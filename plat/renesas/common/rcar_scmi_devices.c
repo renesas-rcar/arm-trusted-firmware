@@ -28,24 +28,14 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef RCAR_SCMI_RESOURCES_H
-#define RCAR_SCMI_RESOURCES_H
+#include "rcar_private.h"
+#include "rcar_scmi_resources.h"
 
-enum rcar_scmi_devid {
-	RCAR_SCMIDEV_MAX
+static const struct scmi_device default_dev = {
+		.rsts = (int[]){-1},
+		.clks = (int[]){-1},
 };
 
-enum rcar_scmi_rst_offset {
-	RCAR_SCMIRST_MAX
+const struct scmi_device rcar_devices[RCAR_SCMIDEV_MAX] = {
+	[0 ... RCAR_SCMIDEV_MAX - 1] = default_dev, /* sentinel */
 };
-
-enum rcar_scmi_clk {
-	RCAR_CLK_MAX,
-	RCAR_SCMICLK_MAX = RCAR_CLK_MAX /* end of SCMI exported clocks */
-};
-
-extern const struct scmi_device rcar_devices[RCAR_SCMIDEV_MAX];
-extern struct scmi_clk rcar_clocks[RCAR_CLK_MAX];
-extern struct scmi_reset rcar_resets[RCAR_SCMIRST_MAX];
-
-#endif /* RCAR_SCMI_RESOURCES_H */

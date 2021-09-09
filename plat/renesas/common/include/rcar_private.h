@@ -109,7 +109,10 @@ void rcar_console_boot_end(void);
 void rcar_console_runtime_init(void);
 void rcar_console_runtime_end(void);
 
+uint32_t rcar_trigger_scmi(size_t);
+int rcar_setup_scmi(void);
 int rcar_cpg_init(void);
+uint32_t scmi_count_protocols(void);
 
 #define SCMI_SUCCESS		0
 #define SCMI_NOT_SUPPORTED	(-1)
@@ -129,11 +132,19 @@ int rcar_cpg_init(void);
 #define FLD(mask, val) (((val) << (__builtin_ffsll(mask) - 1) & (mask)))
 #define FLD_GET(mask, val) (((val) & (mask)) >> (__builtin_ffsll(mask) - 1))
 
+#define channel_to_agent(channel) ((channel) + 1)
+#define agent_to_channel(agent) ((agent) - 1)
+
 typedef uint16_t scmi_umask_t;
 
 _Static_assert(sizeof(scmi_umask_t) * 8 == RCAR_SCMI_CHAN_COUNT);
 
 typedef scmi_umask_t scmi_perm_t;
+
+struct scmi_device {
+	int *rsts;
+	int *clks;
+};
 
 struct scmi_reset {
 	uint16_t rst_reg;
@@ -176,6 +187,7 @@ static inline bool scmi_permission_granted(scmi_perm_t perm, uint32_t channel)
 	return perm & (1 << channel);
 }
 
+uint32_t rcar_scmi_handle_base(size_t, uint8_t, volatile uint8_t*, size_t);
 uint32_t rcar_scmi_handle_power(size_t, uint8_t, volatile uint8_t*, size_t);
 uint32_t rcar_scmi_handle_clock(size_t, uint8_t, volatile uint8_t*, size_t);
 uint32_t rcar_scmi_handle_reset(size_t, uint8_t, volatile uint8_t*, size_t);
