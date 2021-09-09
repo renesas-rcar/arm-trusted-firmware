@@ -176,6 +176,7 @@ static inline bool scmi_permission_granted(scmi_perm_t perm, uint32_t channel)
 	return perm & (1 << channel);
 }
 
+uint32_t rcar_scmi_handle_power(size_t, uint8_t, volatile uint8_t*, size_t);
 uint32_t rcar_scmi_handle_clock(size_t, uint8_t, volatile uint8_t*, size_t);
 uint32_t rcar_scmi_handle_reset(size_t, uint8_t, volatile uint8_t*, size_t);
 void rcar_reset_clock(uint32_t, uint32_t);
