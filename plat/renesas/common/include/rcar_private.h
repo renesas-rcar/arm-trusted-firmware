@@ -7,9 +7,13 @@
 #ifndef RCAR_PRIVATE_H
 #define RCAR_PRIVATE_H
 
+#include <platform_def.h>
+
+#include <assert.h>
 #include <common/bl_common.h>
 #include <lib/bakery_lock.h>
 #include <lib/el3_runtime/cpu_data.h>
+#include <lib/xlat_tables/xlat_tables_defs.h>
 
 #include <platform_def.h>
 
@@ -104,5 +108,43 @@ void rcar_console_boot_init(void);
 void rcar_console_boot_end(void);
 void rcar_console_runtime_init(void);
 void rcar_console_runtime_end(void);
+
+#define SCMI_SUCCESS		0
+#define SCMI_NOT_SUPPORTED	(-1)
+#define SCMI_INVALID_PARAMETERS	(-2)
+#define SCMI_DENIED		(-3)
+#define SCMI_NOT_FOUND		(-4)
+#define SCMI_OUT_OF_RANGE	(-5)
+#define SCMI_BUSY		(-6)
+#define SCMI_COMMS_ERROR	(-7)
+#define SCMI_GENERIC_ERROR	(-8)
+#define SCMI_HARDWARE_ERROR	(-9)
+#define SCMI_PROTOCOL_ERROR	(-10)
+
+#define RCAR_SCMI_CHAN_COUNT	(DRAM2_NS_SCMI_SIZE & ~(PAGE_SIZE - 1)) / PAGE_SIZE
+#define SCMI_PROTOCOL_VERSION	0x20000 /* DEN0056C, 4.2.2.1 */
+
+#define FLD(mask, val) (((val) << (__builtin_ffsll(mask) - 1) & (mask)))
+#define FLD_GET(mask, val) (((val) & (mask)) >> (__builtin_ffsll(mask) - 1))
+
+typedef uint16_t scmi_perm_t;
+
+_Static_assert(sizeof(scmi_perm_t) * 8 == RCAR_SCMI_CHAN_COUNT);
+
+struct scmi_reset {
+	uint16_t rst_reg;
+	uint16_t clr_reg;
+	uint8_t bit_off;
+	scmi_perm_t perm;
+};
+
+static inline bool scmi_permission_granted(scmi_perm_t perm, uint32_t channel)
+{
+	assert(channel < RCAR_SCMI_CHAN_COUNT);
+	return perm & (1 << channel);
+}
+
+uint32_t rcar_scmi_handle_reset(size_t, uint8_t, volatile uint8_t*, size_t);
+void rcar_reset_reset(uint32_t);
 
 #endif /* RCAR_PRIVATE_H */
