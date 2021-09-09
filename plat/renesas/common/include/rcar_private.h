@@ -109,6 +109,8 @@ void rcar_console_boot_end(void);
 void rcar_console_runtime_init(void);
 void rcar_console_runtime_end(void);
 
+int rcar_cpg_init(void);
+
 #define SCMI_SUCCESS		0
 #define SCMI_NOT_SUPPORTED	(-1)
 #define SCMI_INVALID_PARAMETERS	(-2)
@@ -127,9 +129,11 @@ void rcar_console_runtime_end(void);
 #define FLD(mask, val) (((val) << (__builtin_ffsll(mask) - 1) & (mask)))
 #define FLD_GET(mask, val) (((val) & (mask)) >> (__builtin_ffsll(mask) - 1))
 
-typedef uint16_t scmi_perm_t;
+typedef uint16_t scmi_umask_t;
 
-_Static_assert(sizeof(scmi_perm_t) * 8 == RCAR_SCMI_CHAN_COUNT);
+_Static_assert(sizeof(scmi_umask_t) * 8 == RCAR_SCMI_CHAN_COUNT);
+
+typedef scmi_umask_t scmi_perm_t;
 
 struct scmi_reset {
 	uint16_t rst_reg;
@@ -138,13 +142,43 @@ struct scmi_reset {
 	scmi_perm_t perm;
 };
 
+union rcar_clk {
+	struct {
+		uint16_t mult;
+		uint16_t div;
+	} fixed;
+	struct {
+		uint64_t rate;
+	} extal;
+	struct {
+		uint16_t cr; /* control register */
+	} div6;
+	struct {
+		uint16_t cr; /* control register */
+		uint16_t st; /* satus register   */
+		uint8_t bit;
+		uint8_t init;/* default value	 */
+	} mssr;
+};
+
+struct scmi_clk {
+	const char *name;
+	const int parent;
+	scmi_umask_t usage;
+	scmi_perm_t perm;
+	const uint8_t type;
+	const union rcar_clk clk;
+};
+
 static inline bool scmi_permission_granted(scmi_perm_t perm, uint32_t channel)
 {
 	assert(channel < RCAR_SCMI_CHAN_COUNT);
 	return perm & (1 << channel);
 }
 
+uint32_t rcar_scmi_handle_clock(size_t, uint8_t, volatile uint8_t*, size_t);
 uint32_t rcar_scmi_handle_reset(size_t, uint8_t, volatile uint8_t*, size_t);
+void rcar_reset_clock(uint32_t, uint32_t);
 void rcar_reset_reset(uint32_t);
 
 #endif /* RCAR_PRIVATE_H */

@@ -35,6 +35,12 @@ enum rcar_scmi_rst_offset {
 	RCAR_SCMIRST_MAX
 };
 
+enum rcar_scmi_clk {
+	RCAR_CLK_MAX,
+	RCAR_SCMICLK_MAX = RCAR_CLK_MAX /* end of SCMI exported clocks */
+};
+
+extern struct scmi_clk rcar_clocks[RCAR_CLK_MAX];
 extern struct scmi_reset rcar_resets[RCAR_SCMIRST_MAX];
 
 #endif /* RCAR_SCMI_RESOURCES_H */
