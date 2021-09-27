@@ -109,8 +109,22 @@ void rcar_console_boot_end(void);
 void rcar_console_runtime_init(void);
 void rcar_console_runtime_end(void);
 
+#ifdef RCAR_SCMI_PLATFORM
 uint32_t rcar_trigger_scmi(size_t);
 int rcar_setup_scmi(void);
+#else
+static inline uint32_t rcar_trigger_scmi(size_t channel __unused)
+{
+	WARN("SCMI Platform not implemented\n");
+	return -1;
+}
+
+static int __unused rcar_setup_scmi(void)
+{
+	return 0;
+}
+#endif
+
 int rcar_cpg_init(void);
 uint32_t scmi_count_protocols(void);
 uint8_t scmi_get_first_protocol(uint32_t);
