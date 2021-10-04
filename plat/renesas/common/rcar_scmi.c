@@ -99,6 +99,40 @@ uint32_t scmi_count_protocols(void)
 	return count;
 }
 
+uint8_t scmi_get_first_protocol(uint32_t skip)
+{
+	uint32_t skipped = 0;
+	if (skip >= ARRAY_SIZE(proto_handlers)) {
+		return 0;
+	}
+
+	for (int i = 0; i < ARRAY_SIZE(proto_handlers); i++) {
+		if (proto_handlers[i] != scmi_handle_default) {
+			if (skipped == skip) {
+				return i;
+			}
+			skipped++;
+		}
+	}
+
+	return 0;
+}
+
+uint8_t scmi_get_next_protocol(uint8_t protocol_id)
+{
+	if (protocol_id >= ARRAY_SIZE(proto_handlers)) {
+		return 0;
+	}
+
+	for (int i = protocol_id + 1; i < ARRAY_SIZE(proto_handlers); i++) {
+		if (proto_handlers[i] != scmi_handle_default) {
+			return i;
+		}
+	}
+
+	return 0;
+}
+
 int rcar_setup_scmi(void)
 {
 	return rcar_cpg_init();

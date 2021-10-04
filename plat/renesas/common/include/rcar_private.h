@@ -113,6 +113,8 @@ uint32_t rcar_trigger_scmi(size_t);
 int rcar_setup_scmi(void);
 int rcar_cpg_init(void);
 uint32_t scmi_count_protocols(void);
+uint8_t scmi_get_first_protocol(uint32_t);
+uint8_t scmi_get_next_protocol(uint8_t);
 
 #define SCMI_SUCCESS		0
 #define SCMI_NOT_SUPPORTED	(-1)

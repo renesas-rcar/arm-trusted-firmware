@@ -146,6 +146,9 @@ static uint32_t impl_version(size_t channel __unused,
 	return sizeof(*status) + sizeof(*version);
 }
 
+#define ALIGN_NEXT(VALUE, INTERVAL) ((\
+		((VALUE) + (INTERVAL) - 1) / (INTERVAL)) * (INTERVAL))
+
 static uint32_t get_protocols(size_t channel __unused,
 			      volatile uint8_t *param,
 			      size_t size)
@@ -153,28 +156,45 @@ static uint32_t get_protocols(size_t channel __unused,
 	struct protocols_response {
 		int32_t status;
 		uint32_t num_protocols;
-		uint32_t protocols;
+		uint8_t protocols[];
 	} *res = (struct protocols_response*)param;
 	uint32_t skip = *(uint32_t*)param;
+	uint32_t max_payload_size = SCMI_MAX_PAYLOAD - sizeof(*res);
+	uint8_t protocol_id;
+	int counter = 0;
 
 	if (size != sizeof(skip)) {
 		res->status = SCMI_PROTOCOL_ERROR;
 		return sizeof(res->status);
 	}
 
-	if (skip != 0) {
+	if (skip > scmi_count_protocols()) {
 		res->status = SCMI_INVALID_PARAMETERS;
 		return sizeof(res->status);
 	}
 
-	res->status = SCMI_SUCCESS;
-	res->num_protocols = scmi_count_protocols();
-	/*FIXME: get supported protocols from rcar_scmi.c */
-	res->protocols = FLD(GENMASK(23,16), 0x11) |
-			 FLD(GENMASK(15,8), 0x14)  |
-			 FLD(GENMASK(7,0), 0x16);
+	protocol_id = scmi_get_first_protocol(skip);
+	if (!protocol_id) {
+		res->status = SCMI_SUCCESS;
+		res->num_protocols = 0;
+		return sizeof(*res);
+	}
 
-	return sizeof(*res);
+	while (protocol_id) {
+		if (counter * sizeof(protocol_id) >= max_payload_size) {
+			break;
+		}
+
+		res->protocols[counter] = protocol_id;
+		protocol_id = scmi_get_next_protocol(protocol_id);
+		counter++;
+	}
+
+	res->num_protocols = counter;
+	res->status = SCMI_SUCCESS;
+
+	return sizeof(*res) +
+		ALIGN_NEXT(counter * sizeof(protocol_id), sizeof(uint32_t));
 }
 
 static uint32_t get_agent(size_t channel, volatile uint8_t *param, size_t size)
