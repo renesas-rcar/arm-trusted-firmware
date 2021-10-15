@@ -161,7 +161,12 @@ static void opteed_cpu_suspend_finish_handler(u_register_t max_off_pwrlvl)
  ******************************************************************************/
 static int32_t opteed_cpu_migrate_info(u_register_t *resident_cpu)
 {
+#if defined(PLAT_rcar_gen4)
+	*resident_cpu = 0U;
+	return OPTEE_TYPE_UP;
+#else
 	return OPTEE_MIGRATE_INFO;
+#endif
 }
 
 /*******************************************************************************
