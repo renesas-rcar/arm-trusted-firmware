@@ -199,14 +199,22 @@ int psci_cpu_off(void)
 {
 	int rc;
 	unsigned int target_pwrlvl = PLAT_MAX_PWR_LVL;
+#if defined(PLAT_rcar_gen4)
+	uint32_t chk = bl31_plat_boot_mpidr_chk();
 
+	if (chk == RCAR_MPIDRCHK_NOT_BOOTCPU) {
+#endif
 	/*
 	 * Do what is needed to power off this CPU and possible higher power
 	 * levels if it able to do so. Upon success, enter the final wfi
 	 * which will power down this CPU.
 	 */
-	rc = psci_do_cpu_off(target_pwrlvl);
-
+		rc = psci_do_cpu_off(target_pwrlvl);
+#if defined(PLAT_rcar_gen4)
+	} else {
+		rc = PSCI_E_DENIED;
+	}
+#endif
 	/*
 	 * The only error cpu_off can return is E_DENIED. So check if that's
 	 * indeed the case.
