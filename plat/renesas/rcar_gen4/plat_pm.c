@@ -70,6 +70,7 @@ static void rcar_pwr_domain_on_finish(const psci_power_state_t *target_state)
 		plat_cci_enable();
 	}
 
+	rcar_pwrc_disable_interrupt_wakeup(mpidr);
 	rcar_program_mailbox(mpidr, 0U);
 	gicv3_rdistif_init(plat_my_core_pos());
 	gicv3_cpuif_enable(plat_my_core_pos());
@@ -79,6 +80,7 @@ static void rcar_pwr_domain_off(const psci_power_state_t *target_state)
 {
 	u_register_t mpidr = read_mpidr_el1();
 
+	rcar_pwrc_disable_interrupt_wakeup(mpidr);
 	gicv3_cpuif_disable(plat_my_core_pos());
 
 	if (CLUSTER_PWR_STATE(target_state) == PLAT_MAX_OFF_STATE) {
