@@ -128,6 +128,8 @@ uint32_t scmi_count_protocols(void);
 
 #define RCAR_SCMI_CHAN_COUNT	(DRAM2_NS_SCMI_SIZE & ~(PAGE_SIZE - 1)) / PAGE_SIZE
 #define SCMI_PROTOCOL_VERSION	0x20000 /* DEN0056C, 4.2.2.1 */
+/* Setting max payload, according to the SCP-firmware implementation */
+#define SCMI_MAX_PAYLOAD 128
 
 #define FLD(mask, val) (((val) << (__builtin_ffsll(mask) - 1) & (mask)))
 #define FLD_GET(mask, val) (((val) & (mask)) >> (__builtin_ffsll(mask) - 1))
