@@ -55,6 +55,64 @@ enum rcar_scmi_devid {
 	RCAR_SCMIDEV_SOUND,	/* 20 */
 	RCAR_SCMIDEV_AUDMA0,	/* 21 */
 	RCAR_SCMIDEV_AUDMA1,	/* 22 */
+	RCAR_SCMIDEV_GPIO0,	/* 23 */
+	RCAR_SCMIDEV_GPIO1,	/* 24 */
+	RCAR_SCMIDEV_GPIO2,	/* 25 */
+	RCAR_SCMIDEV_GPIO3,	/* 26 */
+	RCAR_SCMIDEV_GPIO4,	/* 27 */
+	RCAR_SCMIDEV_GPIO5,	/* 28 */
+	RCAR_SCMIDEV_GPIO6,	/* 29 */
+	RCAR_SCMIDEV_GPIO7,	/* 30 */
+	RCAR_SCMIDEV_PINCTRL,	/* 31 */
+	RCAR_SCMIDEV_CAN0,	/* 32 */
+	RCAR_SCMIDEV_CAN1,	/* 33 */
+	RCAR_SCMIDEV_CANFD,	/* 34 */
+	RCAR_SCMIDEV_DRIF0,	/* 35 */
+	RCAR_SCMIDEV_DRIF1,	/* 36 */
+	RCAR_SCMIDEV_DRIF2,	/* 37 */
+	RCAR_SCMIDEV_DRIF3,	/* 38 */
+	RCAR_SCMIDEV_DU,	/* 39 */
+	RCAR_SCMIDEV_HSCIF0,	/* 40 */
+	RCAR_SCMIDEV_HSCIF1,	/* 41 */
+	RCAR_SCMIDEV_HSCIF2,	/* 42 */
+	RCAR_SCMIDEV_HSCIF3,	/* 43 */
+	RCAR_SCMIDEV_HSCIF4,	/* 44 */
+	RCAR_SCMIDEV_I2C5,	/* 45 */
+	RCAR_SCMIDEV_I2C6,	/* 46 */
+	RCAR_SCMIDEV_I2C_DVFS,	/* 47 */
+	RCAR_SCMIDEV_MLB,	/* 48 */
+	RCAR_SCMIDEV_MSIOF0,	/* 49 */
+	RCAR_SCMIDEV_MSIOF1,	/* 50 */
+	RCAR_SCMIDEV_MSIOF2,	/* 51 */
+	RCAR_SCMIDEV_MSIOF3,	/* 52 */
+	RCAR_SCMIDEV_PWM0,	/* 53 */
+	RCAR_SCMIDEV_PWM1,	/* 54 */
+	RCAR_SCMIDEV_PWM2,	/* 55 */
+	RCAR_SCMIDEV_PWM3,	/* 56 */
+	RCAR_SCMIDEV_PWM4,	/* 57 */
+	RCAR_SCMIDEV_PWM5,	/* 58 */
+	RCAR_SCMIDEV_PWM6,	/* 59 */
+	RCAR_SCMIDEV_SATA,	/* 60 */
+	RCAR_SCMIDEV_SCIF0,	/* 61 */
+	RCAR_SCMIDEV_SCIF1,	/* 62 */
+	RCAR_SCMIDEV_SCIF2,	/* 63 */
+	RCAR_SCMIDEV_SCIF3,	/* 64 */
+	RCAR_SCMIDEV_SCIF4,	/* 65 */
+	RCAR_SCMIDEV_SCIF5,	/* 66 */
+	RCAR_SCMIDEV_SDHI0,	/* 67 */
+	RCAR_SCMIDEV_SDHI1,	/* 68 */
+	RCAR_SCMIDEV_SDHI2,	/* 69 */
+	RCAR_SCMIDEV_SDHI3,	/* 70 */
+	RCAR_SCMIDEV_SSI,	/* 71 */
+	RCAR_SCMIDEV_TMU,	/* 72 */
+	RCAR_SCMIDEV_TPU,	/* 73 */
+	RCAR_SCMIDEV_USB0,	/* 74 */
+	RCAR_SCMIDEV_USB1,	/* 75 */
+	RCAR_SCMIDEV_USB2,	/* 76 */
+	RCAR_SCMIDEV_USB3,	/* 77 */
+	RCAR_SCMIDEV_VIN4,	/* 78 */
+	RCAR_SCMIDEV_VIN5,	/* 79 */
+
 	RCAR_SCMIDEV_MAX
 };
 
@@ -148,8 +206,92 @@ enum rcar_scmi_clk {
 	RCAR_SCMICLK_MAX = RCAR_SCMICLK_HDMI /* end of SCMI exported clocks */
 };
 
+enum rcar_scmi_pinctrl {
+	RCAR_SCMIPIN_EAVB,        /* 0 */
+	RCAR_SCMIPIN_I2C0,        /* 1 */
+	RCAR_SCMIPIN_I2C1,        /* 2 */
+	RCAR_SCMIPIN_I2C2,        /* 3 */
+	RCAR_SCMIPIN_I2C3,        /* 4 */
+	RCAR_SCMIPIN_I2C4,        /* 5 */
+	RCAR_SCMIPIN_XHCI0,       /* 6 */
+	RCAR_SCMIPIN_OHCI0,       /* 7 */
+	RCAR_SCMIPIN_EHCI0,       /* 8 */
+	RCAR_SCMIPIN_OHCI1,       /* 9 */
+	RCAR_SCMIPIN_EHCI1,       /* 10 */
+	RCAR_SCMIPIN_USB_DMAC0,   /* 11 */
+	RCAR_SCMIPIN_USB_DMAC1,   /* 12 */
+	RCAR_SCMIPIN_USB_DMAC2,   /* 13 */
+	RCAR_SCMIPIN_USB_DMAC3,   /* 14 */
+	RCAR_SCMIPIN_USB2_PHY0,   /* 15 */
+	RCAR_SCMIPIN_USB2_PHY1,   /* 16 */
+	RCAR_SCMIPIN_USB_HSUSB,   /* 17 */
+	RCAR_SCMIPIN_SOUND,       /* 18 */
+	RCAR_SCMIPIN_AUDMA0,      /* 19 */
+	RCAR_SCMIPIN_AUDMA1,      /* 20 */
+	RCAR_SCMIPIN_GPIO0,       /* 21 */
+	RCAR_SCMIPIN_GPIO1,       /* 22 */
+	RCAR_SCMIPIN_GPIO2,       /* 23 */
+	RCAR_SCMIPIN_GPIO3,       /* 24 */
+	RCAR_SCMIPIN_GPIO4,       /* 25 */
+	RCAR_SCMIPIN_GPIO5,       /* 26 */
+	RCAR_SCMIPIN_GPIO6,       /* 27 */
+	RCAR_SCMIPIN_GPIO7,       /* 28 */
+	RCAR_SCMIPIN_PINCTRL,     /* 29 */
+	RCAR_SCMIPIN_CAN0,        /* 30 */
+	RCAR_SCMIPIN_CAN1,        /* 31 */
+	RCAR_SCMIPIN_CANFD,       /* 32 */
+	RCAR_SCMIPIN_DRIF0,       /* 33 */
+	RCAR_SCMIPIN_DRIF1,       /* 34 */
+	RCAR_SCMIPIN_DRIF2,       /* 35 */
+	RCAR_SCMIPIN_DRIF3,       /* 36 */
+	RCAR_SCMIPIN_DU,          /* 37 */
+	RCAR_SCMIPIN_HSCIF0,      /* 38 */
+	RCAR_SCMIPIN_HSCIF1,      /* 39 */
+	RCAR_SCMIPIN_HSCIF2,      /* 40 */
+	RCAR_SCMIPIN_HSCIF3,      /* 41 */
+	RCAR_SCMIPIN_HSCIF4,      /* 42 */
+	RCAR_SCMIPIN_I2C5,        /* 43 */
+	RCAR_SCMIPIN_I2C6,        /* 44 */
+	RCAR_SCMIPIN_I2C_DVFS,    /* 45 */
+	RCAR_SCMIPIN_MLB,         /* 46 */
+	RCAR_SCMIPIN_MSIOF0,      /* 47 */
+	RCAR_SCMIPIN_MSIOF1,      /* 48 */
+	RCAR_SCMIPIN_MSIOF2,      /* 49 */
+	RCAR_SCMIPIN_MSIOF3,      /* 50 */
+	RCAR_SCMIPIN_PWM0,        /* 51 */
+	RCAR_SCMIPIN_PWM1,        /* 52 */
+	RCAR_SCMIPIN_PWM2,        /* 53 */
+	RCAR_SCMIPIN_PWM3,        /* 54 */
+	RCAR_SCMIPIN_PWM4,        /* 55 */
+	RCAR_SCMIPIN_PWM5,        /* 56 */
+	RCAR_SCMIPIN_PWM6,        /* 57 */
+	RCAR_SCMIPIN_SATA,        /* 58 */
+	RCAR_SCMIPIN_SCIF0,       /* 59 */
+	RCAR_SCMIPIN_SCIF1,       /* 60 */
+	RCAR_SCMIPIN_SCIF2,       /* 61 */
+	RCAR_SCMIPIN_SCIF3,       /* 62 */
+	RCAR_SCMIPIN_SCIF4,       /* 63 */
+	RCAR_SCMIPIN_SCIF5,       /* 64 */
+	RCAR_SCMIPIN_SDHI0,       /* 65 */
+	RCAR_SCMIPIN_SDHI1,       /* 66 */
+	RCAR_SCMIPIN_SDHI2,       /* 67 */
+	RCAR_SCMIPIN_SDHI3,       /* 68 */
+	RCAR_SCMIPIN_SSI,         /* 69 */
+	RCAR_SCMIPIN_TMU,         /* 70 */
+	RCAR_SCMIPIN_TPU,         /* 71 */
+	RCAR_SCMIPIN_USB0,        /* 72 */
+	RCAR_SCMIPIN_USB1,        /* 73 */
+	RCAR_SCMIPIN_USB2,        /* 74 */
+	RCAR_SCMIPIN_USB3,        /* 75 */
+	RCAR_SCMIPIN_VIN4,        /* 76 */
+	RCAR_SCMIPIN_VIN5,        /* 77 */
+
+	RCAR_PINCTRL_MAX, /* end of SCMI exported pinctrl regs */
+};
+
 extern const struct scmi_device rcar_devices[RCAR_SCMIDEV_MAX];
 extern struct scmi_clk rcar_clocks[RCAR_CLK_MAX];
 extern struct scmi_reset rcar_resets[RCAR_SCMIRST_MAX];
+extern struct scmi_pinctrl rcar_pinctrl[RCAR_PINCTRL_MAX];
 
 #endif /* RCAR_SCMI_RESOURCES_H */

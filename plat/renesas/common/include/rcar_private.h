@@ -165,6 +165,7 @@ typedef scmi_umask_t scmi_perm_t;
 struct scmi_device {
 	int *rsts;
 	int *clks;
+	int *pins;
 };
 
 struct scmi_reset {
@@ -202,6 +203,12 @@ struct scmi_clk {
 	const union rcar_clk clk;
 };
 
+struct scmi_pinctrl {
+	int *groups;
+	int *pins;
+	scmi_perm_t perm;
+};
+
 static inline bool scmi_permission_granted(scmi_perm_t perm, uint32_t channel)
 {
 	assert(channel < RCAR_SCMI_CHAN_COUNT);
@@ -212,6 +219,7 @@ uint32_t rcar_scmi_handle_base(size_t, uint8_t, volatile uint8_t*, size_t);
 uint32_t rcar_scmi_handle_power(size_t, uint8_t, volatile uint8_t*, size_t);
 uint32_t rcar_scmi_handle_clock(size_t, uint8_t, volatile uint8_t*, size_t);
 uint32_t rcar_scmi_handle_reset(size_t, uint8_t, volatile uint8_t*, size_t);
+uint32_t rcar_scmi_handle_pinctrl(size_t, uint8_t, volatile uint8_t*, size_t);
 void rcar_reset_clock(uint32_t, uint32_t);
 void rcar_reset_reset(uint32_t);
 

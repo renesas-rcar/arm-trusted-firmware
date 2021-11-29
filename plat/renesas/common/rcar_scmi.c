@@ -44,6 +44,7 @@ enum scmi_protocol_id {
 	SCMI_POWER_PROTO = 0x11,
 	SCMI_CLOCK_PROTO = 0x14,
 	SCMI_RESET_PROTO = 0x16,
+	SCMI_PINCTRL_PROTO = 0x18,
 	SCMI_LAST_PROTO
 };
 
@@ -74,6 +75,7 @@ static proto_handler_t proto_handlers[SCMI_LAST_PROTO] = {
 	[SCMI_POWER_PROTO]  = rcar_scmi_handle_power,
 	[SCMI_CLOCK_PROTO] = rcar_scmi_handle_clock,
 	[SCMI_RESET_PROTO] = rcar_scmi_handle_reset,
+	[SCMI_PINCTRL_PROTO] = rcar_scmi_handle_pinctrl,
 };
 
 static uint32_t scmi_handle_cmd(size_t ch, uint8_t protocol, uint8_t cmd,

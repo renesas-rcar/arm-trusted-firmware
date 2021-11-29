@@ -274,6 +274,7 @@ static inline void __mangle_dev_perm(uint32_t agent_id, uint32_t dev_id,
 	assert(agent_id <= RCAR_SCMI_CHAN_COUNT);
 	MANGLE(rsts, rcar_resets);
 	MANGLE(clks, rcar_clocks);
+	MANGLE(pins, rcar_pinctrl);
 #undef MANGLE
 }
 
