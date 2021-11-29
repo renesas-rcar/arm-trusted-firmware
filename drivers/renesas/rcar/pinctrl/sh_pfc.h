@@ -8,10 +8,15 @@
 #ifndef __SH_PFC_H
 #define __SH_PFC_H
 
-#include <linux/bug.h>
-#include <linux/pinctrl/pinconf-generic.h>
-#include <linux/spinlock.h>
-#include <linux/stringify.h>
+#include <lib/spinlock.h>
+#include <drivers/pinctrl_defs.h>
+
+typedef uint64_t phys_addr_t;
+
+#define BUILD_BUG_ON_ZERO(e) (0)
+
+#define __stringify_1(x...)	#x
+#define __stringify(x...)	__stringify_1(x)
 
 enum {
 	PINMUX_TYPE_NONE,
@@ -21,7 +26,11 @@ enum {
 	PINMUX_TYPE_INPUT,
 };
 
-#define SH_PFC_PIN_NONE			U16_MAX
+#define SH_PFC_MAX_RANGES 10
+#define SH_PFC_PINS_MAX			255
+#define SH_PFC_CONFIGS_MAX		255
+
+#define SH_PFC_PIN_NONE			UINT16_MAX
 
 #define SH_PFC_PIN_CFG_INPUT		(1 << 0)
 #define SH_PFC_PIN_CFG_OUTPUT		(1 << 1)
@@ -31,17 +40,16 @@ enum {
 					 SH_PFC_PIN_CFG_PULL_DOWN)
 #define SH_PFC_PIN_CFG_IO_VOLTAGE	(1 << 4)
 #define SH_PFC_PIN_CFG_DRIVE_STRENGTH	(1 << 5)
-#define SH_PFC_PIN_CFG_NO_GPIO		(1 << 31)
+#define SH_PFC_PIN_CFG_NO_GPIO		(1 << 30)
 
-struct sh_pfc_pin {
-	u16 pin;
-	u16 enum_id;
-	const char *name;
-	unsigned int configs;
-};
+#define SH_PFC_DEF_GROUP(idx, n)	\
+	 n##_def = idx
+
+#define SH_PFC_GROUP_DEF(n)	n##_def
 
 #define SH_PFC_PIN_GROUP_ALIAS(alias, n)		\
 	{						\
+		.id = alias##_def,			\
 		.name = #alias,				\
 		.pins = n##_pins,			\
 		.mux = n##_mux,				\
@@ -51,6 +59,7 @@ struct sh_pfc_pin {
 #define SH_PFC_PIN_GROUP(n)	SH_PFC_PIN_GROUP_ALIAS(n, n)
 
 struct sh_pfc_pin_group {
+	const int id;
 	const char *name;
 	const unsigned int *pins;
 	const unsigned int *mux;
@@ -63,8 +72,9 @@ struct sh_pfc_pin_group {
  * in this case. It accepts an optional 'version' argument used when the
  * same group can appear on a different set of pins.
  */
-#define VIN_DATA_PIN_GROUP(n, s, ...)					\
+#define VIN_DATA_PIN_GROUP(idx, n, s, ...)					\
 	{								\
+		.id = idx##_def,				\
 		.name = #n#s#__VA_ARGS__,				\
 		.pins = n##__VA_ARGS__##_pins.data##s,			\
 		.mux = n##__VA_ARGS__##_mux.data##s,			\
@@ -94,35 +104,37 @@ union vin_data {
 	unsigned int data4[4];
 };
 
-#define SH_PFC_FUNCTION(n)				\
+#define SH_PFC_FUNCTION(num, n)				\
 	{						\
+		.id = num,			\
 		.name = #n,				\
 		.groups = n##_groups,			\
 		.nr_groups = ARRAY_SIZE(n##_groups),	\
 	}
 
 struct sh_pfc_function {
+	const int id;
 	const char *name;
-	const char * const *groups;
+	const int* groups;
 	unsigned int nr_groups;
 };
 
 struct pinmux_func {
-	u16 enum_id;
+	uint16_t enum_id;
 	const char *name;
 };
 
 struct pinmux_cfg_reg {
-	u32 reg;
-	u8 reg_width, field_width;
+	uint32_t reg;
+	uint8_t reg_width, field_width;
 #ifdef DEBUG
-	u16 nr_enum_ids;	/* for variable width regs only */
+	uint16_t nr_enum_ids;	/* for variable width regs only */
 #define SET_NR_ENUM_IDS(n)	.nr_enum_ids = n,
 #else
 #define SET_NR_ENUM_IDS(n)
 #endif
-	const u16 *enum_ids;
-	const u8 *var_field_width;
+	const uint16_t *enum_ids;
+	const uint8_t *var_field_width;
 };
 
 #define GROUP(...)	__VA_ARGS__
@@ -141,9 +153,9 @@ struct pinmux_cfg_reg {
 #define PINMUX_CFG_REG(name, r, r_width, f_width, ids)			\
 	.reg = r, .reg_width = r_width,					\
 	.field_width = f_width + BUILD_BUG_ON_ZERO(r_width % f_width) +	\
-	BUILD_BUG_ON_ZERO(sizeof((const u16 []) { ids }) / sizeof(u16) != \
+	BUILD_BUG_ON_ZERO(sizeof((const uint16_t []) { ids }) / sizeof(uint16_t) != \
 			  (r_width / f_width) * (1 << f_width)),	\
-	.enum_ids = (const u16 [(r_width / f_width) * (1 << f_width)])	\
+	.enum_ids = (const uint16_t [(r_width / f_width) * (1 << f_width)])	\
 		{ ids }
 
 /*
@@ -160,18 +172,18 @@ struct pinmux_cfg_reg {
  */
 #define PINMUX_CFG_REG_VAR(name, r, r_width, f_widths, ids)		\
 	.reg = r, .reg_width = r_width,					\
-	.var_field_width = (const u8 []) { f_widths, 0 },		\
-	SET_NR_ENUM_IDS(sizeof((const u16 []) { ids }) / sizeof(u16))	\
-	.enum_ids = (const u16 []) { ids }
+	.var_field_width = (const uint8_t []) { f_widths, 0 },		\
+	SET_NR_ENUM_IDS(sizeof((const uint16_t []) { ids }) / sizeof(uint16_t))	\
+	.enum_ids = (const uint16_t []) { ids }
 
 struct pinmux_drive_reg_field {
-	u16 pin;
-	u8 offset;
-	u8 size;
+	uint16_t pin;
+	uint8_t offset;
+	uint8_t size;
 };
 
 struct pinmux_drive_reg {
-	u32 reg;
+	uint32_t reg;
 	const struct pinmux_drive_reg_field fields[8];
 };
 
@@ -180,9 +192,9 @@ struct pinmux_drive_reg {
 	.fields =
 
 struct pinmux_bias_reg {
-	u32 puen;		/* Pull-enable or pull-up control register */
-	u32 pud;		/* Pull-up/down control register (optional) */
-	const u16 pins[32];
+	uint32_t puen;		/* Pull-enable or pull-up control register */
+	uint32_t pud;		/* Pull-up/down control register (optional) */
+	const uint16_t pins[32];
 };
 
 #define PINMUX_BIAS_REG(name1, r1, name2, r2) \
@@ -191,13 +203,13 @@ struct pinmux_bias_reg {
 	.pins =
 
 struct pinmux_ioctrl_reg {
-	u32 reg;
+	uint32_t reg;
 };
 
 struct pinmux_data_reg {
-	u32 reg;
-	u8 reg_width;
-	const u16 *enum_ids;
+	uint32_t reg;
+	uint8_t reg_width;
+	const uint16_t *enum_ids;
 };
 
 /*
@@ -210,9 +222,9 @@ struct pinmux_data_reg {
  */
 #define PINMUX_DATA_REG(name, r, r_width, ids)				\
 	.reg = r, .reg_width = r_width +				\
-	BUILD_BUG_ON_ZERO(sizeof((const u16 []) { ids }) / sizeof(u16) != \
+	BUILD_BUG_ON_ZERO(sizeof((const uint16_t []) { ids }) / sizeof(uint16_t) != \
 			  r_width),					\
-	.enum_ids = (const u16 [r_width]) { ids }
+	.enum_ids = (const uint16_t [r_width]) { ids }
 
 struct pinmux_irq {
 	const short *gpios;
@@ -226,18 +238,21 @@ struct pinmux_irq {
 	{ .gpios = (const short []) { ids, -1 } }
 
 struct pinmux_range {
-	u16 begin;
-	u16 end;
-	u16 force;
+	uint16_t begin;
+	uint16_t end;
+	uint16_t force;
 };
 
 struct sh_pfc_window {
 	phys_addr_t phys;
-	void __iomem *virt;
+	void *virt;
 	unsigned long size;
 };
 
-struct sh_pfc_pin_range;
+struct sh_pfc_pin_range {
+	uint16_t start;
+	uint16_t end;
+};
 
 struct sh_pfc {
 	struct device *dev;
@@ -249,13 +264,13 @@ struct sh_pfc {
 	unsigned int num_irqs;
 	unsigned int *irqs;
 
-	struct sh_pfc_pin_range *ranges;
+	struct sh_pfc_pin_range ranges[SH_PFC_MAX_RANGES];
 	unsigned int nr_ranges;
 
 	unsigned int nr_gpio_pins;
 
 	struct sh_pfc_chip *gpio;
-	u32 *saved_regs;
+	uint32_t *saved_regs;
 };
 
 struct sh_pfc_soc_operations {
@@ -263,7 +278,7 @@ struct sh_pfc_soc_operations {
 	unsigned int (*get_bias)(struct sh_pfc *pfc, unsigned int pin);
 	void (*set_bias)(struct sh_pfc *pfc, unsigned int pin,
 			 unsigned int bias);
-	int (*pin_to_pocctrl)(struct sh_pfc *pfc, unsigned int pin, u32 *pocctrl);
+	int (*pin_to_pocctrl)(struct sh_pfc *pfc, unsigned int pin, uint32_t *pocctrl);
 };
 
 struct sh_pfc_soc_info {
@@ -274,7 +289,7 @@ struct sh_pfc_soc_info {
 	struct pinmux_range output;
 	struct pinmux_range function;
 
-	const struct sh_pfc_pin *pins;
+	const struct pinctrl_pin *pins;
 	unsigned int nr_pins;
 	const struct sh_pfc_pin_group *groups;
 	unsigned int nr_groups;
@@ -292,18 +307,20 @@ struct sh_pfc_soc_info {
 	const struct pinmux_ioctrl_reg *ioctrl_regs;
 	const struct pinmux_data_reg *data_regs;
 
-	const u16 *pinmux_data;
+	const uint16_t *pinmux_data;
 	unsigned int pinmux_data_size;
 
 	const struct pinmux_irq *gpio_irq;
 	unsigned int gpio_irq_size;
 
-	u32 unlock_reg;
-	const u32 *unlock_regs_table;
+	uint32_t unlock_reg;
+	const uint32_t *unlock_regs_table;
 	unsigned int unlock_regs_size;
-	u32 writable_area;
+	uint32_t writable_area;
 };
 
+extern const struct sh_pfc_soc_info plat_soc_info;
+#if 0
 extern const struct sh_pfc_soc_info emev2_pinmux_info;
 extern const struct sh_pfc_soc_info r8a73a4_pinmux_info;
 extern const struct sh_pfc_soc_info r8a7740_pinmux_info;
@@ -324,7 +341,7 @@ extern const struct sh_pfc_soc_info r8a7792_pinmux_info;
 extern const struct sh_pfc_soc_info r8a7793_pinmux_info;
 extern const struct sh_pfc_soc_info r8a7794_pinmux_info;
 extern const struct sh_pfc_soc_info r8a77950_pinmux_info __weak;
-extern const struct sh_pfc_soc_info r8a77951_pinmux_info __weak;
+extern const struct sh_pfc_soc_info r8a77951_pinmux_info;
 extern const struct sh_pfc_soc_info r8a77960_pinmux_info;
 extern const struct sh_pfc_soc_info r8a77961_pinmux_info;
 extern const struct sh_pfc_soc_info r8a77965_pinmux_info;
@@ -346,6 +363,7 @@ extern const struct sh_pfc_soc_info sh7757_pinmux_info;
 extern const struct sh_pfc_soc_info sh7785_pinmux_info;
 extern const struct sh_pfc_soc_info sh7786_pinmux_info;
 extern const struct sh_pfc_soc_info shx3_pinmux_info;
+#endif
 
 /* -----------------------------------------------------------------------------
  * Helper macros to create pin and port lists
@@ -661,7 +679,7 @@ extern const struct sh_pfc_soc_info shx3_pinmux_info;
 /* PINMUX_GPIO - Expand to a sh_pfc_pin entry */
 #define PINMUX_GPIO(_pin)						\
 	[GPIO_##_pin] = {						\
-		.pin = (u16)-1,						\
+		.pin = (uint16_t)-1,						\
 		.name = __stringify(GPIO_##_pin),			\
 		.enum_id = _pin##_DATA,					\
 	}

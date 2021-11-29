@@ -305,6 +305,7 @@ include drivers/renesas/common/ddr/ddr.mk
 include drivers/renesas/rcar/qos/qos.mk
 include drivers/renesas/rcar/pfc/pfc.mk
 include lib/libfdt/libfdt.mk
+include drivers/renesas/rcar/pinctrl/pinctrl.mk
 
 PLAT_INCLUDES	+=	-Idrivers/renesas/common/ddr		\
 			-Idrivers/renesas/rcar/qos		\
@@ -333,6 +334,8 @@ ifneq (${ENABLE_STACK_PROTECTOR},0)
 BL_COMMON_SOURCES	+=	plat/renesas/rcar/rcar_stack_protector.c
 BL31_CFLAGS	+=	-fno-stack-protector
 endif
+
+BL31_SOURCES		+=	drivers/pinctrl/pinctrl.c
 
 ifeq (${RCAR_GEN3_ULCB},1)
 BL31_SOURCES		+=	drivers/renesas/rcar/cpld/ulcb_cpld.c
