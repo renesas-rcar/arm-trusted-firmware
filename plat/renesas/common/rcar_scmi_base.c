@@ -146,9 +146,6 @@ static uint32_t impl_version(size_t channel __unused,
 	return sizeof(*status) + sizeof(*version);
 }
 
-#define ALIGN_NEXT(VALUE, INTERVAL) ((\
-		((VALUE) + (INTERVAL) - 1) / (INTERVAL)) * (INTERVAL))
-
 static uint32_t get_protocols(size_t channel __unused,
 			      volatile uint8_t *param,
 			      size_t size)

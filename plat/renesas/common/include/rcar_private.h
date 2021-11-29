@@ -150,6 +150,9 @@ uint8_t scmi_get_next_protocol(uint8_t);
 #define FLD(mask, val) (((val) << (__builtin_ffsll(mask) - 1) & (mask)))
 #define FLD_GET(mask, val) (((val) & (mask)) >> (__builtin_ffsll(mask) - 1))
 
+#define ALIGN_NEXT(VALUE, INTERVAL) ((\
+		((VALUE) + (INTERVAL) - 1) / (INTERVAL)) * (INTERVAL))
+
 #define channel_to_agent(channel) ((channel) + 1)
 #define agent_to_channel(agent) ((agent) - 1)
 
