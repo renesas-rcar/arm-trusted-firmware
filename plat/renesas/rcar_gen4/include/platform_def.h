@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2021, Renesas Electronics Corporation. All rights reserved.
+ * Copyright (c) 2015-2022, Renesas Electronics Corporation. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -26,7 +26,7 @@
  ******************************************************************************/
 
 /* Size of cacheable stacks */
-#define PLATFORM_STACK_SIZE	U(0x400)
+#define PLATFORM_STACK_SIZE	U(0x800)
 
 /*
  * R-Car S4 Cortex-A55
