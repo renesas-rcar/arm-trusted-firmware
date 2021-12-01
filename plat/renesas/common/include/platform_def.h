@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2020, Renesas Electronics Corporation. All rights reserved.
+ * Copyright (c) 2015-2021, Renesas Electronics Corporation. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -40,7 +40,7 @@
 #define PLATFORM_STACK_SIZE	U(0x400)
 #endif
 #elif IMAGE_BL31
-#define PLATFORM_STACK_SIZE	U(0x400)
+#define PLATFORM_STACK_SIZE	U(0x800)
 #elif IMAGE_BL32
 #define PLATFORM_STACK_SIZE	U(0x440)
 #endif
