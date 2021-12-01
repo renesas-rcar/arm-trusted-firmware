@@ -69,6 +69,10 @@ extern void rcar_pfc_init(void);
 extern void rcar_dma_init(void);
 
 static void bl2_init_generic_timer(void);
+static uint64_t rcar_get_dest_addr_from_cert(uint32_t certid, uintptr_t *dest,
+		uint32_t *len);
+static uint64_t check_secure_load_area(uintptr_t base, uint32_t size,
+		uintptr_t dest, uint32_t len);
 
 /* R-Car Gen3 product check */
 #if (RCAR_LSI == RCAR_H3) || (RCAR_LSI == RCAR_H3N)
@@ -361,14 +365,80 @@ int bl2_plat_handle_pre_image_load(unsigned int image_id)
 {
 	u_register_t *boot_kind = (void *) BOOT_KIND_BASE;
 	bl_mem_params_node_t *bl_mem_params;
+	uintptr_t dev_handle;
+	uintptr_t image_spec;
+	uintptr_t dest;
+	uint32_t len;
+	uint64_t ui64_ret;
+	int iret;
 
-	if (image_id != BL31_IMAGE_ID)
+	if ((image_id != BL31_IMAGE_ID) &&
+	    (image_id != BL32_IMAGE_ID) &&
+	    (image_id != BL33_IMAGE_ID)) {
 		return 0;
+	}
 
 	bl_mem_params = get_bl_mem_params_node(image_id);
+	if (bl_mem_params == NULL) {
+		ERROR("BL2: Failed to get loading parameter.\n");
+		return 1;
+	}
 
-	if (is_ddr_backup_mode() == RCAR_COLD_BOOT)
-		goto cold_boot;
+	if (image_id == BL31_IMAGE_ID) {
+		if (is_ddr_backup_mode() == RCAR_COLD_BOOT) {
+
+			iret = plat_get_image_source(image_id, &dev_handle,
+					&image_spec);
+			if (iret != 0) {
+				return 1;
+			}
+
+			ui64_ret = rcar_get_dest_addr_from_cert(
+					SOC_FW_CONTENT_CERT_ID, &dest, &len);
+			if (ui64_ret != 0U) {
+				return 1;
+			}
+
+			ui64_ret = check_secure_load_area(
+					BL31_BASE, (BL31_LIMIT - BL31_BASE),
+					dest, len);
+			if (ui64_ret != 0U) {
+				return 1;
+			}
+
+			bl_mem_params->image_info.image_base = dest;
+			bl_mem_params->image_info.image_size = len;
+
+			goto cold_boot;
+		}
+	} else {
+		if (image_id == BL32_IMAGE_ID) {
+			ui64_ret = rcar_get_dest_addr_from_cert(
+					TRUSTED_OS_FW_CONTENT_CERT_ID,
+					&dest, &len);
+			if (ui64_ret != 0U) {
+				return 1;
+			}
+
+			ui64_ret = check_secure_load_area(
+					BL32_BASE, (BL32_LIMIT - BL32_BASE),
+					dest, len);
+		} else {
+			/* case of image_id == BL33_IMAGE_ID */
+			ui64_ret = rcar_get_dest_addr_from_cert(
+					NON_TRUSTED_FW_CONTENT_CERT_ID,
+					&dest, &len);
+		}
+
+		if (ui64_ret != 0U) {
+			return 1;
+		}
+
+		bl_mem_params->image_info.image_base = dest;
+		bl_mem_params->image_info.image_size = len;
+
+		return 0;
+	}
 
 	*boot_kind  = RCAR_WARM_BOOT;
 	flush_dcache_range(BOOT_KIND_BASE, sizeof(*boot_kind));
@@ -386,9 +456,62 @@ cold_boot:
 	return 0;
 }
 
-static uint64_t rcar_get_dest_addr_from_cert(uint32_t certid, uintptr_t *dest)
+static uint64_t check_secure_load_area(uintptr_t base, uint32_t size,
+		uintptr_t dest, uint32_t len)
 {
-	uint32_t cert, len;
+	uintptr_t free_end, requested_end;
+
+	/*
+	 * Handle corner cases first.
+	 *
+	 * The order of the 2 tests is important, because if there's no space
+	 * left (i.e. free_size == 0) but we don't ask for any memory
+	 * (i.e. size == 0) then we should report that the memory is free.
+	 */
+	if (len == 0U) {
+		WARN("BL2: load data size is zero\n");
+		return 0;	/* A zero-byte region is always free */
+	}
+	if (size == 0U) {
+		goto err;
+	}
+
+	/*
+	 * Check that the end addresses don't overflow.
+	 * If they do, consider that this memory region is not free, as this
+	 * is an invalid scenario.
+	 */
+	if (check_uptr_overflow(base, size - 1U)) {
+		goto err;
+	}
+	free_end = base + (size - 1U);
+
+	if (check_uptr_overflow(dest, len - 1U)) {
+		goto err;
+	}
+	requested_end = dest + (len - 1U);
+
+	/*
+	 * Finally, check that the requested memory region lies within the free
+	 * region.
+	 */
+	if ((dest < base) || (requested_end > free_end)) {
+		goto err;
+	}
+
+	return 0;
+
+err:
+	ERROR("BL2: load data is outside the loadable area.\n");
+	ERROR("BL2: dst=0x%x, len=%d(0x%x)\n", (uint32_t)dest, len, len);
+	return 1;
+}
+
+
+static uint64_t rcar_get_dest_addr_from_cert(uint32_t certid, uintptr_t *dest,
+		uint32_t *len)
+{
+	uint32_t cert;
 	int ret;
 
 	ret = rcar_get_certificate(certid, &cert);
@@ -397,7 +520,7 @@ static uint64_t rcar_get_dest_addr_from_cert(uint32_t certid, uintptr_t *dest)
 		return 1;
 	}
 
-	rcar_read_certificate((uint64_t) cert, &len, dest);
+	rcar_read_certificate((uint64_t) cert, len, dest);
 
 	return 0;
 }
@@ -406,35 +529,33 @@ int bl2_plat_handle_post_image_load(unsigned int image_id)
 {
 	static bl2_to_bl31_params_mem_t *params;
 	bl_mem_params_node_t *bl_mem_params;
-	uintptr_t dest;
-	int ret;
 
-	if (!params) {
+	if (params == NULL) {
 		params = (bl2_to_bl31_params_mem_t *) PARAMS_BASE;
 		memset((void *)PARAMS_BASE, 0, sizeof(*params));
 	}
 
 	bl_mem_params = get_bl_mem_params_node(image_id);
+	if (bl_mem_params == NULL) {
+		ERROR("BL2: Failed to get loading parameter.\n");
+		return 1;
+	}
 
 	switch (image_id) {
 	case BL31_IMAGE_ID:
-		ret = rcar_get_dest_addr_from_cert(SOC_FW_CONTENT_CERT_ID,
-						   &dest);
-		if (!ret)
-			bl_mem_params->image_info.image_base = dest;
+		bl_mem_params->ep_info.pc = bl_mem_params->image_info.image_base;
 		break;
 	case BL32_IMAGE_ID:
-		ret = rcar_get_dest_addr_from_cert(TRUSTED_OS_FW_CONTENT_CERT_ID,
-						   &dest);
-		if (!ret)
-			bl_mem_params->image_info.image_base = dest;
-
+		bl_mem_params->ep_info.pc = bl_mem_params->image_info.image_base;
 		memcpy(&params->bl32_ep_info, &bl_mem_params->ep_info,
 			sizeof(entry_point_info_t));
 		break;
 	case BL33_IMAGE_ID:
+		bl_mem_params->ep_info.pc = bl_mem_params->image_info.image_base;
 		memcpy(&params->bl33_ep_info, &bl_mem_params->ep_info,
 			sizeof(entry_point_info_t));
+		break;
+	default:
 		break;
 	}
 
