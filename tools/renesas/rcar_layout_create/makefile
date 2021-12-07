@@ -69,7 +69,8 @@ $(eval $(call add_define,RCAR_VMA_ADJUST_ADDR))
 #c compiler
 CC = $(CROSS_COMPILE)gcc
 CFLAGS += ${DEFINES}
-CFLAGS += -I../../include/lib/stdlib
+CFLAGS += -I../../../include/lib/libc \
+	  -I../../../include/lib/libc/aarch64
 
 #Linker
 LD = $(CROSS_COMPILE)ld
