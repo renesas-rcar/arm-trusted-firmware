@@ -6,8 +6,8 @@
 
 #include <assert.h>
 #include <drivers/console.h>
-#include <drivers/renesas/rcar/console/console.h>
 #include "rcar_private.h"
+#include "scif.h"
 
 /* RAS functions common to AArch64 ARM platforms */
 void plat_ea_handler(unsigned int ea_reason, uint64_t syndrome, void *cookie,

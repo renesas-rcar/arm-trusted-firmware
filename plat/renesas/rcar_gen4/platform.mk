@@ -53,7 +53,8 @@ HW_ASSISTED_COHERENCY := 1
 
 PLAT_INCLUDES	:=	-Iplat/renesas/rcar_gen4/include		\
 			-Iplat/renesas/rcar_gen4			\
-			-Idrivers/renesas/rcar_gen4/pwrc
+			-Idrivers/renesas/rcar_gen4/pwrc		\
+			-Idrivers/renesas/rcar_gen4/scif
 
 ifneq (${ENABLE_STACK_PROTECTOR},0)
 BL_COMMON_SOURCES	+=	plat/renesas/rcar_gen4/rcar_stack_protector.c
@@ -78,7 +79,8 @@ BL31_SOURCES	+=	${RCAR_GIC_SOURCES}				\
 			plat/renesas/rcar_gen4/plat_pm.c		\
 			plat/renesas/rcar_gen4/rcar_common.c		\
 			drivers/renesas/rcar_gen4/pwrc/pwrc.c		\
-			drivers/renesas/rcar_gen4/scif/scif.S		\
+			drivers/renesas/rcar_gen4/scif/scif.c		\
+			drivers/renesas/rcar_gen4/scif/scif_helpers.S	\
 			drivers/arm/cci/cci.c
 
 include lib/xlat_tables_v2/xlat_tables.mk
