@@ -25,8 +25,10 @@ endif
 
 # LSI setting common define
 RCAR_S4:=9
+RCAR_V3U:=10
 RCAR_AUTO:=99
 $(eval $(call add_define,RCAR_S4))
+$(eval $(call add_define,RCAR_V3U))
 $(eval $(call add_define,RCAR_AUTO))
 $(eval $(call add_define,PLAT_EXTRA_LD_SCRIPT))
 
@@ -38,15 +40,32 @@ else
     RCAR_LSI:=${RCAR_AUTO}
   else ifeq (${LSI},S4)
     RCAR_LSI:=${RCAR_S4}
+  else ifeq (${LSI},V3U)
+    RCAR_LSI:=${RCAR_V3U}
   else
     $(error "Error: ${LSI} is not supported.")
   endif
   $(eval $(call add_define,RCAR_LSI))
 endif
 
-
+ifeq (${RCAR_LSI},${RCAR_S4})
 # Enable workarounds for selected Cortex-A55 errata.
 ERRATA_A55_1530923 := 1
+BL31_SOURCES += lib/cpus/aarch64/cortex_a55.S
+else
+# Enable workarounds for selected Cortex-A76 errata.
+DYNAMIC_WORKAROUND_CVE_2018_3639 := 1
+ERRATA_A76_1073348  :=1
+ERRATA_A76_1130799  :=1
+ERRATA_A76_1220197  :=1
+ERRATA_A76_1257314  :=1
+ERRATA_A76_1262606  :=1
+ERRATA_A76_1262888  :=1
+ERRATA_A76_1275112  :=1
+ERRATA_A76_1286807  :=1
+
+BL31_SOURCES +=	lib/cpus/aarch64/cortex_a76.S
+endif
 
 USE_COHERENT_MEM := 0
 HW_ASSISTED_COHERENCY := 1
@@ -81,7 +100,6 @@ PLAT_INCLUDES	+=	-Idrivers/arm/css/scmi				\
 #
 
 BL31_SOURCES	+=	${RCAR_GIC_SOURCES}				\
-			lib/cpus/aarch64/cortex_a55.S			\
 			plat/common/plat_psci_common.c			\
 			plat/renesas/rcar_gen4/plat_topology.c		\
 			plat/renesas/rcar_gen4/aarch64/plat_helpers.S	\
