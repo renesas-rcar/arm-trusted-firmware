@@ -107,8 +107,8 @@
 
 /* Product register */
 #define RCAR_PRR			UL(0xFFF00044)
-#define RCAR_CPU_HAVE_CA55		U(0x00000000)
-#define PRR_CA55_XX_EN_CLUSTER_MASK	U(0x00000004)
+#define RCAR_CPU_HAVE_CAXX		U(0x00000000)
+#define PRR_CAXX_XX_EN_CLUSTER_MASK	U(0x00000004)
 
 /* Memory mapped Generic timer interfaces */
 #define ARM_SYS_CNTCTL_BASE		RCAR_CNTC_BASE

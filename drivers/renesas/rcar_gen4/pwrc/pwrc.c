@@ -80,7 +80,7 @@ static inline uintptr_t RCAR_APMU_FSMSTSRC(uint32_t n)
 }
 
 /* Product register */
-static inline uint32_t PRR_CA55_XX_EN_CPU(uint32_t n)
+static inline uint32_t PRR_CAXX_XX_EN_CPU(uint32_t n)
 {
 	return ((uint32_t)(1) << ((n) & U(1)));
 }
@@ -121,7 +121,7 @@ void rcar_pwrc_cpuon(u_register_t mpidr)
 
 	mmio_setbits_32(RCAR_APMU_PWRCTRLC(cpu), RCAR_APMU_PWRCTRLC_WUP_REQ);
 
-	/* Wait until CA55 wake up sequence finishes */
+	/* Wait until CAXX wake up sequence finishes */
 	while ((mmio_read_32(RCAR_APMU_PWRCTRLC(cpu)) &
 			RCAR_APMU_PWRCTRLC_WUP_REQ)
 			== RCAR_APMU_PWRCTRLC_WUP_REQ)
@@ -203,7 +203,7 @@ void rcar_pwrc_setup(void)
 	reg = mmio_read_32(RCAR_PRR) >> 17;
 	for (i = 0; i < PLATFORM_CLUSTER_COUNT; i++) {
 		reg >>= 3;
-		if ((reg & PRR_CA55_XX_EN_CLUSTER_MASK) != RCAR_CPU_HAVE_CA55) {
+		if ((reg & PRR_CAXX_XX_EN_CLUSTER_MASK) != RCAR_CPU_HAVE_CAXX) {
 			continue;
 		}
 
@@ -213,7 +213,7 @@ void rcar_pwrc_setup(void)
 		for (j = 0; j < PLATFORM_MAX_CPUS_PER_CLUSTER; j++) {
 			uint32_t cpu = (i * PLATFORM_MAX_CPUS_PER_CLUSTER) + j;
 
-			if ((reg & PRR_CA55_XX_EN_CPU(cpu)) != RCAR_CPU_HAVE_CA55) {
+			if ((reg & PRR_CAXX_XX_EN_CPU(cpu)) != RCAR_CPU_HAVE_CAXX) {
 				continue;
 			}
 
@@ -278,13 +278,13 @@ uint32_t rcar_pwrc_cpu_on_check(u_register_t mpidr)
 	for (i = 0; i < PLATFORM_CLUSTER_COUNT; i++) {
 		prr >>= 3;
 		/* check the cluster has cores */
-		if ((prr & PRR_CA55_XX_EN_CLUSTER_MASK) != RCAR_CPU_HAVE_CA55) {
+		if ((prr & PRR_CAXX_XX_EN_CLUSTER_MASK) != RCAR_CPU_HAVE_CAXX) {
 			continue;
 		}
 		for (j = 0; j < PLATFORM_MAX_CPUS_PER_CLUSTER; j++) {
 			cpu = (i * PLATFORM_MAX_CPUS_PER_CLUSTER) + j;
 			/* check the core be implemented */
-			if ((prr & PRR_CA55_XX_EN_CPU(cpu)) != RCAR_CPU_HAVE_CA55) {
+			if ((prr & PRR_CAXX_XX_EN_CPU(cpu)) != RCAR_CPU_HAVE_CAXX) {
 				continue;
 			}
 			if (core_pos != cpu) {
