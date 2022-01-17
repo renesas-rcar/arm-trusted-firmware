@@ -115,4 +115,11 @@ void bl31_plat_runtime_setup(void)
 {
 	rcar_console_runtime_init();
 	console_switch_state(CONSOLE_FLAG_RUNTIME);
+
+#if (RCAR_RPC_HYPERFLASH_LOCKED == 0)
+	/* Enable non-secure access to the RPC HyperFlash region. */
+	mmio_write_32(0xee2000b8, 0x155);
+	/* Make sure external address space read mode is enabled */
+	mmio_write_32(0xee200000, mmio_read_32(0xee200000) & 0x7fffffff);
+#endif
 }
