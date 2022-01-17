@@ -17,17 +17,24 @@
 #define RST_MODEMR1_MD32	((uint32_t)(1) << U(0))
 
 /* SCIF/HSCIF */
+#define SCIF0_BASE		UL(0xE6E60000)
+#define SCIF3_BASE		UL(0xE6C50000)
+#define HSCIF0_BASE		UL(0xE6540000)
 #define SCIF_SCFSR_TEND		(uint16_t)((uint16_t)1U << 6U)
 #define SCIF_SCFSR_TDFE		(uint16_t)((uint16_t)1U << 5U)
 #define TRANS_END_CHECK		(uint16_t)(SCIF_SCFSR_TEND | SCIF_SCFSR_TDFE)
 
-/* SCIF-3 */
-#define SCIF_BASE	UL(0xE6C50000)
+/* SCIF */
+#if (RCAR_LSI == RCAR_S4) /* S4 */
+#define SCIF_BASE	SCIF3_BASE
+#else
+#define SCIF_BASE	SCIF0_BASE
+#endif
 #define SCIF_SCFTDR	(SCIF_BASE + 0x000CU)	/*  8 Transmit FIFO data register */
 #define SCIF_SCFSR	(SCIF_BASE + 0x0010U)	/* 16 Serial status register */
 
-/* HSCIF-0 */
-#define HSCIF_BASE	UL(0xE6540000)
+/* HSCIF */
+#define HSCIF_BASE	HSCIF0_BASE
 #define HSCIF_HSFTDR	(HSCIF_BASE + 0x000CU) /*  8 Transmit FIFO data register */
 #define HSCIF_HSFSR	(HSCIF_BASE + 0x0010U) /* 16 Serial status register */
 
