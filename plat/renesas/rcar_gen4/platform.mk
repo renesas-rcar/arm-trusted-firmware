@@ -26,9 +26,11 @@ endif
 # LSI setting common define
 RCAR_S4:=9
 RCAR_V3U:=10
+RCAR_V4H:=11
 RCAR_AUTO:=99
 $(eval $(call add_define,RCAR_S4))
 $(eval $(call add_define,RCAR_V3U))
+$(eval $(call add_define,RCAR_V4H))
 $(eval $(call add_define,RCAR_AUTO))
 $(eval $(call add_define,PLAT_EXTRA_LD_SCRIPT))
 
@@ -42,6 +44,8 @@ else
     RCAR_LSI:=${RCAR_S4}
   else ifeq (${LSI},V3U)
     RCAR_LSI:=${RCAR_V3U}
+  else ifeq (${LSI},V4H)
+    RCAR_LSI:=${RCAR_V4H}
   else
     $(error "Error: ${LSI} is not supported.")
   endif
