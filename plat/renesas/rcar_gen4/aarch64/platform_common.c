@@ -58,26 +58,6 @@ CASSERT((ARRAY_SIZE(rcar_mmap) + RCAR_BL_REGIONS)
  * Macro generating the code for the function setting up the pagetables as per
  * the platform memory map & initialize the mmu, for the given exception level
  */
-#if USE_COHERENT_MEM
-void rcar_configure_mmu_el3(uintptr_t total_base,
-			    size_t total_size,
-			    uintptr_t ro_start,
-			    uintptr_t ro_limit,
-			    uintptr_t coh_start,
-			    uintptr_t coh_limit)
-{
-	mmap_add_region(total_base, total_base, total_size,
-			RCAR_DCACHE | MT_RW | MT_SECURE);
-	mmap_add_region(ro_start, ro_start, ro_limit - ro_start,
-			RCAR_DCACHE | MT_RO | MT_SECURE);
-	mmap_add_region(coh_start, coh_start, coh_limit - coh_start,
-			MT_DEVICE | MT_RW | MT_SECURE);
-	mmap_add(rcar_mmap);
-
-	init_xlat_tables();
-	enable_mmu_el3(0);
-}
-#else
 void rcar_configure_mmu_el3(uintptr_t total_base,
 			    size_t total_size,
 			    uintptr_t ro_start,
@@ -92,7 +72,6 @@ void rcar_configure_mmu_el3(uintptr_t total_base,
 	init_xlat_tables();
 	enable_mmu_el3(0);
 }
-#endif
 
 unsigned int plat_get_syscnt_freq2(void)
 {

@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2014, ARM Limited and Contributors. All rights reserved.
- * Copyright (c) 2015-2021, Renesas Electronics Corporation. All rights reserved.
+ * Copyright (c) 2015-2022, Renesas Electronics Corporation. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -81,18 +81,9 @@ void bl31_plat_arch_setup(void)
 	static const uintptr_t BL31_RO_BASE = BL_CODE_BASE;
 	static const uintptr_t BL31_RO_LIMIT = BL_CODE_END;
 
-#if USE_COHERENT_MEM
-	static const uintptr_t BL31_COHERENT_RAM_BASE = BL_COHERENT_RAM_BASE;
-	static const uintptr_t BL31_COHERENT_RAM_LIMIT = BL_COHERENT_RAM_END;
-#endif /* USE_COHERENT_MEM */
-
 	rcar_configure_mmu_el3(BL31_BASE,
 			       BL31_LIMIT - BL31_BASE,
-			       BL31_RO_BASE, BL31_RO_LIMIT
-#if USE_COHERENT_MEM
-			       , BL31_COHERENT_RAM_BASE, BL31_COHERENT_RAM_LIMIT
-#endif /* USE_COHERENT_MEM */
-	    );
+			       BL31_RO_BASE, BL31_RO_LIMIT);
 }
 
 void bl31_platform_setup(void)

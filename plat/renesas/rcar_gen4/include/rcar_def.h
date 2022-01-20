@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2021, Renesas Electronics Corporation. All rights reserved.
+ * Copyright (c) 2015-2022, Renesas Electronics Corporation. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -32,11 +32,7 @@
  * The number of regions like RO(code), coherent and data required by
  * different BL stages which need to be mapped in the MMU
  */
-#if USE_COHERENT_MEM
-#define RCAR_BL_REGIONS			(3)
-#else
 #define RCAR_BL_REGIONS			(2)
-#endif
 /*
  * The RCAR_MAX_MMAP_REGIONS depends on the number of entries in rcar_mmap[]
  * defined for each BL stage in platform_common.c.
