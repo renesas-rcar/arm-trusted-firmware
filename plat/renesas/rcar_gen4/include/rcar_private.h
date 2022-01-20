@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2020, Renesas Electronics Corporation. All rights reserved.
+ * Copyright (c) 2015-2022, Renesas Electronics Corporation. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -29,12 +29,6 @@ typedef struct bl2_to_bl31_params_mem {
 	entry_point_info_t bl32_ep_info;
 } bl2_to_bl31_params_mem_t;
 
-#if USE_COHERENT_MEM
-#define RCAR_INSTANTIATE_LOCK	DEFINE_BAKERY_LOCK(rcar_lock);
-#define rcar_lock_init()	bakery_lock_init(&rcar_lock)
-#define rcar_lock_get()		bakery_lock_get(&rcar_lock)
-#define rcar_lock_release()	bakery_lock_release(&rcar_lock)
-#else
 #define RCAR_INSTANTIATE_LOCK	DEFINE_BAKERY_LOCK(rcar_lock);
 /*
  * Constants to specify how many bakery locks this platform implements. These
@@ -68,7 +62,7 @@ typedef struct rcar_cpu_data {
  */
 CASSERT(sizeof(rcar_cpu_data_t) == PLAT_PCPU_DATA_SIZE,
 	rcar_pcpu_data_size_mismatch);
-#endif
+
 /*
  * Function and variable prototypes
  */
@@ -76,9 +70,6 @@ void rcar_configure_mmu_el3(uintptr_t total_base,
 			    size_t total_size,
 			    uintptr_t ro_start,
 			    uintptr_t ro_limit
-#if USE_COHERENT_MEM
-			    , uintptr_t coh_start, uintptr_t coh_limit
-#endif
 			    );
 
 
