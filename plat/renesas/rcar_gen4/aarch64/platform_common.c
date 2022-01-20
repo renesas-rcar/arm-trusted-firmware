@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2014, ARM Limited and Contributors. All rights reserved.
- * Copyright (c) 2015-2021, Renesas Electronics Corporation. All rights reserved.
+ * Copyright (c) 2015-2022, Renesas Electronics Corporation. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -45,9 +45,9 @@ const uint8_t version_of_renesas[VERSION_OF_RENESAS_MAXLEN]
 
 
 static const mmap_region_t rcar_mmap[] = {
-	MAP_SHARED_RAM,
-	MAP_ATFW_CRASH,
-	MAP_DEVICE_RCAR,
+	MAP_SHARED_RAM,	  /* 0x46422000 - 0x46422FFF  Shared ram area     */
+	MAP_ATFW_CRASH,	  /* 0x4643F000 - 0x4643FFFF  Stack for Crash Log */
+	MAP_DEVICE_RCAR,  /* 0xE6000000 - 0xFFFFFFFF  SoC registers area  */
 	{0}
 };
 
