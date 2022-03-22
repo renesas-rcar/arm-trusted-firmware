@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2020, ARM Limited and Contributors. All rights reserved.
- * Copyright (c) 2015-2021, Renesas Electronics Corporation. All rights reserved.
+ * Copyright (c) 2015-2022, Renesas Electronics Corporation. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -22,7 +22,6 @@
 	.globl	plat_crash_console_putc
 	.globl	plat_crash_console_flush
 	.globl	plat_invalidate_icache
-	.globl	plat_report_exception
 	.globl	plat_secondary_reset
 	.globl	plat_my_core_pos
 	.globl	plat_renesas_calc_core_pos
@@ -163,18 +162,6 @@ loop:
 	b.gt	loop
 	ret
 endfunc platform_mem_init
-
-	/* ---------------------------------------------
-	 * void plat_report_exception(unsigned int type)
-	 * Function to report an unhandled exception
-	 * with platform-specific means.
-	 * ---------------------------------------------
-	 */
-func plat_report_exception
-	/* Switch to SP_EL0 */
-	msr	spsel, #0
-	ret
-endfunc plat_report_exception
 
 	/* ---------------------------------------------
 	 * int plat_crash_console_init(void)
