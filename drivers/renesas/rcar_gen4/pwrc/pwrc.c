@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2021, Renesas Electronics Corporation. All rights reserved.
+ * Copyright (c) 2015-2022, Renesas Electronics Corporation. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -68,10 +68,6 @@ static inline uint32_t PRR_CA55_XX_EN_CPU(uint32_t n)
 {
 	return ((uint32_t)(1) << ((n) & U(1)));
 }
-static inline uint32_t PRR_CA55_XX_EN_SHIFT(uint32_t c)
-{
-	return ((uint32_t)(20) + (((c) & U(3)) * U(3)));
-}
 
 static inline void write_cpupwrctlr(u_register_t v)
 {
@@ -79,8 +75,6 @@ static inline void write_cpupwrctlr(u_register_t v)
 }
 
 static void rcar_pwrc_cpuoff_sub(uint32_t cpu);
-static uint32_t rcar_pwrc_get_cpu_num(uint32_t c);
-static uint32_t rcar_pwrc_get_cpu_num_sub(uint32_t c);
 static uint32_t rcar_pwrc_core_pos(u_register_t mpidr);
 
 
@@ -181,7 +175,6 @@ void rcar_pwrc_setup(void)
 	uintptr_t rst_barl;
 	uint32_t i, j;
 	uint32_t reg;
-	uint32_t cnum;
 	uint64_t reset = (uint64_t) (&plat_secondary_reset) & 0xFFFFFFFFU;
 
 	reset &= RCAR_APMU_RVBARPLC_MASK;
@@ -196,8 +189,8 @@ void rcar_pwrc_setup(void)
 
 		mmio_setbits_32(APSREG_AP_CLUSTER_AUX0(i),
 			      APSREG_AP_CLUSTER_AUX0_INIT);
-		cnum = rcar_pwrc_get_cpu_num(i + 1U);
-		for (j = 0; j < cnum; j++) {
+
+		for (j = 0; j < PLATFORM_MAX_CPUS_PER_CLUSTER; j++) {
 			uint32_t cpu = (i * PLATFORM_MAX_CPUS_PER_CLUSTER) + j;
 
 			if ((reg & PRR_CA55_XX_EN_CPU(cpu)) != RCAR_CPU_HAVE_CA55) {
@@ -226,42 +219,6 @@ uint32_t rcar_pwrc_get_mpidr_cluster(u_register_t mpidr)
 	}
 
 	return (uint32_t)cluster;
-}
-
-static uint32_t rcar_pwrc_get_cpu_num(uint32_t c)
-{
-	uint32_t i;
-	uint32_t count = 0;
-
-	if (c == 0U) {
-		for (i = 0; i < PLATFORM_CLUSTER_COUNT; i++) {
-			count += rcar_pwrc_get_cpu_num_sub(i);
-		}
-	} else {
-		count = rcar_pwrc_get_cpu_num_sub(c - 1U);
-	}
-
-	return count;
-}
-
-static uint32_t rcar_pwrc_get_cpu_num_sub(uint32_t c)
-{
-	uint32_t i;
-	uint32_t count = 0;
-	uint32_t reg = mmio_read_32(RCAR_PRR);
-
-	reg >>= PRR_CA55_XX_EN_SHIFT(c);
-	if ((reg & PRR_CA55_XX_EN_CLUSTER_MASK) != RCAR_CPU_HAVE_CA55) {
-		return 0;
-	}
-
-	for (i = 0; i < PLATFORM_MAX_CPUS_PER_CLUSTER; i++) {
-		if ((reg & PRR_CA55_XX_EN_CPU(i)) == RCAR_CPU_HAVE_CA55) {
-			count++;
-		}
-	}
-
-	return count;
 }
 
 static void rcar_pwrc_cpuoff_sub(uint32_t cpu)
