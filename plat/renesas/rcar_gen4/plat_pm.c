@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2021, Renesas Electronics Corporation. All rights reserved.
+ * Copyright (c) 2015-2022, Renesas Electronics Corporation. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -114,7 +114,15 @@ static void rcar_pwr_domain_suspend(const psci_power_state_t *target_state)
 static void rcar_pwr_domain_suspend_finish(const psci_power_state_t
 					   *target_state)
 {
-	rcar_pwr_domain_on_finish(target_state);
+	u_register_t mpidr = read_mpidr_el1();
+
+	if (CLUSTER_PWR_STATE(target_state) == PLAT_MAX_OFF_STATE) {
+		plat_cci_enable();
+	}
+
+	rcar_pwrc_disable_interrupt_wakeup(mpidr);
+	rcar_program_mailbox(mpidr, 0U);
+	gicv3_cpuif_enable(plat_my_core_pos());
 }
 
 static void __dead2 rcar_pwr_domain_pwr_down_wfi(const psci_power_state_t *target_state)
