@@ -73,7 +73,7 @@
 
 /* Timer control */
 #define RCAR_CNTC_BASE			UL(0xE6080000)
-#define RCAR_CNTC_EXTAL			U(16666600)
+#define RCAR_CNTC_EXTAL			U(16666666)
 
 /* APMU */
 #define RCAR_APMU_BASE			(UL(0xE6170000) + (RCAR_DOMAIN * UL(0x1000)))
