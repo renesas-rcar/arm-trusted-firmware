@@ -267,7 +267,11 @@ void gicv3_ppi_sgi_config_defaults(uintptr_t gicr_base)
 	regs_num = ppi_regs_num << 3;
 	for (i = 0U; i < regs_num; ++i) {
 		/* Setup the default (E)PPI/SGI priorities doing 4 at a time */
+#if PLAT_rcar_gen4
 		gicr_write_ipriorityr(gicr_base, i * 4, GICD_IPRIORITYR_DEF_VAL);
+#else
+		gicr_write_ipriorityr(gicr_base, i, GICD_IPRIORITYR_DEF_VAL);
+#endif
 	}
 
 	/* 16 interrupt IDs per GICR_ICFGR register */
