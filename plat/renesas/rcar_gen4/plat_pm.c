@@ -21,10 +21,9 @@
 #include "rcar_def.h"
 #include "rcar_private.h"
 
-
+#define SYSTEM_PWR_STATE(s)	((s)->pwr_domain_state[PLAT_MAX_PWR_LVL])
 #define CLUSTER_PWR_STATE(s)	((s)->pwr_domain_state[MPIDR_AFFLVL1])
 #define CORE_PWR_STATE(s)	((s)->pwr_domain_state[MPIDR_AFFLVL0])
-
 
 static uintptr_t rcar_sec_entrypoint;
 
@@ -116,6 +115,18 @@ static void rcar_pwr_domain_suspend_finish(const psci_power_state_t
 {
 	u_register_t mpidr = read_mpidr_el1();
 
+	if (SYSTEM_PWR_STATE(target_state) == PLAT_MAX_OFF_STATE) {
+		plat_rcar_gic_driver_init();
+		plat_rcar_gic_init();
+		plat_cci_init();
+		gicv3_rdistif_init(plat_my_core_pos());
+
+		rcar_pwrc_restore_timer_state();
+		rcar_pwrc_setup();
+		rcar_pwrc_code_copy_to_system_ram();
+		plat_rcar_scmi_setup();
+	}
+
 	if (CLUSTER_PWR_STATE(target_state) == PLAT_MAX_OFF_STATE) {
 		plat_cci_enable();
 	}
@@ -125,8 +136,46 @@ static void rcar_pwr_domain_suspend_finish(const psci_power_state_t
 	gicv3_cpuif_enable(plat_my_core_pos());
 }
 
+static void __dead2 rcar_system_off(void)
+{
+	u_register_t mpidr = read_mpidr_el1();
+	uint32_t rtn_on;
+
+	if (bl31_plat_boot_mpidr_chk() != RCAR_MPIDRCHK_BOOTCPU) {
+		panic();
+	}
+
+	rtn_on = rcar_pwrc_cpu_on_check(mpidr);
+
+	if (rtn_on > 0U) {
+		panic();
+	}
+
+	rcar_pwrc_clusteroff(mpidr);
+
+	rcar_scmi_sys_shutdown();
+
+	wfi();
+	ERROR("RCAR System Off: operation not handled.\n");
+	panic();
+}
+
+static void __dead2 rcar_system_reset(void)
+{
+	rcar_scmi_sys_reboot();
+
+	wfi();
+
+	ERROR("RCAR System Reset: operation not handled.\n");
+	panic();
+}
+
 static void __dead2 rcar_pwr_domain_pwr_down_wfi(const psci_power_state_t *target_state)
 {
+	if (SYSTEM_PWR_STATE(target_state) == PLAT_MAX_OFF_STATE) {
+		rcar_pwrc_suspend_to_ram();
+	}
+
 	wfi();
 
 	ERROR("RCAR Power Down: operation not handled.\n");
@@ -138,7 +187,7 @@ static int rcar_validate_power_state(unsigned int power_state,
 {
 	uint32_t pwr_lvl = psci_get_pstate_pwrlvl(power_state);
 	uint32_t pstate = psci_get_pstate_type(power_state);
-	uint32_t i;
+	uint64_t i;
 
 	if (pstate == PSTATE_TYPE_STANDBY) {
 		if (pwr_lvl != MPIDR_AFFLVL0) {
@@ -147,7 +196,7 @@ static int rcar_validate_power_state(unsigned int power_state,
 
 		req_state->pwr_domain_state[MPIDR_AFFLVL0] = PLAT_MAX_RET_STATE;
 	} else {
-		for (i = MPIDR_AFFLVL0; i <= pwr_lvl; i++) {
+		for (i = MPIDR_AFFLVL0; i <= (uint64_t)pwr_lvl; i++) {
 			req_state->pwr_domain_state[i] = PLAT_MAX_OFF_STATE;
 		}
 	}
@@ -159,22 +208,43 @@ static int rcar_validate_power_state(unsigned int power_state,
 	return PSCI_E_SUCCESS;
 }
 
-static const plat_psci_ops_t rcar_plat_psci_ops = {
+static void rcar_get_sys_suspend_power_state(psci_power_state_t *req_state)
+{
+	uint64_t i;
+
+	if (bl31_plat_boot_mpidr_chk() != RCAR_MPIDRCHK_BOOTCPU) {
+		/* deny system suspend entry */
+		req_state->pwr_domain_state[PLAT_MAX_PWR_LVL] =
+				PSCI_LOCAL_STATE_RUN;
+
+		for (i = MPIDR_AFFLVL0; i < (uint64_t)PLAT_MAX_PWR_LVL; i++) {
+			req_state->pwr_domain_state[i] = PLAT_MAX_RET_STATE;
+		}
+	} else {
+		for (i = MPIDR_AFFLVL0; i <= (uint64_t)PLAT_MAX_PWR_LVL; i++) {
+			req_state->pwr_domain_state[i] = PLAT_MAX_OFF_STATE;
+		}
+	}
+}
+
+static plat_psci_ops_t rcar_plat_psci_ops = {
 	.cpu_standby			= rcar_cpu_standby,
 	.pwr_domain_on			= rcar_pwr_domain_on,
 	.pwr_domain_off			= rcar_pwr_domain_off,
 	.pwr_domain_suspend		= rcar_pwr_domain_suspend,
 	.pwr_domain_on_finish		= rcar_pwr_domain_on_finish,
 	.pwr_domain_suspend_finish	= rcar_pwr_domain_suspend_finish,
+	.system_off			= rcar_system_off,
+	.system_reset			= rcar_system_reset,
 	.validate_power_state		= rcar_validate_power_state,
 	.pwr_domain_pwr_down_wfi	= rcar_pwr_domain_pwr_down_wfi,
+	.get_sys_suspend_power_state	= rcar_get_sys_suspend_power_state,
 };
 
 int plat_setup_psci_ops(uintptr_t sec_entrypoint, const plat_psci_ops_t **psci_ops)
 {
-	*psci_ops = &rcar_plat_psci_ops;
+	*psci_ops = plat_rcar_psci_override_pm_ops(&rcar_plat_psci_ops);
 	rcar_sec_entrypoint = sec_entrypoint;
 
 	return 0;
 }
-
