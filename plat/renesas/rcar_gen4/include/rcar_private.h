@@ -29,7 +29,7 @@ typedef struct bl2_to_bl31_params_mem {
 	entry_point_info_t bl32_ep_info;
 } bl2_to_bl31_params_mem_t;
 
-#define RCAR_INSTANTIATE_LOCK	DEFINE_BAKERY_LOCK(rcar_lock);
+#define RCAR_INSTANTIATE_LOCK	DEFINE_BAKERY_LOCK(rcar_lock)
 /*
  * Constants to specify how many bakery locks this platform implements. These
  * are used if the platform chooses not to use coherent memory for bakery lock
@@ -63,6 +63,11 @@ typedef struct rcar_cpu_data {
 CASSERT(sizeof(rcar_cpu_data_t) == PLAT_PCPU_DATA_SIZE,
 	rcar_pcpu_data_size_mismatch);
 
+/* lock for SCMI */
+#define RCAR_SCMI_INSTANTIATE_LOCK	spinlock_t rcar_scmi_lock
+#define RCAR_SCMI_LOCK_GET_INSTANCE	(&rcar_scmi_lock)
+
+
 /*
  * Function and variable prototypes
  */
@@ -76,12 +81,19 @@ void rcar_configure_mmu_el3(uintptr_t total_base,
 void plat_invalidate_icache(void);
 void plat_cci_disable(void);
 void plat_cci_enable(void);
+void plat_cci_init(void);
 
 void rcar_console_boot_init(void);
 void rcar_console_runtime_init(void);
 
 void plat_rcar_gic_driver_init(void);
 void plat_rcar_gic_init(void);
+
+void __init plat_rcar_scmi_setup(void);
+void rcar_scmi_sys_shutdown(void);
+void rcar_scmi_sys_reboot(void);
+void rcar_scmi_sys_suspend(void);
+const plat_psci_ops_t *plat_rcar_psci_override_pm_ops(plat_psci_ops_t *ops);
 
 int32_t rcar_cluster_pos_by_mpidr(u_register_t mpidr);
 
