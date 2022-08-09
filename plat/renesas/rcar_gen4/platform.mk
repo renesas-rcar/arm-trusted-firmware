@@ -28,6 +28,7 @@ RCAR_S4:=9
 RCAR_AUTO:=99
 $(eval $(call add_define,RCAR_S4))
 $(eval $(call add_define,RCAR_AUTO))
+$(eval $(call add_define,PLAT_EXTRA_LD_SCRIPT))
 
 
 ifndef LSI
@@ -68,6 +69,16 @@ GICV3_SUPPORT_GIC600 := 1
 include drivers/arm/gic/v3/gicv3.mk
 RCAR_GIC_SOURCES	:=	${GICV3_SOURCES}	\
 				plat/common/plat_gicv3.c
+#
+
+# SCMI driver configuration
+SCMI_DRIVER_SOURES :=	drivers/arm/css/scmi/scmi_common.c		\
+			drivers/arm/css/scmi/scmi_pwr_dmn_proto.c	\
+			drivers/arm/css/scmi/scmi_sys_pwr_proto.c
+
+PLAT_INCLUDES	+=	-Idrivers/arm/css/scmi				\
+			-Iinclude/drivers
+#
 
 BL31_SOURCES	+=	${RCAR_GIC_SOURCES}				\
 			lib/cpus/aarch64/cortex_a55.S			\
@@ -77,10 +88,13 @@ BL31_SOURCES	+=	${RCAR_GIC_SOURCES}				\
 			plat/renesas/rcar_gen4/aarch64/platform_common.c \
 			plat/renesas/rcar_gen4/bl31_plat_setup.c	\
 			plat/renesas/rcar_gen4/plat_pm.c		\
+			plat/renesas/rcar_gen4/plat_pm_scmi.c		\
 			plat/renesas/rcar_gen4/rcar_common.c		\
+			drivers/renesas/rcar_gen4/pwrc/call_sram.S	\
 			drivers/renesas/rcar_gen4/pwrc/pwrc.c		\
 			drivers/renesas/rcar_gen4/scif/scif.c		\
 			drivers/renesas/rcar_gen4/scif/scif_helpers.S	\
+			${SCMI_DRIVER_SOURES}				\
 			drivers/arm/cci/cci.c
 
 include lib/xlat_tables_v2/xlat_tables.mk

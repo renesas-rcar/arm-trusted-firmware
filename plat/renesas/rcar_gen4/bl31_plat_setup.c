@@ -25,7 +25,7 @@
 
 static u_register_t rcar_boot_mpidr;
 
-static void plat_cci_init(void)
+void plat_cci_init(void)
 {
 	static const int cci_map[] = {
 		CCI500_CLUSTER0_SL_IFACE_IX,
@@ -84,6 +84,8 @@ void bl31_plat_arch_setup(void)
 	rcar_configure_mmu_el3(BL31_BASE,
 			       BL31_LIMIT - BL31_BASE,
 			       BL31_RO_BASE, BL31_RO_LIMIT);
+
+	rcar_pwrc_code_copy_to_system_ram();
 }
 
 void bl31_platform_setup(void)
@@ -101,6 +103,7 @@ void bl31_platform_setup(void)
 	mmio_write_32(RCAR_CNTC_BASE + CNTCR_OFF,
 			CNTCR_FCREQ((uint32_t)(0)) | CNTCR_EN);
 
+	plat_rcar_scmi_setup();
 	rcar_pwrc_setup();
 
 	/*
