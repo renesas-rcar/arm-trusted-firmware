@@ -37,6 +37,7 @@ static uint32_t rcar_pwrc_code_copy_state;
  */
 static RCAR_INSTANTIATE_LOCK;
 
+static u_register_t rcar_boot_mpidr;
 
 /* APSREG boot configuration */
 static inline uintptr_t APSREG_AP_CLUSTER_AUX0(uint32_t n)
@@ -128,6 +129,25 @@ void rcar_pwrc_cpuon(u_register_t mpidr)
 		;
 
 	rcar_lock_release();
+
+	/*
+	 * mask should match the kernel's MPIDR_HWID_BITMASK so the core can be
+	 * identified during cpuhotplug (check the kernel's psci migrate set of
+	 * functions
+	 */
+	rcar_boot_mpidr = read_mpidr_el1() & RCAR_MPIDR_AFFMASK;
+}
+
+int32_t rcar_pwrc_cpu_migrate_info(u_register_t *resident_cpu)
+{
+	*resident_cpu = rcar_boot_mpidr;
+
+	return PSCI_TOS_NOT_UP_MIG_CAP;
+}
+
+bool rcar_pwrc_mpidr_is_boot_cpu(u_register_t mpidr)
+{
+	return (mpidr & RCAR_MPIDR_AFFMASK) == rcar_boot_mpidr;
 }
 
 void rcar_pwrc_cpuoff(u_register_t mpidr)

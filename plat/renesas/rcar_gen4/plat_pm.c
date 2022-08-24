@@ -140,7 +140,7 @@ static void __dead2 rcar_system_off(void)
 	u_register_t mpidr = read_mpidr_el1();
 	uint32_t rtn_on;
 
-	if (bl31_plat_boot_mpidr_chk() != RCAR_MPIDRCHK_BOOTCPU) {
+	if (!rcar_pwrc_mpidr_is_boot_cpu(mpidr)) {
 		panic();
 	}
 
@@ -210,8 +210,9 @@ static int rcar_validate_power_state(unsigned int power_state,
 static void rcar_get_sys_suspend_power_state(psci_power_state_t *req_state)
 {
 	uint64_t i;
+	u_register_t mpidr = read_mpidr_el1();
 
-	if (bl31_plat_boot_mpidr_chk() != RCAR_MPIDRCHK_BOOTCPU) {
+	if (!rcar_pwrc_mpidr_is_boot_cpu(mpidr)) {
 		/* deny system suspend entry */
 		req_state->pwr_domain_state[PLAT_MAX_PWR_LVL] =
 				PSCI_LOCAL_STATE_RUN;

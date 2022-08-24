@@ -23,8 +23,6 @@
 #include "rcar_version.h"
 
 
-static u_register_t rcar_boot_mpidr;
-
 void plat_cci_init(void)
 {
 }
@@ -89,30 +87,16 @@ void bl31_platform_setup(void)
 
 	plat_rcar_scmi_setup();
 	rcar_pwrc_setup();
-
-	/*
-	 * mask should match the kernel's MPIDR_HWID_BITMASK so the core can be
-	 * identified during cpuhotplug (check the kernel's psci migrate set of
-	 * functions
-	 */
-	rcar_boot_mpidr = read_mpidr_el1() & RCAR_MPIDR_AFFMASK;
 }
 
-uint32_t bl31_plat_boot_mpidr_chk(void)
-{
-	uint32_t rc = RCAR_MPIDRCHK_NOT_BOOTCPU;
-	uint64_t tmp_mpidr;
-
-	tmp_mpidr = read_mpidr_el1() & RCAR_MPIDR_AFFMASK;
-
-	if (tmp_mpidr == rcar_boot_mpidr) {
-		rc = RCAR_MPIDRCHK_BOOTCPU;
-	}
-	return rc;
-}
+const spd_pm_ops_t rcar_pm = {
+	.svc_migrate_info = rcar_pwrc_cpu_migrate_info,
+};
 
 void bl31_plat_runtime_setup(void)
 {
+	psci_register_spd_pm_hook(&rcar_pm);
+
 	rcar_console_runtime_init();
 	console_switch_state(CONSOLE_FLAG_RUNTIME);
 
