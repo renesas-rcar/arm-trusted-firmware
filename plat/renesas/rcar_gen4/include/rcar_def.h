@@ -81,14 +81,17 @@
 
 /* Timer control */
 #define RCAR_CNTC_BASE			UL(0xE6080000)
+#if (RCAR_LSI == RCAR_S4)
 #define RCAR_CNTC_EXTAL			U(16666666)
+#elif (RCAR_LSI == RCAR_V4H)
+#define RCAR_CNTC_EXTAL			U(16666600)
+#endif
 /* Counter Count Value Lower register */
 #define RCAR_CNTCVL_OFF			UL(0x008)
 /* Counter Count Value Upper register */
 #define RCAR_CNTCVU_OFF			UL(0x00C)
 /* Conversion value from seconds to micro seconds */
 #define RCAR_CONV_MICROSEC		UL(1000000)
-
 
 /* APMU */
 #define RCAR_APMU_BASE			(UL(0xE6170000) + (RCAR_DOMAIN * UL(0x1000)))
