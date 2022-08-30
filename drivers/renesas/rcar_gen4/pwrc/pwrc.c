@@ -447,16 +447,14 @@ void rcar_pwrc_suspend_to_ram(void)
 	uintptr_t jump = (uintptr_t) rcar_pwrc_go_suspend_to_ram;
 	uintptr_t stack = (uintptr_t) (DEVICE_SRAM_STACK_BASE +
 				       DEVICE_SRAM_STACK_SIZE);
-	u_register_t sctlr;
 
 	rcar_pwrc_save_timer_state();
 
-	dcsw_op_all(DCCISW);
-
 	/* disable MMU */
-	sctlr = read_sctlr_el3();
-	sctlr &= (~SCTLR_EL3_M_BIT);
-	write_sctlr_el3(sctlr);
+	disable_mmu_el3();
+
+	/* cache flush */
+	dcsw_op_all(DCCISW);
 
 	(void)rcar_pwrc_switch_stack(jump, stack, NULL);
 }
