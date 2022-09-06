@@ -130,8 +130,6 @@ const plat_psci_ops_t *plat_rcar_psci_override_pm_ops(plat_psci_ops_t *ops)
 	uint32_t msg_attr;
 	int ret;
 
-	assert(scmi_handle);
-
 	/* Check if the SCMI SYSTEM_POWER_STATE_SET message is supported */
 	ret = scmi_proto_msg_attr(scmi_handle, SCMI_SYS_PWR_PROTO_ID,
 				SCMI_SYS_PWR_STATE_SET_MSG, &msg_attr);
