@@ -359,7 +359,7 @@ static void __section(".system_ram") rcar_pwrc_set_self_refresh(void)
 		wait_time = ((get_count - base_count) * RCAR_CONV_MICROSEC) / freq;
 
 		/* Get base counter */
-		if (wait_time > RCAR_WAIT_DBCS4_FLUSH) {
+		if (wait_time >= RCAR_WAIT_DBCS4_FLUSH) {
 
 			/* Stop flushing and enable access to SDRAM */
 			mmio_write_32(DBSC4_REG_DBCAM0CTRL0, 0);
