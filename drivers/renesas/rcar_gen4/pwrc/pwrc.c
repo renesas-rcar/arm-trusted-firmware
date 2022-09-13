@@ -267,7 +267,6 @@ uint32_t rcar_pwrc_cpu_on_check(u_register_t mpidr)
 	uint32_t i, j;
 	uint32_t prr;
 	uint32_t state;
-	uint32_t idx = 0;
 	uint32_t cpu = 0;
 	uint32_t count = 0;
 
@@ -280,9 +279,9 @@ uint32_t rcar_pwrc_cpu_on_check(u_register_t mpidr)
 			continue;
 		}
 		for (j = 0; j < PLATFORM_MAX_CPUS_PER_CLUSTER; j++) {
-			idx = (i * PLATFORM_MAX_CPUS_PER_CLUSTER) + j;
+			cpu = (i * PLATFORM_MAX_CPUS_PER_CLUSTER) + j;
 			/* check the core be implemented */
-			if ((prr & PRR_CA55_XX_EN_CPU(idx)) != RCAR_CPU_HAVE_CA55) {
+			if ((prr & PRR_CA55_XX_EN_CPU(cpu)) != RCAR_CPU_HAVE_CA55) {
 				continue;
 			}
 			if (core_pos != cpu) {
@@ -291,7 +290,6 @@ uint32_t rcar_pwrc_cpu_on_check(u_register_t mpidr)
 					count++;
 				}
 			}
-			cpu++;
 		}
 	}
 
