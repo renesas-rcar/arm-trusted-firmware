@@ -55,7 +55,7 @@ const uint8_t version_of_renesas[VERSION_OF_RENESAS_MAXLEN]
 
 #define MAP_SCMI_CHANNEL	MAP_REGION_FLAT(RCAR_SCMI_CHANNEL_BASE,	\
 					RCAR_SCMI_CHANNEL_SIZE,		\
-					MT_MEMORY | MT_RW | MT_SECURE)
+					MT_DEVICE | MT_RW | MT_SECURE)
 
 
 static const mmap_region_t rcar_mmap[] = {
