@@ -25,10 +25,12 @@
 	.globl	plat_secondary_reset
 	.globl	plat_my_core_pos
 	.globl	plat_renesas_calc_core_pos
+	.globl	bl31_plat_enable_mmu
 
 	.extern console_rcar_init
 	.extern console_rcar_putc
 	.extern console_rcar_flush
+	.extern rcar_pwrc_code_copy_to_system_ram
 
 	/* -----------------------------------------------------
 	 * void platform_get_core_pos (mpidr)
@@ -217,7 +219,6 @@ func plat_crash_console_flush
 	b	console_rcar_flush
 endfunc plat_crash_console_flush
 
-
 	/* ---------------------------------------------
 	 * void plat_invalidate_icache(void)
 	 * Instruction Cache Invalidate All to PoU
@@ -227,3 +228,19 @@ func plat_invalidate_icache
 	ic	iallu
 	ret
 endfunc plat_invalidate_icache
+
+	/* -----------------------------------------------------
+	 * void bl31_plat_enable_mmu(uint32_t flags);
+	 *
+	 * Enable MMU in BL31.
+	 * And copy the code to run on System RAM.
+	 * Note: This function call will only be done from Warm boot.
+	 * -----------------------------------------------------
+	 */
+func bl31_plat_enable_mmu
+	mov	x28, x30
+	bl	enable_mmu_direct_el3
+	bl	rcar_pwrc_code_copy_to_system_ram
+	mov	x30, x28
+	ret
+endfunc bl31_plat_enable_mmu

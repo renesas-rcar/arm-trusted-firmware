@@ -25,8 +25,11 @@ IMPORT_SYM(uintptr_t, __system_ram_end__, SYSTEM_RAM_END);
 IMPORT_SYM(uintptr_t, __SRAM_COPY_START__, SRAM_COPY_START);
 #endif
 
-static uint32_t dummy_sdram = 0xAAAAAAAA;
+#define	RCAR_CODE_COPY_DONE	U(0x01)
+#define	RCAR_CODE_COPY_NONE	U(0x00)
 
+static uint32_t dummy_sdram = 0xAAAAAAAA;
+static uint32_t rcar_pwrc_code_copy_state;
 
 /*
  * Someday there will be a generic power controller api. At the moment each
@@ -448,6 +451,9 @@ void rcar_pwrc_suspend_to_ram(void)
 
 	rcar_pwrc_save_timer_state();
 
+	/* Clear code copy state to execute copy on next boot time */
+	rcar_pwrc_code_copy_state = RCAR_CODE_COPY_NONE;
+
 	/* disable MMU */
 	disable_mmu_el3();
 
@@ -471,6 +477,19 @@ void rcar_pwrc_code_copy_to_system_ram(void)
 		.base = (uintptr_t) SRAM_COPY_START,
 		.len = (size_t)(SYSTEM_RAM_END - SYSTEM_RAM_START)
 	};
+
+	/*
+	 * The copy of the code should only be executed for ColdBoot,
+	 * and for WarmBoot from SuspendToRAM.
+	 */
+	if (rcar_pwrc_code_copy_state == RCAR_CODE_COPY_DONE) {
+		/* No need to run because it has already been copied */
+		return;
+	}
+
+	rcar_pwrc_code_copy_state = RCAR_CODE_COPY_DONE;
+	flush_dcache_range((uintptr_t)(&rcar_pwrc_code_copy_state),
+			sizeof(rcar_pwrc_code_copy_state));
 
 	attr = MT_MEMORY | MT_RW | MT_SECURE | MT_EXECUTE_NEVER;
 	ret = xlat_change_mem_attributes(sram.base, sram.len, attr);
