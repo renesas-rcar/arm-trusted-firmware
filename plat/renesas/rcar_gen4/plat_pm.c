@@ -117,9 +117,9 @@ static void rcar_pwr_domain_suspend_finish(const psci_power_state_t
 
 	if (SYSTEM_PWR_STATE(target_state) == PLAT_MAX_OFF_STATE) {
 		plat_rcar_gic_driver_init();
-		plat_rcar_gic_init();
-		plat_cci_init();
+		gicv3_distif_init();
 		gicv3_rdistif_init(plat_my_core_pos());
+		plat_cci_init();
 
 		rcar_pwrc_restore_timer_state();
 		rcar_pwrc_setup();
