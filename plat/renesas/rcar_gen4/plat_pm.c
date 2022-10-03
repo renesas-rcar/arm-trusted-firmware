@@ -123,7 +123,6 @@ static void rcar_pwr_domain_suspend_finish(const psci_power_state_t
 
 		rcar_pwrc_restore_timer_state();
 		rcar_pwrc_setup();
-		rcar_pwrc_code_copy_to_system_ram();
 		plat_rcar_scmi_setup();
 	}
 
