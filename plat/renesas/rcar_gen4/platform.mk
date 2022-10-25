@@ -17,6 +17,20 @@ CRASH_REPORTING			:= 1
 HANDLE_EA_EL3_FIRST		:= 1
 ENABLE_STACK_PROTECTOR	:= strong
 
+# Process SET_SCMI_PARAM flag
+# 0:Disable(default), 1:Enable
+ifndef SET_SCMI_PARAM
+    SET_SCMI_PARAM := 0
+    $(eval $(call add_define,SET_SCMI_PARAM))
+else
+    ifeq (${SET_SCMI_PARAM}, 0)
+        $(eval $(call add_define,SET_SCMI_PARAM))
+    else ifeq (${SET_SCMI_PARAM},1)
+        $(eval $(call add_define,SET_SCMI_PARAM))
+    else
+        $(error "Error:SET_SCMI_PARAM=${SET_SCMI_PARAM} is not supported.")
+    endif
+endif
 
 ifeq (${SPD},none)
   SPD_NONE:=1
