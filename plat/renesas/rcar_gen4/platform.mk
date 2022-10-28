@@ -17,6 +17,20 @@ CRASH_REPORTING			:= 1
 HANDLE_EA_EL3_FIRST		:= 1
 ENABLE_STACK_PROTECTOR	:= strong
 
+# Process SET_SCMI_PARAM flag
+# 0:Disable(default), 1:Enable
+ifndef SET_SCMI_PARAM
+    SET_SCMI_PARAM := 0
+    $(eval $(call add_define,SET_SCMI_PARAM))
+else
+    ifeq (${SET_SCMI_PARAM}, 0)
+        $(eval $(call add_define,SET_SCMI_PARAM))
+    else ifeq (${SET_SCMI_PARAM},1)
+        $(eval $(call add_define,SET_SCMI_PARAM))
+    else
+        $(error "Error:SET_SCMI_PARAM=${SET_SCMI_PARAM} is not supported.")
+    endif
+endif
 
 ifeq (${SPD},none)
   SPD_NONE:=1
@@ -110,14 +124,17 @@ BL31_SOURCES	+=	${RCAR_GIC_SOURCES}				\
 			plat/renesas/rcar_gen4/aarch64/platform_common.c \
 			plat/renesas/rcar_gen4/bl31_plat_setup.c	\
 			plat/renesas/rcar_gen4/plat_pm.c		\
-			plat/renesas/rcar_gen4/plat_pm_scmi.c		\
 			plat/renesas/rcar_gen4/rcar_common.c		\
 			drivers/renesas/rcar_gen4/pwrc/call_sram.S	\
 			drivers/renesas/rcar_gen4/pwrc/pwrc.c		\
 			drivers/renesas/rcar_gen4/scif/scif.c		\
 			drivers/renesas/rcar_gen4/scif/scif_helpers.S	\
-			${SCMI_DRIVER_SOURES}				\
 			drivers/arm/cci/cci.c
+
+ifeq (${SET_SCMI_PARAM},1)
+BL31_SOURCES	+=	${SCMI_DRIVER_SOURES}				\
+			plat/renesas/rcar_gen4/plat_pm_scmi.c
+endif
 
 include lib/xlat_tables_v2/xlat_tables.mk
 ifneq (${MBEDTLS_COMMON_MK}, 1)

@@ -89,11 +89,29 @@ void rcar_console_runtime_init(void);
 void plat_rcar_gic_driver_init(void);
 void plat_rcar_gic_init(void);
 
+#if (SET_SCMI_PARAM == 1)
 void __init plat_rcar_scmi_setup(void);
 void rcar_scmi_sys_shutdown(void);
 void rcar_scmi_sys_reboot(void);
 void rcar_scmi_sys_suspend(void);
 const plat_psci_ops_t *plat_rcar_psci_override_pm_ops(plat_psci_ops_t *ops);
+#else
+static inline void plat_rcar_scmi_setup(void) { }
+
+static inline void rcar_scmi_sys_shutdown(void) { }
+
+static inline void rcar_scmi_sys_reboot(void) { }
+
+static inline void rcar_scmi_sys_suspend(void)
+{
+	while (true);
+}
+
+static inline const plat_psci_ops_t *plat_rcar_psci_override_pm_ops(plat_psci_ops_t *ops)
+{
+	return ops;
+}
+#endif
 
 int32_t rcar_cluster_pos_by_mpidr(u_register_t mpidr);
 
