@@ -117,21 +117,16 @@ void __init plat_rcar_scmi_setup(void)
 	sscmi_channel.info = &scmi_plat_info;
 	sscmi_channel.lock = RCAR_SCMI_LOCK_GET_INSTANCE;
 
-#if (SET_SCMI_PARAM == 1)
 	scmi_handle = scmi_init(&sscmi_channel);
 
 	if (scmi_handle == NULL) {
 		ERROR("SCMI Initialization failed on channel\n");
 		panic();
 	}
-#else
-    scmi_handle = &sscmi_channel;
-#endif
 }
 
 const plat_psci_ops_t *plat_rcar_psci_override_pm_ops(plat_psci_ops_t *ops)
 {
-#if (SET_SCMI_PARAM == 1)
 	uint32_t msg_attr;
 	int ret;
 
@@ -153,7 +148,6 @@ const plat_psci_ops_t *plat_rcar_psci_override_pm_ops(plat_psci_ops_t *ops)
 			ops->get_sys_suspend_power_state = NULL;
 		}
 	}
-#endif
 
 	return ops;
 }
