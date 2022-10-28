@@ -10,6 +10,7 @@
 #include <common/bl_common.h>
 #include <lib/bakery_lock.h>
 #include <lib/el3_runtime/cpu_data.h>
+#include <lib/mmio.h>
 
 #include <platform_def.h>
 
@@ -100,7 +101,10 @@ static inline void plat_rcar_scmi_setup(void) { }
 
 static inline void rcar_scmi_sys_shutdown(void) { }
 
-static inline void rcar_scmi_sys_reboot(void) { }
+static inline void rcar_scmi_sys_reboot(void)
+{
+	mmio_write_32(RCAR_SRESCR, 0x5AA50000U | (1 << 15));
+}
 
 static inline void rcar_scmi_sys_suspend(void)
 {

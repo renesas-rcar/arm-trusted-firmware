@@ -105,6 +105,9 @@
 #define RCAR_APMU_RVBARPLC_MASK		U(0xFFFFFFFC)
 #define RCAR_APMU_RVBARPL_VLD		U(0x00000001)
 
+/* Soft Power On Reset Control Register 0 */
+#define RCAR_SRESCR			(UL(0xE6160018) + (RCAR_DOMAIN * UL(0x4000)))
+
 /* Product register */
 #define RCAR_PRR			UL(0xFFF00044)
 #define RCAR_CPU_HAVE_CAXX		U(0x00000000)
