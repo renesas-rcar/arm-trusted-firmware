@@ -371,17 +371,14 @@ rcar_layout_tool:
 
 # srecords
 SREC_PATH	= ${BUILD_PLAT}
-BL2_ELF_SRC	= ${SREC_PATH}/bl2/bl2.elf
 BL31_ELF_SRC	= ${SREC_PATH}/bl31/bl31.elf
 
 clean_srecord:
-	@echo "clean bl2 and bl31 srecs"
-	rm -f ${SREC_PATH}/bl2.srec ${SREC_PATH}/bl31.srec
+	@echo "clean bl31 srecs"
+	rm -f ${SREC_PATH}/bl31.srec
 
 .PHONY: rcar_srecord
-rcar_srecord: $(BL2_ELF_SRC) $(BL31_ELF_SRC)
-	@echo "generating srec: ${SREC_PATH}/bl2.srec"
-	$(Q)$(OC) -O srec --srec-forceS3 ${BL2_ELF_SRC}  ${SREC_PATH}/bl2.srec
+rcar_srecord: $(BL31_ELF_SRC)
 	@echo "generating srec: ${SREC_PATH}/bl31.srec"
 	$(Q)$(OC) -O srec --srec-forceS3 ${BL31_ELF_SRC} ${SREC_PATH}/bl31.srec
 
