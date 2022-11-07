@@ -133,6 +133,22 @@ else
       endif
       $(eval $(call add_define,RCAR_LSI_CUT))
     endif
+  else ifeq (${LSI},V3H)
+    RCAR_LSI:=${RCAR_V3H}
+    ifndef LSI_CUT
+      # enable compatible function.
+      RCAR_LSI_CUT_COMPAT := 1
+      $(eval $(call add_define,RCAR_LSI_CUT_COMPAT))
+    else
+      # disable compatible function.
+      ifeq (${LSI_CUT},10)
+        RCAR_LSI_CUT:=0
+      endif
+      ifeq (${LSI_CUT},20)
+        RCAR_LSI_CUT:=10
+      endif
+      $(eval $(call add_define,RCAR_LSI_CUT))
+    endif
   else
     $(error "Error: ${LSI} is not supported.")
   endif
