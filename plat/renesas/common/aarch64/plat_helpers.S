@@ -87,7 +87,7 @@ func plat_get_my_entrypoint
 #else
        ldr 	x1, =BOOT_KIND_BASE
        ldr	x21, [x1]
-
+# if 0
 	/* Check the reset info */
 	and	x1, x21, #0x000c
 	cmp	x1, #0x0008
@@ -101,7 +101,7 @@ func plat_get_my_entrypoint
 	beq	el3_panic
 	cmp	x1, #0x0003
 	beq	el3_panic
-
+#endif
 	/* warm boot or cold boot */
 	and	x1, x21, #1
 	cmp	x1, #0
@@ -122,7 +122,7 @@ warm_reset:
 	bl	platform_get_core_pos
 	lsl	x0, x0, #CACHE_WRITEBACK_SHIFT
 	ldr	x0, [x10, x0]
-	cbz	x0, _panic
+	cbz	x0, exit
 exit:
 	ret	x9
 _panic:
