@@ -27,30 +27,14 @@ static u_register_t rcar_boot_mpidr;
 
 void plat_cci_init(void)
 {
-	static const int cci_map[] = {
-		CCI500_CLUSTER0_SL_IFACE_IX,
-		CCI500_CLUSTER1_SL_IFACE_IX,
-		CCI500_CLUSTER2_SL_IFACE_IX,
-		CCI500_CLUSTER3_SL_IFACE_IX
-	};
-
-	cci_init(RCAR_CCI_BASE, cci_map, ARRAY_SIZE(cci_map));
 }
 
 void plat_cci_enable(void)
 {
-	u_register_t mpidr = read_mpidr();
-	uint32_t cluster = rcar_pwrc_get_mpidr_cluster(mpidr);
-
-	cci_enable_snoop_dvm_reqs(cluster);
 }
 
 void plat_cci_disable(void)
 {
-	u_register_t mpidr = read_mpidr();
-	uint32_t cluster = rcar_pwrc_get_mpidr_cluster(mpidr);
-
-	cci_disable_snoop_dvm_reqs(cluster);
 }
 
 struct entry_point_info *bl31_plat_get_next_image_ep_info(uint32_t type)
