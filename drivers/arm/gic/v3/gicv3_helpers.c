@@ -15,6 +15,14 @@
 #include "../common/gic_common_private.h"
 #include "gicv3_private.h"
 
+#define PRR             0xFFF00044U
+#define PRR_PRODUCT_MASK        0x00007F00U
+#define PRR_CUT_MASK            0x000000FFU
+#define PRR_PRODUCT_S4          0x00005A00U /* R-Car S4 */
+#define PRR_PRODUCT_10          0x00U       /* Ver.1.0 */
+#define PRR_PRODUCT_11          0x01U       /* Ver.1.1 */
+#define PRR_PRODUCT_12          0x02U       /* Ver.1.2 */
+
 /******************************************************************************
  * This function marks the core as awake in the re-distributor and
  * ensures that the interface is active.
@@ -291,7 +299,16 @@ void gicv3_ppi_sgi_config_defaults(uintptr_t gicr_base)
 	for (i = 0U; i < regs_num; ++i) {
 		/* Setup the default (E)PPI/SGI priorities doing 4 at a time */
 #if PLAT_rcar_gen4
-		gicr_write_ipriorityr(gicr_base, i * 4, GICD_IPRIORITYR_DEF_VAL);
+		uint32_t product;
+
+		product = *((volatile uint32_t*)PRR);
+
+		if (((product & PRR_PRODUCT_MASK) == PRR_PRODUCT_S4) &&
+			((product & PRR_CUT_MASK) <= PRR_PRODUCT_11)) {
+			gicr_write_ipriorityr(gicr_base, i * 4, GICD_IPRIORITYR_DEF_VAL);
+		} else {
+			gicr_write_ipriorityr(gicr_base, i, GICD_IPRIORITYR_DEF_VAL);
+		}
 #else
 		gicr_write_ipriorityr(gicr_base, i, GICD_IPRIORITYR_DEF_VAL);
 #endif
