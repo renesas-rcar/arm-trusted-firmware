@@ -32,6 +32,11 @@ else
     endif
 endif
 
+ifndef PTP_NONSECURE_ACCESS
+  PTP_NONSECURE_ACCESS:=0
+endif
+$(eval $(call add_define,PTP_NONSECURE_ACCESS))
+
 ifeq (${SPD},none)
   SPD_NONE:=1
   $(eval $(call add_define,SPD_NONE))
@@ -92,7 +97,8 @@ HW_ASSISTED_COHERENCY := 1
 PLAT_INCLUDES	:=	-Iplat/renesas/rcar_gen4/include		\
 			-Iplat/renesas/rcar_gen4			\
 			-Idrivers/renesas/rcar_gen4/pwrc		\
-			-Idrivers/renesas/rcar_gen4/scif
+			-Idrivers/renesas/rcar_gen4/scif		\
+			-Idrivers/renesas/rcar_gen4/ptp
 
 ifneq (${ENABLE_STACK_PROTECTOR},0)
 BL_COMMON_SOURCES	+=	plat/renesas/rcar_gen4/rcar_stack_protector.c
@@ -134,6 +140,10 @@ BL31_SOURCES	+=	${RCAR_GIC_SOURCES}				\
 ifeq (${SET_SCMI_PARAM},1)
 BL31_SOURCES	+=	${SCMI_DRIVER_SOURES}				\
 			plat/renesas/rcar_gen4/plat_pm_scmi.c
+endif
+
+ifeq (${PTP_NONSECURE_ACCESS},1)
+BL31_SOURCES	+=	drivers/renesas/rcar_gen4/ptp/ptp.c
 endif
 
 include lib/xlat_tables_v2/xlat_tables.mk

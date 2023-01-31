@@ -18,6 +18,7 @@
 #include <plat/common/platform.h>
 
 #include "pwrc.h"
+#include "ptp.h"
 #include "rcar_def.h"
 #include "rcar_private.h"
 #include "rcar_version.h"
@@ -87,6 +88,7 @@ void bl31_platform_setup(void)
 
 	plat_rcar_scmi_setup();
 	rcar_pwrc_setup();
+	rcar_ptp_setup();
 }
 
 const spd_pm_ops_t rcar_pm = {
