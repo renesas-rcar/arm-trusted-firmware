@@ -53,7 +53,7 @@ void rcar_scmi_sys_shutdown(void)
 	int ret;
 
 	ret = scmi_sys_pwr_state_set(scmi_handle,
-			SCMI_SYS_PWR_FORCEFUL_REQ, SCMI_SYS_PWR_SHUTDOWN);
+			SCMI_SYS_PWR_GRACEFUL_REQ, SCMI_SYS_PWR_SHUTDOWN);
 	if (ret != SCMI_E_SUCCESS) {
 		ERROR("SCMI system power state set (SHUTDOWN) returns 0x%x\n",
 				ret);
@@ -69,7 +69,7 @@ void rcar_scmi_sys_reboot(void)
 	int ret;
 
 	ret = scmi_sys_pwr_state_set(scmi_handle,
-			SCMI_SYS_PWR_FORCEFUL_REQ, SCMI_SYS_PWR_COLD_RESET);
+			SCMI_SYS_PWR_GRACEFUL_REQ, SCMI_SYS_PWR_COLD_RESET);
 	if (ret != SCMI_E_SUCCESS) {
 		ERROR("SCMI system power state set (COLD RESET) returns 0x%x\n",
 				ret);
@@ -85,7 +85,7 @@ void __section(".system_ram") rcar_scmi_sys_suspend(void)
 	int ret;
 
 	ret = scmi_sys_pwr_state_set(scmi_handle,
-			SCMI_SYS_PWR_FORCEFUL_REQ, SCMI_SYS_PWR_SUSPEND);
+			SCMI_SYS_PWR_GRACEFUL_REQ, SCMI_SYS_PWR_SUSPEND);
 	if (ret != SCMI_E_SUCCESS) {
 		/* Do not out logs and go panic when DRAM backup mode */
 		while (true)
