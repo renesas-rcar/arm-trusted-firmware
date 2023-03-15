@@ -26,6 +26,8 @@
 #define CORE_PWR_STATE(s)	((s)->pwr_domain_state[MPIDR_AFFLVL0])
 
 static uintptr_t rcar_sec_entrypoint;
+static gicv3_redist_ctx_t rdist_ctx[PLATFORM_CORE_COUNT];
+static gicv3_dist_ctx_t dist_ctx;
 
 static void rcar_program_mailbox(u_register_t mpidr, uintptr_t address)
 {
@@ -102,6 +104,12 @@ static void rcar_pwr_domain_suspend(const psci_power_state_t *target_state)
 	rcar_pwrc_enable_interrupt_wakeup(mpidr);
 	gicv3_cpuif_disable(plat_my_core_pos());
 
+	if (SYSTEM_PWR_STATE(target_state) == PLAT_MAX_OFF_STATE) {
+		for (unsigned int i = 0U; i < PLATFORM_CORE_COUNT; i++)
+			gicv3_rdistif_save(i, &rdist_ctx[i]);
+		gicv3_distif_save(&dist_ctx);
+	}
+
 	if (CLUSTER_PWR_STATE(target_state) == PLAT_MAX_OFF_STATE) {
 		plat_cci_disable();
 		rcar_pwrc_clusteroff(mpidr);
@@ -117,8 +125,6 @@ static void rcar_pwr_domain_suspend_finish(const psci_power_state_t
 
 	if (SYSTEM_PWR_STATE(target_state) == PLAT_MAX_OFF_STATE) {
 		plat_rcar_gic_driver_init();
-		gicv3_distif_init();
-		gicv3_rdistif_init(plat_my_core_pos());
 		plat_cci_init();
 
 		rcar_pwrc_restore_timer_state();
@@ -132,6 +138,11 @@ static void rcar_pwr_domain_suspend_finish(const psci_power_state_t
 
 	rcar_pwrc_disable_interrupt_wakeup(mpidr);
 	rcar_program_mailbox(mpidr, 0U);
+	if (SYSTEM_PWR_STATE(target_state) == PLAT_MAX_OFF_STATE) {
+		gicv3_distif_init_restore(&dist_ctx);
+		for (unsigned int i = 0U; i < PLATFORM_CORE_COUNT; i++)
+			gicv3_rdistif_init_restore(i, &rdist_ctx[i]);
+	}
 	gicv3_cpuif_enable(plat_my_core_pos());
 }
 
