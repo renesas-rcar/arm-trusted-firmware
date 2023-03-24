@@ -72,7 +72,7 @@ static const mmap_region_t rcar_mmap[] = {
 	MAP_DEVICE_RCAR,  /* 0xE6000000 - 0xE62FFFFF  SoC registers area    */
 	MAP_SRAM,         /* 0xE6342000 - 0xE6343FFF  System RAM code area  */
 	MAP_SRAM_DATA_STACK, /* 0xE6344000 - 0xE6344FFF  System RAM data & stack area */
-	MAP_SCMI_CHANNEL, /* 0xE6341000 - 0xE6341FFF  SCMI channel area     */
+	MAP_SCMI_CHANNEL, /* 0xE6359000 - 0xE6359FFF  SCMI channel area     */
 	MAP_DEVICE_RCAR2, /* 0xE6370000 - 0xFFFFFFFF  SoC registers area 2  */
 	{0}
 };
