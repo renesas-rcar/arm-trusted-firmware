@@ -194,7 +194,6 @@ void *scmi_init(scmi_channel_t *ch)
 	if (!is_scmi_version_compatible(SCMI_SYS_PWR_PROTO_VER, version)) {
 		WARN("SCMI system power management protocol version 0x%x incompatible with driver version 0x%x",
 			version, SCMI_SYS_PWR_PROTO_VER);
-		goto error;
 	}
 
 	VERBOSE("SCMI system power management protocol version 0x%x detected\n",
