@@ -433,8 +433,8 @@ static void __section(".system_ram") rcar_pwrc_set_self_refresh(void)
 static void __section(".system_ram") __attribute__ ((noinline))
 		rcar_pwrc_go_suspend_to_ram(void)
 {
-	rcar_pwrc_set_self_refresh();
 	rcar_scmi_sys_suspend();
+	rcar_pwrc_set_self_refresh();
 
 	wfi();
 
