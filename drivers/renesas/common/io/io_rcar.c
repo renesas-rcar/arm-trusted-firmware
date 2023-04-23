@@ -341,13 +341,18 @@ done:
 		 * 2. check:
 		 *      | IMAGE n |
 		 *  | IMAGE n+1 |
+		 * 3. check:
+		 *      | IMAGE n |
+		 *  |    IMAGE n+1    |
 		 *
 		 * */
-		if (((dst > addr_loaded[n].dest) &&
-		     (dst <  addr_loaded[n].dest + addr_loaded[n].length)) ||
-		    (((dst < addr_loaded[n].dest) &&
-		      (dst + len)) > addr_loaded[n].dest)) {
-			ERROR("BL2: image is inside a previous image area.\n");
+		if (((dst >= addr_loaded[n].dest) &&
+		     (dst <=  addr_loaded[n].dest + addr_loaded[n].length)) ||
+		    ((dst + len >= addr_loaded[n].dest) &&
+		     (dst + len <= addr_loaded[n].dest + addr_loaded[n].length)) ||
+		    ((dst <= addr_loaded[n].dest) &&
+		     (dst + len >= addr_loaded[n].dest + addr_loaded[n].length))) {
+			ERROR("BL2: next image overlap a previous image area.\n");
 			result = IO_FAIL;
 		}
 	}
