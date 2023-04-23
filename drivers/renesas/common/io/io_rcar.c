@@ -266,7 +266,14 @@ void rcar_read_certificate(uint64_t cert, uint32_t *len, uintptr_t *dst)
 	}
 
 	size = cert + RCAR_CERT_INFO_SIZE_OFFSET;
-	*len = mmio_read_32(size) * 4U;
+	*len = mmio_read_32(size);
+	if (*len > (UINT32_MAX / 4)) {
+		ERROR("BL2: uint32 overflow!\n");
+		*dst = 0;
+		*len = 0;
+		return;
+	}
+	*len = *len * 4U;
 	dstl = cert + RCAR_CERT_INFO_DST_OFFSET;
 	dsth = dstl + 4U;
 	*dst = ((uintptr_t) mmio_read_32(dsth) << 32) +
