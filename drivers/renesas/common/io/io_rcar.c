@@ -84,7 +84,7 @@ typedef struct {
 #define RCAR_COUNT_LOAD_BL33		(2U)
 #define RCAR_COUNT_LOAD_BL33X		(3U)
 
-#define CHECK_IMAGE_AREA_CNT (5U)
+#define CHECK_IMAGE_AREA_CNT (7U)
 #define BOOT_BL2_ADDR (0xE6304000U)
 #define BOOT_BL2_LENGTH (0x19000U)
 
@@ -93,8 +93,10 @@ typedef struct {
 	uintptr_t length;
 } addr_loaded_t;
 
-static addr_loaded_t addr_loaded[CHECK_IMAGE_AREA_CNT] = { [0] = {BOOT_BL2_ADDR, BOOT_BL2_LENGTH} };
-static uint32_t addr_loaded_cnt = 1;
+static addr_loaded_t addr_loaded[CHECK_IMAGE_AREA_CNT] = { [0] = {BOOT_BL2_ADDR, BOOT_BL2_LENGTH},
+							   [1] = {BL31_BASE, RCAR_TRUSTED_SRAM_SIZE},
+							   [2] = {BL32_BASE, 0x00200000} };
+static uint32_t addr_loaded_cnt = 3;
 
 static const plat_rcar_name_offset_t name_offset[] = {
 	{BL31_IMAGE_ID, 0U, RCAR_ATTR_SET_ALL(0, 0, 0)},
