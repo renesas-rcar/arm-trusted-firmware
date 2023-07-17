@@ -440,9 +440,11 @@ int bl2_plat_handle_pre_image_load(unsigned int image_id)
 				return 1;
 			}
 
+#ifndef SPD_NONE
 			ui64_ret = check_secure_load_area(
 					BL32_BASE, (BL32_LIMIT - BL32_BASE),
 					dest, len);
+#endif
 		} else {
 			/* case of image_id == BL33_IMAGE_ID */
 			ui64_ret = rcar_get_dest_addr_from_cert(
