@@ -85,6 +85,8 @@
 #define RCAR_CNTC_EXTAL			U(16666666)
 #elif (RCAR_LSI == RCAR_V4H)
 #define RCAR_CNTC_EXTAL			U(16666600)
+#elif (RCAR_LSI == RCAR_V4M)
+#define RCAR_CNTC_EXTAL			U(16666600)
 #endif
 /* Counter Count Value Lower register */
 #define RCAR_CNTCVL_OFF			UL(0x008)
