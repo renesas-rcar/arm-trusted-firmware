@@ -98,7 +98,8 @@ PLAT_INCLUDES	:=	-Iplat/renesas/rcar_gen4/include		\
 			-Iplat/renesas/rcar_gen4			\
 			-Idrivers/renesas/rcar_gen4/pwrc		\
 			-Idrivers/renesas/rcar_gen4/scif		\
-			-Idrivers/renesas/rcar_gen4/ptp
+			-Idrivers/renesas/rcar_gen4/ptp			\
+			-Idrivers/renesas/rcar_gen4/mssr
 
 ifneq (${ENABLE_STACK_PROTECTOR},0)
 BL_COMMON_SOURCES	+=	plat/renesas/rcar_gen4/rcar_stack_protector.c
@@ -135,6 +136,7 @@ BL31_SOURCES	+=	${RCAR_GIC_SOURCES}				\
 			drivers/renesas/rcar_gen4/pwrc/pwrc.c		\
 			drivers/renesas/rcar_gen4/scif/scif.c		\
 			drivers/renesas/rcar_gen4/scif/scif_helpers.S	\
+			drivers/renesas/rcar_gen4/mssr/mssr.c		\
 			drivers/arm/cci/cci.c
 
 ifeq (${SET_SCMI_PARAM},1)
