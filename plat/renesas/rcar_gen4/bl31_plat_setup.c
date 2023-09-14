@@ -19,6 +19,7 @@
 
 #include "pwrc.h"
 #include "ptp.h"
+#include "mssr.h"
 #include "rcar_def.h"
 #include "rcar_private.h"
 #include "rcar_version.h"
@@ -73,6 +74,8 @@ void bl31_plat_arch_setup(void)
 
 void bl31_platform_setup(void)
 {
+	rcar_mssr_setup();
+
 	plat_rcar_gic_driver_init();
 	plat_rcar_gic_init();
 
