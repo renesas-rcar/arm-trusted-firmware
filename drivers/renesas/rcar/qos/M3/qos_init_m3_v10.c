@@ -19,7 +19,7 @@
 struct rcar_gen3_dbsc_qos_settings m3_v10_qos[] = {
 	/* BUFCAM settings */
 	/* DBSC_DBCAM0CNF0 not set */
-	{ DBSC_DBCAM0CNF1, 0x00043218 },
+	{ DBSC_DBCAM0CNF1, 0x00048218U },
 	{ DBSC_DBCAM0CNF2, 0x000000F4 },
 	{ DBSC_DBCAM0CNF3, 0x00000000 },
 	{ DBSC_DBSCHCNT0, 0x080F0037 },
