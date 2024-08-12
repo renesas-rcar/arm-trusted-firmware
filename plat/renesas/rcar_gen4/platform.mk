@@ -134,5 +134,5 @@ clean_srecord:
 .PHONY: rcar_srecord
 rcar_srecord: $(BL31_ELF_SRC)
 	@echo "generating srec: ${SREC_PATH}/bl31.srec"
-	$(Q)$(OC) -O srec --srec-forceS3 ${BL31_ELF_SRC} ${SREC_PATH}/bl31.srec
+	$(Q)$($(ARCH)-oc) -O srec --srec-forceS3 ${BL31_ELF_SRC} ${SREC_PATH}/bl31.srec
 
