@@ -113,7 +113,7 @@ warm_reset:
 exit:
 	ret	x9
 _panic:
-	b	do_panic
+	b	el3_panic
 
 endfunc plat_get_my_entrypoint
 

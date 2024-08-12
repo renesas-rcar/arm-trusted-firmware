@@ -104,6 +104,8 @@ BL31_SOURCES	+=	${RCAR_GIC_SOURCES}				\
 			plat/renesas/rcar_gen4/plat_pm.c		\
 			plat/renesas/rcar_gen4/plat_pm_scmi.c		\
 			plat/renesas/rcar_gen4/rcar_common.c		\
+			drivers/delay_timer/delay_timer.c       \
+			drivers/delay_timer/generic_delay_timer.c   \
 			drivers/renesas/rcar_gen4/pwrc/call_sram.S	\
 			drivers/renesas/rcar_gen4/pwrc/pwrc.c		\
 			drivers/renesas/rcar_gen4/scif/scif.c		\
