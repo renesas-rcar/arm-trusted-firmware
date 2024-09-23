@@ -70,11 +70,10 @@ $(eval $(call add_define,RCAR_VMA_ADJUST_ADDR))
 
 ###################################################
 
-include ../../../make_helpers/defaults.mk
-
 #c compiler
 CFLAGS += ${DEFINES}
 CFLAGS += -I../../../include/lib/libc -I../../../include/lib/libc/${ARCH}
+LD := $(CROSS_COMPILE)ld
 
 #clean
 CL = rm -f
@@ -91,19 +90,19 @@ all: $(OUTPUT_FILE_SA0) $(OUTPUT_FILE_SA6)
 # Linker
 ###################################################
 $(OUTPUT_FILE_SA0) : $(MEMORY_DEF_SA0) $(OBJ_FILE_SA0)
-	$(aarch64-ld) $(OBJ_FILE_SA0) -nostdlib	\
+	$(LD) $(OBJ_FILE_SA0) -nostdlib	\
 	-T $(MEMORY_DEF_SA0)			\
 	-o $(OUTPUT_FILE_SA0)			\
-	-Wl,-Map $(FILE_NAME_SA0).map 		\
+	-Map $(FILE_NAME_SA0).map 		\
 
 	$(aarch64-oc) -O srec --adjust-vma=$(RCAR_VMA_ADJUST_ADDR) --srec-forceS3  $(OUTPUT_FILE_SA0) $(FILE_NAME_SA0).srec
 	$(aarch64-oc) -O binary --adjust-vma=$(RCAR_VMA_ADJUST_ADDR) --srec-forceS3  $(OUTPUT_FILE_SA0) $(FILE_NAME_SA0).bin
 
 $(OUTPUT_FILE_SA6) : $(MEMORY_DEF_SA6) $(OBJ_FILE_SA6)
-	$(aarch64-ld) $(OBJ_FILE_SA6) -nostdlib	\
+	$(LD) $(OBJ_FILE_SA6) -nostdlib	\
 	-T $(MEMORY_DEF_SA6)			\
 	-o $(OUTPUT_FILE_SA6)			\
-	-Wl,-Map $(FILE_NAME_SA6).map 		\
+	-Map $(FILE_NAME_SA6).map 		\
 
 	$(aarch64-oc) -O srec --adjust-vma=$(RCAR_VMA_ADJUST_ADDR) --srec-forceS3  $(OUTPUT_FILE_SA6) $(FILE_NAME_SA6).srec
 	$(aarch64-oc) -O binary --adjust-vma=$(RCAR_VMA_ADJUST_ADDR) --srec-forceS3  $(OUTPUT_FILE_SA6) $(FILE_NAME_SA6).bin
