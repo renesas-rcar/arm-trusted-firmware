@@ -35,7 +35,6 @@
 #include "emmc_def.h"
 #include "emmc_hal.h"
 #include "emmc_std.h"
-
 #if PMIC_ROHM_BD9571 && RCAR_SYSTEM_RESET_KEEPON_DDR
 #include "iic_dvfs.h"
 #endif
@@ -53,7 +52,7 @@
  */
 static const uint64_t BL2_RO_BASE		= BL_CODE_BASE;
 static const uint64_t BL2_RO_LIMIT		= BL_CODE_END;
-
+uint32_t rcar_m3nm3l_ident ;
 #if USE_COHERENT_MEM
 static const uint64_t BL2_COHERENT_RAM_BASE	= BL_COHERENT_RAM_BASE;
 static const uint64_t BL2_COHERENT_RAM_LIMIT	= BL_COHERENT_RAM_END;
@@ -722,9 +721,6 @@ static void bl2_populate_compatible_string(void *dt)
 		ret = fdt_appendprop_string(dt, 0, "compatible",
 					    "renesas,r8a77995");
 		break;
-	default:
-		NOTICE("BL2: Cannot set compatible string, SoC unsupported\n");
-		panic();
 	}
 
 	if (ret < 0) {
@@ -877,7 +873,7 @@ static void bl2_advertise_dram_size(uint32_t product)
 		[6] = 0x700000000ULL,
 	};
 	uint32_t cut = mmio_read_32(RCAR_PRR) & PRR_CUT_MASK;
-
+	rcar_m3nm3l_ident = (*(volatile uint32_t*)RCAR_M3NM3L_IDENT);    // identify SoC type (M3N or M3Le)
 	switch (product) {
 	case PRR_PRODUCT_H3:
 #if (RCAR_DRAM_LPDDR4_MEMCONF == 0)
@@ -920,12 +916,21 @@ static void bl2_advertise_dram_size(uint32_t product)
 		break;
 
 	case PRR_PRODUCT_M3N:
+
 #if (RCAR_DRAM_LPDDR4_MEMCONF == 2)
 		/* 4GB(4GBx1) */
-		dram_config[1] = 0x100000000ULL;
+		if (rcar_m3nm3l_ident == RCAR_M3N_IDENT_VAL)
+			dram_config[1] = 0x100000000ULL;
 #elif (RCAR_DRAM_LPDDR4_MEMCONF == 1)
-		/* 2GB(1GBx2) */
-		dram_config[1] = 0x80000000ULL;
+			/* 2GB(1GBx2) */
+			dram_config[1] = 0x80000000ULL;
+#elif (RCAR_DRAM_LPDDR4_MEMCONF == 0)
+		/* 4GB(4GBx1) */
+		if (rcar_m3nm3l_ident == RCAR_M3L_IDENT_VAL){
+			dram_config[1] = 0x100000000ULL;
+		} else {
+			dram_config[1] = 0x80000000ULL;
+		}
 #endif
 		break;
 
@@ -967,6 +972,7 @@ void bl2_el3_early_platform_setup(u_register_t arg1, u_register_t arg2,
 	const char *cpu_ca57 = "CA57";
 	const char *cpu_ca53 = "CA53";
 	const char *product_m3n = "M3N";
+	const char *product_m3l = "M3L";
 	const char *product_h3 = "H3";
 	const char *product_m3 = "M3";
 	const char *product_e3 = "E3";
@@ -1033,7 +1039,7 @@ void bl2_el3_early_platform_setup(u_register_t arg1, u_register_t arg2,
 	reg = mmio_read_32(RCAR_PRR);
 	product_cut = reg & (PRR_PRODUCT_MASK | PRR_CUT_MASK);
 	product = reg & PRR_PRODUCT_MASK;
-
+	rcar_m3nm3l_ident = (*(volatile uint32_t*)RCAR_M3NM3L_IDENT);
 	switch (product) {
 	case PRR_PRODUCT_H3:
 		str = product_h3;
@@ -1042,7 +1048,13 @@ void bl2_el3_early_platform_setup(u_register_t arg1, u_register_t arg2,
 		str = product_m3;
 		break;
 	case PRR_PRODUCT_M3N:
+		if (rcar_m3nm3l_ident == RCAR_M3N_IDENT_VAL)
+		{
 		str = product_m3n;
+		} else 
+		{
+		str = product_m3l;	
+		}
 		break;
 	case PRR_PRODUCT_V3M:
 		str = product_v3m;
@@ -1065,6 +1077,7 @@ void bl2_el3_early_platform_setup(u_register_t arg1, u_register_t arg2,
 			NOTICE("BL2: PRR is R-Car %s Ver.1.1 / Ver.1.2\n",
 				str);
 		} else {
+			
 			NOTICE("BL2: PRR is R-Car %s Ver.1.%d\n",
 				str,
 				(reg & RCAR_MINOR_MASK) + RCAR_M3_MINOR_OFFSET);
@@ -1081,7 +1094,12 @@ void bl2_el3_early_platform_setup(u_register_t arg1, u_register_t arg2,
 		major = (reg & RCAR_MAJOR_MASK) >> RCAR_MAJOR_SHIFT;
 		major = major + RCAR_MAJOR_OFFSET;
 		minor = reg & RCAR_MINOR_MASK;
+		if (rcar_m3nm3l_ident == RCAR_M3N_IDENT_VAL)
+		{
 		NOTICE("BL2: PRR is R-Car %s Ver.%d.%d\n", str, major, minor);
+		} else {
+		NOTICE("BL2: PRR is R-Car %s Ver.1.0\n", str);	
+		}
 	}
 
 	if (PRR_PRODUCT_E3 == product || PRR_PRODUCT_D3 == product) {
@@ -1111,10 +1129,13 @@ void bl2_el3_early_platform_setup(u_register_t arg1, u_register_t arg2,
 
 	if (type == BOARD_UNKNOWN || rev == BOARD_REV_UNKNOWN)
 		NOTICE("BL2: Board is %s Rev.---\n", GET_BOARD_NAME(type));
-	else {
+	else if (rcar_m3nm3l_ident != RCAR_M3L_IDENT_VAL) {
 		NOTICE("BL2: Board is %s Rev.%d.%d\n",
 		       GET_BOARD_NAME(type),
 		       GET_BOARD_MAJOR(rev), GET_BOARD_MINOR(rev));
+	}else
+	{
+		NOTICE("BL2: Board is Geist Rev 1.0\n");
 	}
 
 #if RCAR_LSI != RCAR_AUTO
@@ -1124,9 +1145,12 @@ void bl2_el3_early_platform_setup(u_register_t arg1, u_register_t arg2,
 		panic();
 	}
 #endif
+
+	 // identify SoC type (M3Le or another board)
+	if (rcar_m3nm3l_ident == RCAR_M3N_IDENT_VAL){
 	rcar_avs_init();
 	rcar_avs_setting();
-
+	}
 	switch (boot_dev) {
 	case MODEMR_BOOT_DEV_HYPERFLASH160:
 		str = boot_hyper160;
@@ -1155,8 +1179,9 @@ void bl2_el3_early_platform_setup(u_register_t arg1, u_register_t arg2,
 		break;
 	}
 	NOTICE("BL2: Boot device is %s\n", str);
-
+	if (rcar_m3nm3l_ident == RCAR_M3N_IDENT_VAL){
 	rcar_avs_setting();
+	}
 	reg = rcar_rom_get_lcs(&lcs);
 	if (reg) {
 		str = unknown;
@@ -1186,8 +1211,9 @@ void bl2_el3_early_platform_setup(u_register_t arg1, u_register_t arg2,
 
 lcm_state:
 	NOTICE("BL2: LCM state is %s\n", str);
-
+	if (rcar_m3nm3l_ident == RCAR_M3N_IDENT_VAL){
 	rcar_avs_end();
+	}
 	is_ddr_backup_mode();
 
 	bl2_tzram_layout.total_base = BL31_BASE;

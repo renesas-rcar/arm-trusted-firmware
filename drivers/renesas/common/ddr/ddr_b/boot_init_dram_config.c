@@ -6,7 +6,7 @@
  */
 
 #include <board.h>
-
+#include <rcar_def.h>
 #ifndef RZG_SOC
 #define RZG_SOC		0
 #endif
@@ -17,10 +17,9 @@
 
 #include <board.h>
 
-#define BOARDNUM 22
+#define BOARDNUM 23
 #endif /* RZG_SOC == 1 */
 #define BOARD_JUDGE_AUTO
-
 #ifdef BOARD_JUDGE_AUTO
 static uint32_t _board_judge(void);
 
@@ -295,7 +294,7 @@ static const struct _boardcnf boardcnfs[BOARDNUM] = {
 				  0, 0, 0, 0, 0, 0, 0, 0 }
 			}
 		}
-	},
+		},
 };
 #else
 static const struct _boardcnf boardcnfs[BOARDNUM] = {
@@ -1765,7 +1764,42 @@ static const struct _boardcnf boardcnfs[BOARDNUM] = {
 	    0, 0, 0, 0, 0, 0, 0, 0}
 	}
 	}
-	}
+	},
+/* boardcnf[22] RENESAS R-CarM3Le Reference board Rev.0.14/SoC */
+    {
+		0x01U,
+		0x01U,
+		0x0300U,
+		0U,
+		0x0300U,
+		0x00A0U,
+		{
+		{
+
+        { 0x04U, 0x04U },
+           0x520314FFFF345021U,
+           0x3201U,
+        { 0x01726453U, 0x23510476U, 0x45732061U, 0x17406238U },
+        { 0x08U, 0x08U, 0x08U, 0x05U },
+           WDQLVL_PAT,
+        { 0U, 0U, 0U, 0U, 0U, 0U, 0U, 0U,
+          0U, 0U, 0U, 0U, 0U, 0U, 0U, 0U },
+        { 0U, 0U, 0U, 0U },
+        { 0U, 0U, 0U, 0U, 0U, 0U, 0U, 0U,
+		  0U, 0U, 0U, 0U, 0U, 0U, 0U, 0U,
+		  0U, 0U, 0U, 0U, 0U, 0U, 0U, 0U,
+          0U, 0U, 0U, 0U, 0U, 0U, 0U, 0U },
+        { 0U, 0U, 0U, 0U },
+
+        { 0U, 0U, 0U, 0U, 0U, 0U, 0U, 0U,
+          0U, 0U, 0U, 0U, 0U, 0U, 0U, 0U,
+          0U, 0U, 0U, 0U, 0U, 0U, 0U, 0U,
+          0U, 0U, 0U, 0U, 0U, 0U, 0U, 0U }
+
+   	    }
+   	    }
+   	    },
+
 };
 #endif /* RZG_SOC == 1 */
 
@@ -1798,7 +1832,7 @@ void boardcnf_get_brd_clk(uint32_t brd, uint32_t *clk, uint32_t *div)
 		}
 	}
 	(void)brd;
-}
+};
 
 void boardcnf_get_ddr_mbps(uint32_t brd, uint32_t *mbps, uint32_t *div)
 {
@@ -2013,6 +2047,7 @@ static uint32_t ddr_rank_judge(void)
 static uint32_t _board_judge(void)
 {
 	uint32_t brd;
+	uint32_t rcar_m3nm3l_ident ;
 
 #if (RZG_SOC == 1)
 	brd = rzg2_board_judge();
@@ -2050,13 +2085,18 @@ static uint32_t _board_judge(void)
 
 	/* RENESAS Eva-board */
 	brd = 99;
+	rcar_m3nm3l_ident = (*(volatile uint32_t *)(RCAR_M3NM3L_IDENT));
+	//NOTICE("rcar_m3nm3l_ident value = 0x%x\n",rcar_m3nm3l_ident);
 	if (prr_product == PRR_PRODUCT_V3H) {
 		/* RENESAS Condor board */
 		brd = 12;
 	} else if (usb2_ovc_open) {
-		if (prr_product == PRR_PRODUCT_M3N) {
+		if ((prr_product == PRR_PRODUCT_M3N) && (rcar_m3nm3l_ident == RCAR_M3N_IDENT_VAL)) {
 			/* RENESAS Kriek board with M3-N */
 			brd = 10;
+		} else if ((prr_product == PRR_PRODUCT_M3N) && (rcar_m3nm3l_ident == RCAR_M3L_IDENT_VAL)) {
+		    NOTICE("RENESAS_BOARD_M3LESOC_GEIST_4GB_2RANK\n");
+			brd = 22;
 		} else if (prr_product == PRR_PRODUCT_M3) {
 			/* RENESAS Kriek board with M3-W */
 			brd = 1;
@@ -2086,8 +2126,16 @@ static uint32_t _board_judge(void)
 #endif
 			}
 		} else if (prr_product == PRR_PRODUCT_M3N) {
+		// identify Soc Type (M3N or M3Le)
+		    rcar_m3nm3l_ident = (*(volatile uint32_t *)(RCAR_M3NM3L_IDENT));
+		if (rcar_m3nm3l_ident == RCAR_M3N_IDENT_VAL) {
 			/* RENESAS SALVATOR-X (M3-N/SIP) */
+			NOTICE("RENESAS SALVATOR-X M3N\n");
 			brd = 11;
+		} else if (rcar_m3nm3l_ident == RCAR_M3L_IDENT_VAL){
+			/* RENESAS GEIST M3L4GB */
+			NOTICE("RENESAS_BOARD_M3LESOC_GEIST_4GB_2RANK\n");
+			brd = 22 ;
 		} else if ((prr_product == PRR_PRODUCT_M3) &&
 			   (prr_cut <= PRR_PRODUCT_20)) {
 			/* RENESAS SALVATOR-X (M3-W/SIP) */
@@ -2100,6 +2148,9 @@ static uint32_t _board_judge(void)
 			   (prr_cut >= PRR_PRODUCT_30)) {
 			/* RENESAS SALVATOR-X (M3-W ver.3.0/SIP) */
 			brd = 18;
+		} else {
+			NOTICE("Unknown product\n");
+		}
 		}
 	}
 #endif
