@@ -24,7 +24,6 @@ void rcar_pwrc_restore_timer_state(void);
 
 void plat_secondary_reset(void);
 
-int32_t rcar_pwrc_cpu_migrate_info(u_register_t *resident_cpu);
 bool rcar_pwrc_mpidr_is_boot_cpu(u_register_t mpidr);
 #endif
 

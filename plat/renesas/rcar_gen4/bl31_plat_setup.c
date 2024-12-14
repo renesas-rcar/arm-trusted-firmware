@@ -94,14 +94,8 @@ void bl31_platform_setup(void)
 	rcar_ptp_setup();
 }
 
-const spd_pm_ops_t rcar_pm = {
-	.svc_migrate_info = rcar_pwrc_cpu_migrate_info,
-};
-
 void bl31_plat_runtime_setup(void)
 {
-	psci_register_spd_pm_hook(&rcar_pm);
-
 	rcar_console_runtime_init();
 	console_switch_state(CONSOLE_FLAG_RUNTIME);
 

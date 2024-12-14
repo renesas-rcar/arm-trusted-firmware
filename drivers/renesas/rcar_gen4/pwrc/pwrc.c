@@ -138,13 +138,6 @@ void rcar_pwrc_cpuon(u_register_t mpidr)
 	rcar_boot_mpidr = read_mpidr_el1() & RCAR_MPIDR_AFFMASK;
 }
 
-int32_t rcar_pwrc_cpu_migrate_info(u_register_t *resident_cpu)
-{
-	*resident_cpu = rcar_boot_mpidr;
-
-	return PSCI_TOS_NOT_UP_MIG_CAP;
-}
-
 bool rcar_pwrc_mpidr_is_boot_cpu(u_register_t mpidr)
 {
 	return (mpidr & RCAR_MPIDR_AFFMASK) == rcar_boot_mpidr;
