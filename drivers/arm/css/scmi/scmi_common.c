@@ -183,7 +183,6 @@ void *scmi_init(scmi_channel_t *ch)
 	if (!is_scmi_version_compatible(SCMI_PWR_DMN_PROTO_VER, version)) {
 		WARN("SCMI power domain protocol version 0x%x incompatible with driver version 0x%x\n",
 			version, SCMI_PWR_DMN_PROTO_VER);
-		goto error;
 	}
 
 	VERBOSE("SCMI power domain protocol version 0x%x detected\n", version);
