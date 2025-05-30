@@ -33,25 +33,39 @@
  * L1:I/64KB per core, D/64KB per core, L2:512KB L3:4MB per cluster
  */
 
-/* Hardware environment: 8 clusters, 4 cores each */
-#define PLATFORM_CLUSTER_COUNT		U(8)
-#define PLATFORM_CLUSTER0_CORE_COUNT	U(4)
-#define PLATFORM_CLUSTER1_CORE_COUNT	U(4)
-#define PLATFORM_CLUSTER2_CORE_COUNT	U(4)
-#define PLATFORM_CLUSTER3_CORE_COUNT	U(4)
-#define PLATFORM_CLUSTER4_CORE_COUNT	U(4)
-#define PLATFORM_CLUSTER5_CORE_COUNT	U(4)
-#define PLATFORM_CLUSTER6_CORE_COUNT	U(4)
-#define PLATFORM_CLUSTER7_CORE_COUNT	U(4)
-#define PLATFORM_CORE_COUNT		(PLATFORM_CLUSTER7_CORE_COUNT + \
-					PLATFORM_CLUSTER6_CORE_COUNT + \
-					PLATFORM_CLUSTER5_CORE_COUNT + \
-					PLATFORM_CLUSTER4_CORE_COUNT + \
-					PLATFORM_CLUSTER3_CORE_COUNT + \
-					PLATFORM_CLUSTER2_CORE_COUNT + \
-					PLATFORM_CLUSTER1_CORE_COUNT + \
-					PLATFORM_CLUSTER0_CORE_COUNT)
-#define PLATFORM_MAX_CPUS_PER_CLUSTER U(4)
+#if VDK_ENV == 1
+    /* VDK environment: 4 clusters, 8 cores each */
+    #define PLATFORM_CLUSTER_COUNT         U(4)
+    #define PLATFORM_CLUSTER0_CORE_COUNT  U(8)
+    #define PLATFORM_CLUSTER1_CORE_COUNT  U(8)
+    #define PLATFORM_CLUSTER2_CORE_COUNT  U(8)
+    #define PLATFORM_CLUSTER3_CORE_COUNT  U(8)
+    #define PLATFORM_CORE_COUNT           (PLATFORM_CLUSTER3_CORE_COUNT + \
+                                          PLATFORM_CLUSTER2_CORE_COUNT + \
+                                          PLATFORM_CLUSTER1_CORE_COUNT + \
+                                          PLATFORM_CLUSTER0_CORE_COUNT)
+    #define PLATFORM_MAX_CPUS_PER_CLUSTER U(8)
+#else
+    /* Hardware environment: 8 clusters, 4 cores each */
+    #define PLATFORM_CLUSTER_COUNT         U(8)
+    #define PLATFORM_CLUSTER0_CORE_COUNT  U(4)
+    #define PLATFORM_CLUSTER1_CORE_COUNT  U(4)
+    #define PLATFORM_CLUSTER2_CORE_COUNT  U(4)
+    #define PLATFORM_CLUSTER3_CORE_COUNT  U(4)
+    #define PLATFORM_CLUSTER4_CORE_COUNT  U(4)
+    #define PLATFORM_CLUSTER5_CORE_COUNT  U(4)
+    #define PLATFORM_CLUSTER6_CORE_COUNT  U(4)
+    #define PLATFORM_CLUSTER7_CORE_COUNT  U(4)
+    #define PLATFORM_CORE_COUNT           (PLATFORM_CLUSTER7_CORE_COUNT + \
+                                          PLATFORM_CLUSTER6_CORE_COUNT + \
+                                          PLATFORM_CLUSTER5_CORE_COUNT + \
+                                          PLATFORM_CLUSTER4_CORE_COUNT + \
+                                          PLATFORM_CLUSTER3_CORE_COUNT + \
+                                          PLATFORM_CLUSTER2_CORE_COUNT + \
+                                          PLATFORM_CLUSTER1_CORE_COUNT + \
+                                          PLATFORM_CLUSTER0_CORE_COUNT)
+    #define PLATFORM_MAX_CPUS_PER_CLUSTER U(4)
+#endif
 
 #define PLAT_MAX_PWR_LVL		MPIDR_AFFLVL2
 #define PLAT_NUM_PWR_DOMAINS		(PLATFORM_CORE_COUNT + \
@@ -84,6 +98,15 @@
  */
 #define BL31_BASE   (RCAR_TRUSTED_SRAM_BASE)
 #define BL31_LIMIT  (RCAR_TRUSTED_SRAM_BASE + RCAR_TRUSTED_SRAM_SIZE)
+
+#if VDK_ENV == 1
+    #define BL32_BASE   0x12500000
+    #define BL32_LIMIT  (BL32_BASE + 0x100000)  // 1MB
+
+    #define BL33_BASE  0x60600000
+
+    #define BL33_LIMIT  (BL33_BASE + 0xA00000)  // 10MB
+#endif
 
 
 /*******************************************************************************

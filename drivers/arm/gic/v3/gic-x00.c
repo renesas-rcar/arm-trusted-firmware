@@ -72,12 +72,19 @@ static void gicr_wait_group_not_in_transit(uintptr_t base)
 
 static void gic600_pwr_on(uintptr_t base)
 {
+	#if VDK_ENV == 1
+		uint32_t pwrr;
+	#endif
+
 	do {	/* Wait until group not transitioning */
 		gicr_wait_group_not_in_transit(base);
-
+		#if VDK_ENV == 1
+			pwrr = gicr_read_pwrr(base);
+		#endif
 		/* Power on redistributor */
-		gicr_write_pwrr(base, PWRR_ON);
-
+		#if VDK_ENV == 1
+			gicr_write_pwrr(base, pwrr & ~0x3);
+		#endif
 		/*
 		 * Wait until the power on state is reflected.
 		 * If RDPD == 0 then powered on.

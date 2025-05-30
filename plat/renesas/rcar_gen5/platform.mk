@@ -33,6 +33,14 @@ else
     endif
 endif
 
+# Process VDK_ENV flag
+# 0:Disable(default), 1:Enable
+ifndef VDK_ENV
+VDK_ENV := 0
+endif
+$(eval $(call add_define,VDK_ENV=$(VDK_ENV)))
+
+
 
 ifeq (${SPD},none)
   SPD_NONE:=1
@@ -75,6 +83,10 @@ PLAT_INCLUDES	:=	-Iplat/renesas/rcar_gen5/include		\
 			-Idrivers/renesas/rcar_gen5/pwrc		\
 			-Idrivers/renesas/rcar_gen5/scif
 
+ifeq ($(VDK_ENV), 1)
+    PLAT_INCLUDES += -Idrivers/renesas/rcar_gen5/tauj		\
+		     -Idrivers/renesas/rcar_gen5/scif/vdk
+endif
 
 
 ifneq (${ENABLE_STACK_PROTECTOR},0)
@@ -117,12 +129,18 @@ BL31_SOURCES	+=	${RCAR_GIC_SOURCES}				\
 			drivers/delay_timer/generic_delay_timer.c	\
 			drivers/renesas/rcar_gen5/pwrc/call_sram.S	\
 			drivers/renesas/rcar_gen5/pwrc/pwrc.c		\
+			drivers/renesas/rcar_gen5/tauj/tauj.c		\
 			drivers/renesas/rcar_gen5/scif/scif.c		\
+			drivers/renesas/rcar_gen5/scif/vdk/uart.c	\
 			drivers/renesas/rcar_gen5/scif/scif_helpers.S	\
 			${SCMI_DRIVER_SOURES}				\
 			drivers/arm/cci/cci.c
 
 
+ifeq ($(VDK_ENV), 1)
+    BL31_SOURCES += drivers/renesas/rcar_gen5/tauj/tauj.c		\
+		    drivers/renesas/rcar_gen5/scif/vdk/uart.c
+endif
 
 include lib/xlat_tables_v2/xlat_tables.mk
 ifneq (${MBEDTLS_COMMON_MK}, 1)
@@ -130,7 +148,16 @@ include drivers/auth/mbedtls/mbedtls_crypto.mk
 endif
 PLAT_BL_COMMON_SOURCES	+=	${XLAT_TABLES_LIB_SRCS}
 
+# Process RCAR_BL33_EXECUTION_EL flag
+ifndef RCAR_BL33_EXECUTION_EL
+RCAR_BL33_EXECUTION_EL := 0
+endif
+$(eval $(call add_define,RCAR_BL33_EXECUTION_EL))
 
+# Process RCAR_BL33_ARG0 flag
+ifdef RCAR_BL33_ARG0
+$(eval $(call add_define,RCAR_BL33_ARG0))
+endif
 
 # build the layout images for the bootrom and the necessary srecords
 rcar: rcar_srecord

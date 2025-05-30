@@ -16,6 +16,11 @@
 #include <drivers/console.h>
 #include <lib/mmio.h>
 #include <plat/common/platform.h>
+#if VDK_ENV == 1
+	#include <platform_def.h>
+	#include <common/desc_image_load.h>
+	#include <lib/xlat_tables/xlat_tables_defs.h>
+#endif
 
 
 
@@ -24,23 +29,82 @@
 #include "rcar_private.h"
 #include "rcar_version.h"
 
+#if VDK_ENV == 0
 static entry_point_info_t bl33_image_ep_info;
+#endif
+
+#if VDK_ENV == 1
+
+	#define BL33_MODE MODE_EL2
+
+	uint64_t fdt_blob[PAGE_SIZE_4KB / sizeof(uint64_t)];
+
+	bl_mem_params_node_t bl2_mem_params_descs[] = {
+	# ifdef BL32_BASE
+		{
+			.image_id = BL32_IMAGE_ID,
+
+			SET_STATIC_PARAM_HEAD(ep_info, PARAM_EP, VERSION_2,
+				entry_point_info_t, SECURE | EXECUTABLE),
+			.ep_info.pc = BL32_BASE,
+			.ep_info.spsr = 0,
+			.ep_info.args.arg3 = (uintptr_t)fdt_blob,
+
+			SET_STATIC_PARAM_HEAD(image_info, PARAM_EP, VERSION_2,
+				image_info_t, 0),
+			.image_info.image_max_size = BL32_LIMIT - BL32_BASE,
+			.image_info.image_base = BL32_BASE,
+
+			.next_handoff_image_id = BL33_IMAGE_ID,
+		},
+	#endif
+		{
+			.image_id = BL33_IMAGE_ID,
+
+			SET_STATIC_PARAM_HEAD(ep_info, PARAM_EP, VERSION_2,
+				entry_point_info_t, NON_SECURE | EXECUTABLE),
+			.ep_info.spsr = SPSR_64(BL33_MODE, MODE_SP_ELX,
+				DISABLE_ALL_EXCEPTIONS),
+			.ep_info.pc = BL33_BASE,
+			.ep_info.args.arg0 = 0x01000000,
+			.ep_info.args.arg1 = (uintptr_t)fdt_blob,
+			SET_STATIC_PARAM_HEAD(image_info, PARAM_EP, VERSION_2,
+				image_info_t, 0),
+			.image_info.image_max_size =
+					(uint32_t) (BL33_LIMIT - BL33_BASE),
+			.image_info.image_base = BL33_BASE,
+
+			.next_handoff_image_id = INVALID_IMAGE_ID,
+		}
+	};
+
+	REGISTER_BL_IMAGE_DESCS(bl2_mem_params_descs)
+#endif
 
 
 static u_register_t rcar_boot_mpidr;
 
 struct entry_point_info *bl31_plat_get_next_image_ep_info(uint32_t type)
 {
-	bl2_to_bl31_params_mem_t *from_bl2 = (bl2_to_bl31_params_mem_t *)
-					     PARAMS_BASE;
+	#if VDK_ENV == 0
+		bl2_to_bl31_params_mem_t *from_bl2 = (bl2_to_bl31_params_mem_t *)
+						     PARAMS_BASE;
+	#endif
 
 	entry_point_info_t *next_image_info;
 
-	next_image_info = (type == NON_SECURE) ?
-		&from_bl2->bl33_ep_info : &from_bl2->bl32_ep_info;
+	#if VDK_ENV == 0
+		next_image_info = (type == NON_SECURE) ?
+			&from_bl2->bl33_ep_info : &from_bl2->bl32_ep_info;
+	#endif
 
+	#if VDK_ENV == 1
+		next_image_info = (type == NON_SECURE) ?
+			&bl2_mem_params_descs[1].ep_info : &bl2_mem_params_descs[0].ep_info;
+	#else
 		if (type == NON_SECURE)
 			return &bl33_image_ep_info;
+	#endif
 
 	return (next_image_info->pc != 0U) ? next_image_info : NULL;
 }
@@ -48,22 +112,34 @@ struct entry_point_info *bl31_plat_get_next_image_ep_info(uint32_t type)
 void bl31_early_platform_setup2(u_register_t arg0, u_register_t arg1,
 				u_register_t arg2, u_register_t arg3)
 {
+	#if VDK_ENV == 1
+		/* Wait for boot ready flag */
+		while (BOOT_READY_CR52_FLAG != mmio_read_32(BOOT_BL31_REG))
+		{
+			;
+		}
+
+		/* Clear BOOT_BL31_REG */
+		mmio_write_32(BOOT_BL31_REG, 0x0);
+	#endif
 
 	rcar_console_boot_init();
 	NOTICE("BL3-1 : Rev.%s\n", version_of_renesas);
 
 
-	bl33_image_ep_info.h.type = 0x01U;
-	bl33_image_ep_info.h.version = 0x01U;
-	bl33_image_ep_info.h.size = 0x0058U;
-	SET_SECURITY_STATE(bl33_image_ep_info.h.attr, NON_SECURE);
-	bl33_image_ep_info.pc = 0x60600000;
-	bl33_image_ep_info.spsr = 0x000003C5;
-	/* Set x0-x3 for the primary CPU as expected by the kernel */
-	bl33_image_ep_info.args.arg0 = 0U;
-	bl33_image_ep_info.args.arg1 = 0U;
-	bl33_image_ep_info.args.arg2 = 0U;
-	bl33_image_ep_info.args.arg3 = 0U;
+	#if VDK_ENV == 0
+		bl33_image_ep_info.h.type = 0x01U;
+		bl33_image_ep_info.h.version = 0x01U;
+		bl33_image_ep_info.h.size = 0x0058U;
+		SET_SECURITY_STATE(bl33_image_ep_info.h.attr, NON_SECURE);
+		bl33_image_ep_info.pc = 0x60600000;
+		bl33_image_ep_info.spsr = 0x000003C5;
+		/* Set x0-x3 for the primary CPU as expected by the kernel */
+		bl33_image_ep_info.args.arg0 = 0U;
+		bl33_image_ep_info.args.arg1 = 0U;
+		bl33_image_ep_info.args.arg2 = 0U;
+		bl33_image_ep_info.args.arg3 = 0U;
+	#endif
 }
 
 /**

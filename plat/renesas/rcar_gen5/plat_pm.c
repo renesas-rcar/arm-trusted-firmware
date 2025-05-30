@@ -26,9 +26,26 @@
 #define CORE_PWR_STATE(s)	((s)->pwr_domain_state[MPIDR_AFFLVL0])
 
 static uintptr_t rcar_sec_entrypoint;
-static gicv3_redist_ctx_t rdist_ctx[PLATFORM_CORE_COUNT];
-static gicv3_dist_ctx_t dist_ctx;
+#if VDK_ENV == 0
+	static gicv3_redist_ctx_t rdist_ctx[PLATFORM_CORE_COUNT];
+	static gicv3_dist_ctx_t dist_ctx;
+#endif
 
+#if VDK_ENV == 1
+static uint32_t rcar_pwrc_core_pos(u_register_t mpidr);
+static uint32_t rcar_pwrc_core_pos(u_register_t mpidr)
+{
+	int cpu;
+
+	cpu = plat_core_pos_by_mpidr(mpidr);
+	if (cpu < 0) {
+		ERROR("BL3-1 : The value of passed MPIDR is invalid.");
+		//panic();
+	}
+
+	return (uint32_t)cpu;
+}
+#endif
 
 
 static void rcar_program_mailbox(u_register_t mpidr, uintptr_t address)
@@ -74,6 +91,12 @@ static void rcar_pwr_domain_on_finish(const psci_power_state_t *target_state)
 	gicv3_rdistif_init(plat_my_core_pos());
 	gicv3_cpuif_enable(plat_my_core_pos());
 
+
+
+	#if VDK_ENV == 1
+		uint32_t cpu = rcar_pwrc_core_pos(mpidr);
+		CLEAR_WAKEUP_FLAG(cpu);
+	#endif
 }
 
 static void rcar_pwr_domain_off(const psci_power_state_t *target_state)
@@ -96,12 +119,16 @@ static void rcar_pwr_domain_suspend(const psci_power_state_t *target_state)
 
 	rcar_program_mailbox(mpidr, rcar_sec_entrypoint);
 	rcar_pwrc_enable_interrupt_wakeup(mpidr);
-	gicv3_cpuif_disable(plat_my_core_pos());
+	#if VDK_ENV == 0
+		gicv3_cpuif_disable(plat_my_core_pos());
+	#endif
 
 	if (SYSTEM_PWR_STATE(target_state) == PLAT_MAX_OFF_STATE) {
-		for (unsigned int i = 0U; i < PLATFORM_CORE_COUNT; i++)
-			gicv3_rdistif_save(i, &rdist_ctx[i]);
-		gicv3_distif_save(&dist_ctx);
+		#if VDK_ENV == 0
+			for (unsigned int i = 0U; i < PLATFORM_CORE_COUNT; i++)
+				gicv3_rdistif_save(i, &rdist_ctx[i]);
+			gicv3_distif_save(&dist_ctx);
+		#endif
 	}
 
 }
@@ -123,12 +150,16 @@ static void rcar_pwr_domain_suspend_finish(const psci_power_state_t
 	rcar_pwrc_disable_interrupt_wakeup(mpidr);
 	rcar_program_mailbox(mpidr, 0U);
 	if (SYSTEM_PWR_STATE(target_state) == PLAT_MAX_OFF_STATE) {
-		gicv3_distif_init_restore(&dist_ctx);
-		for (unsigned int i = 0U; i < PLATFORM_CORE_COUNT; i++)
-			gicv3_rdistif_init_restore(i, &rdist_ctx[i]);
+		#if VDK_ENV == 0
+			gicv3_distif_init_restore(&dist_ctx);
+			for (unsigned int i = 0U; i < PLATFORM_CORE_COUNT; i++)
+				gicv3_rdistif_init_restore(i, &rdist_ctx[i]);
+		#endif
 	}
 
-	gicv3_cpuif_enable(plat_my_core_pos());
+	#if VDK_ENV == 0
+		gicv3_cpuif_enable(plat_my_core_pos());
+	#endif
 
 }
 
@@ -167,6 +198,19 @@ static void __dead2 rcar_system_reset(void)
 
 static void __dead2 rcar_pwr_domain_pwr_down_wfi(const psci_power_state_t *target_state)
 {
+	#if VDK_ENV == 1
+		u_register_t mpidr = read_mpidr_el1();
+		uint32_t cpu = rcar_pwrc_core_pos(mpidr);
+
+		if (cpu != 0) {
+			while (!CHECK_WAKEUP_FLAG(cpu))
+			{
+				dsb();
+			}
+			__asm__ volatile ("b plat_secondary_reset");
+		}
+	#endif
+
 
 	if (SYSTEM_PWR_STATE(target_state) == PLAT_MAX_OFF_STATE) {
 		rcar_pwrc_suspend_to_ram();

@@ -259,6 +259,7 @@ void gicv3_rdistif_init(unsigned int proc_num)
 		gicd_set_ctlr(gicv3_driver_data->gicd_base, bitmap, RWP_TRUE);
 	}
 
+	#if VDK_ENV == 0
 		/* Setting GICR_xxx with 0x39xx_xxxx address */
 		gicr_base = gicr_base + 0x01000000;
 
@@ -268,6 +269,7 @@ void gicv3_rdistif_init(unsigned int proc_num)
 		bitmap = gicv3_secure_ppi_sgi_config_props(gicr_base,
 				gicv3_driver_data->interrupt_props,
 				gicv3_driver_data->interrupt_props_num);
+	#endif
 }
 
 /*******************************************************************************
@@ -300,9 +302,11 @@ void gicv3_cpuif_enable(unsigned int proc_num)
 	gicr_base = gicv3_driver_data->rdistif_base_addrs[proc_num];
 	gicv3_rdistif_mark_core_awake(gicr_base);
 
+	#if VDK_ENV == 0
 		/* Mark the connected core as awake: 0x39xx_xxxx address */
 		gicr_base = gicr_base + 0x01000000;
 		gicv3_rdistif_mark_core_awake(gicr_base);
+	#endif
 
 	/* Disable the legacy interrupt bypass */
 	icc_sre_el3 = ICC_SRE_DIB_BIT | ICC_SRE_DFB_BIT;

@@ -67,6 +67,20 @@ CASSERT(sizeof(rcar_cpu_data_t) == PLAT_PCPU_DATA_SIZE,
 #define RCAR_SCMI_INSTANTIATE_LOCK	spinlock_t rcar_scmi_lock
 #define RCAR_SCMI_LOCK_GET_INSTANCE	(&rcar_scmi_lock)
 
+#if VDK_ENV == 1
+/* Declare the wakeup factor variable in the .wakeup_factor section */
+extern uint32_t wakeup_flag __attribute__((section(".wakeup_factor")));
+
+/* Macro to set a specific bit in the wakeup flag based on MPIDR */
+#define SET_WAKEUP_FLAG(cpu)  (wakeup_flag |= (1U << ((cpu) & 0xFF)))
+
+/* Macro to check if the wakeup flag is set for the current core */
+#define CHECK_WAKEUP_FLAG(cpu)  (wakeup_flag & (1U << ((cpu) & 0xFF)))
+
+/* Macro to clear the wakeup flag for a specific core */
+#define CLEAR_WAKEUP_FLAG(cpu)  (wakeup_flag &= ~(1U << ((cpu) & 0xFF)))
+#endif
+
 
 /*
  * Function and variable prototypes

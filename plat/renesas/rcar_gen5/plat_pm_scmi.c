@@ -20,6 +20,9 @@
 #include "rcar_private.h"
 #include "scmi_private.h"
 
+#if VDK_ENV == 1
+#include "tauj.h"
+#endif
 
 /*
  * This file implements the SCP helper functions using SCMI protocol.
@@ -69,6 +72,10 @@ typedef enum {
 #define POWER_ON_STATE      (0x00000000U)
 #define POWER_OFF_STATE     (0x40000000U)
 
+#if VDK_ENV == 1
+/* Define the wakeup factor variable in the .wakeup_factor section */
+uint32_t wakeup_flag __attribute__((section(".wakeup_factor"))) = 0;
+#endif
 
 /*
  * Function to obtain the SCMI Domain ID and SCMI Channel number from the linear
@@ -114,6 +121,9 @@ static scmi_channel_plat_info_t scmi_plat_info;
 
 static uint32_t rcar_pwrc_core_pos(u_register_t mpidr);
 
+#if VDK_ENV == 1
+static RCAR_INSTANTIATE_LOCK;
+#endif
 
 /*
  * Helper function to turn ON a CPU power domain and its parent power domains
@@ -140,6 +150,11 @@ void rcar_scmi_cpuon(u_register_t mpidr)
 		panic();
 	}
 
+	#if VDK_ENV == 1
+	rcar_lock_get();
+	SET_WAKEUP_FLAG(core_pos);
+	rcar_lock_release();
+	#endif
 
 }
 
@@ -220,6 +235,10 @@ void rcar_scmi_sys_reboot(void)
 void rcar_scmi_sys_suspend(void)
 {
 	int ret;
+
+	#if VDK_ENV == 1
+		test_tauj();
+	#endif
 
 	ret = scmi_sys_pwr_state_set(scmi_handle,
 			SCMI_SYS_PWR_GRACEFUL_REQ, SCMI_SYS_PWR_SUSPEND);

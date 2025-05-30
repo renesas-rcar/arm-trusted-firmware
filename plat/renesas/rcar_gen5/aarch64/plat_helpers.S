@@ -40,7 +40,11 @@ func plat_renesas_calc_core_pos
 	lsr	x0, x0, #8
 	and	x1, x0, #MPIDR_CPU_MASK
 	and	x0, x0, #MPIDR_CLUSTER_MASK
-	add	x0, x1, x0, LSR #6
+	#if VDK_ENV == 1
+		add	x0, x1, x0, LSR #5
+	#else
+		add	x0, x1, x0, LSR #6
+	#endif
 	ret
 endfunc plat_renesas_calc_core_pos
 

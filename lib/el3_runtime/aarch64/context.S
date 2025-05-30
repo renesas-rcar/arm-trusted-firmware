@@ -653,6 +653,10 @@ sve_not_enabled:
 	str	xzr, [sp, #CTX_EL3STATE_OFFSET + CTX_NESTED_EA_FLAG]
 #endif /* IMAGE_BL31 */
 
+#if VDK_ENV == 1
+	msr cptr_el3, xzr
+#endif
+
 	exception_return
 
 endfunc el3_exit

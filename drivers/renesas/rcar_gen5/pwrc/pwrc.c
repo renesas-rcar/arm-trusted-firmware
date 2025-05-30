@@ -37,10 +37,6 @@ static uint32_t rcar_pwrc_code_copy_state;
 
 static void rcar_pwrc_go_suspend_to_ram(void);
 
-static void rcar_pwrc_go_suspend_to_ram(void)
-{
-
-}
 
 static uint64_t rcar_pwrc_saved_cntpct_el0;
 static uint32_t rcar_pwrc_saved_cntfid;
@@ -87,6 +83,70 @@ void rcar_pwrc_restore_timer_state(void)
 	mmio_write_32((uintptr_t)(RCAR_CNTC_BASE + CNTCR_OFF),
 			CNTCR_FCREQ((uint32_t)(0)) | CNTCR_EN);
 }
+
+
+#define BOOT_KIND_ADDR  (BOOT_KIND_BASE)
+#define BOOT_KIND_WARM  0x01
+#define BOOT_KIND_MASK  0x03  // Only the last 2 bits are relevant (Boot field)
+
+#define PMIC_BKUP_FLAG		(UL(0x1003FC50))   /* PMIC Backup Flag */
+#define PMIC_BKUP_MASK		(UL(1U << 0))   /* PMIC Backup Mask */
+#define VDK_SMON		(UL(0x1003FC60))
+#define VDK_SMON_EXPECTED_VALUE		(UL(0x10000001))
+
+static void wait_for_warm_boot(void) {
+	INFO("Waiting for Warm Boot...\n");
+
+	while ((mmio_read_32(PMIC_BKUP_FLAG) & PMIC_BKUP_MASK) != 0x01) {
+		// Optionally add a small delay to reduce CPU load
+		__asm__("nop");  // No operation (can replace with platform-specific delay)
+
+	}
+
+	/* Wait for boot ready flag */
+	while (BOOT_READY_CR52_FLAG != mmio_read_32(BOOT_BL31_REG))
+	{
+		;
+	}
+
+	/* Wait until CM33 wake up */
+	uint32_t loop_count = 100000U;
+	while(loop_count--)
+	{
+		if(0 == loop_count % 10000)
+		{
+			NOTICE("loop_count=%d\n", loop_count / 10000);
+		}
+	}
+	INFO("%s() L=%d  BOOT_BL31_REG=0x%x\n", __func__, __LINE__, mmio_read_32(BOOT_BL31_REG));
+
+	/* Clear BOOT_BL31_REG */
+	mmio_write_32(BOOT_BL31_REG, 0x0);
+	INFO("%s() L=%d  BOOT_BL31_REG=0x%x\n", __func__, __LINE__, mmio_read_32(BOOT_BL31_REG));
+
+	INFO("Warm Boot detected. Proceeding...\n");
+
+	__asm__ volatile ("b bl31_entrypoint");
+
+}
+
+static void rcar_pwrc_go_suspend_to_ram(void)
+{
+	INFO("%s() L=%d  PMIC_BKUP_FLAG=0x%x\n", __func__, __LINE__, mmio_read_32(PMIC_BKUP_FLAG));
+	rcar_scmi_sys_suspend();
+	INFO("%s() L=%d  PMIC_BKUP_FLAG=0x%x\n", __func__, __LINE__, mmio_read_32(PMIC_BKUP_FLAG));
+
+
+
+	wait_for_warm_boot();
+
+	wfi();
+
+	/* Do not return */
+	while (true)
+		;
+}
+
 void rcar_pwrc_suspend_to_ram(void)
 {
 	rcar_pwrc_save_timer_state();
@@ -103,6 +163,7 @@ void rcar_pwrc_suspend_to_ram(void)
 
 	rcar_pwrc_go_suspend_to_ram();
 }
+
 void rcar_pwrc_code_copy_to_system_ram(void)
 {
 	//TODO: Dummy now

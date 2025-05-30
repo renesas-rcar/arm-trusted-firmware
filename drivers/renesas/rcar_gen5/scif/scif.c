@@ -15,6 +15,10 @@
 #include "hscif_register.h"
 #include "scif_register.h"
 
+#if VDK_ENV == 1
+	#include "vdk/uart.h"
+#endif
+
 /* RST */
 /* RCarX5H_TS_RegisterDescription_Operating_Mode_20230920.xlsm */
 #define RST_MODEMR0         (0xC1321000U)    /* Mode0 */
@@ -38,8 +42,10 @@
 
 static void scif_console_init(uint32_t modemr);
 
-static void scif_console_putc(uint8_t outchar);
-static void hscif_console_putc(uint8_t outchar);
+#if VDK_ENV == 0
+	static void scif_console_putc(uint8_t outchar);
+	static void hscif_console_putc(uint8_t outchar);
+#endif
 
 static void (*rcar_putc)(uint8_t outchar);
 
@@ -83,21 +89,31 @@ int console_rcar_flush(console_t *pconsole)
 
 static void scif_console_init(uint32_t modemr)
 {
-	switch (modemr) {
-	case MODEMR_HSCIF_DLMODE_3000000: /* 0x00000600U */
-	case MODEMR_HSCIF_DLMODE_1843200: /* 0x00000400U */
-	case MODEMR_HSCIF_DLMODE_921600:  /* 0x00000200U */
-		/* Set the pointer to a function that outputs one character. */
-		rcar_putc = hscif_console_putc;
-		break;
-	case MODEMR_SCIF_DLMODE: /* 0x00000000 */
-		/* Set the pointer to a function that outputs one character. */
-		rcar_putc = scif_console_putc;
-		break;
-	default:
-		break;
-	}
+#if VDK_ENV == 1
+    uart_init();
+
+    /* Set the pointer to a function that outputs one character. */
+    rcar_putc = uart_console_putc;
+#else
+    switch (modemr) {
+        case MODEMR_HSCIF_DLMODE_3000000: /* 0x00000600U */
+        case MODEMR_HSCIF_DLMODE_1843200: /* 0x00000400U */
+        case MODEMR_HSCIF_DLMODE_921600:  /* 0x00000200U */
+            /* Set the pointer to a function that outputs one character. */
+            rcar_putc = hscif_console_putc;
+            break;
+
+        case MODEMR_SCIF_DLMODE: /* 0x00000000 */
+            /* Set the pointer to a function that outputs one character. */
+            rcar_putc = scif_console_putc;
+            break;
+
+        default:
+            break;
+    }
+#endif
 }
+#if VDK_ENV == 0
 static void scif_console_putc(uint8_t outchar)
 {
 	static uint8_t remain;
@@ -135,3 +151,4 @@ static void hscif_console_putc(uint8_t outchar)
 	remain--;
 }
 /* End of function hscif_console_putc(uint8_t outchar) */
+#endif

@@ -507,6 +507,9 @@ static void setup_context_common(cpu_context_t *ctx, const entry_point_info_t *e
 			scr_el3 |= SCR_ECVEN_BIT;
 		}
 	}
+	#if VDK_ENV == 1
+		scr_el3 |= SCR_FGTEN_BIT;
+	#endif
 
 	/* Enable WFE trap delay in SCR_EL3 if supported and configured */
 	if (is_feat_twed_supported()) {

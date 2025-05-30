@@ -13,6 +13,7 @@
 #define RCAR_DOMAIN			UL(0x0)
 
 #define RCAR_TRUSTED_SRAM_BASE		UL(0x40610000) /* DRAM */
+
 #define RCAR_TRUSTED_SRAM_SIZE		UL(0x00040000) /* 256kB */
 #define RCAR_SHARED_MEM_BASE		(RCAR_TRUSTED_SRAM_BASE + \
 					RCAR_TRUSTED_SRAM_SIZE)
@@ -60,8 +61,13 @@
 #define CCI500_CLUSTER3_SL_IFACE_IX	(3)
 #define RCAR_CCI_BASE			CCI500_BASE
 /* GIC */
-#define RCAR_GICD_BASE			UL(0x39000000) /* GICD base address for View 1 */
-#define RCAR_GICR_BASE			UL(0x38080000)
+#if VDK_ENV == 1
+	#define RCAR_GICD_BASE                  UL(0x38000000)
+	#define RCAR_GICR_BASE                  UL(0x38060000)   // by refer boot-wrapper-aarch64
+#else
+	#define RCAR_GICD_BASE			UL(0x39000000) /* GICD base address for View 1 */
+	#define RCAR_GICR_BASE			UL(0x38080000)
+#endif
 
 #define ARM_IRQ_SEC_PHY_TIMER		U(29)
 #define ARM_IRQ_SEC_SGI_0		U(8)
@@ -75,7 +81,12 @@
 
 /* Timer control */
 #define RCAR_CNTC_BASE			UL(0x1C000000)
-#define RCAR_CNTC_EXTAL			U(1066666667)
+
+#if VDK_ENV == 1
+	#define RCAR_CNTC_EXTAL			U(16666666)	// VDK env
+#else
+	#define RCAR_CNTC_EXTAL			U(1066666667)	// real board env
+#endif
 
 
 /* Counter Count Value Lower register */

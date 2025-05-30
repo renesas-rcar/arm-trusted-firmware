@@ -15,6 +15,16 @@
 
 const unsigned char *plat_get_power_domain_tree_desc(void)
 {
+#if VDK_ENV == 1
+	static const unsigned char rcar_power_domain_tree_desc[] = {
+		1,
+		PLATFORM_CLUSTER_COUNT,
+		PLATFORM_CLUSTER0_CORE_COUNT,
+		PLATFORM_CLUSTER1_CORE_COUNT,
+		PLATFORM_CLUSTER2_CORE_COUNT,
+		PLATFORM_CLUSTER3_CORE_COUNT
+        };
+#else
 	static const unsigned char rcar_power_domain_tree_desc[] = {
 		1,
 		PLATFORM_CLUSTER_COUNT,
@@ -27,7 +37,7 @@ const unsigned char *plat_get_power_domain_tree_desc(void)
 		PLATFORM_CLUSTER6_CORE_COUNT,
 		PLATFORM_CLUSTER7_CORE_COUNT
 	};
-
+#endif
 	return rcar_power_domain_tree_desc;
 }
 

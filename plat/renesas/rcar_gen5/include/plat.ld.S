@@ -15,6 +15,9 @@ MEMORY {
     SRAM_DATA (rwx): ORIGIN = DEVICE_SRAM_DATA_BASE, LENGTH = DEVICE_SRAM_DATA_SIZE
     PRAM      (r)  : ORIGIN = BL31_LIMIT - (DEVICE_SRAM_SIZE + DEVICE_SRAM_DATA_SIZE),
                      LENGTH = DEVICE_SRAM_SIZE + DEVICE_SRAM_DATA_SIZE
+    #if VDK_ENV == 1
+		DRAM_WAKEUP (rw): ORIGIN = 0x40650800, LENGTH = 0x1000 /* Reserve 4KB for wakeup factor */
+	#endif
 }
 
 SECTIONS
@@ -38,6 +41,15 @@ SECTIONS
 		*(.system_ram_data)
 	        __system_ram_data_end__ = .;
 	} >SRAM_DATA AT>PRAM
+
+	#if VDK_ENV == 1
+		/* Wakeup factor section in DRAM */
+		.wakeup_factor : {
+			__wakeup_factor_start__ = .;
+			KEEP(*(.wakeup_factor)) /* Ensure linker doesn't discard this section */
+			__wakeup_factor_end__ = .;
+		} >DRAM_WAKEUP
+	#endif
 
 
     ASSERT(__BL31_END__ <= (BL31_LIMIT - (DEVICE_SRAM_SIZE + DEVICE_SRAM_DATA_SIZE)),
