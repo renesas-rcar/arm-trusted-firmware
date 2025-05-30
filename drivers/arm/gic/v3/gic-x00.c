@@ -129,7 +129,8 @@ static bool gicv3_redists_need_power_mgmt(uintptr_t gicr_base)
 	 */
 	return (((reg & IIDR_MODEL_MASK) == IIDR_MODEL_ARM_GIC_600) ||
 		((reg & IIDR_MODEL_MASK) == IIDR_MODEL_ARM_GIC_600AE) ||
-		((reg & IIDR_MODEL_MASK) == IIDR_MODEL_ARM_GIC_700));
+		((reg & IIDR_MODEL_MASK) == IIDR_MODEL_ARM_GIC_700) ||
+		((reg & IIDR_MODEL_MASK) == IIDR_MODEL_ARM_GIC_720AE));
 }
 
 #endif	/* GICV3_SUPPORT_GIC600 */

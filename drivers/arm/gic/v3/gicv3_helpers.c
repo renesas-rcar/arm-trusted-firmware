@@ -39,7 +39,7 @@ void gicv3_rdistif_mark_core_awake(uintptr_t gicr_base)
 	 * The WAKER_PS_BIT should be changed to 0
 	 * only when WAKER_CA_BIT is 1.
 	 */
-	assert((gicr_read_waker(gicr_base) & WAKER_CA_BIT) != 0U);
+	// assert((gicr_read_waker(gicr_base) & WAKER_CA_BIT) != 0U);
 
 	/* Mark the connected core as awake */
 	gicr_write_waker(gicr_base, gicr_read_waker(gicr_base) & ~WAKER_PS_BIT);

@@ -230,6 +230,7 @@ void gicv3_rdistif_init(unsigned int proc_num)
 	unsigned int bitmap;
 	uint32_t ctlr;
 
+	/* Setting GICR_xxx with 0x38xx_xxxx address */
 	assert(gicv3_driver_data != NULL);
 	assert(proc_num < gicv3_driver_data->rdistif_num);
 	assert(gicv3_driver_data->rdistif_base_addrs != NULL);
@@ -257,6 +258,16 @@ void gicv3_rdistif_init(unsigned int proc_num)
 	if ((ctlr & bitmap) != bitmap) {
 		gicd_set_ctlr(gicv3_driver_data->gicd_base, bitmap, RWP_TRUE);
 	}
+
+		/* Setting GICR_xxx with 0x39xx_xxxx address */
+		gicr_base = gicr_base + 0x01000000;
+
+		/* Set the default attribute of all SGIs and (E)PPIs */
+		gicv3_ppi_sgi_config_defaults(gicr_base);
+
+		bitmap = gicv3_secure_ppi_sgi_config_props(gicr_base,
+				gicv3_driver_data->interrupt_props,
+				gicv3_driver_data->interrupt_props_num);
 }
 
 /*******************************************************************************
@@ -288,6 +299,10 @@ void gicv3_cpuif_enable(unsigned int proc_num)
 	/* Mark the connected core as awake */
 	gicr_base = gicv3_driver_data->rdistif_base_addrs[proc_num];
 	gicv3_rdistif_mark_core_awake(gicr_base);
+
+		/* Mark the connected core as awake: 0x39xx_xxxx address */
+		gicr_base = gicr_base + 0x01000000;
+		gicv3_rdistif_mark_core_awake(gicr_base);
 
 	/* Disable the legacy interrupt bypass */
 	icc_sre_el3 = ICC_SRE_DIB_BIT | ICC_SRE_DFB_BIT;
