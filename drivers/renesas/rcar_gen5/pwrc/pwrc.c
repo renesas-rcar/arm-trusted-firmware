@@ -39,7 +39,13 @@ static void rcar_pwrc_go_suspend_to_ram(void);
 
 static void rcar_pwrc_go_suspend_to_ram(void)
 {
+	rcar_scmi_sys_suspend();
 
+	wfi();
+
+	/* Do not return */
+	while (true)
+		;
 }
 
 static uint64_t rcar_pwrc_saved_cntpct_el0;
