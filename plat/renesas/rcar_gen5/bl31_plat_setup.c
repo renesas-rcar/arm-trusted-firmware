@@ -24,7 +24,6 @@
 #include "rcar_private.h"
 #include "rcar_version.h"
 
-static entry_point_info_t bl33_image_ep_info;
 
 
 static u_register_t rcar_boot_mpidr;
@@ -39,31 +38,14 @@ struct entry_point_info *bl31_plat_get_next_image_ep_info(uint32_t type)
 	next_image_info = (type == NON_SECURE) ?
 		&from_bl2->bl33_ep_info : &from_bl2->bl32_ep_info;
 
-		if (type == NON_SECURE)
-			return &bl33_image_ep_info;
-
 	return (next_image_info->pc != 0U) ? next_image_info : NULL;
 }
 
 void bl31_early_platform_setup2(u_register_t arg0, u_register_t arg1,
 				u_register_t arg2, u_register_t arg3)
 {
-
 	rcar_console_boot_init();
 	NOTICE("BL3-1 : Rev.%s\n", version_of_renesas);
-
-
-	bl33_image_ep_info.h.type = 0x01U;
-	bl33_image_ep_info.h.version = 0x01U;
-	bl33_image_ep_info.h.size = 0x0058U;
-	SET_SECURITY_STATE(bl33_image_ep_info.h.attr, NON_SECURE);
-	bl33_image_ep_info.pc = 0x60600000;
-	bl33_image_ep_info.spsr = 0x000003C5;
-	/* Set x0-x3 for the primary CPU as expected by the kernel */
-	bl33_image_ep_info.args.arg0 = 0U;
-	bl33_image_ep_info.args.arg1 = 0U;
-	bl33_image_ep_info.args.arg2 = 0U;
-	bl33_image_ep_info.args.arg3 = 0U;
 }
 
 /**

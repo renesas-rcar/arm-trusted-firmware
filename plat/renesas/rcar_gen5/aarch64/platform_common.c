@@ -30,6 +30,10 @@ const uint8_t version_of_renesas[VERSION_OF_RENESAS_MAXLEN]
 
 #define RCAR_DCACHE		MT_MEMORY
 
+#define MAP_SHARED_RAM_2		MAP_REGION_FLAT(PARAMS_BASE,	\
+					PARAMS_SIZE,		\
+					MT_MEMORY | MT_RW | MT_SECURE)
+
 #define MAP_SHARED_RAM		MAP_REGION_FLAT(RCAR_SHARED_MEM_BASE,	\
 					RCAR_SHARED_MEM_SIZE,		\
 					MT_MEMORY | MT_RW | MT_SECURE)
@@ -66,6 +70,7 @@ const uint8_t version_of_renesas[VERSION_OF_RENESAS_MAXLEN]
 static const mmap_region_t rcar_mmap[] = {
 	MAP_DEVICE_RCAR1,
 	MAP_SHARED_RAM,
+	MAP_SHARED_RAM_2,
 	MAP_ATFW_CRASH,
 	MAP_DEVICE_RCAR2,
 	MAP_SRAM,

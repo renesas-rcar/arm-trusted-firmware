@@ -48,7 +48,7 @@
  * The RCAR_MAX_MMAP_REGIONS depends on the number of entries in rcar_mmap[]
  * defined for each BL stage in platform_common.c.
  */
-#define RCAR_MMAP_ENTRIES		(9)
+#define RCAR_MMAP_ENTRIES		(10)
 /* BL31 */
 #define RCAR_CRASH_STACK		RCAR_BL31_CRASH_BASE
 
