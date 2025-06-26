@@ -105,4 +105,13 @@ void rcar_console_boot_end(void);
 void rcar_console_runtime_init(void);
 void rcar_console_runtime_end(void);
 
+uint32_t rcar_product_id(void);
+bool is_rcar_product(uint32_t product_id);
+#define PRODUCT_ID_H3	0x1
+#define PRODUCT_ID_M3	0x10
+#define PRODUCT_ID_M3N	0x20
+#define PRODUCT_ID_M3L	0x30
+#define PRODUCT_ID_E3	0x40
+#define PRODUCT_ID_D3	0x50
+
 #endif /* RCAR_PRIVATE_H */

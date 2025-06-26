@@ -10,6 +10,7 @@
 #include <drivers/console.h>
 #include <lib/xlat_tables/xlat_mmu_helpers.h>
 #include <plat/common/platform.h>
+#include <rcar_private.h>
 
 #include <lib/mmio.h>
 #include <cpg_registers.h>
@@ -97,3 +98,52 @@ void rcar_console_runtime_init(void)
 void rcar_console_runtime_end(void)
 {
 }
+
+uint32_t rcar_product_id(void)
+{
+	uint32_t product;
+	uint32_t rcar_prod_indent;
+	static uint32_t rcar_prod_id_num;
+
+	if (rcar_prod_id_num > 0)
+		return rcar_prod_id_num;
+
+	product = mmio_read_32(PRR) & PRR_PRODUCT_MASK;
+
+	switch (product)
+	{
+	case PRR_PRODUCT_H3:
+		rcar_prod_id_num = PRODUCT_ID_H3;
+		break;
+	case PRR_PRODUCT_M3:
+		rcar_prod_id_num = PRODUCT_ID_M3;
+		break;
+	case PRR_PRODUCT_D3:
+		rcar_prod_id_num = PRODUCT_ID_D3;
+		break;
+	case PRR_PRODUCT_E3:
+		rcar_prod_id_num = PRODUCT_ID_E3;
+		break;
+	case PRR_PRODUCT_M3N:
+		rcar_prod_indent = mmio_read_32(RCAR_M3NM3L_IDENT);
+		if(rcar_prod_indent == RCAR_M3N_IDENT_VAL){
+			rcar_prod_id_num = PRODUCT_ID_M3N;
+		} else {
+			rcar_prod_id_num = PRODUCT_ID_M3L;
+		}
+		break;
+	default:
+		break;
+	}
+
+	return rcar_prod_id_num;
+}
+
+bool is_rcar_product(uint32_t product_id)
+{
+	if (rcar_product_id() == product_id)
+		return true;
+
+	return false;
+}
+
