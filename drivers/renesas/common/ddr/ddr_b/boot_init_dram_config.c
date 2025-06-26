@@ -7,6 +7,7 @@
 
 #include <board.h>
 #include <rcar_def.h>
+#include <rcar_private.h>
 #ifndef RZG_SOC
 #define RZG_SOC		0
 #endif
@@ -2047,7 +2048,6 @@ static uint32_t ddr_rank_judge(void)
 static uint32_t _board_judge(void)
 {
 	uint32_t brd;
-	uint32_t rcar_m3nm3l_ident ;
 
 #if (RZG_SOC == 1)
 	brd = rzg2_board_judge();
@@ -2085,18 +2085,18 @@ static uint32_t _board_judge(void)
 
 	/* RENESAS Eva-board */
 	brd = 99;
-	rcar_m3nm3l_ident = (*(volatile uint32_t *)(RCAR_M3NM3L_IDENT));
-	//NOTICE("rcar_m3nm3l_ident value = 0x%x\n",rcar_m3nm3l_ident);
 	if (prr_product == PRR_PRODUCT_V3H) {
 		/* RENESAS Condor board */
 		brd = 12;
 	} else if (usb2_ovc_open) {
-		if ((prr_product == PRR_PRODUCT_M3N) && (rcar_m3nm3l_ident == RCAR_M3N_IDENT_VAL)) {
-			/* RENESAS Kriek board with M3-N */
-			brd = 10;
-		} else if ((prr_product == PRR_PRODUCT_M3N) && (rcar_m3nm3l_ident == RCAR_M3L_IDENT_VAL)) {
-		    NOTICE("RENESAS_BOARD_M3LESOC_GEIST_4GB_2RANK\n");
-			brd = 22;
+		if (prr_product == PRR_PRODUCT_M3N) {
+			if (is_rcar_product(PRODUCT_ID_M3N)) {
+				/* RENESAS Kriek board with M3-N */
+				brd = 10;
+			} else if (is_rcar_product(PRODUCT_ID_M3L)) {
+				/* RENESAS Geist board with M3Le */
+				brd = 22;
+			}
 		} else if (prr_product == PRR_PRODUCT_M3) {
 			/* RENESAS Kriek board with M3-W */
 			brd = 1;
@@ -2126,16 +2126,13 @@ static uint32_t _board_judge(void)
 #endif
 			}
 		} else if (prr_product == PRR_PRODUCT_M3N) {
-		// identify Soc Type (M3N or M3Le)
-		    rcar_m3nm3l_ident = (*(volatile uint32_t *)(RCAR_M3NM3L_IDENT));
-		if (rcar_m3nm3l_ident == RCAR_M3N_IDENT_VAL) {
-			/* RENESAS SALVATOR-X (M3-N/SIP) */
-			NOTICE("RENESAS SALVATOR-X M3N\n");
-			brd = 11;
-		} else if (rcar_m3nm3l_ident == RCAR_M3L_IDENT_VAL){
-			/* RENESAS GEIST M3L4GB */
-			NOTICE("RENESAS_BOARD_M3LESOC_GEIST_4GB_2RANK\n");
-			brd = 22 ;
+			if (is_rcar_product(PRODUCT_ID_M3N)) {
+				/* RENESAS SALVATOR-X (M3-N/SIP) */
+				brd = 11;
+			} else if (is_rcar_product(PRODUCT_ID_M3L)) {
+				/* RENESAS Geist board with M3Le */
+				brd = 22 ;
+			}
 		} else if ((prr_product == PRR_PRODUCT_M3) &&
 			   (prr_cut <= PRR_PRODUCT_20)) {
 			/* RENESAS SALVATOR-X (M3-W/SIP) */
@@ -2150,7 +2147,6 @@ static uint32_t _board_judge(void)
 			brd = 18;
 		} else {
 			NOTICE("Unknown product\n");
-		}
 		}
 	}
 #endif
