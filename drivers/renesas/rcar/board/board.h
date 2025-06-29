@@ -13,6 +13,7 @@
 #define BOARD_STARTER_KIT		(0x02)
 #define BOARD_EAGLE			(0x03)
 #define BOARD_SALVATOR_XS		(0x04)
+#define BOARD_GEIST			(0x11)
 #define BOARD_DRAAK			(0x07)
 #define BOARD_EBISU			(0x08)
 #define BOARD_STARTER_KIT_PRE		(0x0B)

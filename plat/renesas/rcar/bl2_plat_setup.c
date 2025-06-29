@@ -1125,6 +1125,7 @@ void bl2_el3_early_platform_setup(u_register_t arg1, u_register_t arg2,
 	case BOARD_KRIEK:
 	case BOARD_STARTER_KIT:
 	case BOARD_SALVATOR_XS:
+	case BOARD_GEIST:
 	case BOARD_EBISU:
 	case BOARD_STARTER_KIT_PRE:
 	case BOARD_EBISU_4D:
@@ -1138,13 +1139,10 @@ void bl2_el3_early_platform_setup(u_register_t arg1, u_register_t arg2,
 
 	if (type == BOARD_UNKNOWN || rev == BOARD_REV_UNKNOWN)
 		NOTICE("BL2: Board is %s Rev.---\n", GET_BOARD_NAME(type));
-	else if (!is_rcar_product(PRODUCT_ID_M3L)) {
+	else {
 		NOTICE("BL2: Board is %s Rev.%d.%d\n",
 		       GET_BOARD_NAME(type),
 		       GET_BOARD_MAJOR(rev), GET_BOARD_MINOR(rev));
-	}else
-	{
-		NOTICE("BL2: Board is Geist Rev 1.0\n");
 	}
 
 #if RCAR_LSI != RCAR_AUTO
