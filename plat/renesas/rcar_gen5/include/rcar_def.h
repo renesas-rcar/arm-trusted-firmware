@@ -12,7 +12,7 @@
 
 #define RCAR_DOMAIN			UL(0x0)
 
-#define RCAR_TRUSTED_SRAM_BASE		UL(0x40610000) /* DRAM */
+#define RCAR_TRUSTED_SRAM_BASE		UL(0x8C200000) /* DRAM */
 #define RCAR_TRUSTED_SRAM_SIZE		UL(0x00040000) /* 256kB */
 #define RCAR_SHARED_MEM_BASE		(RCAR_TRUSTED_SRAM_BASE + \
 					RCAR_TRUSTED_SRAM_SIZE)
@@ -35,7 +35,7 @@
 #define MBOX_BASE			RCAR_SHARED_MEM_BASE
 #define MBOX_SIZE			UL(0x800) /* 2kB: 32 cores */
 /* Base address where parameters to BL31 are stored */
-#define PARAMS_BASE			(RCAR_TRUSTED_SRAM_BASE - UL(0x10000))
+#define PARAMS_BASE			(RCAR_TRUSTED_SRAM_BASE - UL(0x100000))
 #define PARAMS_SIZE			UL(0x8000) /* 32kB */
 #define BOOT_KIND_BASE			(PARAMS_BASE + UL(0x1700))
 
