@@ -71,6 +71,10 @@ void rcar_pwrc_init_suspend_to_ram(void);
 void rcar_pwrc_suspend_to_ram(void);
 #endif
 
+#if PMIC_RAA271003
+uint32_t raa271003_system_off(void);
+#endif
+
 extern uint32_t rcar_pwrc_switch_stack(uintptr_t jump, uintptr_t stack,
 				       void *arg);
 #endif

@@ -196,6 +196,10 @@ static void __dead2 rcar_system_off(void)
 	rcar_pwrc_clusteroff(mpidr);
 
 #endif /* PMIC_ROHM_BD9571 */
+#if PMIC_RAA271003
+	raa271003_system_off();
+#endif
+
 	wfi();
 	ERROR("RCAR System Off: operation not handled.\n");
 	panic();

@@ -294,6 +294,21 @@ uint32_t __section(".system_ram") raa271003_system_reset(void)
 	return res;
 }
 
+uint32_t __section(".system_ram") raa271003_system_off(void)
+{
+	uint8_t data;
+	uint8_t res;
+
+	data = 0x0; // Clear Auto boot (reg 0x604)
+	res = rcar_iic_dvfs_send(RAA271003_ADD_PAGE6, 0x04, data);
+
+	/* Change State from ACTIVE -> READY */
+	data = 0x1; // READY state
+	res = rcar_iic_dvfs_send(RAA271003_ADD_PAGE6, 0x07, data);
+
+	return res;
+}
+
 #endif //PMIC_RAA271003
 
 uint32_t rcar_pwrc_status(u_register_t mpidr)
