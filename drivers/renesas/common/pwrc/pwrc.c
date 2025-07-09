@@ -156,6 +156,107 @@ IMPORT_SYM(unsigned long, __system_ram_end__, SYSTEM_RAM_END);
 IMPORT_SYM(unsigned long, __SRAM_COPY_START__, SRAM_COPY_START);
 #endif
 
+#if PMIC_RAA271003
+uint32_t __section(".system_ram") raa271003_suspend(void)
+{
+	uint8_t data;
+	uint8_t res;
+	/* Setting for reg 0x441->0x44B */
+	data = 0x03;   // Delay of slot0 in ACTIVE to MEM_RET Sequence :0.5 ms(0x441)
+	res = rcar_iic_dvfs_send(RAA271003_ADD_PAGE4, 0x41, data);
+	data = 0x03;   // Delay of slot1 in ACTIVE to MEM_RET Sequence :0.5 ms(0x442)
+	res = rcar_iic_dvfs_send(RAA271003_ADD_PAGE4, 0x42, data);
+	data = 0x1F;   // Delay of slot2 in ACTIVE to MEM_RET Sequence :10.0 ms(0x443)
+	res = rcar_iic_dvfs_send(RAA271003_ADD_PAGE4, 0x43, data);
+	data = 0x1F;   // Delay of slot3 in ACTIVE to MEM_RET Sequence :10.0 ms(0x444)
+	res = rcar_iic_dvfs_send(RAA271003_ADD_PAGE4, 0x44, data);
+	data = 0x1F;   // Delay of slot4 in ACTIVE to MEM_RET Sequence :10.0 ms(0x445)
+	res = rcar_iic_dvfs_send(RAA271003_ADD_PAGE4, 0x45, data);
+	data = 0x1F;   // Delay of slot5 in ACTIVE to MEM_RET Sequence :10.0 ms(0x446)
+	res = rcar_iic_dvfs_send(RAA271003_ADD_PAGE4, 0x46, data);
+	data = 0x1F;   // Delay of slot6 in ACTIVE to MEM_RET Sequence :10.0 ms(0x447)
+	res = rcar_iic_dvfs_send(RAA271003_ADD_PAGE4, 0x47, data);
+	data = 0x1F;   // Delay of slot7 in ACTIVE to MEM_RET Sequence :10.0 ms(0x448)
+	res = rcar_iic_dvfs_send(RAA271003_ADD_PAGE4, 0x48, data);
+	data = 0x1F;   // Delay of slot8 in ACTIVE to MEM_RET Sequence :10.0 ms(0x449)
+	res = rcar_iic_dvfs_send(RAA271003_ADD_PAGE4, 0x49, data);
+	data = 0x1F;   // Delay of slot9 in ACTIVE to MEM_RET Sequence :10.0 ms(0x44A)
+	res = rcar_iic_dvfs_send(RAA271003_ADD_PAGE4, 0x4A, data);
+	data = 0x1F;   // Delay of slot10 in ACTIVE to MEM_RET Sequence :10.0 ms(0x44B)
+	res = rcar_iic_dvfs_send(RAA271003_ADD_PAGE4, 0x4B, data);
+
+	/* Setting for reg 0x472->0x47A */
+	data = 0x0E;   // Delay of slot1 in MEM_RET to ACTIVE Sequence :3.25 ms(0x472)
+	res = rcar_iic_dvfs_send(RAA271003_ADD_PAGE4, 0x72, data);
+	data = 0x04;   // Delay of slot2 in MEM_RET to ACTIVE Sequence :0.75 ms(0x473)
+	res = rcar_iic_dvfs_send(RAA271003_ADD_PAGE4, 0x73, data);
+	data = 0x03;   // Delay of slot3 in MEM_RET to ACTIVE Sequence :0.5 ms(0x474)
+	res = rcar_iic_dvfs_send(RAA271003_ADD_PAGE4, 0x74, data);
+	data = 0x03;   // Delay of slot4 in MEM_RET to ACTIVE Sequence :0.5 ms(0x475)
+	res = rcar_iic_dvfs_send(RAA271003_ADD_PAGE4, 0x75, data);
+	data = 0x03;   // Delay of slot5 in MEM_RET to ACTIVE Sequence :0.5 ms(0x476)
+	res = rcar_iic_dvfs_send(RAA271003_ADD_PAGE4, 0x76, data);
+	data = 0x03;   // Delay of slot6 in MEM_RET to ACTIVE Sequence :0.5 ms(0x477)
+	res = rcar_iic_dvfs_send(RAA271003_ADD_PAGE4, 0x77, data);
+	data = 0x03;   // Delay of slot7 in MEM_RET to ACTIVE Sequence :0.5 ms(0x478)
+	res = rcar_iic_dvfs_send(RAA271003_ADD_PAGE4, 0x78, data);
+	data = 0x1E;   // Delay of slot8 in MEM_RET to ACTIVE Sequence :9.5 ms(0x479)
+	res = rcar_iic_dvfs_send(RAA271003_ADD_PAGE4, 0x79, data);
+	data = 0x09;   // Delay of slot8 in MEM_RET to ACTIVE Sequence :2 ms(0x47A)
+	res = rcar_iic_dvfs_send(RAA271003_ADD_PAGE4, 0x79, data);
+
+	/* Setting for reg 0x4D1->0x4D9 */
+	data = 0x55;   //Buck1/Buck2 Resource slot selection in ACTIVE to MEM_RET state(0x4D1)
+	res = rcar_iic_dvfs_send(RAA271003_ADD_PAGE4, 0xD1, data);
+	data = 0x40;   //Buck3/Buck4 Resource slot selection in ACTIVE to MEM_RET state(0x4D2)
+	res = rcar_iic_dvfs_send(RAA271003_ADD_PAGE4, 0xD2, data);
+	data = 0x23;   //Buck3/Buck4 Resource slot selection in ACTIVE to MEM_RET state(0x4D3)
+	res = rcar_iic_dvfs_send(RAA271003_ADD_PAGE4, 0xD3, data);
+	data = 0x10;   //WD timer/nPRESET Resource slot selection in ACTIVE to MEM_RET state(0x4D6)
+	res = rcar_iic_dvfs_send(RAA271003_ADD_PAGE4, 0xD6, data);
+	data = 60;   //OTP/virGPO1 Resource slot selection in ACTIVE to MEM_RET state(0x4D7)
+	res = rcar_iic_dvfs_send(RAA271003_ADD_PAGE4, 0xD7, data);
+	data = 0x15;   //virGPO2/virGPO3 Resource slot selection in ACTIVE to MEM_RET state(0x4D8)
+	res = rcar_iic_dvfs_send(RAA271003_ADD_PAGE4, 0xD8, data);
+	data = 0x00;   //virGPO4/virGPO5 Resource slot selection in ACTIVE to MEM_RET state(0x4D9)
+	res = rcar_iic_dvfs_send(RAA271003_ADD_PAGE4, 0xD9, data);
+
+	/* Setting for reg 0x501->0x509 */
+	data = 0x23;   //Buck1/Buck2 Resource slot selection in MEM_RET to ACTIVE state(0x501)
+	res = rcar_iic_dvfs_send(RAA271003_ADD_PAGE5, 0x01, data);
+	data = 0x40;   //Buck3/Buck4 Resource slot selection in MEM_RET to ACTIVE state(0x502)
+	res = rcar_iic_dvfs_send(RAA271003_ADD_PAGE5, 0x02, data);
+	data = 0x75;   //Buck5/LDO1 Resource slot selection in MEM_RET to ACTIVE state (0x503)
+	res = rcar_iic_dvfs_send(RAA271003_ADD_PAGE5, 0x03, data);
+	data = 0x05;   //LDO4/PGOOD Resource slot selection in MEM_RET to ACTIVE state
+	res = rcar_iic_dvfs_send(RAA271003_ADD_PAGE5, 0x05, data);
+	data = 0x90;   //LDO4/PGOOD Resource slot selection in MEM_RET to ACTIVE state
+	res = rcar_iic_dvfs_send(RAA271003_ADD_PAGE5, 0x06, data);
+	data = 0x10;   //OTP/virGPO1 Resource slot selection in MEM_RET to ACTIVE state
+	res = rcar_iic_dvfs_send(RAA271003_ADD_PAGE5, 0x07, data);
+	data = 0x71;   //virGPO2/virGPO3 Resource slot selection in MEM_RET to ACTIVE state
+	res = rcar_iic_dvfs_send(RAA271003_ADD_PAGE5, 0x08, data);
+	data = 0x00;   //virGPO4/virGPO5 Resource slot selection in MEM_RET to ACTIVE state
+	res = rcar_iic_dvfs_send(RAA271003_ADD_PAGE5, 0x09, data);
+
+	/*Write 0x01 to register 0x75B to indicate WARM boot before entering MEM_RET */
+	res = rcar_iic_dvfs_send(RAA271003_ADD_PAGE7, KEEP_STATUS_REG, BOOT_STATUS_BIT_WARM);
+	/*IO_GPIO9_CONF1 (0x0122)*/
+	res = rcar_iic_dvfs_send(RAA271003_ADD_PAGE1,
+				 IO_GPIO9_CONF1_REG,
+				 GPIO9_CONF1_MEM_RET_CFG_VAL);
+	/* Setting PWRSEQ_STATE_SUPPLIES */
+	data = 0xC4;  // keep BUCK3, LDO3,LDO2 on
+	res = rcar_iic_dvfs_send(RAA271003_ADD_PAGE4, 0x09, data);
+	data = 0x00;   // all resource power-off
+	res = rcar_iic_dvfs_send(RAA271003_ADD_PAGE4, 0x0a, data);
+
+	/* Change State from ACTIVE -> MEM_RET */
+	data = 0x3; // MEM_RET state
+	res = rcar_iic_dvfs_send(RAA271003_ADD_PAGE6, 0x07, 0x03);
+	return res;
+}
+#endif //PMIC_RAA271003
 uint32_t rcar_pwrc_status(u_register_t mpidr)
 {
 	uint32_t ret = 0;
@@ -721,6 +822,11 @@ rcar_pwrc_go_suspend_to_ram(void)
 		}
 	}
 #endif
+/*PMIC_RAA271003*/
+#if PMIC_RAA271003
+		raa271003_suspend();
+#endif //PMIC_RAA271003
+
 	wfi();
 
 	while (1)

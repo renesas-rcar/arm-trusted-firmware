@@ -35,10 +35,7 @@
 #include "emmc_def.h"
 #include "emmc_hal.h"
 #include "emmc_std.h"
-#if PMIC_ROHM_BD9571 && RCAR_SYSTEM_RESET_KEEPON_DDR
 #include "iic_dvfs.h"
-#endif
-
 #include "io_common.h"
 #include "io_rcar.h"
 #include "qos_init.h"
@@ -379,12 +376,33 @@ mmu:
 	isb();
 }
 
+#if RCAR_SYSTEM_SUSPEND
+#if PMIC_RAA271003
+static uint32_t is_m3l_ddr_backup_mode(void)
+{
+	uint8_t status_val;
+	uint32_t boot_state = RCAR_COLD_BOOT;
+	/** Judge cold/warm boot for M3Le by read 0x75B reg */
+	rcar_iic_dvfs_receive(RAA271003_ADD_PAGE7, KEEP_STATUS_REG, &status_val);
+	if ((status_val & BOOT_STATUS_BIT) == BOOT_STATUS_BIT_WARM) {
+		boot_state = RCAR_WARM_BOOT;
+	}
+	return boot_state;
+}
+#endif // PMIC_RAA271003
+#endif // RCAR_SYSTEM_SUSPEND
+
 static uint32_t is_ddr_backup_mode(void)
 {
 #if RCAR_SYSTEM_SUSPEND
 	static uint32_t reason = RCAR_COLD_BOOT;
 	static uint32_t once;
 
+#if PMIC_RAA271003
+	if (is_rcar_product(PRODUCT_ID_M3L)) {
+		return is_m3l_ddr_backup_mode();
+	}
+#endif
 #if PMIC_ROHM_BD9571 && RCAR_SYSTEM_RESET_KEEPON_DDR
 	uint8_t data;
 #endif

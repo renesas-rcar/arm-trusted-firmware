@@ -209,10 +209,17 @@ $(eval $(call add_define,LIFEC_DBSC_PROTECT_ENABLE))
 
 # Process PMIC_ROHM_BD9571 flag
 ifndef PMIC_ROHM_BD9571
+ifeq (${LSI},M3L)
+PMIC_RAA271003 := 1
+else
 PMIC_ROHM_BD9571 := 1
 endif
+endif
+ifeq (${PMIC_RAA271003},1)
+$(eval $(call add_define,PMIC_RAA271003))
+else
 $(eval $(call add_define,PMIC_ROHM_BD9571))
-
+endif
 # Process PMIC_LEVEL_MODE flag
 ifndef PMIC_LEVEL_MODE
 PMIC_LEVEL_MODE := 1
@@ -252,7 +259,9 @@ $(eval $(call add_define,RCAR_SYSTEM_SUSPEND))
 # processing equivalent to that implemented in PMIC_ROHM_BD9571 is necessary.
 ifeq (${RCAR_SYSTEM_SUSPEND},1)
   ifeq (${PMIC_ROHM_BD9571},0)
+  ifeq (${PMIC_RAA271003},0)
     $(error "Error: When you want RCAR_SYSTEM_SUSPEND to be enable, please also set PMIC_ROHM_BD9571 to enable.")
+  endif
   endif
 endif
 
