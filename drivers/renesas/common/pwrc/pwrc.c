@@ -256,7 +256,46 @@ uint32_t __section(".system_ram") raa271003_suspend(void)
 	res = rcar_iic_dvfs_send(RAA271003_ADD_PAGE6, 0x07, 0x03);
 	return res;
 }
+
+uint32_t __section(".system_ram") raa271003_system_reset(void)
+{
+	uint8_t data;
+	uint8_t res;
+	/* Setting time slot for ARC2 */
+	data = 0x03;   // Delay of slot0 in WARM_RST to ACTIVE (reg 0x451)
+	res = rcar_iic_dvfs_send(RAA271003_ADD_PAGE4, 0x51, data);
+	data = 0x1F;   // Delay of slot1 in WARM_RST to ACTIVE (reg 0x452)
+	res = rcar_iic_dvfs_send(RAA271003_ADD_PAGE4, 0x52, data);
+	data = 0x03;   // Delay of slot2 in WARM_RST to ACTIVE (reg 0x453)
+	res = rcar_iic_dvfs_send(RAA271003_ADD_PAGE4, 0x53, data);
+
+	data = 0x03;   // Delay of slot0 in ACTIVE to WARM_RST (reg 0x461)
+	res = rcar_iic_dvfs_send(RAA271003_ADD_PAGE4, 0x61, data);
+	data = 0x03;   // Delay of slot1 in ACTIVE to WARM_RST (reg 0x462)
+	res = rcar_iic_dvfs_send(RAA271003_ADD_PAGE4, 0x62, data);
+	data = 0x03;   // Delay of slot2 in ACTIVE to WARM_RST (reg 0x463)
+	res = rcar_iic_dvfs_send(RAA271003_ADD_PAGE4, 0x63, data);
+
+	data = 0x20;   // nPRESET Resource slot selection in WARM_RST to ACTIVE (reg 0x4E6)
+	res = rcar_iic_dvfs_send(RAA271003_ADD_PAGE4, 0xE6, data);
+	data = 0x11;   // nPRESET Resource slot selection in ACTIVE to WARM_RST (reg 0x4F6)
+	res = rcar_iic_dvfs_send(RAA271003_ADD_PAGE4, 0xF6, data);
+
+	/* Setting PWRSEQ_STATE4_SUPPLIES */
+	data = 0xFF;   //
+	res = rcar_iic_dvfs_send(RAA271003_ADD_PAGE4, 0x11, data);
+	data = 0xE3;   //
+	res = rcar_iic_dvfs_send(RAA271003_ADD_PAGE4, 0x12, data);
+
+	/* Change State from ACTIVE -> WARM_RST */
+	data = 0x5; // WARM_RST state
+	res = rcar_iic_dvfs_send(RAA271003_ADD_PAGE6, 0x07, 0x05);
+
+	return res;
+}
+
 #endif //PMIC_RAA271003
+
 uint32_t rcar_pwrc_status(u_register_t mpidr)
 {
 	uint32_t ret = 0;
@@ -824,7 +863,18 @@ rcar_pwrc_go_suspend_to_ram(void)
 #endif
 /*PMIC_RAA271003*/
 #if PMIC_RAA271003
+	uint8_t data;
+	uint8_t res;
+	//Check bit(1) = 1 or not for detect WRM_RST or MEM_RET
+	res = rcar_iic_dvfs_receive(RAA271003_ADD_PAGE7, 0x5B, &data);
+	if (res) {
+		ERROR("Received data WRM_RST/MEM_RET error\n");
+	}
+	if (data == SYSTEM_RST_BIT_RST_RST) {
+		raa271003_system_reset();
+	} else {
 		raa271003_suspend();
+	}
 #endif //PMIC_RAA271003
 
 	wfi();
