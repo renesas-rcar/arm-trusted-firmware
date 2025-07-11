@@ -703,6 +703,11 @@ static void bl2_populate_compatible_string(void *dt)
 		ret = fdt_setprop_string(dt, 0, "compatible",
 					 "renesas,draak");
 		break;
+	case BOARD_GEIST:
+		ret = fdt_setprop_string(dt, 0, "compatible",
+					 "renesas,geist");
+		break;
+
 	default:
 		NOTICE("BL2: Cannot set compatible string, board unsupported\n");
 		panic();
@@ -724,8 +729,15 @@ static void bl2_populate_compatible_string(void *dt)
 					    "renesas,r8a7796");
 		break;
 	case PRR_PRODUCT_M3N:
-		ret = fdt_appendprop_string(dt, 0, "compatible",
-					    "renesas,r8a77965");
+		if (is_rcar_product(PRODUCT_ID_M3L)) {
+			ret = fdt_appendprop_string(dt, 0,
+						    "compatible",
+						    "renesas,r8a779md");
+		} else {
+			ret = fdt_appendprop_string(dt, 0,
+						    "compatible",
+						    "renesas,r8a77965");
+		}
 		break;
 	case PRR_PRODUCT_V3M:
 		ret = fdt_appendprop_string(dt, 0, "compatible",
