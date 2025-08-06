@@ -376,5 +376,6 @@ void bl2_secure_setting(void)
 {
 	lifec_security_setting();
 	axi_security_setting();
+	bl2_ram_security_setting_finish();
 	rcar_micro_delay(10U);
 }
