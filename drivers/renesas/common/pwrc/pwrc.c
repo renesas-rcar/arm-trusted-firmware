@@ -308,7 +308,16 @@ uint32_t __section(".system_ram") raa271003_system_off(void)
 
 	return res;
 }
-
+uint32_t __section(".system_ram") raa271003_enable_ldo1(void)
+{
+	uint8_t res;
+	//enable LDO_LDO1_CTRL1(0x18C)
+	res = rcar_iic_dvfs_send(RAA271003_ADD_PAGE1, 0x8c, 0x02);
+	if (res) {
+		ERROR("Failed to send LDO1 CTRL Reg\n");
+	}
+	return res;
+}
 #endif //PMIC_RAA271003
 
 uint32_t rcar_pwrc_status(u_register_t mpidr)
@@ -610,7 +619,9 @@ void rcar_pwrc_setup(void)
 			rst_barl += 0x10;
 		}
 	}
-
+#if PMIC_RAA271003
+	raa271003_enable_ldo1();
+#endif
 	rcar_lock_init();
 }
 
