@@ -308,6 +308,7 @@ uint32_t __section(".system_ram") raa271003_system_off(void)
 
 	return res;
 }
+
 uint32_t __section(".system_ram") raa271003_enable_ldo1(void)
 {
 	uint8_t res;
@@ -318,6 +319,7 @@ uint32_t __section(".system_ram") raa271003_enable_ldo1(void)
 	}
 	return res;
 }
+
 #endif //PMIC_RAA271003
 
 uint32_t rcar_pwrc_status(u_register_t mpidr)
@@ -619,9 +621,7 @@ void rcar_pwrc_setup(void)
 			rst_barl += 0x10;
 		}
 	}
-#if PMIC_RAA271003
-	raa271003_enable_ldo1();
-#endif
+
 	rcar_lock_init();
 }
 

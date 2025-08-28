@@ -107,11 +107,12 @@ void bl31_platform_setup(void)
 {
 	plat_rcar_gic_driver_init();
 	plat_rcar_gic_init();
-
 	/* enable the system level generic timer */
 	mmio_write_32(RCAR_CNTC_BASE + CNTCR_OFF, CNTCR_FCREQ(U(0)) | CNTCR_EN);
-
 	rcar_pwrc_setup();
+#if PMIC_RAA271003
+	raa271003_enable_ldo1();
+#endif
 #if 0
 	/*
 	 * TODO: there is a broad number of rcar-gen3 SoC configurations; to
