@@ -18,6 +18,8 @@ CRASH_REPORTING			:= 1
 HANDLE_EA_EL3_FIRST		:= 1
 ENABLE_STACK_PROTECTOR	:= strong
 
+CTX_INCLUDE_AARCH32_REGS	:= 0
+
 # Process SET_SCMI_PARAM flag
 # 0:Disable(default), 1:Enable
 ifndef SET_SCMI_PARAM
