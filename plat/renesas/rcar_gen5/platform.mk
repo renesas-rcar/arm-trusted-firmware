@@ -18,6 +18,12 @@ INIT_UNUSED_NS_EL2		:= 1
 ENABLE_FEAT_AMU			:= 1
 ENABLE_AMU_AUXILIARY_COUNTERS	:= 1
 
+ENABLE_PAUTH			:= 1
+CTX_INCLUDE_PAUTH_REGS		:= 1
+# Build for Cortex-A720 instead of generic ARMv8A, this makes additional
+# instructions, like 'xpaci' used by Pointer Authentication, available.
+MARCH_DIRECTIVE			:= -mcpu=cortex-a720
+
 CRASH_REPORTING			:= 1
 HANDLE_EA_EL3_FIRST_NS		:= 1
 ENABLE_STACK_PROTECTOR	:= strong
@@ -136,6 +142,11 @@ include drivers/auth/mbedtls/mbedtls_crypto.mk
 endif
 PLAT_BL_COMMON_SOURCES	+=	${XLAT_TABLES_LIB_SRCS}
 
+# Pointer Authentication sources
+ifeq (${ENABLE_PAUTH}, 1)
+PLAT_BL_COMMON_SOURCES	+=	plat/arm/common/aarch64/arm_pauth.c \
+		lib/extensions/pauth/pauth_helpers.S
+endif
 
 
 # build the layout images for the bootrom and the necessary srecords
