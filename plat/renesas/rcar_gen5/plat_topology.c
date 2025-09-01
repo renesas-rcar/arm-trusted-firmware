@@ -104,3 +104,14 @@ int32_t rcar_cluster_pos_by_mpidr(u_register_t mpidr)
 
 	return (int32_t)cluster;
 }
+
+/* FIXME: Selective counter enablement is mandatory here ! */
+#include <lib/extensions/amu.h>
+static const struct amu_topology gen5_amu_topology = {
+	.cores[0].enable = 0xffff
+};
+
+const struct amu_topology *plat_amu_topology(void)
+{
+	return &gen5_amu_topology;
+}
