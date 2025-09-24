@@ -22,7 +22,7 @@ ENABLE_PAUTH			:= 1
 CTX_INCLUDE_PAUTH_REGS		:= 1
 # Build for Cortex-A720 instead of generic ARMv8A, this makes additional
 # instructions, like 'xpaci' used by Pointer Authentication, available.
-MARCH_DIRECTIVE			:= -mcpu=cortex-a720
+MARCH_DIRECTIVE			:= -march=armv9.2-a
 
 CRASH_REPORTING			:= 1
 HANDLE_EA_EL3_FIRST_NS		:= 1
