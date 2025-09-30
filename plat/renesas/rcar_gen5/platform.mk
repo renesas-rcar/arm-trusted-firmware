@@ -120,6 +120,7 @@ BL31_SOURCES	+=	${RCAR_GIC_SOURCES}				\
 			plat/common/plat_psci_common.c			\
 			plat/renesas/rcar_gen5/plat_topology.c		\
 			plat/renesas/rcar_gen5/aarch64/plat_helpers.S	\
+			plat/renesas/rcar_gen5/aarch64/plat_helpers_secondary_reset.S	\
 			plat/renesas/rcar_gen5/aarch64/platform_common.c \
 			plat/renesas/rcar_gen5/bl31_plat_setup.c	\
 			plat/renesas/rcar_gen5/plat_pm.c		\

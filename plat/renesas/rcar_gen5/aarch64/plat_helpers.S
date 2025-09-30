@@ -22,7 +22,6 @@
 	.globl	plat_crash_console_putc
 	.globl	plat_crash_console_flush
 	.globl	plat_invalidate_icache
-	.globl	plat_secondary_reset
 	.globl	plat_my_core_pos
 	.globl	plat_renesas_calc_core_pos
 	.globl	bl31_plat_enable_mmu
@@ -116,34 +115,6 @@ _panic:
 	b	el3_panic
 
 endfunc plat_get_my_entrypoint
-
-	/* ---------------------------------------------
-	 * plat_secondary_reset
-	 *
-	 * ---------------------------------------------
-	 */
-func plat_secondary_reset
-	mrs	x0, sctlr_el3
-	bic	x0, x0, #SCTLR_EE_BIT
-	msr	sctlr_el3, x0
-	isb
-
-	mrs	x0, cptr_el3
-	bic	w0, w0, #TCPAC_BIT
-	bic	w0, w0, #TTA_BIT
-	bic	w0, w0, #TFP_BIT
-	msr	cptr_el3, x0
-
-	mov_imm	x0, PARAMS_BASE
-	mov_imm	x2, BL31_BASE
-	ldr x3, =BOOT_KIND_BASE
-	mov x1, #0x1
-	str x1, [x3]
-	br	x2	/* jump to BL31 */
-	nop
-	nop
-	nop
-endfunc plat_secondary_reset
 
 	/* -----------------------------------------------------
 	 * void platform_mem_init (void);

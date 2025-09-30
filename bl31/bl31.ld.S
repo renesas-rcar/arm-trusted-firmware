@@ -86,6 +86,13 @@ SECTIONS {
         __RO_START__ = .;
 
         *bl31_entrypoint.o(.text*)
+
+        /* Force plat_secondary_reset to fixed offset 0x230 from BL31 base
+         * for SCP firmware compatibility. SCP hardcodes jump to 0x8c200230
+         * for secondary core boot. */
+        . = __RO_START__ + 0x230;
+        *plat_helpers_secondary_reset.o(.text*)
+
         *(SORT_BY_ALIGNMENT(.text*))
         *(SORT_BY_ALIGNMENT(.rodata*))
 
