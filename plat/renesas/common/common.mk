@@ -16,6 +16,7 @@ MULTI_CONSOLE_API		:= 1
 
 CRASH_REPORTING			:= 1
 HANDLE_EA_EL3_FIRST		:= 1
+RCAR_SCMI_PLATFORM		?= 0
 
 $(eval $(call add_define,PLAT_EXTRA_LD_SCRIPT))
 
@@ -133,6 +134,17 @@ BL31_SOURCES	+=	${RCAR_GIC_SOURCES}				\
 			drivers/renesas/common/pwrc/pwrc.c		\
 			drivers/renesas/common/common.c			\
 			drivers/arm/cci/cci.c
+
+ifneq (${RCAR_SCMI_PLATFORM},0)
+$(eval $(call add_define,RCAR_SCMI_PLATFORM))
+BL31_SOURCES	+=	plat/renesas/common/rcar_scmi.c			\
+			plat/renesas/common/rcar_scmi_base.c		\
+			plat/renesas/common/rcar_scmi_devices.c		\
+			plat/renesas/common/rcar_scmi_power.c		\
+			plat/renesas/common/rcar_scmi_reset.c		\
+			plat/renesas/common/rcar_scmi_clocks.c		\
+			plat/renesas/common/rcar_scmi_pinctrl.c
+endif
 
 include lib/xlat_tables_v2/xlat_tables.mk
 ifneq (${MBEDTLS_COMMON_MK}, 1)
