@@ -24,6 +24,8 @@ CTX_INCLUDE_PAUTH_REGS		:= 1
 # instructions, like 'xpaci' used by Pointer Authentication, available.
 MARCH_DIRECTIVE			:= -march=armv9.2-a
 
+ENABLE_SYS_REG_TRACE_FOR_NS	:= 1
+
 CRASH_REPORTING			:= 1
 HANDLE_EA_EL3_FIRST_NS		:= 1
 ENABLE_STACK_PROTECTOR	:= strong
