@@ -10,6 +10,7 @@
 
 #include <common/debug.h>
 #include <plat/common/platform.h>
+#include <../drivers/renesas/rcar_gen5/mfis/mfis.h>
 
 /* Set the default maximum log level to the `LOG_LEVEL` build flag */
 static unsigned int max_log_level = LOG_LEVEL;
@@ -26,6 +27,9 @@ void tf_log(const char *fmt, ...)
 	unsigned int log_level;
 	va_list args;
 	const char *prefix_str;
+
+	/* Lock to avoid conflict for HSCIF */
+	rcar_mfis_lock(MFIS_TARGET_HSCIF);
 
 	/* We expect the LOG_MARKER_* macro as the first character */
 	log_level = fmt[0];
@@ -47,6 +51,9 @@ void tf_log(const char *fmt, ...)
 	va_start(args, fmt);
 	(void)vprintf(fmt + 1, args);
 	va_end(args);
+
+	/* Unlock to avoid conflict for HSCIF */
+	rcar_mfis_unlock(MFIS_TARGET_HSCIF);
 }
 
 void tf_log_newline(const char log_fmt[2])

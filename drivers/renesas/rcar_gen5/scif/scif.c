@@ -11,6 +11,7 @@
 #include <drivers/delay_timer.h>
 #include "rcar_def.h"
 #include "scif.h"
+#include "mfis.h"
 
 #include "hscif_register.h"
 #include "scif_register.h"
@@ -50,6 +51,7 @@ int console_rcar_init(uintptr_t base_addr, uint32_t uart_clk,
 	(void)uart_clk;
 	(void)baud_rate;
 
+	rcar_mfis_init();
 	scif_console_init(MODEMR_HSCIF_DLMODE_3000000); /* force use HSCIF */
 
 	return 1;

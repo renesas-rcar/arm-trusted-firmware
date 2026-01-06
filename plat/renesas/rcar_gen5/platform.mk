@@ -85,7 +85,8 @@ HW_ASSISTED_COHERENCY := 1
 PLAT_INCLUDES	:=	-Iplat/renesas/rcar_gen5/include		\
 			-Iplat/renesas/rcar_gen5			\
 			-Idrivers/renesas/rcar_gen5/pwrc		\
-			-Idrivers/renesas/rcar_gen5/scif
+			-Idrivers/renesas/rcar_gen5/scif		\
+			-Idrivers/renesas/rcar_gen5/mfis
 
 
 
@@ -132,6 +133,7 @@ BL31_SOURCES	+=	${RCAR_GIC_SOURCES}				\
 			drivers/renesas/rcar_gen5/pwrc/pwrc.c		\
 			drivers/renesas/rcar_gen5/scif/scif.c		\
 			drivers/renesas/rcar_gen5/scif/scif_helpers.S	\
+			drivers/renesas/rcar_gen5/mfis/mfis.c	\
 			${SCMI_DRIVER_SOURES}				\
 			drivers/arm/cci/cci.c
 
