@@ -13,7 +13,7 @@
 #define RCAR_DOMAIN			UL(0x0)
 
 #define RCAR_TRUSTED_SRAM_BASE		UL(0x8C200000) /* DRAM */
-#define RCAR_TRUSTED_SRAM_SIZE		UL(0x00040000) /* 256kB */
+#define RCAR_TRUSTED_SRAM_SIZE		UL(0x00080000) /* 512kB */
 #define RCAR_SHARED_MEM_BASE		(RCAR_TRUSTED_SRAM_BASE + \
 					RCAR_TRUSTED_SRAM_SIZE)
 #define RCAR_SHARED_MEM_SIZE		UL(0x00002000) /* 8kB */
@@ -48,7 +48,7 @@
  * The RCAR_MAX_MMAP_REGIONS depends on the number of entries in rcar_mmap[]
  * defined for each BL stage in platform_common.c.
  */
-#define RCAR_MMAP_ENTRIES		(10)
+#define RCAR_MMAP_ENTRIES		(11)
 /* BL31 */
 #define RCAR_CRASH_STACK		RCAR_BL31_CRASH_BASE
 
@@ -114,5 +114,17 @@
 #define RCAR_SCMI_MFIS_ADDR		UL(0x18840004)
 #define RCAR_SCMI_MFIS_MOD_MASK		U(0x00000001)
 #define RCAR_SCMI_MFIS_PRV_MASK		(~RCAR_SCMI_MFIS_MOD_MASK)
+
+/*
+ * LDR (Logging Data Recorder) region in Non-secure DRAM, shared with the
+ * LDR daemon:
+ *   0x8C108000  252 KB  send buffer: ring buffer written by BL31
+ *   0x8C147000    4 KB  receive buffer: reserved, not accessed by BL31
+ * The sizes must match the daemon's dram_send_size and dram_recv_size.
+ */
+#define BL31_LDR_BASE			UL(0x8C108000)
+#define BL31_LDR_SIZE			UL(0x00040000)
+#define BL31_LDR_SEND_SIZE		UL(0x0003F000)
+#define BL31_LDR_RECV_SIZE		UL(0x00001000)
 
 #endif /* RCAR_DEF_H */

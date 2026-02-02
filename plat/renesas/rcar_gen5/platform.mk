@@ -74,6 +74,32 @@ else
   $(eval $(call add_define,RCAR_LSI))
 endif
 
+# Serial console (SCIF or HSCIF) output. With 0 the console is kept for the
+# crash path only, which removes the UART cost from normal logging.
+RCAR_CONSOLE_UART ?= 1
+
+# LDR (Logging Data Recorder) console: record BL31 console output in DRAM.
+RCAR_CONSOLE_LDR ?= 1
+
+$(eval $(call assert_booleans,RCAR_CONSOLE_UART RCAR_CONSOLE_LDR))
+$(eval $(call add_define,RCAR_CONSOLE_UART))
+$(eval $(call add_define,RCAR_CONSOLE_LDR))
+
+ifeq (${RCAR_CONSOLE_UART},0)
+$(info UART console output DISABLED: serial console is registered for its rcar_mfis_init() side effect only. Crash output is unaffected.)
+endif
+
+ifeq (${RCAR_CONSOLE_LDR},1)
+LDR_LIB_DIR := drivers/renesas/rcar_gen5/ldr/lib
+
+LDR_SOURCES := drivers/renesas/rcar_gen5/ldr/ldr.c			\
+	       drivers/renesas/rcar_gen5/ldr/ldr_console.c		\
+	       ${LDR_LIB_DIR}/ldr_dlt_protocol/ldr_dlt_protocol.c	\
+	       ${LDR_LIB_DIR}/ldr_ring_buffer/ldr_ring_buffer.c
+
+BL31_SOURCES += ${LDR_SOURCES}
+endif
+
 # Disable workarounds unnecessary for Cortex-A720AE
 WORKAROUND_CVE_2017_5715	:= 0
 WORKAROUND_CVE_2022_23960	:= 0
@@ -87,6 +113,8 @@ HW_ASSISTED_COHERENCY := 1
 PLAT_INCLUDES	:=	-Iplat/renesas/rcar_gen5/include		\
 			-Iplat/renesas/rcar_gen5			\
 			-Idrivers/renesas/rcar_gen5/pwrc		\
+			-Idrivers/renesas/rcar_gen5/ldr			\
+			-Idrivers/renesas/rcar_gen5/ldr/lib		\
 			-Idrivers/renesas/rcar_gen5/scif		\
 			-Idrivers/renesas/rcar_gen5/mfis
 
@@ -171,3 +199,22 @@ rcar_srecord: $(BL31_ELF_SRC)
 	@echo "generating srec: ${SREC_PATH}/bl31.srec"
 	$(Q)$($(ARCH)-oc) -O srec --srec-forceS3 ${BL31_ELF_SRC} ${SREC_PATH}/bl31.srec
 
+# LDR region for the build log; ldr.c checks the values against rcar_def.h.
+ifeq (${RCAR_CONSOLE_LDR},1)
+RCAR_LDR_MK_BASE	:= 0x8C108000
+RCAR_LDR_MK_SEND_SIZE	:= 0x0003F000
+RCAR_LDR_MK_RECV_SIZE	:= 0x00001000
+$(eval $(call add_define_val,RCAR_LDR_MK_BASE,$(RCAR_LDR_MK_BASE)))
+$(eval $(call add_define_val,RCAR_LDR_MK_SEND_SIZE,$(RCAR_LDR_MK_SEND_SIZE)))
+$(eval $(call add_define_val,RCAR_LDR_MK_RECV_SIZE,$(RCAR_LDR_MK_RECV_SIZE)))
+RCAR_LDR_MK_RECV_BASE	:= $(shell printf '0x%08X' $$(( $(RCAR_LDR_MK_BASE) + $(RCAR_LDR_MK_SEND_SIZE) )))
+RCAR_LDR_MK_END		:= $(shell printf '0x%08X' $$(( $(RCAR_LDR_MK_RECV_BASE) + $(RCAR_LDR_MK_RECV_SIZE) )))
+RCAR_LDR_MK_SEND_KB	:= $(shell echo $$(( $(RCAR_LDR_MK_SEND_SIZE) / 1024 )))
+RCAR_LDR_MK_RECV_KB	:= $(shell echo $$(( $(RCAR_LDR_MK_RECV_SIZE) / 1024 )))
+$(info LDR enabled: BL31 send ring BASE=$(RCAR_LDR_MK_BASE) SIZE=$(RCAR_LDR_MK_SEND_SIZE) ($(RCAR_LDR_MK_SEND_KB) KB); recv reserved BASE=$(RCAR_LDR_MK_RECV_BASE) SIZE=$(RCAR_LDR_MK_RECV_SIZE) ($(RCAR_LDR_MK_RECV_KB) KB, not used by BL31); region ends $(RCAR_LDR_MK_END))
+endif
+
+# LDR_ENABLE was renamed: fail rather than silently ignore an old command line.
+ifdef LDR_ENABLE
+$(error LDR_ENABLE has been renamed to RCAR_CONSOLE_LDR)
+endif

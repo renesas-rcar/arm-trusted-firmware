@@ -24,7 +24,9 @@
 #include "rcar_private.h"
 #include "rcar_version.h"
 
-
+#if RCAR_CONSOLE_LDR
+#include "ldr.h"
+#endif
 
 static u_register_t rcar_boot_mpidr;
 
@@ -44,8 +46,31 @@ struct entry_point_info *bl31_plat_get_next_image_ep_info(uint32_t type)
 void bl31_early_platform_setup2(u_register_t arg0, u_register_t arg1,
 				u_register_t arg2, u_register_t arg3)
 {
+	uint32_t reg_cntfid;
+
 	rcar_console_boot_init();
+
+	/* initialize generic timer, the time base of LDR records */
+	reg_cntfid = RCAR_CNTC_EXTAL;
+	/* Update memory mapped and register based frequency */
+	write_cntfrq_el0((u_register_t)reg_cntfid);
+	mmio_write_32(ARM_SYS_CNTCTL_BASE + (uintptr_t)CNTFID_OFF, reg_cntfid);
+
+	/* enable the system level generic timer */
+	mmio_write_32(RCAR_CNTC_BASE + CNTCR_OFF,
+			CNTCR_FCREQ((uint32_t)(0)) | CNTCR_EN);
+
+#if RCAR_CONSOLE_LDR
+	rcar_ldr_init();
+	console_rcar_ldr_register();
+#endif
+
+	/* After the LDR setup, so that the banner is the first LDR record. */
 	NOTICE("BL3-1 : Rev.%s\n", version_of_renesas);
+
+#if RCAR_CONSOLE_LDR
+	INFO("LDR initialized\n");
+#endif
 }
 
 /**
@@ -154,20 +179,8 @@ void bl31_plat_arch_setup(void)
 
 void bl31_platform_setup(void)
 {
-	uint32_t reg_cntfid;
-
 	plat_rcar_gic_driver_init();
 	plat_rcar_gic_init();
-
-	/* initialize generic timer */
-	reg_cntfid = RCAR_CNTC_EXTAL;
-	/* Update memory mapped and register based frequency */
-	write_cntfrq_el0((u_register_t)reg_cntfid);
-	mmio_write_32(ARM_SYS_CNTCTL_BASE + (uintptr_t)CNTFID_OFF, reg_cntfid);
-
-	/* enable the system level generic timer */
-	mmio_write_32(RCAR_CNTC_BASE + CNTCR_OFF,
-			CNTCR_FCREQ((uint32_t)(0)) | CNTCR_EN);
 
 	/*
 	 * Preserve plat_secondary_reset symbol for secondary CPU boot.

@@ -66,6 +66,17 @@ const uint8_t version_of_renesas[VERSION_OF_RENESAS_MAXLEN]
 					RCAR_SCMI_CHANNEL_SIZE,		\
 					MT_DEVICE | MT_RW | MT_SECURE)
 
+#if RCAR_CONSOLE_LDR
+/*
+ * Non-cacheable: the ring header holds the daemon's 'head' and BL31's 'tail'
+ * in one cache line. With a cacheable mapping, cleaning BL31's copy of that
+ * line after an enqueue can write back a stale 'head' that the daemon has
+ * just advanced, and the daemon then reads the same record a second time.
+ */
+#define MAP_LDR_REGION		MAP_REGION_FLAT(BL31_LDR_BASE,		\
+					BL31_LDR_SIZE,			\
+					MT_NON_CACHEABLE | MT_RW | MT_SECURE)
+#endif
 
 static const mmap_region_t rcar_mmap[] = {
 	MAP_DEVICE_RCAR1,
@@ -77,6 +88,9 @@ static const mmap_region_t rcar_mmap[] = {
 	MAP_SRAM_DATA_STACK,
 	MAP_SCMI_CHANNEL,
 	MAP_DEVICE_RCAR3,
+#if RCAR_CONSOLE_LDR
+	MAP_LDR_REGION,
+#endif
 	{0}
 };
 
