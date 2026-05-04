@@ -912,9 +912,14 @@ static void bl2_advertise_dram_size(uint32_t product)
 		dram_config[5] = 0x40000000ULL;
 		dram_config[7] = 0x40000000ULL;
 #elif (RCAR_DRAM_LPDDR4_MEMCONF == 1) && \
-      (RCAR_DRAM_CHANNEL        == 5) && \
+      (RCAR_DRAM_CHANNEL        == 5 || RCAR_DRAM_CHANNEL == 3) && \
       (RCAR_DRAM_SPLIT          == 2)
-		/* 4GB(2GBx2 2ch split) */
+		/* 4GB(2GBx2 2ch split) :
+		 * With value of RCAR_DRAM_CHANNEL:
+		 * == 5: use for H3N/H3 2x2GBs (physical RAM of CH1 & CH2 are swapped).
+		 * == 3: use when physical RAM of CH1 & CH2 are not swapped (e.g. use
+		 * 	 only 4GBs of H3 4x2GBs).
+		 */
 		dram_config[1] = 0x80000000ULL;
 		dram_config[3] = 0x80000000ULL;
 #elif (RCAR_DRAM_LPDDR4_MEMCONF == 1) && (RCAR_DRAM_CHANNEL == 15)
