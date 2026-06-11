@@ -31,13 +31,30 @@ static const uint32_t mfis_mfislckr_table[] = {
 /******************************************************************************/
 void rcar_mfis_init(void)
 {
-	uint32_t register_value;
-
-	/* Write Protection Control Register */
-	/* Enable write protection setting */
-	register_value = (MFISWPCNTR_CODEVALUE_SET | MFISWPCNTR_WPD_SET);
-	mmio_write_32(MFIS_MFISWPCNTR, register_value);
-
+	/*
+	 * Disable MFIS write protection (WPD=1).
+	 *
+	 * MFISWPCNTR and MFISWACNTR are single shared registers covering
+	 * ALL channels and ALL software agents (IPL, BL31, SCP, Linux,
+	 * FreeRTOS).  There is no cross-agent mutex protecting the
+	 * three-step sequence: MFISWPCNTR→MFISWACNTR→MFISLCKRj.
+	 *
+	 * The previous implementation enabled write protection (WPD=0)
+	 * which forced every unlock through the shared MFISWACNTR write-gate.
+	 * This created two problems:
+	 *   1. BL31 re-locked protection that FreeRTOS had already unlocked,
+	 *      breaking RPMsg CR-CA communication.
+	 *   2. Concurrent MFISWACNTR writes from different agents/channels
+	 *      race: the last writer wins, silently corrupting the unlock of
+	 *      the other channel.
+	 *
+	 * Fix: disable write protection once at init (WPD=1).  All agents
+	 * can then write MFISLCKRj directly without going through MFISWACNTR,
+	 * eliminating the shared-register race.  No agent should re-enable
+	 * protection (WPD=0) after this point.
+	 */
+	mmio_write_32(MFIS_MFISWPCNTR,
+		      MFISWPCNTR_CODEVALUE_SET | MFISWPCNTR_WPD_UNLOCK);
 }
 
 void rcar_mfis_lock(mfis_target_t target)
@@ -60,22 +77,20 @@ void rcar_mfis_lock(mfis_target_t target)
 
 void rcar_mfis_unlock(mfis_target_t target)
 {
-	uint32_t register_value_mfis_mfiswacntr;
 	uint32_t register_value_mfis_mfislckr;
-
-	register_value_mfis_mfiswacntr = MFISWACNTR_CODEVALUE_SET;
-	register_value_mfis_mfiswacntr |= (mfis_mfislckr_table[target]
-					   & MFISWACNTR_REGISTERADDRESS_MASK);
 
 	register_value_mfis_mfislckr = mmio_read_32(mfis_mfislckr_table[target]);
 	register_value_mfis_mfislckr &= (~(MFISLCKR_LCK_MASK));
 	register_value_mfis_mfislckr |= MFISLCKR_LCK_RELEASE_SET;
 
-	/* Write Access Control Register */
-	/* MFISLCKR[j] Register address setting */
-	mmio_write_32(MFIS_MFISWACNTR, register_value_mfis_mfiswacntr);
-
-	/* MFIS Lock Register [j] (MFISLCKR[j]) */
+	/*
+	 * Write protection is disabled (WPD=1, set in rcar_mfis_init()).
+	 * Write MFISLCKRj directly — no MFISWACNTR step required.
+	 *
+	 * MFISWACNTR must NOT be used here: it is a single shared register
+	 * with no cross-agent mutex.  Concurrent writes from different agents
+	 * or channels overwrite each other's address field, causing the wrong
+	 * channel to be unlocked.
+	 */
 	mmio_write_32(mfis_mfislckr_table[target], register_value_mfis_mfislckr);
-
 }

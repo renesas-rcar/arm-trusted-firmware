@@ -45,8 +45,10 @@
 #define MFISLCKR_LCK_NOT_ACQUIRED_CHECK                       (0x00000000uL)
 /* MFISWPCNTR bit[31:16] (Code value) Set  */
 #define MFISWPCNTR_CODEVALUE_SET                              (0xACCE0000uL)
-/* MFISWPCNTR bit[0] (WPD) Set  */
+/* MFISWPCNTR bit[0] (WPD) 0 = write protection ENABLED  */
 #define MFISWPCNTR_WPD_SET                                    (0x00000000uL)
+/* MFISWPCNTR bit[0] (WPD) 1 = write protection DISABLED (unlocked)  */
+#define MFISWPCNTR_WPD_UNLOCK                                 (0x00000001uL)
 /* MFISWACNTR bit[31:16] (Code value) Mask  */
 #define MFISWACNTR_CODEVALUE_MASK                             (0xFFFF0000uL)
 /* MFISWACNTR bit[31:16] (Code value) Set  */
