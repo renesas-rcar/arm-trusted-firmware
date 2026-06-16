@@ -243,8 +243,7 @@ done:
 	rcar_cpld_reset_cpu();
 #endif
 #endif
-#elif PMIC_RAA271003
-#if RCAR_SYSTEM_SUSPEND
+#elif PMIC_RAA271003 && RCAR_SYSTEM_SUSPEND
 	uint8_t res;
 	//Clean reg 0x75B and write SYSTEM_RST_BIT
 	res = rcar_iic_dvfs_send(RAA271003_ADD_PAGE7, KEEP_STATUS_REG, KEEP_STATUS_CLEAN_VAL);
@@ -256,7 +255,6 @@ done:
 		rcar_pwrc_set_suspend_to_ram();
 #else
 	rcar_pwrc_system_reset();
-#endif
 #endif
 	wfi();
 
