@@ -889,7 +889,11 @@ rcar_pwrc_go_suspend_to_ram(void)
 #endif
 /*PMIC_RAA271003*/
 #if PMIC_RAA271003
-	uint8_t data;
+	/* safe default if I2C read fails.
+	 * no panic: DDR already in self-refresh,
+	 * must continue to PMIC sequence.
+	 */
+	uint8_t data = SYSTEM_RST_BIT_RST_RST;
 	uint8_t res;
 	//Check bit(1) = 1 or not for detect WRM_RST or MEM_RET
 	res = rcar_iic_dvfs_receive(RAA271003_ADD_PAGE7, 0x5B, &data);
