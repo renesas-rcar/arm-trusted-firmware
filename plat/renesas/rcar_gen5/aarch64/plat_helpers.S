@@ -184,10 +184,34 @@ endfunc plat_crash_console_putc
 
 	/* ---------------------------------------------
 	 * void plat_crash_console_flush()
+	 * console_rcar_flush() is C code (it releases the HSCIF MFIS lock),
+	 * but the crash reporting calls this with sp pointing at the crash
+	 * message, not at a stack. Run it on the crash stack like
+	 * plat_crash_console_putc, or its first push takes an SP alignment
+	 * fault and the crash dump repeats forever.
 	 * ---------------------------------------------
 	 */
 func plat_crash_console_flush
-	b	console_rcar_flush
+	mov	x1, sp
+	mov_imm	x2, RCAR_CRASH_STACK
+	mov	sp, x2
+	str	x1, [sp, #-16]!
+	str	x30, [sp, #-16]!
+	str	x3, [sp, #-16]!
+	str	x4, [sp, #-16]!
+	str	x5, [sp, #-16]!
+	str	x6, [sp, #-16]!
+	str	x7, [sp, #-16]!
+	bl	console_rcar_flush
+	ldr	x7, [sp], #16
+	ldr	x6, [sp], #16
+	ldr	x5, [sp], #16
+	ldr	x4, [sp], #16
+	ldr	x3, [sp], #16
+	ldr	x30, [sp], #16
+	ldr	x1, [sp], #16
+	mov	sp, x1
+	ret
 endfunc plat_crash_console_flush
 
 	/* ---------------------------------------------

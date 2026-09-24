@@ -4,11 +4,14 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
+#include <stdbool.h>
 #include <stdint.h>
 #include <stddef.h>
 #include <lib/mmio.h>
 #include <drivers/console.h>
 #include <drivers/delay_timer.h>
+#include <plat/common/platform.h>
+#include <platform_def.h>
 #include "rcar_def.h"
 #include "scif.h"
 #include "mfis.h"
@@ -44,6 +47,9 @@ static void hscif_console_putc(uint8_t outchar);
 
 static void (*rcar_putc)(uint8_t outchar);
 
+/* Per core: a line is in progress, so this core holds the HSCIF MFIS lock. */
+static bool rcar_uart_line_active[PLATFORM_CORE_COUNT];
+
 int console_rcar_init(uintptr_t base_addr, uint32_t uart_clk,
 		uint32_t baud_rate)
 {
@@ -62,12 +68,22 @@ int console_rcar_putc(int c, console_t *pconsole)
 	(void)pconsole;
 
 	int ret = -1;
+	unsigned int core = plat_my_core_pos();
 
 	if (rcar_putc != NULL) {
+		/* Hold the lock from the first character to the newline. */
+		if (!rcar_uart_line_active[core]) {
+			rcar_mfis_lock(MFIS_TARGET_HSCIF);
+			rcar_uart_line_active[core] = true;
+		}
+
 		rcar_putc((uint8_t)c);
 		if (c == RCAR_CHR_CR) {
 			/* add 'LF' after 'CR' */
 			rcar_putc(RCAR_CHR_LF);
+
+			rcar_uart_line_active[core] = false;
+			rcar_mfis_unlock(MFIS_TARGET_HSCIF);
 		}
 		ret = c;
 	}
@@ -77,8 +93,16 @@ int console_rcar_putc(int c, console_t *pconsole)
 
 int console_rcar_flush(console_t *pconsole)
 {
+	unsigned int core = plat_my_core_pos();
+
 	(void)pconsole;
-	/* Nothing to do */
+
+	/* Release the lock if the last line of this core had no newline. */
+	if (rcar_uart_line_active[core]) {
+		rcar_uart_line_active[core] = false;
+		rcar_mfis_unlock(MFIS_TARGET_HSCIF);
+	}
+
 	return 0;
 }
 
