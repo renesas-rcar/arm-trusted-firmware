@@ -81,6 +81,14 @@ static void rcar_pwr_domain_off(const psci_power_state_t *target_state)
 	u_register_t mpidr = read_mpidr_el1();
 
 	rcar_pwrc_disable_interrupt_wakeup(mpidr);
+
+	/*
+	 * On X5Hv1, an enabled INTID 29 (nCNTPSIRQ) on a powered-off
+	 * core can prevent the associated APU cluster from powering down.
+	 * Disable it before CPU_OFF to ensure proper cluster power-down.
+	 * gicv3_rdistif_init() re-enables it during CPU_ON.
+	 */
+	gicv3_disable_interrupt(ARM_IRQ_SEC_PHY_TIMER, plat_my_core_pos());
 	gicv3_cpuif_disable(plat_my_core_pos());
 
 	rcar_scmi_cpuoff(target_state);
